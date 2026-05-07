@@ -1,0 +1,21 @@
+
+CORBIT CINEMATIC EXPERIENCE UPGRADES
+===================================
+
+Included concepts:
+- Cinematic overlay system
+- Animated grid/HUD layer
+- Glow hover interactions
+- Floating glassmorphism panels
+- Scroll reveal animation classes
+- Enterprise cinematic atmosphere
+- Motion-ready CSS foundations
+- 3D depth hover interactions
+- Investor-demo visual styling
+
+Recommended next stack:
+- Framer Motion
+- GSAP
+- Three.js
+- Lenis smooth scrolling
+- React Three Fiber
