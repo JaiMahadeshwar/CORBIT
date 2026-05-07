@@ -1,5 +1,42 @@
 {
-  "rewrites": [{"source": "/(.*)", "destination": "/index.html"}],
+  "rewrites": [
+    {
+      "source": "/insights/earth-infrastructure-project-controls",
+      "destination": "/insights/earth-infrastructure-project-controls.html"
+    },
+    {
+      "source": "/insights/ai-pmo-capital-projects",
+      "destination": "/insights/ai-pmo-capital-projects.html"
+    },
+    {
+      "source": "/insights",
+      "destination": "/insights/index.html"
+    },
+    {
+      "source": "/insights/ai-project-controls",
+      "destination": "/insights/ai-project-controls.html"
+    },
+    {
+      "source": "/insights/cost-estimating-ai",
+      "destination": "/insights/cost-estimating-ai.html"
+    },
+    {
+      "source": "/insights/schedule-risk-intelligence",
+      "destination": "/insights/schedule-risk-intelligence.html"
+    },
+    {
+      "source": "/insights/risk-register-ai",
+      "destination": "/insights/risk-register-ai.html"
+    },
+    {
+      "source": "/insights/space-infrastructure-project-controls",
+      "destination": "/insights/space-infrastructure-project-controls.html"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
   "buildCommand": "npm run build",
   "outputDirectory": "dist"
 }
