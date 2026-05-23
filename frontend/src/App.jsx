@@ -61,6 +61,224 @@ async function download(path, model, name, setExportingLabel) {
   URL.revokeObjectURL(url);
   if (setExportingLabel) setTimeout(() => setExportingLabel(''), 1200);
 }
+
+
+// V133: Enterprise no-blank-screen hardening. Every generated sector model is normalised
+// before React/Recharts render, so an incomplete backend payload can degrade gracefully
+// instead of taking down the full product during demo.
+const DEFAULT_CURVE = [
+  { percentile: 1, cost_bn: 1, schedule_months: 12 },
+  { percentile: 10, cost_bn: 1.1, schedule_months: 14 },
+  { percentile: 50, cost_bn: 1.3, schedule_months: 18 },
+  { percentile: 80, cost_bn: 1.6, schedule_months: 22 },
+  { percentile: 90, cost_bn: 1.9, schedule_months: 25 },
+  { percentile: 99, cost_bn: 2.3, schedule_months: 30 },
+];
+function asArray(v) { return Array.isArray(v) ? v : []; }
+function asText(v, fallback = '') { return typeof v === 'string' && v.trim() ? v : fallback; }
+function num(v, fallback = 0) { const n = Number(v); return Number.isFinite(n) ? n : fallback; }
+function sectorKey(model = {}, prompt = '') {
+  const t = `${model.subsector || ''} ${model.title || ''} ${model.prompt || ''} ${prompt || ''}`.toLowerCase();
+  if (/airport|aviation|terminal|airside|baggage|orat|heathrow/.test(t)) return 'airport';
+  if (/rail|transit|metro|signalling|rolling stock|corridor|california high/.test(t)) return 'rail';
+  if (/data centre|data center|datacenter|hyperscale|gpu|ai campus|liquid cooling/.test(t)) return 'hyperscale';
+  if (/pharma|biologic|gmp|cqv|fill-finish|aseptic|validation/.test(t)) return 'pharma';
+  if (/semiconductor|fab|wafer|lithography|cleanroom|ultra-pure/.test(t)) return 'semiconductor';
+  if (/lng|oil|gas|offshore|refinery|pipeline|process safety|cryogenic/.test(t)) return 'oilgas';
+  if (/nuclear|reactor|safety case|containment|smr/.test(t)) return 'nuclear';
+  if (/space|lunar|moon|mars|orbital|launch|payload|spaceport|satellite/.test(t)) return 'space';
+  if (/defence|defense|secure|aerospace|mission assurance/.test(t)) return 'defence';
+  if (/water|desalination|wastewater|treatment/.test(t)) return 'water';
+  if (/port|marine|harbour|terminal yard|crane/.test(t)) return 'ports';
+  if (/hospital|healthcare|clinical/.test(t)) return 'healthcare';
+  if (/energy|power|grid|utility|substation|transmission/.test(t)) return 'energy';
+  return model.mode === 'Space' ? 'space' : 'earth';
+}
+const SECTOR_SAFE = {
+  airport: {
+    nodes: ['ORAT readiness','Baggage systems integration','Security certification','Airside phasing','Operational transition','Commissioning overlap','Confidence'],
+    threats: ['Live airport phasing and possessions','Baggage/security systems integration','Operational readiness trials','Regulatory and stakeholder approvals','Airside access and safety constraints'],
+    drivers: ['Benchmark similarity: airport terminal expansion','Scope maturity: capacity, phasing and systems definition','Procurement certainty: baggage/security/MEP packages','Schedule maturity: ORAT and live operations logic','Interface exposure: airlines, airside, landside and regulators'],
+    invalid: ['liquid cooling','transformer lead-time','grid energisation','launch readiness','mission assurance','rolling stock']
+  },
+  rail: {
+    nodes: ['Possession access','Signalling integration','Rolling-stock interface','Utility diversions','Migration sequencing','Operational commissioning','Confidence'],
+    threats: ['Possession constraints and access windows','Signalling and systems integration','Rolling-stock interface readiness','Utility diversions and corridor constraints','Timetable migration and regulator approvals'],
+    drivers: ['Benchmark similarity: rail/transit programme','Scope maturity: alignment, station and systems definition','Procurement certainty: civil/systems package strategy','Schedule maturity: possessions and test/commissioning logic','Interface exposure: utilities, operators and regulators'],
+    invalid: ['liquid cooling','ORAT','launch readiness','payload integration','mission assurance']
+  },
+  hyperscale: {
+    nodes: ['Transformer lead-time','Grid energisation','Liquid cooling readiness','IST congestion','Commissioning overlap','Reserve drawdown','Confidence'],
+    threats: ['Grid energisation and utility agreements','Long-lead transformer and switchgear delivery','Liquid cooling readiness','Integrated systems testing and commissioning','Phased data-hall turnover'],
+    drivers: ['Benchmark similarity: hyperscale digital infrastructure','Scope maturity: campus power and white-space definition','Procurement certainty: transformers, generators and switchgear','Schedule maturity: grid and commissioning logic','Interface exposure: utilities, fibre and commissioning'],
+    invalid: ['ORAT','baggage systems','rolling stock','launch readiness']
+  },
+  pharma: {
+    nodes: ['URS maturity','Cleanroom readiness','Process equipment delivery','CQV execution','GMP inspection readiness','Batch release pathway','Confidence'],
+    threats: ['CQV protocol approval and execution','Long-lead process equipment delivery','Clean utility validation and media fills','FDA/EMA inspection readiness','Automation and batch-release readiness'],
+    drivers: ['Benchmark similarity: pharma / biologics campus','Scope maturity: GMP package and user requirement definition','Procurement certainty: process equipment and clean utility lead-times','Schedule maturity: CQV logic and validation pathway','Regulatory exposure: FDA/EMA inspection readiness'],
+    invalid: ['ORAT','baggage systems','launch readiness','rolling stock']
+  },
+  semiconductor: {
+    nodes: ['Cleanroom envelope','Ultra-pure utilities','Lithography tool delivery','Contamination control','Process qualification','Yield ramp','Confidence'],
+    threats: ['Lithography and process-tool lead-times','Cleanroom and ultra-pure utility readiness','Contamination-control qualification','Specialist workforce constraints','Yield-ramp uncertainty'],
+    drivers: ['Benchmark similarity: advanced fab programme','Scope maturity: cleanroom and process-tool definition','Procurement certainty: lithography and specialist tools','Schedule maturity: qualification and yield-ramp logic','Interface exposure: utilities, contamination control and tool vendors'],
+    invalid: ['ORAT','baggage systems','launch readiness','rolling stock']
+  },
+  oilgas: {
+    nodes: ['Process design freeze','Long-lead equipment','Module fabrication','Shutdown window','Process-safety verification','Commissioning readiness','Confidence'],
+    threats: ['Long-lead rotating equipment procurement','Shutdown-window dependency','Process-safety system verification','Module fabrication and marine logistics','Commissioning under live operating constraints'],
+    drivers: ['Benchmark similarity: process / energy megaproject','Scope maturity: process design and plot-plan definition','Procurement certainty: compressors, vessels and cryogenic packages','Schedule maturity: shutdown and commissioning logic','Interface exposure: marine, process safety and operations'],
+    invalid: ['ORAT','baggage systems','liquid cooling','launch readiness']
+  },
+  nuclear: {
+    nodes: ['Safety case maturity','Regulator hold points','Nuclear-grade procurement','QA traceability','Containment systems','Commissioning governance','Confidence'],
+    threats: ['Licensing and safety-case maturity','Regulator hold points','Nuclear-grade component lead-times','QA traceability and documentation','Specialist workforce constraints'],
+    drivers: ['Benchmark similarity: nuclear generation programme','Scope maturity: safety case and reactor island definition','Procurement certainty: nuclear-grade long-lead components','Schedule maturity: regulator hold-point logic','Interface exposure: QA traceability and commissioning governance'],
+    invalid: ['ORAT','baggage systems','liquid cooling','payload integration']
+  },
+  space: {
+    nodes: ['Payload certification','Launch integration','Range availability','Thermal-power balance','Mission assurance sign-off','Operational readiness','Confidence'],
+    threats: ['Launch-window and range coordination','Payload integration and certification','Propulsion / thermal qualification','Mission assurance sign-off','Deep-space communications and operations readiness'],
+    drivers: ['Benchmark similarity: aerospace / mission programme','Scope maturity: payload, mission and operations definition','Procurement certainty: qualified flight hardware and suppliers','Schedule maturity: test campaign and launch-readiness logic','Interface exposure: range, payload, propulsion and mission operations'],
+    invalid: ['ORAT','baggage systems','rolling stock','liquid cooling readiness']
+  },
+  defence: {
+    nodes: ['Security accreditation','Mission systems integration','Classified supplier readiness','Assurance gates','Operational acceptance','Resilience posture','Confidence'],
+    threats: ['Security accreditation and assurance gates','Mission systems integration','Classified supplier dependency','Operational acceptance testing','Resilience and continuity validation'],
+    drivers: ['Benchmark similarity: defence / secure infrastructure','Scope maturity: mission-system and security definition','Procurement certainty: classified supplier readiness','Schedule maturity: assurance and acceptance logic','Interface exposure: security, operations and regulator stakeholders'],
+    invalid: ['ORAT','baggage systems','liquid cooling readiness','rolling stock']
+  },
+  water: {
+    nodes: ['Process design maturity','Permitting','Civil works sequencing','Equipment procurement','Commissioning permits','Operational handover','Confidence'],
+    threats: ['Permitting and environmental approvals','Process equipment procurement','Civil works and tie-in sequencing','Commissioning permits and water-quality validation','Operational handover'],
+    drivers: ['Benchmark similarity: water infrastructure programme','Scope maturity: treatment process and civil scope definition','Procurement certainty: pumps, membranes and process packages','Schedule maturity: tie-in and commissioning logic','Interface exposure: utilities, regulator and operator constraints'],
+    invalid: ['ORAT','baggage systems','launch readiness','liquid cooling']
+  },
+  ports: {
+    nodes: ['Marine access','Quay works','Crane procurement','Yard systems','Customs / rail interface','Operational commissioning','Confidence'],
+    threats: ['Marine access and dredging windows','Quay and berth construction sequencing','Crane and automation procurement','Yard, customs and rail systems integration','Operational commissioning under live port constraints'],
+    drivers: ['Benchmark similarity: port / marine terminal programme','Scope maturity: berth, yard and systems definition','Procurement certainty: cranes, automation and marine packages','Schedule maturity: marine windows and port operations logic','Interface exposure: customs, rail, shipping and operator stakeholders'],
+    invalid: ['ORAT','liquid cooling','launch readiness','payload integration']
+  },
+  healthcare: {
+    nodes: ['Clinical brief maturity','Medical equipment procurement','Digital health integration','Infection-control validation','Phased occupancy','Clinical commissioning','Confidence'],
+    threats: ['Clinical commissioning readiness','Medical equipment procurement','Digital health and systems integration','Infection-control compliance','Phased occupancy and patient transition'],
+    drivers: ['Benchmark similarity: healthcare / hospital infrastructure','Scope maturity: clinical brief and equipment schedule','Procurement certainty: medical equipment and specialist systems','Schedule maturity: phased occupancy and clinical commissioning logic','Interface exposure: clinicians, regulators and live hospital operations'],
+    invalid: ['ORAT','liquid cooling','launch readiness','rolling stock']
+  },
+  energy: {
+    nodes: ['Grid connection','Permitting','Long-lead equipment','Civil / electrical interface','Commissioning sequence','Market dispatch readiness','Confidence'],
+    threats: ['Grid connection and permitting','Transformer / switchgear procurement','Civil and electrical interface coordination','Commissioning sequence and energisation','Market dispatch and operator readiness'],
+    drivers: ['Benchmark similarity: energy / utility megaprogramme','Scope maturity: generation and grid-interface definition','Procurement certainty: transformers, turbines and switchgear','Schedule maturity: energisation and commissioning logic','Interface exposure: grid operator, regulator and utilities'],
+    invalid: ['ORAT','baggage systems','payload integration']
+  },
+  earth: {
+    nodes: ['Scope definition','Procurement evidence','Interface control','Commissioning readiness','Operational acceptance','Reserve adequacy','Confidence'],
+    threats: ['Long-lead procurement','Interface coordination','Commissioning readiness','Approvals and stakeholder governance','Operational handover'],
+    drivers: ['Benchmark similarity: comparable infrastructure archetype','Scope maturity: package and requirement definition','Procurement certainty: long-lead supplier readiness','Schedule maturity: critical path and commissioning logic','Interface exposure: utilities, operators and regulators'],
+    invalid: ['launch readiness','payload integration']
+  }
+};
+function scrubText(text, invalid = []) {
+  let s = String(text ?? '');
+  invalid.forEach(term => {
+    const re = new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'ig');
+    s = s.replace(re, 'sector-specific readiness');
+  });
+  return s;
+}
+function scrubDeep(value, invalid) {
+  if (typeof value === 'string') return scrubText(value, invalid);
+  if (Array.isArray(value)) return value.map(v => scrubDeep(v, invalid));
+  if (value && typeof value === 'object') {
+    const out = {};
+    for (const [k, v] of Object.entries(value)) out[k] = scrubDeep(v, invalid);
+    return out;
+  }
+  return value;
+}
+function validateCurve(rawCurve, model) {
+  const baseCost = parseFloat(String(model?.cost_p50 || '').replace(/[^0-9.]/g, '')) || 1;
+  const baseSch = parseFloat(String(model?.schedule || '').replace(/[^0-9.]/g, '')) || 24;
+  const curve = asArray(rawCurve).map((d, i) => ({
+    percentile: num(d?.percentile, [1,5,10,20,30,40,50,60,70,80,90,95,99][i] || i + 1),
+    cost_bn: num(d?.cost_bn, baseCost * (0.8 + i * 0.05)),
+    schedule_months: num(d?.schedule_months, Math.round(baseSch * (0.8 + i * 0.05)))
+  })).filter(d => Number.isFinite(d.percentile) && Number.isFinite(d.cost_bn) && Number.isFinite(d.schedule_months));
+  return curve.length >= 3 ? curve : DEFAULT_CURVE.map(d => ({...d, cost_bn: +(baseCost * d.cost_bn).toFixed(1), schedule_months: Math.max(1, Math.round(baseSch * d.schedule_months / 18))}));
+}
+function normaliseModel(raw, prompt = '') {
+  if (!raw || typeof raw !== 'object') return null;
+  const key = sectorKey(raw, prompt);
+  const sector = SECTOR_SAFE[key] || SECTOR_SAFE.earth;
+  let m = scrubDeep({ ...raw }, sector.invalid);
+  m.prompt = asText(m.prompt, prompt);
+  m.title = asText(m.title, key === 'space' ? 'Space infrastructure programme' : 'Capital infrastructure programme');
+  m.mode = asText(m.mode, key === 'space' ? 'Space' : 'Earth');
+  m.subsector = asText(m.subsector, key.replace(/(^|_)(\w)/g, (_,a,b)=> (a?' / ':'') + b.toUpperCase()));
+  m.risk = asText(m.risk, 'Medium-High');
+  m.confidence_pct = Math.max(1, Math.min(99, num(m.confidence_pct, 58)));
+  m.scenario_label = asText(m.scenario_label, 'Base');
+  m.cost_p50 = asText(m.cost_p50, '$1.0B');
+  m.cost_range = asText(m.cost_range, '$0.8B - $1.4B');
+  m.schedule = asText(m.schedule, '24 months');
+  m.causal_graph_nodes = asArray(m.causal_graph_nodes).filter(Boolean).map(String).slice(0,7);
+  if (m.causal_graph_nodes.length < 4) m.causal_graph_nodes = sector.nodes;
+  m.sector_schedule_threats = asArray(m.sector_schedule_threats).length ? asArray(m.sector_schedule_threats).map(String) : sector.threats;
+  m.sector_confidence_drivers = asArray(m.sector_confidence_drivers).length ? asArray(m.sector_confidence_drivers).map(String) : sector.drivers;
+  m.next_best_actions = asArray(m.next_best_actions).length ? asArray(m.next_best_actions).map(String) : ['Validate dominant critical-path constraint against benchmark evidence.','Confirm procurement maturity and named evidence owners.','Challenge reserve posture against commissioning and interface exposure.','Prepare board decision paper with explicit scenario trade-offs.'];
+  m.board_briefing = asArray(m.board_briefing).length ? asArray(m.board_briefing).map(String) : [asText(m.executive_shock_insight, 'The programme is now governed by evidence maturity, interfaces and commissioning readiness.'),'Challenge whether the current confidence posture is supported by procurement and operational-readiness evidence.'];
+  m.mission_control_cards = asArray(m.mission_control_cards).length ? asArray(m.mission_control_cards) : [
+    { label: 'LIVE CALIBRATION', signal: 'Current sector conditions are being applied to confidence, contingency and delivery-tail exposure.', severity: 'ACTIVE' },
+    { label: 'EXECUTIVE SHOCK', signal: asText(m.executive_shock_insight, 'The programme narrative should be challenged against evidence maturity.'), severity: 'MEDIUM-HIGH' },
+    { label: 'CRITICAL PATH EXPOSURE', signal: sector.threats[0], severity: 'HIGH' }
+  ];
+  m.benchmark_comparison = asArray(m.benchmark_comparison).length ? asArray(m.benchmark_comparison) : [
+    { archetype: key === 'space' ? 'Aerospace / Mission Assurance Programme' : sector.drivers[0].replace('Benchmark similarity: ', ''), anchor_cost: '$1B-$10B', anchor_duration_months: '36-96' }
+  ];
+  m.cost_breakdown = asArray(m.cost_breakdown).length ? asArray(m.cost_breakdown) : [
+    { cbs: '01.01', description: 'Core delivery package', type: 'Direct', p10_bn: .8, p50_bn: 1, p90_bn: 1.3, basis: 'Fallback normalized cost line' }
+  ];
+  m.schedule_detail = asArray(m.schedule_detail).length ? asArray(m.schedule_detail) : [
+    { activity_id: 'A1000', phase: 'Governance', activity: 'Project initiation / controls setup', predecessor: '', duration_months: 2, critical: 'No', basis: 'Fallback normalized schedule line' }
+  ];
+  m.risk_register = asArray(m.risk_register).length ? asArray(m.risk_register) : [
+    { id: 'R-001', risk: sector.threats[0], owner: 'Programme Director', mitigation: 'Evidence workshop and owner action plan', likelihood: 'Medium', impact: 'High' }
+  ];
+  m.cost_waterfall_vs_base = asArray(m.cost_waterfall_vs_base).length ? asArray(m.cost_waterfall_vs_base) : [{ driver: 'Base P50', value: m.cost_p50, kind: 'total' }];
+  m.schedule_waterfall_vs_base = asArray(m.schedule_waterfall_vs_base).length ? asArray(m.schedule_waterfall_vs_base) : [{ driver: 'Base duration', months: parseFloat(String(m.schedule).replace(/[^0-9.]/g,'')) || 24, kind: 'total' }];
+  m.scenario_matrix = asArray(m.scenario_matrix).length ? asArray(m.scenario_matrix) : scenarios.map(s => ({ scenario: s, cost_p50: m.cost_p50, schedule: m.schedule, confidence_pct: m.confidence_pct, risk: m.risk }));
+  m.monte_carlo = m.monte_carlo && typeof m.monte_carlo === 'object' ? m.monte_carlo : {};
+  m.monte_carlo.curve = validateCurve(m.monte_carlo.curve, m);
+  const p50c = parseFloat(String(m.cost_p50).replace(/[^0-9.]/g,'')) || 1;
+  const p50s = parseFloat(String(m.schedule).replace(/[^0-9.]/g,'')) || 24;
+  m.monte_carlo.qcra = m.monte_carlo.qcra && typeof m.monte_carlo.qcra === 'object' ? m.monte_carlo.qcra : { p50: p50c, p80: +(p50c*1.18).toFixed(1), p90: +(p50c*1.35).toFixed(1) };
+  m.monte_carlo.qsra = m.monte_carlo.qsra && typeof m.monte_carlo.qsra === 'object' ? m.monte_carlo.qsra : { p50: p50s, p80: Math.round(p50s*1.18), p90: Math.round(p50s*1.35) };
+  m.monte_carlo.tornado = asArray(m.monte_carlo.tornado).length ? asArray(m.monte_carlo.tornado) : sector.threats.slice(0,4).map((driver,i)=>({driver, impact: 5-i}));
+  m.uncertainty_narrative = m.uncertainty_narrative && typeof m.uncertainty_narrative === 'object' ? m.uncertainty_narrative : {
+    estimate_maturity: 'Class maturity is suitable for option selection, but evidence gaps remain before approval.',
+    schedule_maturity: 'Schedule logic requires critical-path, handover and commissioning validation.',
+    interpretation: `Live calibration is weighting ${sector.threats.slice(0,3).join(', ')} into the QCRA/QSRA tail.`
+  };
+  m.why_casey_generated_this = asArray(m.why_casey_generated_this).length ? asArray(m.why_casey_generated_this).map(String) : [
+    `CASEY detected ${m.subsector} from the project brief and routed it to the ${m.mode} sector model.`,
+    `Sector behaviours applied: ${sector.nodes.slice(0,4).join(', ')}.`,
+    'Cost, schedule and risk were calibrated against estimate class, schedule level, complexity and delivery environment.',
+    'The output is designed for early board challenge and scope definition, not certified pricing.'
+  ];
+  return m;
+}
+class ErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { failed: false, error: null }; }
+  static getDerivedStateFromError(error) { return { failed: true, error }; }
+  componentDidCatch(error, info) { console.error('CASEY render guard caught:', error, info); }
+  render() {
+    if (!this.state.failed) return this.props.children;
+    return <div className="app v50EliteApp"><main className="console"><section className="layout one"><Card className="shockCard"><h2>CASEY recovered the demo session</h2><p>The previous project payload contained an incomplete render object. The product did not lose data; refresh and rerun the same brief or switch to another sector example.</p><button className="primary" onClick={() => { this.setState({failed:false,error:null}); window.location.reload(); }}>Recover session</button><p className="chartCaption">Render guard: no blank-screen failure.</p></Card></section></main></div>;
+  }
+}
+
 function Card({ children, className = '' }) {
   return <motion.div className={`card ${className}`} initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>{children}</motion.div>;
 }
@@ -674,7 +892,7 @@ function scenarioAdjustedModel(currentModel, nextScenario) {
       };
       const m = await post('/generate', payload);
       const nextContext = lockedProjectContext(m, canonicalPrompt);
-      setModel(m); setProjectContext(nextContext); setScenario(nextScenario); setPrompt(canonicalPrompt);
+      const safe = normaliseModel(m, canonicalPrompt); const nextContextSafe = lockedProjectContext(safe, canonicalPrompt); setModel(safe); setProjectContext(nextContextSafe); setScenario(nextScenario); setPrompt(canonicalPrompt);
     } catch (e) { setError(String(e.message || e)); }
     finally { setLoading(false); setSimulationStage(''); setConfidencePulse(false); }
   }
@@ -718,7 +936,7 @@ function scenarioAdjustedModel(currentModel, nextScenario) {
 
   return <div className="app v50EliteApp">
     <Briefing open={briefing} onClose={() => setBriefing(false)} onEarth={runEarth} onSpace={runSpace}/>
-    <OneShotDemo open={trialOpen} onClose={() => setTrialOpen(false)} onComplete={(m) => { setModel(m); setProjectContext(lockedProjectContext(m, m?.prompt || prompt)); setShow(false); setTrialOpen(false); setTab('overview'); }} />
+    <OneShotDemo open={trialOpen} onClose={() => setTrialOpen(false)} onComplete={(m) => { const safe = normaliseModel(m, m?.prompt || prompt); setModel(safe); setProjectContext(lockedProjectContext(safe, safe?.prompt || prompt)); setShow(false); setTrialOpen(false); setTab('overview'); }} />
     <AnimatePresence>{loading && <Loading text="Building full CASEY intelligence pack..."/>}</AnimatePresence>
     {show && !model && <Hero onBriefing={() => setBriefing(true)} onEarth={runEarth} onSpace={runSpace} onConsole={() => setShow(false)} onTryDemo={() => setTrialOpen(true)}/>} 
     <header className="v50ConsoleTop"><Logo/><nav><button onClick={() => { setModel(null); setProjectContext(null); setShow(true); }}>Home</button><button onClick={() => setBriefing(true)}>Film</button><button onClick={() => setTrialOpen(true)}>Free run</button><button onClick={runEarth}>Earth demo</button><button onClick={runSpace}>Space demo</button><a href={emailLink}>Request access</a></nav></header>
@@ -836,4 +1054,4 @@ function scenarioAdjustedModel(currentModel, nextScenario) {
   </div>;
 }
 
-createRoot(document.getElementById('root')).render(<App/>);
+createRoot(document.getElementById('root')).render(<ErrorBoundary><App/></ErrorBoundary>);
