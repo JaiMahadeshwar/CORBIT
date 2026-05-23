@@ -2642,3 +2642,69 @@ body,#root{
   cursor:pointer!important;
 }
 @media(max-width:950px){.v50SoundBtn{bottom:128px!important;font-size:12px!important;padding:12px 14px!important}}
+
+/* FINAL PRODUCTION COMPACTNESS + SOUND PLAYER POLISH
+   Keeps the demo cinematic, but stops the interface and free-run modal feeling oversized on desktop. */
+html{font-size:14px!important;}
+body{overflow-x:hidden!important;}
+.v50Console{max-width:1480px!important;padding:18px 20px 46px!important;}
+.v50ConsoleTop{padding:13px 24px!important;}
+.v50ConsoleTop nav button,.v50ConsoleTop nav a{padding:9px 12px!important;font-size:11px!important;letter-spacing:.11em!important;}
+.v50Logo img{width:126px!important;}
+.v50Logo span{font-size:9px!important;letter-spacing:.18em!important;}
+.kpis{gap:12px!important;margin:10px 0 16px!important;}
+.v50Kpi{gap:12px!important;min-height:108px!important;}
+.v50Kpi p{font-size:10px!important;}
+.v50Kpi b{font-size:23px!important;line-height:1.05!important;}
+.v50Kpi span{font-size:13px!important;}
+.bench{padding:13px 14px!important;min-height:72px!important;}
+.bench b{font-size:12px!important;}.bench strong{font-size:14px!important;}
+.tabs{gap:7px!important;margin:13px 0 16px!important;}
+.tabs button{padding:10px 13px!important;font-size:10px!important;}
+.card{padding:20px!important;}
+.card h2{font-size:20px!important;line-height:1.05!important;margin-bottom:14px!important;}
+.card h3{font-size:14px!important;margin:15px 0 9px!important;}
+.card p,.big,.reason,td{font-size:13px!important;line-height:1.43!important;}
+.reason{padding:10px 12px!important;margin:7px 0!important;}
+.reason span{width:24px!important;height:24px!important;min-width:24px!important;font-size:12px!important;}
+.layout.two{gap:16px!important;}
+.liveSignals{max-width:1180px!important;margin:0 auto 18px!important;padding:14px 16px!important;}
+.liveSignals b{font-size:12px!important;}.liveSignals span,.liveSignals p{font-size:12px!important;}
+.scenarioGrid{gap:10px!important;}
+.scenarioCard{padding:14px 16px!important;min-height:90px!important;}
+.scenarioCard h3{font-size:13px!important;}.scenarioCard strong{font-size:14px!important;}
+.exports button,.v50Exports .contactBtn{font-size:12px!important;min-height:48px!important;padding:11px 13px!important;}
+
+/* Free run modal: boardroom size, not billboard size */
+.publicDemoOverlay,.boomDemoOverlay{padding:18px!important;place-items:center!important;}
+.publicDemoModal,.boomDemoModal{width:min(820px,92vw)!important;max-height:88vh!important;padding:24px 28px!important;}
+.publicDemoClose{width:32px!important;height:32px!important;font-size:22px!important;right:16px!important;top:14px!important;}
+.demoKicker{font-size:10px!important;letter-spacing:.2em!important;margin-bottom:6px!important;}
+.publicDemoModal h2,.boomHeader h2{font-size:clamp(34px,4.5vw,56px)!important;line-height:.9!important;letter-spacing:-.05em!important;margin:0 0 10px!important;}
+.demoSub{font-size:14px!important;line-height:1.45!important;max-width:680px!important;}
+.boomEmail{margin:16px 0 10px!important;font-size:10px!important;letter-spacing:.13em!important;}
+.boomEmail input,.boomBrief textarea{padding:12px 14px!important;font-size:13px!important;line-height:1.45!important;}
+.boomBrief textarea{min-height:180px!important;max-height:290px!important;}
+.boomQuality{gap:7px!important;margin:10px 0 2px!important;}
+.boomQuality span{font-size:9px!important;padding:7px 9px!important;}
+.publicDemoActions{margin-top:14px!important;}
+.boomActions .heroBtn,.publicDemoActions button{font-size:12px!important;padding:11px 14px!important;min-height:42px!important;}
+.demoFinePrint{font-size:11px!important;margin-top:10px!important;}
+.missionProcessing{padding:12px 14px!important;margin-top:12px!important;}
+.missionProcessing b{font-size:11px!important}.missionProcessing span{font-size:11px!important}
+
+/* Film modal: keep audio controls visible without making the film frame huge or empty-looking */
+.v50Briefing{background:#000!important;}
+.v50BriefingVideo{width:100%!important;height:100%!important;object-fit:cover!important;background:#000!important;}
+.v50BriefingTop{top:22px!important;left:30px!important;right:30px!important;}
+.v50BriefingBottom{bottom:24px!important;left:30px!important;right:30px!important;gap:9px!important;}
+.v50BriefingTop button,.v50BriefingBottom button{font-size:11px!important;padding:11px 14px!important;min-height:42px!important;}
+.v50SoundBtn{font-size:12px!important;padding:12px 16px!important;bottom:88px!important;}
+
+@media(max-width:950px){
+  .v50Console{padding:14px 14px 38px!important;}
+  .publicDemoModal,.boomDemoModal{width:94vw!important;padding:20px!important;}
+  .publicDemoModal h2,.boomHeader h2{font-size:clamp(32px,11vw,48px)!important;}
+  .boomBrief textarea{min-height:170px!important;}
+  .v50Kpi{min-height:92px!important;}
+}
