@@ -77,7 +77,7 @@ function Table({ rows = [], cols = [], moneyCols = [] }) {
 }
 function Hero({ onBriefing, onEarth, onSpace, onConsole, onTryDemo }) {
   return <section className="v50TakeoverHero">
-    <video className="v50HeroVideo" src="https://corbit.b-cdn.net/casey_hero_film.mp4" autoPlay muted loop playsInline preload="auto" />
+    <video className="v50HeroVideo" src="https://corbit.b-cdn.net/casey_hero_film.mp4" autoPlay muted loop playsInline preload="auto" crossOrigin="anonymous" />
     <div className="v50HeroShade" />
     <div className="v50TopBar"><Logo/><div className="v50TopActions"><button onClick={onBriefing}><Play size={15}/> Watch briefing</button><button onClick={onEarth}>Run Earth model</button><button onClick={onSpace}>Run Space model</button><button className="tryTopBtn" onClick={onTryDemo}>Try one free run</button><button onClick={onConsole}>Open console</button><a className="topBuyLink" href="mailto:hello@casey.ai?subject=CASEY%20Access%20Request">Request access</a></div></div>
     <motion.div className="v50HeroCenter" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .7 }}>
@@ -93,7 +93,7 @@ function Hero({ onBriefing, onEarth, onSpace, onConsole, onTryDemo }) {
 function Briefing({ open, onClose, onEarth, onSpace }) {
   if (!open) return null;
   return <AnimatePresence><motion.div className="v50Briefing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-    <video className="v50BriefingVideo" src="https://corbit.b-cdn.net/casey_hero_film.mp4" autoPlay controls playsInline preload="auto" />
+    <video className="v50BriefingVideo" src="https://corbit.b-cdn.net/casey_hero_film.mp4" autoPlay muted loop controls playsInline preload="auto" crossOrigin="anonymous" />
     <div className="v50BriefingTop"><Logo/><button onClick={onClose}>Exit film</button></div>
     <div className="v50BriefingBottom"><button onClick={onEarth}>Run Earth model</button><button onClick={onSpace}>Run Space model</button><button onClick={onClose}>Open product</button></div>
   </motion.div></AnimatePresence>;
