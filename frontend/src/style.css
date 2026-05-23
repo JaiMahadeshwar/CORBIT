@@ -2622,3 +2622,23 @@ body,#root{
 /* =========================================================
    END CASEY V123.1 PRODUCTION RELEASE FIX
    ========================================================= */
+
+
+.v50SoundBtn{
+  position:absolute!important;
+  z-index:7!important;
+  left:50%!important;
+  bottom:112px!important;
+  transform:translateX(-50%)!important;
+  border:1px solid rgba(141,247,255,.7)!important;
+  background:linear-gradient(90deg,#f7fbff,#8df7ff)!important;
+  color:#02050a!important;
+  text-transform:uppercase!important;
+  letter-spacing:.14em!important;
+  font-weight:900!important;
+  padding:14px 20px!important;
+  clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)!important;
+  box-shadow:0 0 38px rgba(141,247,255,.28)!important;
+  cursor:pointer!important;
+}
+@media(max-width:950px){.v50SoundBtn{bottom:128px!important;font-size:12px!important;padding:12px 14px!important}}

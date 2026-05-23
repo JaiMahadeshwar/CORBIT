@@ -91,11 +91,34 @@ function Hero({ onBriefing, onEarth, onSpace, onConsole, onTryDemo }) {
   </section>;
 }
 function Briefing({ open, onClose, onEarth, onSpace }) {
+  const videoRef = useRef(null);
+  const [soundOn, setSoundOn] = useState(false);
+  useEffect(() => {
+    if (!open) {
+      setSoundOn(false);
+      return;
+    }
+    const v = videoRef.current;
+    if (v) {
+      v.muted = true;
+      v.volume = 0.9;
+      v.play?.().catch(() => {});
+    }
+  }, [open]);
+  function enableSound() {
+    const v = videoRef.current;
+    if (!v) return;
+    v.muted = false;
+    v.volume = 0.9;
+    v.play?.().catch(() => {});
+    setSoundOn(true);
+  }
   if (!open) return null;
   return <AnimatePresence><motion.div className="v50Briefing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-    <video className="v50BriefingVideo" src="https://corbit.b-cdn.net/casey_hero_film.mp4" autoPlay muted loop controls playsInline preload="auto" crossOrigin="anonymous" />
+    <video ref={videoRef} className="v50BriefingVideo" src="https://corbit.b-cdn.net/casey_hero_film.mp4" autoPlay muted loop controls playsInline preload="auto" crossOrigin="anonymous" />
     <div className="v50BriefingTop"><Logo/><button onClick={onClose}>Exit film</button></div>
-    <div className="v50BriefingBottom"><button onClick={onEarth}>Run Earth model</button><button onClick={onSpace}>Run Space model</button><button onClick={onClose}>Open product</button></div>
+    {!soundOn && <button className="v50SoundBtn" onClick={enableSound}>Enable sound</button>}
+    <div className="v50BriefingBottom"><button onClick={enableSound}>{soundOn ? 'Sound on' : 'Enable sound'}</button><button onClick={onEarth}>Run Earth model</button><button onClick={onSpace}>Run Space model</button><button onClick={onClose}>Open product</button></div>
   </motion.div></AnimatePresence>;
 }
 
