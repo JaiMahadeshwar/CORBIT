@@ -268,7 +268,7 @@ Examples:
 }
 
 function Loading({ text }) {
-  const stages = ['CASEY recalibrating confidence curves...', 'Applying live sector calibration signals...', 'Running procurement and launch-volatility model...', 'Comparing against benchmark archetypes...', 'Stamping scenario/base deltas into exports...'];
+  const stages = ['CASEY recalibrating confidence curves...', 'Applying live sector calibration signals...', 'Running procurement and delivery-tail model...', 'Comparing against benchmark archetypes...', 'Stamping scenario/base deltas into exports...'];
   const [i,setI] = useState(0);
   useEffect(() => { const t = setInterval(() => setI(v => Math.min(v + 1, stages.length - 1)), 650); return () => clearInterval(t); }, []);
   return <motion.div className="loading intelligenceLoading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><Rocket size={44}/><b>{text || 'Building connected model...'}</b><span>{stages[i]}</span><small>Cost · Schedule · QCRA · QSRA · Risk Register · Board Pack</small></motion.div>;
@@ -308,12 +308,15 @@ function confidenceLens(model) {
   const mode = String(model?.mode || 'Earth');
   const subsector = String(model?.subsector || '').toLowerCase();
   const confidenceBand = pct >= 82 ? 'Board-defensible' : pct >= 70 ? 'Execution posture credible' : pct >= 58 ? 'Board challenge likely' : pct >= 45 ? 'Evidence gap visible' : 'Do not approve without more evidence';
-  const constraint = mode === 'Space'
+  const lockedConstraint = model?.confidence_engine_detail?.primary_constraint || model?.sector_constraints || model?.governing_constraint;
+  const constraint = lockedConstraint || (mode === 'Space'
     ? 'mission assurance, launch logistics and autonomous recovery evidence'
     : subsector.includes('data') ? 'energisation, cooling readiness and integrated systems testing'
+    : subsector.includes('airport') || subsector.includes('aviation') ? 'ORAT readiness, baggage/security systems integration, airside phasing and regulator acceptance'
+    : subsector.includes('rail') || subsector.includes('transit') ? 'possessions, signalling integration, systems migration and operator acceptance'
     : subsector.includes('semiconductor') ? 'tool install, UPW readiness and yield-ramp qualification'
     : subsector.includes('life') || subsector.includes('pharma') ? 'CQV, validation readiness and regulatory evidence'
-    : 'interface control, procurement evidence and commissioning readiness';
+    : 'interface control, procurement evidence and commissioning readiness');
   const posture = scenario === 'faster'
     ? 'CASEY reads this as an aggressive acceleration posture: the date improves, but delivery confidence is now being spent as a resource.'
     : scenario === 'cheaper'
@@ -478,8 +481,8 @@ function BenchmarkIntelligence({ model }) {
   </div><div className="benchmarkCards"><div><b>CASEY</b><span>Probabilistic, traceable, decision-led</span></div><div><b>P6</b><span>Schedule control, weak causal intelligence</span></div><div><b>BI</b><span>Reporting without intervention logic</span></div><div><b>PMO</b><span>Human narrative, slow traceability</span></div></div></Card>;
 }
 function CausalGraph({ model }) {
-  const space = model?.mode === 'Space';
-  const nodes = space ? ['Launch cadence','Payload mass growth','Thermal rejection','Power storage','Autonomous commissioning','Mission assurance','Confidence'] : ['Transformer lead-time','Grid energisation','Liquid cooling readiness','IST congestion','Commissioning overlap','Reserve drawdown','Confidence'];
+  const fallback = model?.mode === 'Space' ? ['Launch cadence','Payload integration','Thermal-power balance','Range availability','Autonomous commissioning','Mission assurance','Confidence'] : ['Scope definition','Procurement evidence','Interface control','Commissioning readiness','Operational acceptance','Reserve adequacy','Confidence'];
+  const nodes = (model?.causal_graph_nodes && model.causal_graph_nodes.length ? model.causal_graph_nodes : fallback).slice(0,7);
   return <Card className="causalGraphCard"><h2>Dynamic Causal Traceability</h2><p>Click-level explanation of why the intelligence moved.</p><div className="causalGraph">
     {nodes.map((n,i)=><motion.div key={n} className={`causeNode n${i}`} initial={{opacity:0,scale:.9}} animate={{opacity:1,scale:1}} transition={{delay:i*.08}}><span>{i+1}</span><b>{n}</b></motion.div>)}
     <svg viewBox="0 0 100 100" preserveAspectRatio="none">{nodes.slice(1).map((_,i)=><motion.path key={i} d={`M ${10+i*13} ${24+i%2*28} C ${18+i*13} ${18+i%2*28}, ${22+i*13} ${50-(i%2)*22}, ${29+i*13} ${48-(i%2)*22}`} initial={{pathLength:0,opacity:.2}} animate={{pathLength:1,opacity:.85}} transition={{delay:.15+i*.1,duration:.7}} />)}</svg>
@@ -739,8 +742,8 @@ function scenarioAdjustedModel(currentModel, nextScenario) {
         {tab === 'overview' && <>
           {model.executive_shock_insight && <section className="layout one"><Card className="shockCard"><h2>Executive shock insight</h2><p>{model.executive_shock_insight}</p></Card></section>}
           <section className="layout two">
-            <Card><h2>Executive intelligence summary</h2><p className="big">{model.executive_summary || `${model.title} has been classified as ${model.subsector}. CASEY generated a first-pass cost, schedule, risk and confidence model for the selected scenario.`}</p><div className="miniMetrics"><b><span>Direct cost</span>{fmt(direct)}</b><b><span>Indirect cost</span>{fmt(indirect)}</b><b><span>Risk / reserve</span>{fmt(reserves)}</b></div><h3>Recommendation</h3>{(model.next_best_actions || []).slice(0,5).map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card>
-            <Card><h2>Board briefing</h2>{(model.board_briefing || model.board_challenge_questions || []).slice(0,5).map((x,i)=><div className="reason" key={String(x)}><span>{i+1}</span>{x}</div>)}<h3>CASEY thinking</h3><p className="caseyThinking">{model.casey_thinking || 'CASEY interprets this as a system-of-systems infrastructure programme requiring cost, schedule, risk and decision intelligence.'}</p></Card>
+            <Card><h2>Executive intelligence summary</h2><p className="big">{model.executive_summary || `${model.title} has been classified as ${model.subsector}. CASEY generated a first-pass cost, schedule, risk and confidence model for the selected scenario.`}</p><div className="miniMetrics"><b><span>Direct cost</span>{fmt(direct)}</b><b><span>Indirect cost</span>{fmt(indirect)}</b><b><span>Risk / reserve</span>{fmt(reserves)}</b></div><h3>Recommendation</h3>{(model.next_best_actions || []).slice(0,4).map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card>
+            <Card><h2>Board briefing</h2>{(model.board_briefing || model.board_challenge_questions || []).slice(0,4).map((x,i)=><div className="reason" key={String(x)}><span>{i+1}</span>{x}</div>)}<h3>CASEY thinking</h3><p className="caseyThinking">{model.casey_thinking || 'CASEY interprets this as a system-of-systems infrastructure programme requiring cost, schedule, risk and decision intelligence.'}</p></Card>
           </section>
           <section className="layout two eliteLayer">
             <Card className="confidenceMeaningCard"><h2>What confidence means</h2><h3>{confLens.headline}</h3><p className="big">{confLens.meaning}</p><div className="reason"><span>!</span><b>Decision rule</b><br/>{confLens.decisionRule}</div><div className="reason"><span>→</span><b>Primary constraint</b><br/>{confLens.constraint}</div><div className="reason"><span>%</span><b>Plain English</b><br/>Confidence is not optimism. It is CASEY's board-defensibility score based on benchmark fit, evidence maturity, procurement certainty, schedule logic, reserve adequacy and scenario posture.</div></Card>
@@ -748,7 +751,7 @@ function scenarioAdjustedModel(currentModel, nextScenario) {
           </section>
           <section className="layout two eliteLayer">
             <Card><h2>Evidence threshold map</h2><p className="chartCaption">Shows why the confidence number is where it is, and what must improve before board approval.</p><ResponsiveContainer width="100%" height={260}><BarChart data={evidenceScorecard(model)} layout="vertical"><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis type="number" domain={[0,100]}/><YAxis dataKey="name" type="category" width={145}/><Tooltip formatter={(v) => [`${v}%`, 'board-defensibility score']}/><ReferenceLine x={70} stroke="#ffd96a88" label="board comfort"/><Bar dataKey="score" fill="#8df7ff"/></BarChart></ResponsiveContainer>{evidenceScorecard(model).map((x,i)=><div className="reason compactReason" key={x.name}><span>{i+1}</span><b>{x.name}: {Math.round(x.score)}%</b><br/>{x.note}</div>)}</Card>
-            <Card><h2>Contradiction scan</h2><p className="chartCaption">CASEY does not just make the case look better. It exposes the trade-off that could get challenged.</p>{contradictionScan(model).map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}<h3>Demo close line</h3><p className="caseyThinking finalPosition">Traditional project controls reports show numbers. CASEY shows the board what the numbers are trying to hide.</p></Card>
+            <Card><h2>Contradiction scan</h2><p className="chartCaption">CASEY does not just make the case look better. It exposes the trade-off that could get challenged.</p>{(model.second_order_contradictions || contradictionScan(model)).slice(0,5).map((x,i)=><div className="reason" key={String(x)}><span>{i+1}</span>{x}</div>)}<h3>Governance challenge</h3>{(model.governance_challenges || []).slice(0,3).map((x,i)=><div className="reason compactReason" key={String(x)}><span>{i+1}</span>{x}</div>)}<h3>Demo close line</h3><p className="caseyThinking finalPosition">Traditional project controls reports show numbers. CASEY shows the board what the numbers are trying to hide.</p></Card>
           </section>
           <LiveCalibrationPanel model={model}/>
           {baseVs?.base && <section className="layout two">

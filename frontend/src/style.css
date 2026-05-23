@@ -2708,3 +2708,18 @@ body{overflow-x:hidden!important;}
   .boomBrief textarea{min-height:170px!important;}
   .v50Kpi{min-height:92px!important;}
 }
+
+/* CASEY V130 institutional polish: premium chart feel, lower density, sharper board silence */
+.card, .panel, .exportPanel { letter-spacing: -0.01em; }
+.card p.big, .chartCaption { max-width: 78ch; line-height: 1.55; }
+.reason { min-height: 38px; padding-top: 12px; padding-bottom: 12px; }
+.reason span { box-shadow: 0 0 18px rgba(124,246,255,.08); }
+.recharts-cartesian-grid line { stroke-opacity: .18; }
+.recharts-cartesian-axis-line, .recharts-cartesian-axis-tick-line { stroke-opacity: .32; }
+.recharts-text { font-size: 11px; letter-spacing: .02em; }
+.recharts-tooltip-wrapper .recharts-default-tooltip { border: 1px solid rgba(124,246,255,.28)!important; background: rgba(3,12,24,.96)!important; box-shadow: 0 20px 60px rgba(0,0,0,.45); }
+.liveCalPanel, .boardPressure { animation: caseyFadeUp .45s ease both; }
+.scenarioCompare button, .exportBtn, .topBtn, button { transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease, background .16s ease; }
+.scenarioCompare button:hover, .exportBtn:hover, .topBtn:hover, button:hover { transform: translateY(-1px); }
+.kpis .kpi strong, .confidenceNumber { text-shadow: 0 0 18px rgba(124,246,255,.18); }
+@keyframes caseyFadeUp { from { opacity:0; transform: translateY(8px); } to { opacity:1; transform: translateY(0); } }

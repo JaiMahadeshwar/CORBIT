@@ -1,0 +1,174 @@
+{
+  "version": "CASEY V132 Institutional Authority Final",
+  "generation_qa": {
+    "total": 15000,
+    "unique_model_builds": 80,
+    "failures": [],
+    "counts": {
+      "healthcare": 708,
+      "rail": 685,
+      "data_centre": 652,
+      "mining": 630,
+      "roads": 635,
+      "life_sciences": 710,
+      "semiconductor": 653,
+      "water": 644,
+      "oil_gas": 621,
+      "defence": 663,
+      "energy": 698,
+      "general_infrastructure": 655,
+      "ports": 697,
+      "airport": 683,
+      "nuclear": 666,
+      "space": 5000
+    },
+    "seconds": 14.82
+  },
+  "export_smoke": [
+    {
+      "sector": "data_centre",
+      "model_sector": "data_centre",
+      "workbook_bytes": 36364,
+      "risk_register_bytes": 17996,
+      "xer_bytes": 2354,
+      "json_bytes": 80030,
+      "ok": true
+    },
+    {
+      "sector": "airport",
+      "model_sector": "airport",
+      "workbook_bytes": 36321,
+      "risk_register_bytes": 17896,
+      "xer_bytes": 2350,
+      "json_bytes": 76364,
+      "ok": true
+    },
+    {
+      "sector": "rail",
+      "model_sector": "rail",
+      "workbook_bytes": 36356,
+      "risk_register_bytes": 17911,
+      "xer_bytes": 2338,
+      "json_bytes": 75572,
+      "ok": true
+    },
+    {
+      "sector": "roads",
+      "model_sector": "roads",
+      "workbook_bytes": 35872,
+      "risk_register_bytes": 17513,
+      "xer_bytes": 2300,
+      "json_bytes": 74368,
+      "ok": true
+    },
+    {
+      "sector": "ports",
+      "model_sector": "ports",
+      "workbook_bytes": 35897,
+      "risk_register_bytes": 17515,
+      "xer_bytes": 2310,
+      "json_bytes": 74859,
+      "ok": true
+    },
+    {
+      "sector": "water",
+      "model_sector": "water",
+      "workbook_bytes": 35871,
+      "risk_register_bytes": 17516,
+      "xer_bytes": 2310,
+      "json_bytes": 75388,
+      "ok": true
+    },
+    {
+      "sector": "energy",
+      "model_sector": "energy",
+      "workbook_bytes": 35924,
+      "risk_register_bytes": 17524,
+      "xer_bytes": 2325,
+      "json_bytes": 75778,
+      "ok": true
+    },
+    {
+      "sector": "nuclear",
+      "model_sector": "nuclear",
+      "workbook_bytes": 35906,
+      "risk_register_bytes": 17499,
+      "xer_bytes": 2289,
+      "json_bytes": 70926,
+      "ok": true
+    },
+    {
+      "sector": "oil_gas",
+      "model_sector": "oil_gas",
+      "workbook_bytes": 35987,
+      "risk_register_bytes": 17551,
+      "xer_bytes": 2318,
+      "json_bytes": 76307,
+      "ok": true
+    },
+    {
+      "sector": "mining",
+      "model_sector": "mining",
+      "workbook_bytes": 35886,
+      "risk_register_bytes": 17530,
+      "xer_bytes": 2321,
+      "json_bytes": 75205,
+      "ok": true
+    },
+    {
+      "sector": "healthcare",
+      "model_sector": "healthcare",
+      "workbook_bytes": 35850,
+      "risk_register_bytes": 17510,
+      "xer_bytes": 2342,
+      "json_bytes": 77562,
+      "ok": true
+    },
+    {
+      "sector": "life_sciences",
+      "model_sector": "life_sciences",
+      "workbook_bytes": 36051,
+      "risk_register_bytes": 17619,
+      "xer_bytes": 2355,
+      "json_bytes": 78075,
+      "ok": true
+    },
+    {
+      "sector": "semiconductor",
+      "model_sector": "semiconductor",
+      "workbook_bytes": 36030,
+      "risk_register_bytes": 17567,
+      "xer_bytes": 2335,
+      "json_bytes": 77183,
+      "ok": true
+    },
+    {
+      "sector": "defence",
+      "model_sector": "defence",
+      "workbook_bytes": 35935,
+      "risk_register_bytes": 17565,
+      "xer_bytes": 2326,
+      "json_bytes": 76766,
+      "ok": true
+    },
+    {
+      "sector": "general_infrastructure",
+      "model_sector": "general_infrastructure",
+      "workbook_bytes": 35909,
+      "risk_register_bytes": 17530,
+      "xer_bytes": 2329,
+      "json_bytes": 77161,
+      "ok": true
+    },
+    {
+      "sector": "space",
+      "model_sector": "space",
+      "workbook_bytes": 36433,
+      "risk_register_bytes": 17958,
+      "xer_bytes": 2338,
+      "json_bytes": 78095,
+      "ok": true
+    }
+  ],
+  "export_smoke_failures": []
+}

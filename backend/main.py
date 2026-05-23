@@ -6079,3 +6079,853 @@ def live_calibration_manifest():
 APP_VERSION = 'CASEY V123 Live Calibration Demo Layer'
 print('CASEY V123 live calibration demo layer installed')
 # ================= END CASEY V123 LIVE CALIBRATION SIGNALS =================
+
+# ================= CASEY V124 SECTOR ONTOLOGY HARDENING LOCK =================
+# Final public-demo hardening: sector-locked causal graphs, vocabulary and benchmark guardrails.
+# Prevents data-centre / rail / airport / space / defence / energy ontology bleed in UI and exports.
+
+def _v124_text_blob(model: Dict[str, Any]) -> str:
+    return (str(model.get('prompt','')) + ' ' + str(model.get('title','')) + ' ' + str(model.get('subsector','')) + ' ' + str(model.get('mode',''))).lower()
+
+
+def _v124_sector_key(model: Dict[str, Any]) -> str:
+    t = _v124_text_blob(model)
+    sub = str(model.get('subsector','')).lower()
+    mode = str(model.get('mode',''))
+    if mode == 'Space' or any(k in t for k in ['lunar','mars','orbital','satellite','spaceport','launch vehicle','payload','moon','deep space']): return 'space'
+    if any(k in t for k in ['airport','aviation','terminal','runway','heathrow','gatwick','airside','baggage','orat']): return 'airport'
+    if any(k in t for k in ['data centre','data center','hyperscale','ai campus','compute campus','gpu','cloud region','white space']): return 'data_centre'
+    if any(k in t for k in ['energy','power plant','renewable','wind farm','offshore wind','solar','battery','substation','transmission','grid','hydrogen','nuclear']): return 'energy'
+    if any(k in t for k in ['rail','metro','transit','high speed','hs2','station','signalling','rolling stock','california high speed']): return 'rail'
+    if any(k in t for k in ['semiconductor','fab','wafer','cleanroom','foundry','lithography','chip plant']): return 'semiconductor'
+    if any(k in t for k in ['life sciences','pharma','biologics','gmp','fill-finish','sterile','cqv','amgen','lilly','novartis','pfizer']): return 'life_sciences'
+    if any(k in t for k in ['defence','defense','military','naval','airbase','radar','missile','secure facility','mod ','dod '] ): return 'defence'
+    if any(k in t for k in ['oil','gas','lng','refinery','petrochemical','offshore','pipeline','fpsO'.lower(),'hydrocarbon','carbon capture']): return 'oil_gas'
+    if any(k in t for k in ['hospital','healthcare','clinical','medical centre','patient','nhs']): return 'healthcare'
+    if any(k in t for k in ['water','wastewater','desalination','sewer','reservoir','treatment plant']): return 'water'
+    if any(k in t for k in ['port','harbour','marine','dock','container terminal']): return 'ports'
+    return 'general_infrastructure'
+
+
+def _v124_library(key: str) -> Dict[str, Any]:
+    lib = {
+      'airport': {
+        'label':'Airport / Aviation',
+        'shock':'The dominant risk sits in live operations, ORAT, baggage/security integration and regulatory acceptance — not headline construction progress.',
+        'constraints':'ORAT readiness, baggage/security systems integration, airside phasing and regulator acceptance',
+        'signals':[('Live operations phasing','Active','Terminal works must sequence around airside access, airline interfaces and passenger operations.'),('ORAT readiness','Active','Operational readiness, trials and airport transition govern confidence.'),('Baggage / security integration','Watch','Baggage, security, ICT and MEP systems must operate as one environment.'),('Regulatory and airline approvals','Watch','Airport approvals and stakeholder readiness create the P80/P90 tail.')],
+        'bench':[('Airport Terminal Expansion','$2B–$24B','60-144'),('Major Hub Capacity Programme','$5B–$35B','72-168'),('Rail/Transit Systems Integration','$3B–$80B','60-180')],
+        'chain':['ORAT readiness','Baggage/security integration','Airside phasing','Regulatory acceptance','Operational transition','Commissioning overlap','Confidence'],
+        'confidence':['Benchmark similarity: airport terminal / airfield expansion','Scope maturity: capacity, phasing and systems definition','Procurement certainty: baggage/security/MEP packages','Schedule maturity: ORAT and live operations logic','Interface exposure: airlines, airside, landside and regulators'],
+        'cost':['Terminal and airside works','Baggage and security systems','Operational transition and phasing','Transport integration and utilities','Retail/passenger experience fit-out'],
+        'schedule':['Live airport phasing and possessions','Baggage/security systems integration','Operational readiness trials','Regulatory and stakeholder approvals','Airside access and safety constraints']},
+      'rail': {
+        'label':'Rail / Transit',
+        'shock':'The dominant risk sits in possessions, signalling integration, systems migration and operator acceptance rather than civil progress alone.',
+        'constraints':'possessions, signalling integration, systems migration and operator acceptance',
+        'signals':[('Possession window pressure','Active','Access windows and blockades govern productive delivery time.'),('Signalling and systems integration','Active','Signalling, telecoms, power and control systems drive migration risk.'),('Operator acceptance','Watch','Timetable, trial running and safety assurance determine readiness.'),('Utilities / corridor interfaces','Watch','Diversions and third-party interfaces create schedule tail exposure.')],
+        'bench':[('Metro / Rail Extension','$3B–$80B','60-180'),('Major Station Redevelopment','$1B–$15B','36-96'),('Rail Systems Migration Programme','$500M–$10B','30-84')],
+        'chain':['Possession access','Utility diversions','Signalling integration','Systems migration','Trial operations','Operator acceptance','Confidence'],
+        'confidence':['Benchmark similarity: rail/transit programme','Scope maturity: alignment, station and systems definition','Procurement certainty: civil/systems package strategy','Schedule maturity: possessions and test/commissioning logic','Interface exposure: utilities, operators and regulators'],
+        'cost':['Civil and station works','Signalling, power and telecoms systems','Utility diversions and corridor constraints','Possessions and access logistics','Systems assurance and testing'],
+        'schedule':['Possession window availability','Signalling integration and migration','Utility diversion completion','Trial running and safety certification','Operator/regulator acceptance']},
+      'data_centre': {
+        'label':'Digital Infrastructure / Hyperscale Data Centre',
+        'shock':'Power availability and systems integration readiness are more likely to govern delivery than shell construction progress.',
+        'constraints':'energisation, cooling readiness and integrated systems testing',
+        'signals':[('Grid connection congestion','Active','Utility interconnection and energisation remain the dominant delivery constraints.'),('Transformer / switchgear lead times','Active','Long-lead electrical packages shape procurement tail exposure.'),('Liquid cooling readiness','Watch','Cooling readiness and heat-rejection capacity govern commissioning risk.'),('IST and phased hall turnover','Watch','Integrated systems testing and phased data-hall readiness drive confidence.')],
+        'bench':[('Hyperscale AI Data Centre Campus','$2B–$18B','24-84'),('Digital Infrastructure Campus','$1B–$12B','24-72'),('Energy / Utility Megaprogramme','$1B–$18B','36-108'),('Semiconductor / Advanced Manufacturing','$8B–$32B','54-96')],
+        'chain':['Transformer lead-time','Grid energisation','Liquid cooling readiness','IST congestion','Commissioning overlap','Reserve drawdown','Confidence'],
+        'confidence':['Benchmark similarity: hyperscale digital infrastructure','Scope maturity: campus power and white-space definition','Procurement certainty: transformers, generators and switchgear','Schedule maturity: grid and commissioning logic','Interface exposure: utilities, fibre and commissioning'],
+        'cost':['Utility/grid connection and substations','Power train, transformers and switchgear','Liquid cooling / heat rejection systems','Data halls and white space fit-out','Accelerated procurement premiums'],
+        'schedule':['Grid energisation and utility agreements','Long-lead transformer and switchgear delivery','Integrated systems testing and commissioning','Cooling plant readiness','Phased data-hall turnover']},
+      'semiconductor': {
+        'label':'Semiconductor / Advanced Manufacturing',
+        'shock':'Tool install, cleanroom certification and yield-ramp readiness govern board confidence more than shell completion.',
+        'constraints':'cleanroom readiness, process tool install, specialty utilities and yield-ramp qualification',
+        'signals':[('Tool-install sequencing','Active','OEM tool windows and installation sequence govern critical path.'),('Cleanroom certification','Active','Cleanroom classification and environmental stability constrain turnover.'),('UPW / specialty utilities','Watch','Ultra-pure water, gases and exhaust systems drive commissioning readiness.'),('Yield ramp qualification','Watch','Production qualification creates post-mechanical-completion uncertainty.')],
+        'bench':[('Advanced Semiconductor Fab','$8B–$35B','54-108'),('Cleanroom Manufacturing Campus','$2B–$12B','36-84'),('Specialty Utilities Programme','$500M–$5B','24-60')],
+        'chain':['Cleanroom readiness','Specialty utilities','Process tool delivery','Tool hook-up','Qualification lots','Yield ramp','Confidence'],
+        'confidence':['Benchmark similarity: advanced fab / cleanroom campus','Scope maturity: process flow and tool list maturity','Procurement certainty: OEM tool slots and specialty utilities','Schedule maturity: tool hook-up and qualification sequence','Interface exposure: utilities, vendors and yield ramp'],
+        'cost':['Cleanrooms and classified areas','Process tools and hook-up','UPW/specialty gases/exhaust systems','Vibration/environmental controls','Yield ramp and qualification support'],
+        'schedule':['Tool delivery and install windows','Cleanroom certification','Specialty utilities qualification','Process qualification and yield ramp','OEM/vendor interface availability']},
+      'life_sciences': {
+        'label':'Life Sciences / Biologics Manufacturing',
+        'shock':'Mechanical completion is not the true finish line; validated production readiness and deviation closure are the real board decision gates.',
+        'constraints':'CQV, GMP turnover, validation readiness and regulatory evidence',
+        'signals':[('CQV readiness','Active','Commissioning, qualification and validation control release confidence.'),('Clean utility validation','Active','WFI, clean steam and process utilities constrain turnover.'),('Media fill / batch readiness','Watch','Process validation and batch release drive operational start-up risk.'),('Regulatory inspection readiness','Watch','FDA/EMA readiness affects board-defensible approval.')],
+        'bench':[('Biologics Manufacturing Campus','$2B–$8B','36-78'),('Sterile Fill-Finish / Aseptic Expansion','$1B–$5B','30-60'),('Advanced GMP Cleanroom','$2B–$10B','42-84')],
+        'chain':['GMP turnover','Clean utility validation','CQV protocols','Media fill readiness','Deviation closure','Regulatory readiness','Confidence'],
+        'confidence':['Benchmark similarity: pharma / biologics campus','Scope maturity: GMP package and user requirement definition','Procurement certainty: process equipment and clean utility lead times','Schedule maturity: CQV logic and validation pathway','Regulatory exposure: FDA/EMA inspection readiness'],
+        'cost':['Process equipment and fill-finish lines','GMP cleanrooms / classified areas','Clean utilities and HVAC zoning','CQV validation and deviation closure','Regulatory readiness and quality systems'],
+        'schedule':['CQV protocol approval and execution','Long-lead process equipment delivery','Clean utility validation and media fills','FDA/EMA inspection readiness','Batch release and operational readiness']},
+      'defence': {
+        'label':'Defence / Secure Mission Systems',
+        'shock':'Assurance, security accreditation and mission-system integration are likely to govern approval before asset completion.',
+        'constraints':'security accreditation, mission assurance, sovereign supply chain and integration test evidence',
+        'signals':[('Security accreditation','Active','Classified systems and facility accreditation create approval gates.'),('Mission-system integration','Active','Sensors, comms, command systems and platform interfaces govern readiness.'),('Sovereign supply-chain exposure','Watch','Controlled components and cleared supplier capacity affect delivery tails.'),('Assurance test campaign','Watch','Operational acceptance depends on test evidence and traceability.')],
+        'bench':[('Secure Mission Facility','$500M–$8B','30-96'),('Defence Systems Integration Programme','$1B–$20B','48-144'),('Naval / Airbase Modernisation','$1B–$15B','48-120')],
+        'chain':['Security requirements','Sovereign procurement','Mission-system integration','Assurance test campaign','Accreditation gates','Operational acceptance','Confidence'],
+        'confidence':['Benchmark similarity: defence secure systems programme','Scope maturity: mission requirement and accreditation definition','Procurement certainty: cleared suppliers and controlled components','Schedule maturity: integration/test campaign logic','Interface exposure: security, operators and regulators'],
+        'cost':['Secure facilities and hardening','Mission systems and integration','Controlled equipment procurement','Cyber/security accreditation','Test campaign and operational acceptance'],
+        'schedule':['Security accreditation gates','Mission-system integration testing','Controlled supplier lead-times','Operational test campaign','Authority-to-operate approval']},
+      'oil_gas': {
+        'label':'Energy / Oil & Gas',
+        'shock':'Procurement, modular integration, HSE readiness and commissioning/start-up govern value more than installed quantities.',
+        'constraints':'long-lead equipment, module integration, HSE readiness and start-up/commissioning assurance',
+        'signals':[('Long-lead rotating equipment','Active','Compressors, turbines and specialist packages shape procurement exposure.'),('Module / brownfield integration','Active','Tie-ins, shutdown windows and interface planning create schedule tails.'),('HSE / regulatory approvals','Watch','Permitting and safety case maturity affect board confidence.'),('Commissioning and start-up','Watch','Hydrotest, pre-commissioning and start-up dominate late risk.')],
+        'bench':[('LNG / Gas Processing Train','$5B–$30B','48-108'),('Refinery / Petrochemical Expansion','$2B–$20B','36-96'),('Offshore / Pipeline Programme','$1B–$18B','36-96')],
+        'chain':['FEED maturity','Long-lead packages','Module fabrication','Tie-in windows','Pre-commissioning','Start-up readiness','Confidence'],
+        'confidence':['Benchmark similarity: oil/gas processing or export infrastructure','Scope maturity: FEED, plot plan and tie-in definition','Procurement certainty: rotating equipment and specialist packages','Schedule maturity: modularisation and shutdown logic','Interface exposure: brownfield operations, HSE and regulators'],
+        'cost':['Process units and rotating equipment','Pipelines / terminals / tie-ins','Modular fabrication and logistics','HSE, permitting and compliance','Commissioning and start-up support'],
+        'schedule':['Long-lead compressor/turbine packages','Module fabrication and transport','Shutdown/tie-in windows','Regulatory and HSE approvals','Pre-commissioning and start-up']},
+      'energy': {
+        'label':'Energy / Power Infrastructure',
+        'shock':'Grid access, equipment lead-times, permitting and commissioning readiness govern delivery confidence more than site progress.',
+        'constraints':'grid connection, major equipment lead-times, permitting and commissioning readiness',
+        'signals':[('Grid connection access','Active','Interconnection agreements and energisation gates govern the delivery tail.'),('Major equipment lead-times','Active','Transformers, turbines, inverters or batteries shape procurement risk.'),('Permitting and environmental approvals','Watch','Approvals and grid studies affect schedule certainty.'),('Commissioning / performance testing','Watch','Performance tests and grid compliance govern final acceptance.')],
+        'bench':[('Transmission / Grid Reinforcement','$500M–$10B','24-84'),('Renewable + Storage Programme','$300M–$8B','18-60'),('Power Generation Programme','$1B–$15B','36-96')],
+        'chain':['Permitting','Grid studies','Major equipment delivery','Site construction','Energisation','Performance testing','Confidence'],
+        'confidence':['Benchmark similarity: power / utility infrastructure','Scope maturity: connection, permitting and design definition','Procurement certainty: transformers, turbines, inverters or batteries','Schedule maturity: energisation and commissioning logic','Interface exposure: grid operator, regulator and land/environment'],
+        'cost':['Grid connection and substations','Generation/storage equipment','Civil and balance-of-plant works','Environmental and permitting compliance','Commissioning and performance testing'],
+        'schedule':['Grid connection agreement','Long-lead equipment delivery','Permitting and environmental approval','Energisation windows','Performance testing and acceptance']},
+      'space': {
+        'label':'Space / Lunar / Orbital Infrastructure',
+        'shock':'Launch alone is not the real constraint; qualification, thermal-power balance and autonomous recovery determine mission survivability.',
+        'constraints':'mission assurance, launch logistics, qualification evidence and autonomous recovery',
+        'signals':[('Launch reliability volatility','Active','Launch cadence, range access and manifest priority affect schedule certainty.'),('Mission assurance burden','Active','Qualification and redundancy evidence govern board defensibility.'),('Thermal-power balance','Watch','Power storage and thermal rejection shape survivability.'),('Regulatory and range availability','Watch','Flight approvals, range windows and orbital operations create schedule tails.')],
+        'bench':[('Orbital / Lunar Infrastructure','$8B–$95B','72-216'),('Launch and Payload Integration','$1B–$14B','36-108'),('Deep-Space Mission Systems','$4B–$35B','60-144'),('Autonomous Operations Platform','$2B–$20B','36-96')],
+        'chain':['Launch cadence','Payload integration','Thermal-power balance','Range availability','Autonomous commissioning','Mission assurance','Confidence'],
+        'confidence':['Benchmark similarity: space infrastructure archetype','Scope maturity: payload and mission architecture definition','Procurement certainty: launch, avionics and qualified hardware','Schedule maturity: launch and commissioning logic','Operational exposure: remote recovery and servicing limits'],
+        'cost':['Payload / habitat / mission systems','Launch and orbital logistics','Power, thermal and autonomy systems','Qualification and test campaign','Mission operations and recovery reserve'],
+        'schedule':['Payload qualification campaign','Launch manifest and range access','Thermal-vacuum and systems testing','Orbital/surface deployment sequence','Autonomous commissioning and recovery']},
+      'healthcare': {
+        'label':'Healthcare / Hospital Infrastructure','shock':'Clinical transition, medical equipment integration and infection-control readiness govern approval more than building completion.','constraints':'clinical commissioning, infection-control compliance, medical equipment integration and phased occupancy','signals':[('Clinical commissioning','Active','Clinical workflows and patient transition govern readiness.'),('Medical equipment integration','Active','Imaging, theatres, labs and digital systems drive handover risk.'),('Infection-control compliance','Watch','ICRA and commissioning evidence shape confidence.'),('Phased occupancy','Watch','Live hospital operations constrain access and transition.')],'bench':[('Major Hospital Campus','$1B–$8B','36-96'),('Clinical Tower / Specialist Centre','$500M–$4B','30-72')],'chain':['Clinical requirements','Medical equipment procurement','Digital systems integration','Infection-control validation','Phased occupancy','Clinical commissioning','Confidence'],'confidence':['Benchmark similarity: hospital / clinical campus','Scope maturity: clinical brief and department definition','Procurement certainty: medical equipment and digital systems','Schedule maturity: clinical commissioning and phased occupancy','Interface exposure: clinicians, patients, regulators and live operations'],'cost':['Clinical departments and fit-out','Medical equipment and imaging','Digital health and systems integration','Infection-control and compliance','Phased occupancy and transition'],'schedule':['Medical equipment delivery','Clinical commissioning readiness','Infection-control validation','Digital systems integration','Patient transition and phased occupancy']},
+      'water': {
+        'label':'Water / Environmental Infrastructure','shock':'Consents, process commissioning and environmental compliance govern delivery confidence more than civil installation.','constraints':'permits, process commissioning, environmental compliance and operational acceptance','signals':[('Consents and discharge permits','Active','Environmental approvals govern start-up readiness.'),('Process commissioning','Active','Treatment-process performance controls acceptance.'),('MEICA procurement','Watch','Pumps, controls and specialist equipment create lead-time risk.'),('Operational takeover','Watch','Operator readiness and compliance testing affect confidence.')],'bench':[('Water Treatment Programme','$300M–$5B','24-72'),('Desalination / Major Water Plant','$1B–$10B','36-96')],'chain':['Environmental permits','MEICA procurement','Civil/process works','Process commissioning','Compliance testing','Operator acceptance','Confidence'],'confidence':['Benchmark similarity: water treatment / environmental asset','Scope maturity: process capacity and permit definition','Procurement certainty: MEICA and specialist equipment','Schedule maturity: commissioning and compliance testing logic','Interface exposure: regulator, operator and environmental stakeholders'],'cost':['Civil/process treatment works','MEICA equipment','Pipelines and intake/outfall works','Environmental mitigation','Commissioning and compliance testing'],'schedule':['Permit approval','MEICA procurement','Process commissioning','Compliance testing','Operator acceptance']},
+      'ports': {
+        'label':'Ports / Marine Infrastructure','shock':'Marine access, dredging, quay interfaces and terminal systems govern delivery risk more than civil progress alone.','constraints':'marine access, dredging, quay works, terminal systems and port operational interfaces','signals':[('Marine access window','Active','Weather, tides and vessel windows shape productivity.'),('Dredging / quay interface','Active','Marine works and ground conditions control schedule exposure.'),('Terminal systems readiness','Watch','Cranes, automation and yard systems affect operational acceptance.'),('Port operations interface','Watch','Live port operations constrain phasing and access.')],'bench':[('Container Terminal Expansion','$500M–$8B','30-84'),('Major Port / Marine Works','$1B–$12B','36-96')],'chain':['Marine access','Dredging / ground risk','Quay construction','Cranes and terminal systems','Operational trials','Port acceptance','Confidence'],'confidence':['Benchmark similarity: port / terminal expansion','Scope maturity: marine works and terminal operating model','Procurement certainty: cranes, systems and marine contractors','Schedule maturity: dredging, quay and systems commissioning','Interface exposure: shipping, operators and regulators'],'cost':['Dredging and marine works','Quay / berth construction','Cranes and terminal systems','Yard, utilities and access roads','Operational trials and port transition'],'schedule':['Marine access and weather windows','Dredging / ground treatment','Quay and berth completion','Cranes / terminal systems commissioning','Port operational acceptance']}
+    }
+    return lib.get(key, {
+      'label':'Capital Infrastructure','shock':'The dominant risk sits in interfaces, procurement evidence and commissioning readiness rather than headline progress.','constraints':'interface control, procurement evidence and commissioning readiness','signals':[('Procurement volatility','Watch','Market capacity and supplier evidence shape confidence.'),('Approvals latency','Watch','Governance and permit friction influence schedule tails.'),('Commissioning readiness','Active','Operational readiness is a board-defensibility signal.'),('Interface density','Active','Interfaces create the largest uncertainty transfer.')],'bench':[('Complex Infrastructure Programme','$1B–$20B','36-120')],'chain':['Scope definition','Procurement evidence','Interface control','Commissioning readiness','Operational acceptance','Reserve adequacy','Confidence'],'confidence':['Benchmark similarity: comparable infrastructure archetype','Scope maturity: requirements and package definition','Procurement certainty: supplier and market evidence','Schedule maturity: critical-path and commissioning logic','Interface exposure: utilities, operators and approvals'],'cost':['Civil/enabling works','Specialist systems and equipment','Utilities and interfaces','Programme indirects','Risk reserve and contingency'],'schedule':['Approvals and governance','Long-lead procurement','Interface coordination','Commissioning readiness','Operational acceptance']})
+
+
+def _v124_forbidden_terms(key: str):
+    all_terms = {
+      'data_centre':['ORAT','baggage','airside','landside','rolling stock','signalling','payload integration','launch cadence','range availability','yield ramp','CQV'],
+      'airport':['liquid cooling','white-space','white space','GPU','data hall','thermal rejection','yield ramp','payload','launch reliability','transformer lead-time'],
+      'rail':['liquid cooling','GPU','data hall','ORAT','baggage systems','airside','launch reliability','thermal-power','yield ramp'],
+      'space':['ORAT','baggage','airside','rolling stock','signalling','liquid cooling readiness','white space','yield ramp','CQV'],
+      'semiconductor':['ORAT','baggage','airside','rolling stock','launch reliability','payload integration'],
+      'life_sciences':['ORAT','baggage','rolling stock','launch reliability','liquid cooling readiness','white space'],
+      'defence':['ORAT','baggage','liquid cooling readiness','white space','yield ramp'],
+      'oil_gas':['ORAT','baggage','rolling stock','liquid cooling readiness','white space','payload integration','yield ramp'],
+      'energy':['ORAT','baggage','rolling stock','liquid cooling readiness','payload integration','yield ramp'],
+      'healthcare':['launch reliability','liquid cooling readiness','rolling stock','baggage systems'],
+      'water':['launch reliability','liquid cooling readiness','rolling stock','baggage systems'],
+      'ports':['launch reliability','liquid cooling readiness','rolling stock','baggage systems','ORAT']
+    }
+    return all_terms.get(key, [])
+
+
+def _v124_scrub_value(v, forbidden):
+    """Remove only terms forbidden for the selected ontology.
+    Do not apply global replacements blindly; otherwise valid ORAT/launch/cooling terms are damaged.
+    """
+    replacements = {
+        'liquid cooling readiness':'systems readiness', 'Liquid cooling readiness':'Systems readiness',
+        'Liquid cooling':'Systems readiness', 'liquid cooling':'systems readiness',
+        'white-space':'specialist systems', 'white space':'specialist systems', 'data hall':'delivery package', 'GPU':'specialist equipment',
+        'ORAT':'operational readiness', 'baggage systems':'systems integration', 'Baggage':'Systems', 'baggage':'systems',
+        'airside':'operational access', 'landside':'public interface', 'rolling stock':'operating assets', 'signalling':'control systems',
+        'launch reliability':'delivery reliability', 'Launch reliability':'Delivery reliability', 'payload integration':'systems integration',
+        'range availability':'access availability', 'yield ramp':'operational ramp-up', 'CQV':'commissioning validation'
+    }
+    if isinstance(v, str):
+        out = v
+        low_forbidden = {str(f).lower() for f in forbidden}
+        for a,b in replacements.items():
+            if a.lower() in low_forbidden:
+                out = out.replace(a,b)
+        return out
+    if isinstance(v, list): return [_v124_scrub_value(x, forbidden) for x in v]
+    if isinstance(v, dict): return {k:_v124_scrub_value(val, forbidden) for k,val in v.items()}
+    return v
+
+
+def _v124_apply_sector_lock(model: Dict[str, Any]) -> Dict[str, Any]:
+    m = dict(model or {})
+    key = _v124_sector_key(m)
+    L = _v124_library(key)
+    m['sector_ontology_key'] = key
+    m['sector_ontology_label'] = L['label']
+    m['executive_shock_insight'] = L['shock']
+    m['sector_confidence_drivers'] = L['confidence']
+    m['sector_primary_cost_drivers'] = L['cost']
+    m['sector_schedule_threats'] = L['schedule']
+    m['causal_graph_nodes'] = L['chain']
+    m['causal_chain'] = L['chain']
+    m['benchmark_comparison'] = [{'archetype':a,'anchor_cost':c,'anchor_duration_months':d} for a,c,d in L['bench']]
+    m['why_casey_generated_this'] = [
+        f"CASEY detected {L['label']} from the project brief and locked the sector ontology before generating outputs.",
+        f"Sector-native behaviours applied: {', '.join(L['chain'][:5])}.",
+        "Benchmark cohort, causal chain, confidence drivers and risk language were constrained to the selected sector.",
+        "The output is designed for early board challenge and scope definition, not certified pricing."
+    ]
+    sigs=[]
+    for s,status,basis in L['signals']:
+        sigs.append({'signal':s,'status':status,'direction':'sector-locked calibration','weight':0.12,'applies_to':'confidence, QCRA/QSRA, risk register','basis':basis})
+    m['live_calibration_signals']=sigs
+    m['live_calibration_strip']=' • '.join([x['signal'] for x in sigs[:4]])
+    m['mission_control_cards']=[{'label':'Live calibration','signal':'Current sector conditions are being applied to confidence, contingency and delivery-tail exposure.','severity':'Active'}] + [{'label':s,'signal':b,'severity':st} for s,st,b in L['signals']]
+    m['mission_control_cards']=m['mission_control_cards'][:6]
+    m['casey_thinking'] = f"CASEY has re-cut the programme as a {m.get('scenario_label','Base')} scenario inside the {L['label']} ontology. The governing consequence is: {L['shock']} QCRA/QSRA curves, cost basis, risk probabilities and schedule logic have been sector-locked to this posture."
+    m['executive_summary'] = f"{L['label']} scenario view: {m.get('scenario_label','Base')}. CASEY indicates {m.get('cost_p50')} P50 exposure, {m.get('cost_range')} range, {m.get('schedule')} baseline, {m.get('risk')} risk and {m.get('confidence_pct')}% confidence. {L['shock']} Trade-off: {m.get('scenario_why','Balanced cost, time and evidence posture.')}"
+    m['board_briefing'] = [
+        L['shock'],
+        f"{m.get('scenario_label','Base')} is the reference case: no cost, schedule or confidence delta is applied unless a scenario is selected.",
+        f"{m.get('scenario_label','Base')} scenario: {m.get('cost_p50')} P50, {m.get('cost_range')} range, {m.get('schedule')} baseline and {m.get('confidence_pct')}% confidence.",
+        f"Confidence is governed by {L['constraints']}.",
+        "Gained: Maintains a credible reference case for board challenge."
+    ]
+    m['uncertainty_narrative']={
+        'estimate_maturity':'Class 3 maturity is suitable for budget authorization, but procurement and design assumptions still need challenge.',
+        'schedule_maturity':'Schedule Level 4 gives stronger logic and QSRA traceability.',
+        'interpretation':f"Live calibration is weighting {L['constraints']} into the QSRA/QCRA tail."
+    }
+    # Scenario delta language remains, but sector nouns are locked.
+    m['top_decisions_required']=[
+        'Accept or reject the scenario trade-off explicitly at board level.',
+        'Confirm the changed critical path and near-critical path density.',
+        'Approve the scenario-specific reserve and contingency philosophy.',
+        'Assign named owners for the new top scenario risks.',
+        'Confirm whether XER, cost workbook and risk register should be issued as scenario-controlled outputs.'
+    ]
+    forbidden = _v124_forbidden_terms(key)
+    m = _v124_scrub_value(m, forbidden)
+    # restore sector-native strings after broad scrub in case terms are valid for this key
+    m['sector_ontology_key'] = key; m['sector_ontology_label'] = L['label']
+    if key == 'data_centre':
+        m['sector_primary_cost_drivers'] = L['cost']; m['sector_schedule_threats'] = L['schedule']; m['causal_graph_nodes'] = L['chain']; m['causal_chain'] = L['chain']
+    if key == 'space':
+        m['sector_confidence_drivers'] = L['confidence']; m['sector_schedule_threats'] = L['schedule']; m['causal_graph_nodes'] = L['chain']; m['causal_chain'] = L['chain']
+    return m
+
+_CASEY_V124_PREV_BUILD_MODEL = build_model
+def build_model(prompt:str, client:str='', class_level:int=3, schedule_level:int=3, scenario:str='base'):
+    return _v124_apply_sector_lock(_CASEY_V124_PREV_BUILD_MODEL(prompt, client, class_level, schedule_level, scenario))
+
+APP_VERSION = 'CASEY V124 Sector Ontology Hardened Public Demo'
+print('CASEY V124 sector ontology hardening lock installed')
+# ================= END CASEY V124 SECTOR ONTOLOGY HARDENING LOCK =================
+
+# ================= CASEY V125 FULL SECTOR QA LOCK =================
+# Post-release hardening: fixes residual sector misclassification and removes legacy benchmark/casual field leakage.
+
+def _v125_text_for_routing(prompt: str='', client: str='') -> str:
+    return (str(prompt or '') + ' ' + str(client or '')).lower()
+
+def _v125_has_any(t, terms):
+    import re
+    for term in terms:
+        pat = r'(?<![a-z0-9])' + re.escape(term.lower()) + r'(?![a-z0-9])'
+        if re.search(pat, t):
+            return True
+    return False
+
+def _v125_sector_key_from_input(prompt: str='', client: str='', fallback_model=None) -> str:
+    t = _v125_text_for_routing(prompt or (fallback_model or {}).get('prompt',''), client or (fallback_model or {}).get('client',''))
+    # Space first because space briefs contain energy/power/manufacturing words but delivery logic is mission assurance.
+    if _v125_has_any(t, ['lunar','moon','mars','orbital','satellite','spaceport','launch vehicle','payload','deep space','isru','leo','cislunar','propellant depot']): return 'space'
+    # High-specificity Earth sectors before general transport/energy terms.
+    if _v125_has_any(t, ['pharma','biologics','life sciences','gmp','fill-finish','sterile','cqv','validation','media fill','amgen','lilly','novartis','pfizer']): return 'life_sciences'
+    if _v125_has_any(t, ['semiconductor','fab','wafer','foundry','lithography','chip plant','ultra-pure water','upw']): return 'semiconductor'
+    if _v125_has_any(t, ['data centre','data center','hyperscale','ai campus','compute campus','gpu','cloud region','white space','white-space','data hall','azure','openai','meta ai']): return 'data_centre'
+    if _v125_has_any(t, ['oil','gas','lng','refinery','petrochemical','offshore platform','pipeline','fpso','hydrocarbon','carbon capture']): return 'oil_gas'
+    if _v125_has_any(t, ['airport','aviation','terminal','runway','heathrow','gatwick','airside','baggage','orat']): return 'airport'
+    if _v125_has_any(t, ['hospital','healthcare','clinical','medical centre','medical center','patient','nhs']): return 'healthcare'
+    if _v125_has_any(t, ['water','wastewater','desalination','sewer','reservoir','treatment plant','pumping station']): return 'water'
+    if _v125_has_any(t, ['rail','metro','transit','high speed','hs2','station','signalling','signaling','rolling stock','california high speed']): return 'rail'
+    if _v125_has_any(t, ['defence','defense','military','naval','airbase','radar','missile','secure facility','mod','dod','hardened command']): return 'defence'
+    if _v125_has_any(t, ['nuclear','smr','reactor']): return 'energy'
+    if _v125_has_any(t, ['energy','power plant','renewable','wind farm','offshore wind','solar','battery','substation','transmission','grid','hydrogen','hvdc']): return 'energy'
+    if _v125_has_any(t, ['port','harbour','harbor','marine','dock','container terminal','quay','dredging']): return 'ports'
+    return 'general_infrastructure'
+
+def _v125_library(key: str):
+    return _v124_library(key)
+
+def _v125_forbidden_terms(key: str):
+    base = set(_v124_forbidden_terms(key))
+    # Add the leaks actually seen in QA screenshots/tests.
+    if key in {'airport','rail','healthcare','water','ports','defence','energy','oil_gas','life_sciences','semiconductor','space'}:
+        base.update(['Liquid cooling readiness','liquid cooling','GPU','white space','white-space','data hall','IST congestion'])
+    if key not in {'airport'}:
+        base.update(['ORAT','airside','landside','baggage systems'])
+    if key not in {'rail'}:
+        base.update(['rolling stock','signalling','signaling','possessions'])
+    if key not in {'space'}:
+        base.update(['launch reliability','launch cadence','payload integration','range availability','mission assurance','thermal-power balance'])
+    if key not in {'life_sciences'}:
+        base.update(['CQV','media fills'])
+    if key not in {'semiconductor'}:
+        base.update(['yield ramp','lithography','UPW'])
+    return list(base)
+
+def _v125_sector_rows(L, m):
+    # Build compact sector-native cost, schedule and risk rows so exports use the locked ontology.
+    cost_base = _parse_money_bn(m.get('cost_p50')) or 1.0
+    cost_weights = [0.34,0.24,0.18,0.14,0.10]
+    cost_lines=[]
+    for i, name in enumerate(L['cost'][:5], 1):
+        p50 = cost_base * cost_weights[i-1]
+        cost_lines.append({'cbs':f'{i:02d}.0{i}','description':name,'type':'Direct' if i<=3 else ('Indirect' if i==4 else 'Reserve'),'low_p10':_fmt_money_bn(p50*0.78),'p50':_fmt_money_bn(p50),'high_p90':_fmt_money_bn(p50*1.32),'basis':f'{name} priced from sector-locked {L["label"]} template, estimate class and scenario posture.'})
+    months = _parse_months(m.get('schedule')) or 60
+    schedule_rows=[]
+    pred=''
+    for i, name in enumerate(L['schedule'][:5], 1):
+        aid=f'A{1000+i*100}'
+        schedule_rows.append({'activity_id':aid,'phase':'Sector critical path','activity':name,'predecessor':pred,'duration_months':max(1, round(months * [0.15,0.22,0.20,0.18,0.12][i-1])),'critical':'Yes' if i in [2,3,4] else 'No','basis':f'{L["label"]} schedule logic: {name}.'})
+        pred=aid
+    risks=[]
+    for i, name in enumerate((L['schedule']+L['cost'])[:8],1):
+        risks.append({'id':f'R-{i:03d}','risk':name,'cause':f'Sector-locked {L["label"]} exposure','event':f'{name} underperforms the board evidence threshold','impact':'P80/P90 cost or schedule tail increases','probability_pct':max(18, 52-i*3),'activity':schedule_rows[min(i-1,len(schedule_rows)-1)]['activity_id'],'cbs':cost_lines[min(i-1,len(cost_lines)-1)]['cbs'],'owner':('Programme Director' if i==1 else 'Sector Integration Lead'),'mitigation':f'Named owner to evidence {name.lower()} readiness, dates, constraints and fallback plan.','status':'Open' if i<=3 else 'Monitor'})
+    return cost_lines, schedule_rows, risks
+
+def _v125_deep_scrub_model(m, forbidden):
+    protected={'prompt','client','title','id'}
+    out={}
+    for k,v in (m or {}).items():
+        out[k]=v if k in protected else _v124_scrub_value(v, forbidden)
+    return out
+
+def _v125_apply_full_sector_lock(model: Dict[str, Any], prompt: str='', client: str='') -> Dict[str, Any]:
+    key = _v125_sector_key_from_input(prompt, client, model)
+    L = _v125_library(key)
+    m = dict(model or {})
+    m['sector_ontology_key']=key
+    m['sector_ontology_label']=L['label']
+    m['subsector']=L['label']
+    # Overwrite every display/export field that previously carried shared ontology remnants.
+    m['executive_shock_insight']=L['shock']
+    m['sector_confidence_drivers']=L['confidence']
+    m['sector_primary_cost_drivers']=L['cost']
+    m['sector_schedule_threats']=L['schedule']
+    m['causal_graph_nodes']=L['chain']
+    m['causal_chain']=L['chain']
+    bench=[{'sector':a,'archetype':a,'anchor_cost':c,'anchor_duration_months':d,'similarity_score':max(5, 10-i),'use':'Sector-locked benchmark cohort; directional calibration only.'} for i,(a,c,d) in enumerate(L['bench'][:4])]
+    m['benchmark_comparison']=bench
+    m['benchmark_memory']=bench
+    m['benchmarks']=bench
+    m['peer_competitors']=bench
+    m['why_casey_generated_this']=[
+        f"CASEY detected {L['label']} from the project brief and locked the sector ontology before generating outputs.",
+        f"Sector-native behaviours applied: {', '.join(L['chain'][:5])}.",
+        "Benchmark cohort, causal chain, confidence drivers and risk language were constrained to the selected sector.",
+        "The output is designed for early board challenge and scope definition, not certified pricing."
+    ]
+    sigs=[{'signal':s,'status':st,'direction':'sector-locked calibration','weight':0.12,'applies_to':'confidence, QCRA/QSRA, risk register','basis':basis} for s,st,basis in L['signals']]
+    m['live_calibration_signals']=sigs
+    m['live_calibration_strip']=' • '.join(x['signal'] for x in sigs[:4])
+    m['mission_control_cards']=[{'label':'Live calibration','signal':'Current sector conditions are being applied to confidence, contingency and delivery-tail exposure.','severity':'Active'}] + [{'label':s,'signal':basis,'severity':st} for s,st,basis in L['signals']]
+    m['mission_control_cards']=m['mission_control_cards'][:6]
+    m['casey_thinking']=f"CASEY has re-cut the programme as a {m.get('scenario_label','Base')} scenario inside the {L['label']} ontology. The governing consequence is: {L['shock']} QCRA/QSRA curves, cost basis, risk probabilities and schedule logic have been sector-locked to this posture."
+    m['executive_summary']=f"{L['label']} scenario view: {m.get('scenario_label','Base')}. CASEY indicates {m.get('cost_p50')} P50 exposure, {m.get('cost_range')} range, {m.get('schedule')} baseline, {m.get('risk')} risk and {m.get('confidence_pct')}% confidence. {L['shock']} Trade-off: {m.get('scenario_why','Balanced cost, time and evidence posture.')}"
+    m['board_briefing']=[L['shock'],f"{m.get('scenario_label','Base')} is the reference case: scenario movement is explicitly controlled before board use.",f"{m.get('scenario_label','Base')} scenario: {m.get('cost_p50')} P50, {m.get('cost_range')} range, {m.get('schedule')} baseline and {m.get('confidence_pct')}% confidence.",f"Confidence is governed by {L['constraints']}.","Gained: Maintains a credible reference case for board challenge."]
+    m['confidence_explanation']=f"{m.get('confidence_pct')}% means CASEY believes the current case is board-defensible only if evidence is improved around {L['constraints']}."
+    m['confidence_engine_detail']={'decision_rule':'Use for option selection, but close evidence gaps before approval.','primary_constraint':L['constraints'],'plain_english':'Confidence is not optimism. It is CASEY’s board-defensibility score based on benchmark fit, evidence maturity, procurement certainty, schedule logic, reserve adequacy and scenario posture.'}
+    m['board_challenge_questions']=[
+        'Is this a decision case or only a reference case?',
+        'What must be proven before this becomes board-approvable?',
+        f"What evidence proves {L['constraints']}?",
+        'Which three risks create most P80/P90 exposure?',
+        'What data would move confidence above the board-comfort threshold?',
+        'Which named owner is accountable for the critical-path constraint?'
+    ]
+    m['uncertainty_narrative']={'estimate_maturity':'Class 3 maturity is suitable for budget authorization, but procurement and design assumptions still need challenge.','schedule_maturity':'Schedule Level 4 gives stronger logic and QSRA traceability.','interpretation':f"Live calibration is weighting {L['constraints']} into the QSRA/QCRA tail."}
+    cost_lines, schedule_rows, risks = _v125_sector_rows(L, m)
+    m['cost_lines']=cost_lines
+    m['schedule_rows']=schedule_rows
+    m['risk_register']=risks
+    m['risks']=risks
+    m['procurement_heatmap']=[{'package':x,'status':'Active' if i<3 else 'Watch','risk':'Sector-native procurement exposure','owner':'Commercial Lead'} for i,x in enumerate(L['cost'][:5])]
+    m['critical_path_narrative']=[f"{x} is part of the locked {L['label']} critical-path narrative." for x in L['schedule'][:4]]
+    m['red_flags']=[f"Evidence gap around {L['constraints']}.",f"Benchmark challenge remains unless {L['chain'][-2].lower()} is proven."]
+    forbidden=_v125_forbidden_terms(key)
+    m=_v125_deep_scrub_model(m, forbidden)
+    # Restore native fields after scrub.
+    m['sector_ontology_key']=key; m['sector_ontology_label']=L['label']; m['subsector']=L['label']
+    m['sector_confidence_drivers']=L['confidence']; m['sector_primary_cost_drivers']=L['cost']; m['sector_schedule_threats']=L['schedule']; m['causal_graph_nodes']=L['chain']; m['causal_chain']=L['chain']
+    return m
+
+_CASEY_V125_PREV_BUILD_MODEL = build_model
+def build_model(prompt:str, client:str='', class_level:int=3, schedule_level:int=3, scenario:str='base'):
+    return _v125_apply_full_sector_lock(_CASEY_V125_PREV_BUILD_MODEL(prompt, client, class_level, schedule_level, scenario), prompt, client)
+
+APP_VERSION = 'CASEY V125 Full Sector QA Hardened'
+print('CASEY V125 full sector QA lock installed')
+# ================= END CASEY V125 FULL SECTOR QA LOCK =================
+
+# ================= CASEY V126 QA HOTFIX =================
+def _v126_parse_money_bn(x):
+    try:
+        s=str(x or '').replace('$','').replace(',','').strip().upper().split()[0]
+        if s.endswith('T'): return float(s[:-1])*1000
+        if s.endswith('B'): return float(s[:-1])
+        if s.endswith('M'): return float(s[:-1])/1000
+        return float(s)
+    except Exception:
+        return 1.0
+
+def _v126_fmt_money_bn(x):
+    try: x=float(x)
+    except Exception: x=0.0
+    if x>=1000: return f'${x/1000:.1f}T'
+    if x>=1: return f'${x:.1f}B'
+    return f'${x*1000:.0f}M'
+
+def _v126_sector_rows(L, m):
+    cost_base = _v126_parse_money_bn(m.get('cost_p50')) or 1.0
+    cost_weights=[0.34,0.24,0.18,0.14,0.10]
+    cost_lines=[]
+    for i,name in enumerate(L['cost'][:5],1):
+        p50=cost_base*cost_weights[i-1]
+        cost_lines.append({'cbs':f'{i:02d}.0{i}','description':name,'type':'Direct' if i<=3 else ('Indirect' if i==4 else 'Reserve'),'low_p10':_v126_fmt_money_bn(p50*0.78),'p50':_v126_fmt_money_bn(p50),'high_p90':_v126_fmt_money_bn(p50*1.32),'basis':f'{name} priced from sector-locked {L["label"]} template, estimate class and scenario posture.'})
+    months = _parse_months(m.get('schedule')) if '_parse_months' in globals() else 60
+    if not months: months=60
+    schedule_rows=[]; pred=''
+    for i,name in enumerate(L['schedule'][:5],1):
+        aid=f'A{1000+i*100}'
+        schedule_rows.append({'activity_id':aid,'phase':'Sector critical path','activity':name,'predecessor':pred,'duration_months':max(1,round(months*[0.15,0.22,0.20,0.18,0.12][i-1])),'critical':'Yes' if i in [2,3,4] else 'No','basis':f'{L["label"]} schedule logic: {name}.'})
+        pred=aid
+    risks=[]
+    for i,name in enumerate((L['schedule']+L['cost'])[:8],1):
+        risks.append({'id':f'R-{i:03d}','risk':name,'cause':f'Sector-locked {L["label"]} exposure','event':f'{name} underperforms the board evidence threshold','impact':'P80/P90 cost or schedule tail increases','probability_pct':max(18,52-i*3),'activity':schedule_rows[min(i-1,len(schedule_rows)-1)]['activity_id'],'cbs':cost_lines[min(i-1,len(cost_lines)-1)]['cbs'],'owner':'Programme Director' if i==1 else 'Sector Integration Lead','mitigation':f'Named owner to evidence {name.lower()} readiness, dates, constraints and fallback plan.','status':'Open' if i<=3 else 'Monitor'})
+    return cost_lines,schedule_rows,risks
+
+def _v126_apply(model, prompt='', client=''):
+    key=_v125_sector_key_from_input(prompt,client,model); L=_v125_library(key)
+    m=_v125_apply_full_sector_lock(model,prompt,client)
+    cost_lines,schedule_rows,risks=_v126_sector_rows(L,m)
+    m['cost_lines']=cost_lines; m['schedule_rows']=schedule_rows; m['risk_register']=risks; m['risks']=risks
+    return m
+
+_CASEY_V126_PREV_BUILD_MODEL = _CASEY_V125_PREV_BUILD_MODEL
+# Important: bypass broken V125 wrapper and apply the V126 fixed wrapper directly to the V124 model.
+def build_model(prompt:str, client:str='', class_level:int=3, schedule_level:int=3, scenario:str='base'):
+    return _v126_apply(_CASEY_V126_PREV_BUILD_MODEL(prompt, client, class_level, schedule_level, scenario), prompt, client)
+APP_VERSION='CASEY V126 Full Sector QA Hardened'
+print('CASEY V126 QA hotfix installed')
+# ================= END CASEY V126 QA HOTFIX =================
+# CASEY V126.1 compatibility aliases for V125 sector-row functions
+_parse_money_bn = _v126_parse_money_bn
+_fmt_money_bn = _v126_fmt_money_bn
+def _v126_parse_months(x):
+    try:
+        return int(float(str(x or '0').replace('months','').replace('mo','').strip().split()[0]))
+    except Exception:
+        return 60
+_parse_months = _v126_parse_months
+
+# ================= CASEY V127 QA SCRUB FINAL =================
+_CASEY_V127_PREV_BUILD_MODEL = build_model
+def build_model(prompt:str, client:str='', class_level:int=3, schedule_level:int=3, scenario:str='base'):
+    m=_CASEY_V127_PREV_BUILD_MODEL(prompt, client, class_level, schedule_level, scenario)
+    # Remove legacy hidden base-model blob that carried old-sector vocabulary into QA/export JSON.
+    if isinstance(m, dict) and '_hs_base' in m:
+        m.pop('_hs_base', None)
+    return m
+APP_VERSION='CASEY V127 Full Sector QA Hardened Final'
+print('CASEY V127 final QA scrub installed')
+# ================= END CASEY V127 QA SCRUB FINAL =================
+
+# ================= CASEY V128 EXPORT SURFACE HARDENING =================
+def _v128_forbidden_terms(key: str):
+    terms=set(_v125_forbidden_terms(key))
+    if key == 'defence':
+        terms.discard('mission assurance'); terms.discard('Mission assurance')
+    return list(terms)
+
+def _v128_clean_surface(m):
+    key=m.get('sector_ontology_key','general_infrastructure'); L=_v125_library(key)
+    # Avoid airport/other sectors using the rail-specific word "possessions".
+    if key == 'airport':
+        repl=lambda s: str(s).replace('possessions','access windows').replace('Possessions','Access windows')
+        for fld in ['sector_schedule_threats','causal_chain','causal_graph_nodes']:
+            m[fld]=[repl(x) for x in m.get(fld,[])]
+        for fld in ['schedule_rows','risk_register','risks']:
+            rows=[]
+            for r in m.get(fld,[]):
+                if isinstance(r,dict): rows.append({k:repl(v) if isinstance(v,str) else v for k,v in r.items()})
+                else: rows.append(repl(r))
+            m[fld]=rows
+        m['critical_path_narrative']=[repl(x) for x in m.get('critical_path_narrative',[])]
+    # Old compatibility fields are replaced with locked sector data so JSON/API exports cannot leak stale ontologies.
+    m['cost_breakdown']=m.get('cost_lines',[])
+    m['estimates_by_class']={str(i):m.get('cost_lines',[]) for i in range(1,6)}
+    m['schedules_by_level']={str(i):m.get('schedule_rows',[]) for i in range(1,6)}
+    m['sector_signature_behaviours']=L['chain'][:5]
+    forbidden=_v128_forbidden_terms(key)
+    for k in list(m.keys()):
+        if k not in {'prompt','client','title','id'}:
+            m[k]=_v124_scrub_value(m[k], forbidden)
+    return m
+
+_CASEY_V128_PREV_BUILD_MODEL=build_model
+def build_model(prompt:str, client:str='', class_level:int=3, schedule_level:int=3, scenario:str='base'):
+    return _v128_clean_surface(_CASEY_V128_PREV_BUILD_MODEL(prompt, client, class_level, schedule_level, scenario))
+APP_VERSION='CASEY V128 Full Sector QA Hardened Final'
+print('CASEY V128 export surface hardening installed')
+# ================= END CASEY V128 EXPORT SURFACE HARDENING =================
+
+# ================= CASEY V130 EXECUTIVE INTELLIGENCE / FULL ONTOLOGY LOCK =================
+# Adds five pre-demo hardening layers: sector-native causal graphs, narrative compression,
+# challenge intelligence, second-order contradictions, export-surface governance.
+
+def _v130_has(t, words):
+    return any(w in t for w in words)
+
+def _v130_sector_key(prompt='', client='', model=None):
+    model = model or {}
+    t = (str(prompt)+' '+str(client)+' '+str(model.get('title',''))+' '+str(model.get('subsector',''))+' '+str(model.get('mode',''))).lower()
+    if _v130_has(t,['lunar','mars','orbital','satellite','spaceport','launch','payload','moon','deep space','propulsion','range availability']): return 'space'
+    if _v130_has(t,['data centre','data center','hyperscale','ai campus','compute campus','gpu','cloud region','white space','data hall']): return 'data_centre'
+    if _v130_has(t,['oil','gas','lng','refinery','petrochemical','offshore platform','pipeline','fpso','hydrocarbon','carbon capture']): return 'oil_gas'
+    if _v130_has(t,['nuclear','smr','reactor','containment','safety case']): return 'nuclear'
+    if _v130_has(t,['port','harbour','harbor','marine','dock','container terminal','quay','dredging']): return 'ports'
+    if _v130_has(t,['airport','aviation','terminal','runway','heathrow','gatwick','airside','baggage','orat']): return 'airport'
+    if _v130_has(t,['rail','metro','transit','high speed','hs2','rail station','signalling','signaling','rolling stock','california high speed']): return 'rail'
+    if _v130_has(t,['semiconductor','fab','wafer','cleanroom','foundry','lithography','chip plant']): return 'semiconductor'
+    if _v130_has(t,['life sciences','pharma','biologics','gmp','fill-finish','sterile','cqv','amgen','lilly','novartis','pfizer']): return 'life_sciences'
+    if _v130_has(t,['defence','defense','military','naval','airbase','radar','missile','secure facility','mod ','dod ','command centre','command center']): return 'defence'
+    if _v130_has(t,['energy','power plant','renewable','wind farm','offshore wind','solar','battery','substation','transmission','grid','hydrogen','hvdc']): return 'energy'
+    if _v130_has(t,['hospital','healthcare','clinical','medical centre','patient','nhs']): return 'healthcare'
+    if _v130_has(t,['water','wastewater','desalination','sewer','reservoir','treatment plant']): return 'water'
+    if _v130_has(t,['port','harbour','harbor','marine','dock','container terminal','quay','dredging']): return 'ports'
+    if _v130_has(t,['mine','mining','ore','tailings','pit','processing plant']): return 'mining'
+    if _v130_has(t,['road','highway','motorway','bridge','tunnel']): return 'roads'
+    return _v125_sector_key_from_input(prompt, client, model) if '_v125_sector_key_from_input' in globals() else 'general_infrastructure'
+
+def _v130_library(key):
+    # Start with V125/V128 library where it exists, then override missing or weaker sectors.
+    try:
+        L = dict(_v125_library(key))
+    except Exception:
+        L = {}
+    overrides = {
+    'space': dict(label='Space / Mission Assurance', shock='Mission assurance, payload integration, range availability and thermal-power evidence govern launch confidence — not construction progress alone.', constraints='mission assurance, payload integration, launch readiness, range access and thermal-power balance', signals=[('Mission assurance burden','Active','Qualification evidence and assurance closure control board defensibility.'),('Range and launch-window availability','Active','Launch logistics and range access create schedule-tail exposure.'),('Payload integration maturity','Watch','Interface maturity and verification evidence determine mission readiness.'),('Thermal-power balance','Watch','Sustained operations depend on verified power, thermal and autonomous recovery evidence.')], bench=[('Lunar / Orbital Infrastructure','$8B–$95B','72-216'),('Launch and Payload Integration','$1B–$14B','36-108'),('Deep-Space Mission Systems','$4B–$35B','60-144'),('Autonomous Operations Platform','$2B–$20B','36-96')], chain=['Mission requirements freeze','Payload integration','Qualification campaign','Range availability','Launch readiness review','Mission assurance sign-off','Confidence'], confidence=['Benchmark similarity: mission class and space infrastructure archetype','Scope maturity: payload, surface/orbital architecture and operations definition','Procurement certainty: launch provider, avionics and qualified hardware','Schedule maturity: test campaign, range window and commissioning logic','Operational exposure: remote recovery and autonomous servicing limits'], cost=['Payload and mission systems','Launch integration and range operations','Power/thermal/autonomous operations','Qualification and test campaign','Mission assurance reserve'], schedule=['Payload interface maturity','Qualification and environmental testing','Launch provider and range coordination','Mission operations readiness','Autonomous recovery validation']),
+    'defence': dict(label='Defence / Secure Infrastructure', shock='Security accreditation, systems assurance and operational acceptance govern confidence more than estate completion.', constraints='security accreditation, mission systems integration, assurance evidence and operational acceptance', signals=[('Security accreditation','Active','Authority-to-operate evidence creates approval-tail exposure.'),('Mission systems integration','Active','Secure comms, sensors and classified interfaces dominate commissioning.'),('Supplier assurance','Watch','Security-cleared supply chain capacity governs procurement certainty.'),('Operational acceptance','Watch','User trials and command readiness govern board defensibility.')], bench=[('Secure Defence Facility','$500M–$8B','30-96'),('Command and Mission Systems Campus','$1B–$12B','36-108'),('Airbase / Naval Infrastructure','$1B–$20B','48-144')], chain=['Security requirements','Classified procurement','Mission systems integration','Accreditation evidence','Operational trials','Authority to operate','Confidence'], confidence=['Benchmark similarity: secure mission infrastructure','Scope maturity: security, mission and operational requirements','Procurement certainty: cleared suppliers and specialist systems','Schedule maturity: accreditation and acceptance logic','Interface exposure: users, security authorities and mission systems'], cost=['Secure facilities and hardened works','Mission systems and secure comms','Accreditation and assurance evidence','Specialist cleared supply chain','Operational trial and acceptance reserve'], schedule=['Security accreditation pathway','Classified supplier lead-times','Mission systems integration','Operational trials and acceptance','Authority-to-operate approval']),
+    'energy': dict(label='Energy / Power Infrastructure', shock='Grid interface, permitting, long-lead electrical packages and commissioning evidence dominate delivery confidence.', constraints='grid interconnection, permitting, long-lead electrical procurement and commissioning readiness', signals=[('Grid interconnection','Active','Connection studies, network access and energisation govern P80/P90 exposure.'),('Permitting and land consent','Active','Planning, environmental and connection approvals shape critical path.'),('Long-lead equipment','Watch','Transformers, turbines, HV equipment and controls create procurement tail.'),('Commissioning readiness','Watch','Energisation, protection settings and performance tests determine acceptance.')], bench=[('Power Generation Programme','$1B–$18B','36-108'),('Transmission / HVDC Programme','$2B–$25B','48-144'),('Renewables Portfolio','$500M–$12B','24-84')], chain=['Permitting and consents','Grid studies','Long-lead equipment','Civil/electrical completion','Energisation','Performance testing','Confidence'], confidence=['Benchmark similarity: power/utility programme','Scope maturity: grid, generation and operating model definition','Procurement certainty: turbines, transformers and HV packages','Schedule maturity: permits, energisation and testing logic','Interface exposure: network operator, regulator and offtaker'], cost=['Generation or network assets','Grid connection and substations','Long-lead electrical equipment','Civil/enabling works','Commissioning and performance reserve'], schedule=['Permitting and environmental approvals','Grid connection agreement','Long-lead equipment delivery','Energisation and protection testing','Performance acceptance']),
+    'oil_gas': dict(label='Oil & Gas / Process Infrastructure', shock='Process safety, modular integration, shutdown windows and commissioning systems govern confidence more than mechanical progress.', constraints='process safety, module integration, shutdown access, commissioning systems and regulatory acceptance', signals=[('Process safety case','Active','HAZOP/HAZID closure and safety-critical evidence govern approval.'),('Modular integration','Active','Fabrication, transport, heavy lift and hook-up drive schedule risk.'),('Shutdown / tie-in windows','Watch','Operational access windows create delivery-tail exposure.'),('Commissioning and start-up','Watch','Pre-commissioning, loop checks and performance tests govern readiness.')], bench=[('LNG / Gas Processing Facility','$3B–$40B','48-144'),('Refinery / Petrochemical Expansion','$1B–$25B','36-120'),('Offshore / Pipeline Programme','$1B–$20B','36-108')], chain=['Process safety basis','Module fabrication','Transport and hook-up','Tie-in access','Pre-commissioning','Start-up performance test','Confidence'], confidence=['Benchmark similarity: process/energy infrastructure','Scope maturity: process design and safety-case definition','Procurement certainty: modules, rotating equipment and controls','Schedule maturity: shutdown/tie-in and start-up logic','Interface exposure: operator, regulator and supply chain'], cost=['Process units and modules','Rotating equipment and controls','Pipeline/tie-in and brownfield works','Fabrication, transport and heavy lift','Start-up and safety reserve'], schedule=['Process safety approval','Module fabrication and delivery','Shutdown and tie-in access','Pre-commissioning and loop checks','Start-up performance testing']),
+    'healthcare': dict(label='Healthcare / Hospital Infrastructure', shock='Clinical transition, infection-control evidence and medical systems integration govern readiness more than building completion.', constraints='clinical commissioning, infection-control compliance, medical systems integration and phased occupancy', signals=[('Clinical commissioning','Active','Clinical readiness and staff transition govern usable capacity.'),('Infection-control compliance','Active','HTM/HBN evidence and inspection readiness constrain handover.'),('Medical systems integration','Watch','Equipment, digital health and specialist systems drive commissioning risk.'),('Phased occupancy','Watch','Live hospital operations and patient transition create interface exposure.')], bench=[('Acute Hospital Programme','$500M–$6B','36-96'),('Specialist Clinical Campus','$300M–$4B','30-84'),('Live Healthcare Redevelopment','$200M–$3B','30-72')], chain=['Clinical model freeze','Medical equipment procurement','Infection-control evidence','Digital/medical systems integration','Phased occupancy','Clinical commissioning','Confidence'], confidence=['Benchmark similarity: healthcare capital programme','Scope maturity: clinical brief and department definition','Procurement certainty: medical equipment and specialist systems','Schedule maturity: clinical commissioning and occupancy logic','Interface exposure: patients, operations and regulators'], cost=['Clinical departments and fit-out','Medical equipment and digital systems','Infection-control and compliance works','Live operations phasing','Clinical commissioning reserve'], schedule=['Clinical brief and approvals','Medical equipment procurement','Infection-control verification','Digital/medical systems integration','Phased occupancy and clinical commissioning']),
+    'water': dict(label='Water / Environmental Infrastructure', shock='Permitting, process performance, interfaces and commissioning evidence govern confidence more than civil progress.', constraints='environmental permits, process performance, utility interfaces and operational acceptance', signals=[('Environmental permitting','Active','Discharge permits and regulator evidence govern approval path.'),('Process performance','Active','Treatment performance and testing drive acceptance.'),('Utility/interface access','Watch','Tie-ins and service continuity create schedule exposure.'),('Operational acceptance','Watch','Operator readiness and performance trials govern confidence.')], bench=[('Water Treatment Programme','$200M–$5B','24-84'),('Wastewater Upgrade','$300M–$8B','30-96'),('Desalination / Resource Programme','$500M–$10B','36-108')], chain=['Permit basis','Process design freeze','Equipment procurement','Tie-ins and bypasses','Performance testing','Operator acceptance','Confidence'], confidence=['Benchmark similarity: water/environmental infrastructure','Scope maturity: process and permit definition','Procurement certainty: pumps, membranes, process equipment and controls','Schedule maturity: tie-in, bypass and performance-test logic','Interface exposure: regulator, operator and utilities'], cost=['Civil/process structures','Process equipment and controls','Tie-ins, bypass and utilities','Environmental compliance works','Performance testing reserve'], schedule=['Permit and discharge approvals','Process equipment delivery','Tie-ins and bypass sequencing','Performance testing','Operator/regulator acceptance']),
+    'ports': dict(label='Ports / Marine Infrastructure', shock='Marine access, dredging, landside interfaces and operational cutover govern confidence more than quay wall progress.', constraints='marine access, dredging, berth systems, landside interfaces and operational cutover', signals=[('Marine access windows','Active','Weather, tide and vessel access govern productivity.'),('Dredging and seabed risk','Active','Ground/marine conditions create cost and schedule tail.'),('Terminal systems integration','Watch','Cranes, yard systems and controls drive readiness.'),('Operational cutover','Watch','Shipping-line and port-operator transition governs acceptance.')], bench=[('Container Terminal Expansion','$500M–$8B','30-96'),('Port / Harbour Redevelopment','$300M–$6B','24-84'),('Marine Logistics Hub','$1B–$12B','36-108')], chain=['Marine permits','Dredging/seabed works','Quay/berth construction','Terminal systems','Landside interfaces','Operational cutover','Confidence'], confidence=['Benchmark similarity: port/marine infrastructure','Scope maturity: berth, yard and landside definition','Procurement certainty: cranes, marine plant and systems','Schedule maturity: marine windows and cutover logic','Interface exposure: shipping lines, port operator and regulators'], cost=['Quay/berth and marine works','Dredging and seabed treatment','Cranes and terminal systems','Landside transport interfaces','Operational cutover reserve'], schedule=['Marine permitting and access','Dredging and seabed works','Crane/system procurement','Landside interface readiness','Terminal operational cutover']),
+    'mining': dict(label='Mining / Metals Infrastructure', shock='Resource access, processing plant readiness, tailings approvals and logistics govern confidence more than bulk earthworks.', constraints='resource access, processing plant commissioning, tailings approvals and logistics chain readiness', signals=[('Resource/access readiness','Active','Pit, haul roads and ore access govern ramp-up.'),('Processing plant commissioning','Active','Crushers, mills, flotation/leach systems drive performance risk.'),('Tailings approvals','Watch','Tailings storage facility approvals create governance exposure.'),('Logistics chain','Watch','Rail/port/power/water interfaces constrain operating readiness.')], bench=[('Mine and Processing Plant','$1B–$15B','36-108'),('Tailings / Water Infrastructure','$300M–$5B','24-72'),('Remote Logistics Corridor','$500M–$8B','30-96')], chain=['Resource access','Bulk earthworks','Processing plant install','Power/water/logistics','Tailings approval','Ramp-up performance','Confidence'], confidence=['Benchmark similarity: mining and processing infrastructure','Scope maturity: orebody, plant and logistics definition','Procurement certainty: mills, crushers and process equipment','Schedule maturity: commissioning and ramp-up logic','Interface exposure: power, water, tailings and logistics'], cost=['Mine access and earthworks','Processing plant equipment','Power, water and logistics','Tailings and environmental controls','Ramp-up reserve'], schedule=['Resource access and permits','Processing equipment delivery','Power/water/logistics readiness','Tailings facility approval','Plant commissioning and ramp-up']),
+    'roads': dict(label='Roads / Highways Infrastructure', shock='Utilities, traffic staging, structures and statutory approvals govern confidence more than earthworks progress.', constraints='utility diversions, traffic management, structures, statutory approvals and staged opening', signals=[('Utility diversions','Active','Buried services and third-party approvals govern early critical path.'),('Traffic staging','Active','Live network management constrains productivity.'),('Structures and ground risk','Watch','Bridges, retaining walls and geotechnical conditions create tail exposure.'),('Statutory approvals','Watch','Consents and stakeholder commitments constrain openings.')], bench=[('Highway Upgrade Programme','$500M–$10B','30-96'),('Bridge / Tunnel Corridor','$1B–$20B','48-144'),('Urban Transport Corridor','$500M–$8B','30-96')], chain=['Statutory approvals','Utility diversions','Traffic staging','Structures completion','Systems/safety readiness','Staged opening','Confidence'], confidence=['Benchmark similarity: road/highway programme','Scope maturity: alignment, structures and traffic strategy','Procurement certainty: civils packages and utility interfaces','Schedule maturity: staging and opening logic','Interface exposure: road users, utilities and authorities'], cost=['Earthworks and pavements','Structures and retaining walls','Utilities and drainage','Traffic management and staging','Opening/safety reserve'], schedule=['Statutory approvals','Utility diversion completion','Traffic staging switches','Structures completion','Safety audit and staged opening'])
+    }
+    if key in overrides: L.update(overrides[key])
+    return L
+
+def _v130_forbidden(key):
+    terms = set(_v128_forbidden_terms(key) if '_v128_forbidden_terms' in globals() else [])
+    # Global hard stop against the exact leaks seen in screenshots.
+    if key != 'data_centre': terms.update(['Liquid cooling readiness','liquid cooling','white space','white-space','data hall','IST congestion','GPU'])
+    if key != 'airport': terms.update(['ORAT','baggage','airside','landside','passenger systems'])
+    if key != 'rail': terms.update(['rolling stock','signalling','signaling','possessions','timetable'])
+    if key != 'space': terms.update(['launch reliability','launch cadence','payload integration','range availability','thermal-power balance','mission assurance'])
+    if key != 'defence': terms.update(['classified','authority to operate','secure comms'])
+    if key != 'oil_gas': terms.update(['HAZOP','HAZID','hydrocarbon','FPSO','LNG'])
+    if key != 'semiconductor': terms.update(['lithography','yield ramp','UPW','wafer'])
+    if key != 'life_sciences': terms.update(['CQV','GMP','media fill','fill-finish'])
+    return list(terms)
+
+def _v130_rows(L, m):
+    cost_base = _v126_parse_money_bn(m.get('cost_p50')) if '_v126_parse_money_bn' in globals() else 1.0
+    months = _v126_parse_months(m.get('schedule')) if '_v126_parse_months' in globals() else 60
+    weights=[.31,.25,.19,.15,.10]
+    cost=[]
+    for i,name in enumerate(L['cost'][:5],1):
+        p=cost_base*weights[i-1]
+        cost.append({'cbs':f'{i:02d}.0{i}','description':name,'type':'Direct' if i<=3 else ('Indirect' if i==4 else 'Reserve'),'low_p10':_v126_fmt_money_bn(p*.78),'p50':_v126_fmt_money_bn(p),'high_p90':_v126_fmt_money_bn(p*1.34),'basis':f'{name}. Sector-locked basis: {L["label"]}; estimate class, location, complexity and scenario posture applied.'})
+    sched=[]; pred=''
+    for i,name in enumerate(L['schedule'][:5],1):
+        aid=f'A{1000+i*100}'
+        sched.append({'activity_id':aid,'phase':'Sector critical path','activity':name,'predecessor':pred,'duration_months':max(1,round(months*[.14,.22,.21,.18,.13][i-1])),'critical':'Yes' if i in [2,3,4] else 'Near-critical','basis':f'{name}: near-critical path narrative retained for board challenge.'})
+        pred=aid
+    risks=[]
+    owners=['Programme Director','Integration Lead','Commercial Lead','Technical Assurance Lead','Operations Readiness Lead','Risk Lead','Controls Lead','Sponsor']
+    for i,name in enumerate((L['schedule']+L['cost'])[:8],1):
+        risks.append({'id':f'R-{i:03d}','risk':name,'cause':f'{L["label"]} sector exposure','event':f'{name} fails to meet evidence threshold','impact':'P80/P90 cost or schedule tail expands; confidence falls unless owner evidence closes the gap','probability_pct':max(16,54-i*3),'activity':sched[min(i-1,len(sched)-1)]['activity_id'],'cbs':cost[min(i-1,len(cost)-1)]['cbs'],'owner':owners[(i-1)%len(owners)],'mitigation':f'Named owner to prove {name.lower()} readiness, quantified fallback, date, constraint and evidence source.','status':'Open' if i<=3 else ('Mitigating' if i<=6 else 'Monitor'),'challenge':'Board should not accept the base case until this evidence is named and dated.'})
+    return cost,sched,risks
+
+def _v130_apply(model, prompt='', client=''):
+    key=_v130_sector_key(prompt, client, model); L=_v130_library(key); m=dict(model or {})
+    scenario=str(m.get('scenario_label') or m.get('scenario') or 'Base').title()
+    m['sector_ontology_key']=key; m['sector_ontology_label']=L['label']; m['subsector']=L['label']
+    m['executive_shock_insight']=L['shock']
+    m['executive_summary']=f"{L['label']} · {scenario}: {m.get('cost_p50')} P50, {m.get('cost_range')} range, {m.get('schedule')} baseline and {m.get('confidence_pct')}% confidence. {L['shock']}"
+    m['board_briefing']=[L['shock'], f"Decision posture: use this as a challenge case until named evidence proves {L['constraints']}.", f"P50 reconciles to {m.get('cost_p50')} and QSRA P80 remains the board contingency conversation.", "Board ask: decide what to buy — speed, savings, assurance or resilience — and name the evidence owner."]
+    m['casey_thinking']=f"CASEY has locked the model to {L['label']}. It is challenging the programme narrative against {L['constraints']} rather than accepting progress optics. Cost, risk, schedule, benchmark and export language are generated from the same sector graph."
+    m['confidence_explanation']=f"{m.get('confidence_pct')}% is a board-defensibility score, not optimism. It is constrained by {L['constraints']}."
+    m['confidence_engine_detail']={'decision_rule': 'Do not treat this as approval evidence until owner actions, basis and P80/P90 exposure are reconciled.', 'primary_constraint': L['constraints'], 'plain_english':'CASEY scores whether the board can defend the decision, not whether the team feels confident.'}
+    m['board_challenge_questions']=['Which named owner can evidence the governing constraint?', f'What proof closes the gap around {L["constraints"]}?', 'What second-order risk does the preferred scenario create?', 'Which mitigation changes confidence rather than just narrative?', 'What would invalidate this case before approval?']
+    m['second_order_contradictions']=[f"The base case may look stable while {L['constraints']} remain unevidenced.", f"Acceleration can shorten the visible plan while increasing assurance, interface and commissioning fragility.", f"Cheaper approval may transfer exposure into P80/P90 tail, operations or recovery reserve.", "Higher confidence must come from evidence closure, not from a smoother narrative."]
+    m['governance_challenges']=[f"Require named owner evidence for {L['constraints']}.", "Separate true risk reduction from risk transfer.", "Reconcile P50 headline with P80/P90 board exposure.", "Reject scenario benefits that are not traceable to CBS, activity or risk owner."]
+    m['sector_confidence_drivers']=L['confidence']; m['sector_primary_cost_drivers']=L['cost']; m['sector_schedule_threats']=L['schedule']
+    m['causal_graph_nodes']=L['chain']; m['causal_chain']=L['chain']
+    m['benchmark_comparison']=[{'sector':a,'archetype':a,'anchor_cost':c,'anchor_duration_months':d,'similarity_score':max(6,10-i),'use':'Sector-locked benchmark cohort; no cross-sector borrowing unless delivery mechanics match.'} for i,(a,c,d) in enumerate(L['bench'][:4])]
+    m['benchmark_memory']=m['benchmark_comparison']; m['benchmarks']=m['benchmark_comparison']; m['peer_competitors']=m['benchmark_comparison']
+    m['why_casey_generated_this']=[f"CASEY detected {L['label']} and locked the ontology before output generation.", f"Sector behaviours applied: {', '.join(L['chain'][:5])}.", "Benchmark cohort, causal chain, confidence drivers, risks and exports were constrained to this sector.", "The output is intentionally challenge-oriented: board defensibility over optimism."]
+    sigs=[{'signal':s,'status':st,'direction':'confidence / reserve / P-tail','weight':0.13,'applies_to':'board pack, workbook, risk register, XER, QCRA/QSRA','basis':basis} for s,st,basis in L['signals']]
+    m['live_calibration_signals']=sigs; m['live_calibration_strip']=' • '.join(x['signal'] for x in sigs[:4])
+    m['mission_control_cards']=[{'label':'Live calibration','signal':'Sector conditions are being converted into confidence, contingency and delivery-tail exposure.','severity':'Active'}]+[{'label':s,'signal':basis,'severity':st} for s,st,basis in L['signals']]
+    m['mission_control_cards']=m['mission_control_cards'][:6]
+    m['uncertainty_narrative']={'estimate_maturity':'Class 3 is usable for budget authorisation only if the evidence gaps are explicit.','schedule_maturity':'Schedule Level 4 improves logic, but board confidence is still governed by near-critical density and owner evidence.','interpretation':f"Live calibration is weighting {L['constraints']} into the QSRA/QCRA tail."}
+    cost,sched,risks=_v130_rows(L,m); m['cost_lines']=cost; m['schedule_rows']=sched; m['risk_register']=risks; m['risks']=risks
+    m['cost_breakdown']=cost; m['estimates_by_class']={str(i):cost for i in range(1,6)}; m['schedules_by_level']={str(i):sched for i in range(1,6)}
+    m['procurement_heatmap']=[{'package':x,'status':'Active' if i<3 else 'Watch','risk':'Sector-native procurement exposure','owner':'Commercial Lead'} for i,x in enumerate(L['cost'][:5])]
+    m['critical_path_narrative']=[f"{x} is near-critical in the {L['label']} sector graph and must be evidenced before approval." for x in L['schedule'][:5]]
+    m['red_flags']=[f"Unevidenced confidence around {L['constraints']}.", "Scenario benefit may be risk transfer rather than risk reduction.", "Board pack should name owner, evidence source and date for each governing constraint."]
+    forbidden=_v130_forbidden(key)
+    if '_v124_scrub_value' in globals():
+        for k in list(m.keys()):
+            if k not in {'prompt','client','title','id'}: m[k]=_v124_scrub_value(m[k], forbidden)
+    # restore locked native arrays after scrub
+    m['sector_ontology_key']=key; m['sector_ontology_label']=L['label']; m['subsector']=L['label']; m['causal_graph_nodes']=L['chain']; m['causal_chain']=L['chain']
+    m['sector_confidence_drivers']=L['confidence']; m['sector_primary_cost_drivers']=L['cost']; m['sector_schedule_threats']=L['schedule']
+    return m
+
+_CASEY_V130_PREV_BUILD_MODEL = build_model
+def build_model(prompt:str, client:str='', class_level:int=3, schedule_level:int=3, scenario:str='base'):
+    return _v130_apply(_CASEY_V130_PREV_BUILD_MODEL(prompt, client, class_level, schedule_level, scenario), prompt, client)
+
+APP_VERSION='CASEY V130 Executive Intelligence Final'
+print('CASEY V130 executive intelligence hardening installed')
+# ================= END CASEY V130 EXECUTIVE INTELLIGENCE LOCK =================
+
+# ================= CASEY V130.1 ROUTING HOTFIX =================
+def _v131_sector_key(prompt='', client='', model=None):
+    pt=(str(prompt)+' '+str(client)).lower()
+    # classify on user brief first; never let an older fallback subsector overrule explicit input.
+    if _v130_has(pt,['lunar','mars','orbital','satellite','spaceport','launch','payload','moon','deep space','propulsion','range availability']): return 'space'
+    if _v130_has(pt,['data centre','data center','hyperscale','ai campus','compute campus','gpu','cloud region','white space','data hall']): return 'data_centre'
+    if _v130_has(pt,['oil','gas','lng','refinery','petrochemical','offshore platform','pipeline','fpso','hydrocarbon','carbon capture']): return 'oil_gas'
+    if _v130_has(pt,['nuclear','smr','reactor','containment','safety case']): return 'nuclear'
+    if _v130_has(pt,['energy','power plant','renewable','wind farm','offshore wind','solar','battery','substation','transmission','grid','hydrogen','hvdc']): return 'energy'
+    if _v130_has(pt,['port','harbour','harbor','marine','dock','container terminal','quay','dredging']): return 'ports'
+    if _v130_has(pt,['airport','aviation','terminal','runway','heathrow','gatwick','airside','baggage','orat']): return 'airport'
+    if _v130_has(pt,['rail','metro','transit','high speed','hs2','rail station','signalling','signaling','rolling stock','california high speed']): return 'rail'
+    if _v130_has(pt,['semiconductor','fab','wafer','cleanroom','foundry','lithography','chip plant']): return 'semiconductor'
+    if _v130_has(pt,['life sciences','pharma','biologics','gmp','fill-finish','sterile','cqv','amgen','lilly','novartis','pfizer']): return 'life_sciences'
+    if _v130_has(pt,['defence','defense','military','naval','airbase','radar','missile','secure facility','mod ','dod ','command centre','command center']): return 'defence'
+    if _v130_has(pt,['hospital','healthcare','clinical','medical centre','patient','nhs']): return 'healthcare'
+    if _v130_has(pt,['water','wastewater','desalination','sewer','reservoir','treatment plant']): return 'water'
+    if _v130_has(pt,['mine','mining','ore','tailings','pit','processing plant']): return 'mining'
+    if _v130_has(pt,['road','highway','motorway','bridge','tunnel']): return 'roads'
+    return _v130_sector_key(prompt, client, model)
+
+def _v131_apply(model, prompt='', client=''):
+    # Temporarily override routing inside v130 apply.
+    global _v130_sector_key
+    old=_v130_sector_key
+    try:
+        _v130_sector_key=_v131_sector_key
+        return _v130_apply(model, prompt, client)
+    finally:
+        _v130_sector_key=old
+
+# Bypass previous V130 wrapper so a misrouted old model cannot contaminate the final sector lock.
+def build_model(prompt:str, client:str='', class_level:int=3, schedule_level:int=3, scenario:str='base'):
+    return _v131_apply(_CASEY_V130_PREV_BUILD_MODEL(prompt, client, class_level, schedule_level, scenario), prompt, client)
+APP_VERSION='CASEY V130.1 Executive Intelligence Final'
+print('CASEY V130.1 routing hotfix installed')
+# ================= END CASEY V130.1 ROUTING HOTFIX =================
+
+# ================= CASEY V132 INSTITUTIONAL AUTHORITY / FULL EARTH+SPACE QA LOCK =================
+# Final pre-demo hardening: fixes V131 fallback recursion, expands explicit sector routing,
+# and makes board challenge / intervention / behavioural intelligence part of every model/export.
+
+V132_SECTOR_TESTED = [
+    'data_centre','airport','rail','roads','ports','water','energy','nuclear','oil_gas','mining',
+    'healthcare','life_sciences','semiconductor','defence','space','general_infrastructure'
+]
+
+def _v132_has(t, words):
+    import re
+    t = str(t or '').lower()
+    for w in words:
+        w = str(w or '').lower().strip()
+        if not w:
+            continue
+        # Use token boundaries so 'port' does not match 'transport' and 'mine' does not match 'commissioning'.
+        if re.search(r'(?<![a-z0-9])' + re.escape(w) + r'(?![a-z0-9])', t):
+            return True
+    return False
+
+def _v132_sector_key(prompt='', client='', model=None):
+    model = model or {}
+    pt = (str(prompt or '') + ' ' + str(client or '')).lower()
+    # User brief always wins over older fallback model state. Order is deliberate: specific asset classes before generic words.
+    if _v132_has(pt, ['lunar','moon','mars','orbital','leo','cislunar','satellite','spaceport','launch vehicle','payload','deep space','propulsion test','range operations','isru','propellant depot','space habitat']): return 'space'
+    if _v132_has(pt, ['data centre','data center','datacenter','hyperscale','ai campus','compute campus','gpu','cloud region','white space','data hall','azure','openai','meta ai','msft ai','microsoft ai']): return 'data_centre'
+    if _v132_has(pt, ['semiconductor','fab','wafer','foundry','lithography','chip plant','euv','upw','ultra-pure water']): return 'semiconductor'
+    if _v132_has(pt, ['life sciences','pharma','biologics','gmp','fill-finish','fill finish','sterile','cqv','media fill','amgen','lilly','eli lilly','novartis','pfizer','therapeutics']): return 'life_sciences'
+    if _v132_has(pt, ['mine','mining','ore','tailings','pit','processing plant','metals','lithium mine','copper mine']): return 'mining'
+    if _v132_has(pt, ['oil','gas','lng','refinery','petrochemical','offshore platform','pipeline','fpso','hydrocarbon','carbon capture','ccus','upstream','downstream']): return 'oil_gas'
+    if _v132_has(pt, ['nuclear','smr','reactor','containment','safety case','nuclear island']): return 'nuclear'
+    if _v132_has(pt, ['port','harbour','harbor','marine terminal','dock','container terminal','quay','dredging','berth']): return 'ports'
+    if _v132_has(pt, ['airport','aviation','terminal','runway','heathrow','gatwick','airside','baggage','orat']): return 'airport'
+    if _v132_has(pt, ['rail','metro','transit','high speed','hs2','rail station','signalling','signaling','rolling stock','california high speed','subway']): return 'rail'
+    if _v132_has(pt, ['water','wastewater','desalination','sewer','reservoir','treatment plant','pumping station','flood defence','flood defense']): return 'water'
+    if _v132_has(pt, ['defence','defense','military','naval','airbase','radar','missile','secure facility','mod','dod','command centre','command center','hardened facility','sovereign secure']): return 'defence'
+    if _v132_has(pt, ['hospital','healthcare','clinical','medical centre','medical center','patient','nhs','acute care','health campus']): return 'healthcare'
+    if _v132_has(pt, ['energy','power plant','renewable','wind farm','offshore wind','solar','battery','substation','transmission','grid','hydrogen','hvdc','utility interconnector']): return 'energy'
+    if _v132_has(pt, ['road','highway','motorway','bridge','tunnel','expressway','interchange']): return 'roads'
+    # fallback to current/fallback model only if the input was genuinely generic.
+    t = (pt + ' ' + str(model.get('title','')) + ' ' + str(model.get('subsector','')) + ' ' + str(model.get('mode',''))).lower()
+    if _v132_has(t, ['lunar','moon','mars','orbital','satellite','spaceport','payload']): return 'space'
+    if _v132_has(t, ['data centre','data center','hyperscale','ai campus']): return 'data_centre'
+    if _v132_has(t, ['airport','aviation','terminal','runway']): return 'airport'
+    if _v132_has(t, ['rail','metro','transit','signalling','rolling stock']): return 'rail'
+    return 'general_infrastructure'
+
+def _v132_library(key):
+    L = _v130_library(key) if '_v130_library' in globals() else {}
+    if not isinstance(L, dict): L = {}
+    if key == 'general_infrastructure' or not L.get('label'):
+        L = dict(label='General Capital Infrastructure', shock='The dominant risk is not progress reporting; it is whether the governing constraint has named evidence, owner accountability and reserve logic.', constraints='scope maturity, procurement certainty, interface control, commissioning readiness and evidence ownership', signals=[('Evidence ownership','Active','Board confidence requires named evidence owners, not generic mitigation text.'),('Procurement certainty','Active','Long-lead packages and commercial exposure drive P80/P90 movement.'),('Interface control','Watch','Third-party interfaces and integration gates create schedule tails.'),('Commissioning readiness','Watch','Operational readiness is a governance signal, not late administration.')], bench=[('Capital Infrastructure Programme','$500M–$15B','30-120'),('Complex Systems Integration Programme','$300M–$10B','24-96'),('Major Public / Private Capital Programme','$1B–$25B','48-144')], chain=['Scope definition','Procurement evidence','Interface control','Commissioning readiness','Owner evidence','Reserve logic','Confidence'], confidence=['Benchmark similarity: capital infrastructure archetype','Scope maturity: requirements and package definition','Procurement certainty: long-lead and market capacity','Schedule maturity: critical path and commissioning logic','Interface exposure: utilities, stakeholders and operations'], cost=['Core asset and enabling works','Specialist systems and long-lead packages','Interfaces, utilities and third-party works','Programme management and assurance','Risk reserve and contingency'], schedule=['Scope freeze and approvals','Long-lead procurement','Interface and utility readiness','Commissioning and operational readiness','Owner evidence and board acceptance'])
+    # Institutional authority layer: same structure, stronger phrasing.
+    L = dict(L)
+    L['challenge_line'] = f"The programme narrative is only defensible if {L['constraints']} are evidenced by named owners before approval."
+    L['interventions'] = [
+        f"Name the accountable owner and evidence source for {L['constraints']}.",
+        "Separate true risk reduction from risk transfer into operations, reserve or P90 exposure.",
+        "Reconcile the P50 approval story with P80/P90 downside before board commitment.",
+        "Retire the governing constraint before buying acceleration or declaring savings."
+    ]
+    L['behavioural_forecast'] = f"Comparable {L['label']} programmes with weak evidence around {L['constraints']} typically lose confidence during integration, commissioning or approval windows rather than during visible construction progress."
+    return L
+
+def _v132_forbidden(key):
+    terms = set(_v130_forbidden(key) if '_v130_forbidden' in globals() else [])
+    # Hard guardrails for observed leaks. These are allowed only in their native sector.
+    if key != 'data_centre': terms.update(['liquid cooling','Liquid cooling','white space','white-space','data hall','IST congestion','GPU','hyperscale'])
+    if key != 'airport': terms.update(['ORAT','orat','baggage','Baggage','airside','Airside','landside','passenger systems'])
+    if key != 'rail': terms.update(['rolling stock','Rolling stock','signalling','Signalling','signaling','possessions','Possessions','timetable'])
+    if key != 'space': terms.update(['launch reliability','launch cadence','payload integration','range availability','thermal-power balance','mission assurance','orbital recovery','Launch reliability','Mission assurance'])
+    if key != 'defence': terms.update(['classified','authority to operate','secure comms'])
+    if key != 'oil_gas': terms.update(['HAZOP','HAZID','hydrocarbon','FPSO','LNG','shutdown window'])
+    if key != 'semiconductor': terms.update(['lithography','yield ramp','UPW','wafer','EUV'])
+    if key != 'life_sciences': terms.update(['CQV','GMP','media fill','fill-finish','FDA','EMA'])
+    if key != 'nuclear': terms.update(['nuclear island','containment','safety case'])
+    return list(terms)
+
+def _v132_rows(L, m):
+    # Reuse V130 row builder where available and add owner/status/challenge columns.
+    try:
+        cost, sched, risks = _v130_rows(L, m)
+    except Exception:
+        cost, sched, risks = _v125_sector_rows(L, m) if '_v125_sector_rows' in globals() else ([], [], [])
+    for i, r in enumerate(risks):
+        if isinstance(r, dict):
+            r.setdefault('owner', 'Sector Integration Lead' if i else 'Programme Director')
+            r.setdefault('status', 'Open' if i < 3 else 'Mitigating')
+            r.setdefault('mitigation_owner', r.get('owner'))
+            r.setdefault('mitigation_status', r.get('status'))
+            r.setdefault('challenge', 'Board should require named owner evidence and a dated mitigation proof point.')
+            r.setdefault('residual_status', 'Challenge until evidence improves' if i < 3 else 'Monitor')
+    return cost, sched, risks
+
+def _v132_apply(model, prompt='', client=''):
+    key = _v132_sector_key(prompt, client, model)
+    L = _v132_library(key)
+    m = dict(model or {})
+    scenario = str(m.get('scenario_label') or m.get('scenario') or 'Base').title()
+    m['app_version'] = 'CASEY V132 Institutional Authority Final'
+    m['sector_ontology_key'] = key
+    m['sector_ontology_label'] = L['label']
+    m['subsector'] = L['label']
+    m['sector_constraints'] = L['constraints']
+    m['executive_shock_insight'] = L['shock']
+    m['institutional_authority_line'] = L['challenge_line']
+    m['executive_summary'] = f"{L['label']} · {scenario}: {m.get('cost_p50')} P50, {m.get('cost_range')} range, {m.get('schedule')} baseline and {m.get('confidence_pct')}% confidence. {L['shock']}"
+    m['board_briefing'] = [
+        L['shock'],
+        L['challenge_line'],
+        f"P50 reconciles to {m.get('cost_p50')}; P80/P90 remain the board contingency and stress conversation.",
+        "The case should not be approved until the governing constraint is evidenced, owner-named and traceable to cost, schedule and risk outputs."
+    ]
+    m['casey_thinking'] = f"CASEY has locked this run to {L['label']} and is challenging the programme narrative against {L['constraints']}. It is not accepting progress optics; it is testing whether the decision is board-defensible."
+    m['confidence_explanation'] = f"{m.get('confidence_pct')}% is a board-defensibility score, not optimism. It is constrained by {L['constraints']}."
+    m['confidence_engine_detail'] = {
+        'decision_rule':'Do not treat this as approval evidence until owner actions, evidence source, residual exposure and P80/P90 movement are reconciled.',
+        'primary_constraint':L['constraints'],
+        'plain_english':'CASEY scores whether the board can defend the decision, not whether the team feels confident.'
+    }
+    m['board_challenge_questions'] = [
+        'Which named owner can evidence the governing constraint?',
+        f"What proof closes the gap around {L['constraints']}?",
+        'What second-order risk does the preferred scenario create?',
+        'Which mitigation changes confidence rather than just narrative?',
+        'What would invalidate this case before approval?',
+        'Where is the programme buying schedule, savings or assurance — and what is being sacrificed?'
+    ]
+    m['second_order_contradictions'] = [
+        f"The case can look stable while {L['constraints']} remain unevidenced.",
+        "Acceleration may shorten the visible plan while increasing interface, assurance and commissioning fragility.",
+        "Savings may be risk transfer into P80/P90 exposure, operations or recovery reserve rather than true cost removal.",
+        "Higher confidence must come from evidence closure, not from a smoother executive narrative.",
+        "The programme may be reporting progress in the workface while losing confidence in the governing constraint."
+    ]
+    m['governance_challenges'] = L['interventions']
+    m['behavioural_forecast'] = L['behavioural_forecast']
+    m['intervention_intelligence'] = L['interventions']
+    m['sector_confidence_drivers'] = L['confidence']
+    m['sector_primary_cost_drivers'] = L['cost']
+    m['sector_schedule_threats'] = L['schedule']
+    m['causal_graph_nodes'] = L['chain']
+    m['causal_chain'] = L['chain']
+    m['benchmark_comparison'] = [{'sector':a,'archetype':a,'anchor_cost':c,'anchor_duration_months':d,'similarity_score':max(6,10-i),'use':'Sector-locked benchmark cohort; no cross-sector borrowing unless delivery mechanics match.'} for i,(a,c,d) in enumerate(L['bench'][:4])]
+    m['benchmark_memory'] = m['benchmark_comparison']; m['benchmarks'] = m['benchmark_comparison']; m['peer_competitors'] = m['benchmark_comparison']
+    m['why_casey_generated_this'] = [
+        f"CASEY detected {L['label']} and locked the ontology before output generation.",
+        f"Sector behaviours applied: {', '.join(L['chain'][:5])}.",
+        "Benchmark cohort, causal chain, confidence drivers, risks and exports were constrained to this sector.",
+        "The output is intentionally challenge-oriented: board defensibility over optimism."
+    ]
+    sigs=[{'signal':s,'status':st,'direction':'confidence / reserve / P-tail','weight':0.13,'applies_to':'board pack, workbook, risk register, XER, QCRA/QSRA','basis':basis} for s,st,basis in L['signals']]
+    m['live_calibration_signals']=sigs; m['live_calibration_strip']=' • '.join(x['signal'] for x in sigs[:4])
+    m['mission_control_cards']=[{'label':'Live calibration','signal':'Sector conditions are being converted into confidence, contingency and delivery-tail exposure.','severity':'Active'}]+[{'label':s,'signal':basis,'severity':st} for s,st,basis in L['signals']]
+    m['mission_control_cards']=m['mission_control_cards'][:6]
+    m['uncertainty_narrative']={'estimate_maturity':'Class 3 is usable for budget authorisation only if the evidence gaps are explicit.','schedule_maturity':'Schedule Level 4 improves logic, but board confidence is still governed by near-critical density and owner evidence.','interpretation':f"Live calibration is weighting {L['constraints']} into the QSRA/QCRA tail. {L['behavioural_forecast']}"}
+    cost, sched, risks = _v132_rows(L, m)
+    m['cost_lines']=cost; m['schedule_rows']=sched; m['risk_register']=risks; m['risks']=risks
+    m['cost_breakdown']=cost; m['estimates_by_class']={str(i):cost for i in range(1,6)}; m['schedules_by_level']={str(i):sched for i in range(1,6)}
+    m['procurement_heatmap']=[{'package':x,'status':'Active' if i<3 else 'Watch','risk':'Sector-native procurement exposure','owner':'Commercial Lead'} for i,x in enumerate(L['cost'][:5])]
+    m['critical_path_narrative']=[f"{x} is near-critical in the {L['label']} sector graph and must be evidenced before approval." for x in L['schedule'][:5]]
+    m['red_flags']=[f"Unevidenced confidence around {L['constraints']}.", "Scenario benefit may be risk transfer rather than risk reduction.", "Board pack should name owner, evidence source and date for each governing constraint."]
+    m['near_critical_narrative'] = f"Near-critical density should be interpreted through {L['constraints']}; the headline critical path is not the only board risk."
+    forbidden = _v132_forbidden(key)
+    if '_v124_scrub_value' in globals():
+        for k in list(m.keys()):
+            if k not in {'prompt','client','title','id'}:
+                m[k] = _v124_scrub_value(m[k], forbidden)
+    # Restore native arrays and authority fields after scrub.
+    m['sector_ontology_key']=key; m['sector_ontology_label']=L['label']; m['subsector']=L['label']; m['sector_constraints']=L['constraints']
+    m['sector_confidence_drivers']=L['confidence']; m['sector_primary_cost_drivers']=L['cost']; m['sector_schedule_threats']=L['schedule']; m['causal_graph_nodes']=L['chain']; m['causal_chain']=L['chain']
+    m['sector_signature_behaviours']=L['chain'][:5]
+    m['schedule_detail']=sched
+    m['all_schedule_levels']={str(i):sched for i in range(1,6)}
+    m['cost_detail']=cost
+    m['risk_detail']=risks
+    m['governance_challenges']=L['interventions']; m['intervention_intelligence']=L['interventions']; m['behavioural_forecast']=L['behavioural_forecast']
+    return m
+
+_CASEY_V132_BASE_BUILD_MODEL = _CASEY_V130_PREV_BUILD_MODEL if '_CASEY_V130_PREV_BUILD_MODEL' in globals() else build_model
+
+def build_model(prompt:str, client:str='', class_level:int=3, schedule_level:int=3, scenario:str='base'):
+    return _v132_apply(_CASEY_V132_BASE_BUILD_MODEL(prompt, client, class_level, schedule_level, scenario), prompt, client)
+
+APP_VERSION='CASEY V132 Institutional Authority Final'
+print('CASEY V132 institutional authority final installed')
+# ================= END CASEY V132 INSTITUTIONAL AUTHORITY LOCK =================

@@ -1,0 +1,32 @@
+{
+  "AI_Hyperscale": [
+    "grid energisation",
+    "liquid cooling",
+    "commissioning concurrency"
+  ],
+  "Airport_Aviation": [
+    "ORAT",
+    "baggage integration",
+    "airside phasing"
+  ],
+  "Rail_Transit": [
+    "possessions",
+    "signalling",
+    "migration sequencing"
+  ],
+  "Oil_Gas": [
+    "shutdown windows",
+    "process safety",
+    "offshore logistics"
+  ],
+  "Defence_Space": [
+    "mission assurance",
+    "launch readiness",
+    "payload integration"
+  ],
+  "Healthcare": [
+    "clinical commissioning",
+    "phased occupancy",
+    "infection control"
+  ]
+}
