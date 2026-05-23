@@ -2001,3 +2001,513 @@ body{overflow-x:hidden!important;}
   .v50BottomBar button{display:flex!important;justify-content:center!important;}
   .v50TakeoverHero:after{display:none!important;}
 }
+
+
+/* CASEY public one-shot demo gate */
+.publicDemoOverlay{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.72);backdrop-filter:blur(18px);display:grid;place-items:center;padding:24px}
+.publicDemoModal{position:relative;width:min(980px,96vw);max-height:92vh;overflow:auto;border:1px solid rgba(141,247,255,.34);background:linear-gradient(180deg,rgba(4,12,24,.96),rgba(2,5,10,.98));box-shadow:0 40px 160px rgba(0,0,0,.65),0 0 90px rgba(141,247,255,.13);padding:34px;clip-path:polygon(22px 0,100% 0,100% calc(100% - 22px),calc(100% - 22px) 100%,0 100%,0 22px)}
+.publicDemoClose{position:absolute;right:18px;top:16px;width:38px;height:38px;border:1px solid rgba(255,255,255,.22);background:#07111f;color:#fff;font-size:26px;line-height:1}
+.demoKicker{margin:0 0 8px;color:#8df7ff;text-transform:uppercase;letter-spacing:.22em;font-size:12px;font-weight:900}.publicDemoModal h2{font-size:clamp(32px,5vw,62px);line-height:.92;margin:0 0 12px;text-transform:uppercase;letter-spacing:-.045em}.demoSub{color:#cbd8e8;font-size:17px;max-width:760px}.publicDemoGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:22px 0}.publicDemoGrid label,.projectBriefLabel{display:grid;gap:8px;color:#8df7ff;text-transform:uppercase;letter-spacing:.12em;font-size:11px;font-weight:900}.publicDemoGrid input,.publicDemoGrid select,.projectBriefLabel textarea{width:100%;border:1px solid rgba(255,255,255,.18);background:#07111f;color:#fff;padding:13px 14px;outline:none;border-radius:0}.projectBriefLabel textarea{min-height:132px;resize:vertical;font-size:15px;line-height:1.45;text-transform:none;letter-spacing:0}.publicDemoActions{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:20px}.publicDemoError{margin-top:14px;border:1px solid rgba(255,106,138,.5);background:rgba(72,10,28,.5);color:#ffd7df;padding:14px}.publicDemoSuccess{margin-top:14px;border:1px solid rgba(141,247,255,.45);background:rgba(20,80,95,.28);color:#fff;padding:14px;display:grid;gap:4px}.demoFinePrint{font-size:12px;color:#91a4b9;margin-top:14px}.tryTopBtn{background:linear-gradient(90deg,#f7fbff,#8df7ff)!important;color:#02050a!important}
+@media(max-width:760px){.publicDemoGrid{grid-template-columns:1fr}.publicDemoModal{padding:24px}}
+
+
+/* CASEY mission-control one-shot access modal */
+.missionAccessOverlay{
+  background:
+    radial-gradient(circle at 50% 20%, rgba(141,247,255,.13), transparent 38%),
+    radial-gradient(circle at 80% 0%, rgba(255,222,137,.08), transparent 34%),
+    rgba(0,0,0,.78)!important;
+  backdrop-filter:blur(22px)!important;
+}
+.missionAccessModal{
+  width:min(1020px,96vw)!important;
+  border:1px solid rgba(141,247,255,.42)!important;
+  background:
+    linear-gradient(180deg, rgba(6,18,32,.97), rgba(1,5,10,.985)),
+    repeating-linear-gradient(0deg, rgba(141,247,255,.035) 0 1px, transparent 1px 14px)!important;
+  box-shadow:
+    0 42px 170px rgba(0,0,0,.78),
+    0 0 0 1px rgba(255,255,255,.04) inset,
+    0 0 120px rgba(141,247,255,.12)!important;
+}
+.missionAccessHeader{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:24px;
+  align-items:start;
+}
+.missionAccessHeader h2{
+  max-width:760px;
+}
+.missionAccessBadge{
+  min-width:150px;
+  border:1px solid rgba(141,247,255,.35);
+  background:linear-gradient(180deg,rgba(141,247,255,.10),rgba(141,247,255,.025));
+  padding:14px 16px;
+  text-align:right;
+  clip-path:polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px);
+}
+.missionAccessBadge span{
+  display:block;
+  color:#8df7ff;
+  font-size:10px;
+  letter-spacing:.22em;
+  font-weight:1000;
+}
+.missionAccessBadge b{
+  display:block;
+  margin-top:6px;
+  color:#fff;
+  font-size:13px;
+  letter-spacing:.12em;
+}
+.missionSteps{
+  margin:22px 0 24px;
+  display:grid;
+  grid-template-columns:auto 1fr auto 1fr auto;
+  align-items:center;
+  gap:10px;
+  color:#6f859d;
+  text-transform:uppercase;
+  letter-spacing:.18em;
+  font-size:10px;
+  font-weight:1000;
+}
+.missionSteps i{
+  display:block;
+  height:1px;
+  background:linear-gradient(90deg,rgba(141,247,255,.45),rgba(141,247,255,.06));
+}
+.missionSteps span.active{color:#8df7ff}
+.missionTwoCol{
+  display:grid;
+  grid-template-columns:1fr 260px;
+  gap:14px;
+  margin:20px 0;
+}
+.missionTwoCol label,
+.missionGrid label,
+.missionBrief{
+  display:grid;
+  gap:8px;
+  color:#8df7ff;
+  text-transform:uppercase;
+  letter-spacing:.14em;
+  font-size:11px;
+  font-weight:1000;
+}
+.missionTwoCol input,
+.missionTwoCol select,
+.missionGrid input,
+.missionGrid select,
+.missionBrief textarea{
+  width:100%;
+  border:1px solid rgba(141,247,255,.22);
+  background:linear-gradient(180deg,rgba(4,14,26,.94),rgba(2,7,14,.96));
+  color:#fff;
+  padding:14px 15px;
+  outline:none;
+  border-radius:0;
+  box-shadow:0 0 0 1px rgba(255,255,255,.025) inset;
+}
+.missionTwoCol input:focus,
+.missionTwoCol select:focus,
+.missionGrid input:focus,
+.missionGrid select:focus,
+.missionBrief textarea:focus{
+  border-color:rgba(141,247,255,.65);
+  box-shadow:0 0 24px rgba(141,247,255,.10);
+}
+.missionAccessPanel{
+  display:flex;
+  gap:12px;
+  align-items:flex-start;
+  border:1px solid rgba(255,222,137,.26);
+  background:rgba(255,222,137,.055);
+  padding:14px 16px;
+  color:#d7e5f5;
+  font-size:13px;
+  line-height:1.45;
+}
+.missionAccessPanel svg{color:#ffde89;flex:0 0 auto;margin-top:1px}
+.missionGrid{
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+}
+.missionBrief textarea{
+  min-height:170px!important;
+  font-size:15.5px!important;
+  line-height:1.52!important;
+  text-transform:none!important;
+  letter-spacing:0!important;
+}
+.briefQualityBar{
+  margin-top:12px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+.briefQualityBar span{
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(255,255,255,.035);
+  color:#7f93a9;
+  padding:8px 10px;
+  font-size:10px;
+  font-weight:1000;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+}
+.briefQualityBar span.ok{
+  border-color:rgba(141,247,255,.45);
+  color:#8df7ff;
+  background:rgba(141,247,255,.07);
+}
+.missionProcessing{
+  margin-top:14px;
+  display:flex;
+  gap:12px;
+  align-items:center;
+  border:1px solid rgba(141,247,255,.34);
+  background:rgba(141,247,255,.07);
+  padding:14px;
+}
+.missionProcessing svg{color:#8df7ff}
+.missionProcessing b{display:block;color:#fff;text-transform:uppercase;letter-spacing:.1em;font-size:12px}
+.missionProcessing span{display:block;color:#9fb4c9;font-size:12px;margin-top:3px}
+.missionAccessModal .heroBtn{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+}
+@media(max-width:760px){
+  .missionAccessHeader{grid-template-columns:1fr}
+  .missionAccessBadge{text-align:left}
+  .missionSteps{grid-template-columns:1fr;gap:8px}
+  .missionSteps i{display:none}
+  .missionTwoCol,.missionGrid{grid-template-columns:1fr!important}
+}
+
+/* CASEY wow intelligence layer */
+.missionCardGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}
+.intelCard{border:1px solid rgba(141,247,255,.28);background:linear-gradient(180deg,rgba(141,247,255,.075),rgba(3,10,18,.68));padding:14px;clip-path:polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px)}
+.intelCard b{display:block;color:#8df7ff;text-transform:uppercase;letter-spacing:.16em;font-size:10px;margin-bottom:8px}
+.intelCard p{color:#d9e7f5;margin:0 0 10px;line-height:1.42}
+.intelCard span{display:inline-block;border:1px solid rgba(255,222,137,.35);color:#ffde89;background:rgba(255,222,137,.08);padding:4px 8px;font-size:10px;text-transform:uppercase;letter-spacing:.12em}
+.caseyThinking{border-left:2px solid #8df7ff;padding-left:14px;color:#eaf7ff;font-size:16px;line-height:1.52}
+@media(max-width:760px){.missionCardGrid{grid-template-columns:1fr}}
+
+
+/* FIX: public demo modal inputs/selects visibility + browser dropdown issue */
+.publicDemoModal,
+.missionAccessModal{
+  overflow: visible !important;
+}
+
+.publicDemoModal input,
+.publicDemoModal textarea,
+.publicDemoModal select,
+.missionAccessModal input,
+.missionAccessModal textarea,
+.missionAccessModal select{
+  position: relative !important;
+  z-index: 5 !important;
+  pointer-events: auto !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  color: #ffffff !important;
+  caret-color: #8df7ff !important;
+  background: #06111f !important;
+  border: 1px solid rgba(141,247,255,.38) !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+.publicDemoModal textarea,
+.missionAccessModal textarea{
+  min-height: 170px !important;
+  resize: vertical !important;
+}
+
+.publicDemoModal input::placeholder,
+.publicDemoModal textarea::placeholder,
+.missionAccessModal input::placeholder,
+.missionAccessModal textarea::placeholder{
+  color: rgba(210,230,245,.45) !important;
+}
+
+.publicDemoModal select,
+.missionAccessModal select{
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  cursor: pointer !important;
+  padding-right: 42px !important;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #8df7ff 50%),
+    linear-gradient(135deg, #8df7ff 50%, transparent 50%) !important;
+  background-position:
+    calc(100% - 18px) 50%,
+    calc(100% - 12px) 50% !important;
+  background-size: 6px 6px, 6px 6px !important;
+  background-repeat: no-repeat !important;
+}
+
+.publicDemoModal select option,
+.missionAccessModal select option{
+  background: #06111f !important;
+  color: #ffffff !important;
+}
+
+.missionGrid,
+.publicDemoGrid{
+  position: relative !important;
+  z-index: 10 !important;
+}
+
+.missionBrief,
+.projectBriefLabel{
+  position: relative !important;
+  z-index: 8 !important;
+}
+
+.briefQualityBar,
+.publicDemoActions{
+  position: relative !important;
+  z-index: 12 !important;
+}
+
+.missionAccessHeader,
+.missionSteps{
+  position: relative !important;
+  z-index: 20 !important;
+}
+
+/* Prevent native select list from sitting as a giant white visual block in some Windows browsers */
+select:focus{
+  outline: 1px solid rgba(141,247,255,.85) !important;
+  box-shadow: 0 0 0 3px rgba(141,247,255,.12) !important;
+}
+
+/* SIMPLE BOOM PUBLIC DEMO */
+.boomDemoOverlay{background:radial-gradient(circle at 50% 15%,rgba(141,247,255,.14),transparent 36%),radial-gradient(circle at 80% 0%,rgba(255,222,137,.08),transparent 32%),rgba(0,0,0,.80)!important;backdrop-filter:blur(24px)!important}
+.boomDemoModal{width:min(980px,96vw)!important;max-height:92vh!important;overflow:auto!important;border:1px solid rgba(141,247,255,.44)!important;background:linear-gradient(180deg,rgba(5,17,31,.985),rgba(1,5,10,.99)),repeating-linear-gradient(0deg,rgba(141,247,255,.03) 0 1px,transparent 1px 16px)!important;box-shadow:0 45px 180px rgba(0,0,0,.78),0 0 120px rgba(141,247,255,.12)!important}
+.boomHeader h2{font-size:clamp(42px,7vw,82px)!important;line-height:.86!important;letter-spacing:-.055em!important;margin:0 0 12px!important}
+.boomEmail{display:grid;gap:8px;color:#8df7ff;text-transform:uppercase;letter-spacing:.14em;font-size:11px;font-weight:1000;margin:22px 0 14px}
+.boomEmail input,.boomBrief textarea{width:100%!important;border:1px solid rgba(141,247,255,.38)!important;background:#06111f!important;color:#fff!important;-webkit-text-fill-color:#fff!important;caret-color:#8df7ff!important;padding:15px 16px!important;outline:none!important;box-shadow:0 0 0 1px rgba(255,255,255,.025) inset!important}
+.boomBrief textarea{min-height:260px!important;font-size:16px!important;line-height:1.55!important;resize:vertical!important;text-transform:none!important;letter-spacing:0!important}
+.boomEmail input:focus,.boomBrief textarea:focus{border-color:rgba(141,247,255,.75)!important;box-shadow:0 0 34px rgba(141,247,255,.13)!important}
+.boomEmail input::placeholder,.boomBrief textarea::placeholder{color:rgba(210,230,245,.48)!important;-webkit-text-fill-color:rgba(210,230,245,.48)!important}
+.boomQuality{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 4px}.boomQuality span{border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.035);color:#8da0b5;padding:8px 10px;font-size:10px;font-weight:1000;letter-spacing:.14em;text-transform:uppercase}.boomQuality span.ok{border-color:rgba(141,247,255,.45);color:#8df7ff;background:rgba(141,247,255,.075)}
+.boomActions .heroBtn{font-size:14px!important;letter-spacing:.12em!important;text-transform:uppercase!important}
+@media(max-width:760px){.boomDemoModal{padding:24px!important}.boomBrief textarea{min-height:220px!important}}
+
+/* Public demo locked enterprise outputs */
+.lockedExports button{position:relative}
+.lockedExports button:after{content:'ENTERPRISE';position:absolute;right:10px;top:8px;font-size:8px;letter-spacing:.12em;color:#ffde89;border:1px solid rgba(255,222,137,.35);padding:2px 5px;background:rgba(255,222,137,.08)}
+
+.publicDemoHint{margin:12px 0;padding:13px 16px;border:1px solid rgba(141,247,255,.28);background:rgba(141,247,255,.07);color:#dffcff;font-size:13px;line-height:1.45}
+
+.confidenceEngineBadge{display:flex;gap:14px;align-items:center;justify-content:flex-end;margin:14px 0 10px;color:#dffcff;text-transform:uppercase;letter-spacing:.14em;font-size:11px}
+.confidenceEngineBadge b{border:1px solid rgba(141,247,255,.35);background:rgba(141,247,255,.08);padding:9px 12px;color:#8df7ff}
+.confidenceEngineBadge span{opacity:.72}
+.shockCard{border-color:rgba(255,222,137,.45)!important;background:linear-gradient(135deg,rgba(255,222,137,.08),rgba(141,247,255,.04))!important}
+.shockCard h2{color:#ffde89}
+.shockCard p{font-size:18px;line-height:1.45;color:#fff;font-weight:700}
+
+.deltaGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media(max-width:900px){.deltaGrid{grid-template-columns:1fr}}
+
+.curveMeaning{color:#ffde89;font-size:13px;line-height:1.4;margin-top:-4px;margin-bottom:14px}
+.deltaReason{border-left:2px solid rgba(255,222,137,.6)}
+.shockCard .reason b{color:#ffde89}
+
+
+.riskHigh{color:#ff6b6b!important}
+.riskMedium{color:#ffd166!important}
+.riskLow{color:#8df7ff!important}
+
+/* ===== V103 EXEC DEMO POLISH: scenario-first decision support ===== */
+.scenarioRail{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:10px 0 14px}
+.scenarioRail button{background:linear-gradient(180deg,#07111fe8,#030813ee);border:1px solid #ffffff24;color:#eff9ff;padding:14px 14px;text-align:left;min-height:92px;box-shadow:inset 0 1px 0 #ffffff10,0 18px 50px #0006}
+.scenarioRail button.active{background:linear-gradient(135deg,#effcff,#8df7ff)!important;color:#02050a!important;box-shadow:0 0 45px #8df7ff33}
+.scenarioRail b{display:block;font-size:14px;letter-spacing:.13em;text-transform:uppercase;margin-bottom:7px}.scenarioRail span{display:block;font-size:13px;letter-spacing:0;color:inherit;opacity:.92}.scenarioRail em{display:inline-block;margin-top:8px;font-style:normal;font-size:11px;letter-spacing:.11em;text-transform:uppercase;opacity:.78}
+.exportRail{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 16px}.exportRail button{border:1px solid #8df7ff44;background:#07111fcc;color:#eff9ff;padding:10px 13px;display:inline-flex;align-items:center;gap:8px;box-shadow:0 0 24px #8df7ff12}.exportRail button:hover{background:#8df7ff;color:#02050a}
+.intelligenceLoading span{color:#8df7ff;font-weight:800;margin-top:8px}.intelligenceLoading small{color:#aab8c8;margin-top:6px}
+.v50Kpi.riskLow b{color:#8df7ff!important}.v50Kpi.riskMedium b{color:#ffd166!important}.v50Kpi.riskHigh b{color:#ff6b6b!important}
+.recharts-line-curve,.recharts-area-curve{filter:drop-shadow(0 0 7px rgba(141,247,255,.28))}.recharts-cartesian-axis-line,.recharts-cartesian-axis-tick-line{stroke:#ffffff55!important}.recharts-reference-line-line{stroke-width:2!important}
+.scenarioCompare.upgraded{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}.scenarioCompare.upgraded button{min-height:132px;text-align:left}.scenarioCompare.upgraded strong{display:block;margin:8px 0;color:#8df7ff}.scenarioCompare.upgraded .active strong{color:#02050a}.scenarioCompare.upgraded em{font-style:normal;font-size:11px;opacity:.75;text-transform:uppercase;letter-spacing:.12em}.card{animation:caseyCardIn .35s ease both}@keyframes caseyCardIn{from{opacity:.75;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:1000px){.scenarioRail{grid-template-columns:1fr 1fr}.exportRail button{flex:1}.scenarioRail button{min-height:76px}}
+
+/* CASEY V104 restored graph + scenario polish */
+.scenarioRail{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:16px 0 18px}
+.scenarioRail button{border:1px solid rgba(141,247,255,.24);background:rgba(255,255,255,.035);color:#dffcff;border-radius:18px;padding:13px;text-align:left;cursor:pointer;transition:.18s ease}
+.scenarioRail button:hover,.scenarioRail button.active{transform:translateY(-1px);border-color:rgba(141,247,255,.75);background:rgba(141,247,255,.11);box-shadow:0 0 22px rgba(141,247,255,.10)}
+.scenarioRail b{display:block;color:#fff;font-size:13px;text-transform:uppercase;letter-spacing:.08em}
+.scenarioRail span{display:block;font-size:12px;opacity:.72;margin-top:4px}
+.scenarioRail em{display:block;font-size:11px;color:#ffde89;margin-top:7px;font-style:normal}
+.exportRail{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0 18px}
+.exportRail button{border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:#fff;border-radius:14px;padding:10px 12px;display:flex;gap:8px;align-items:center}
+.chartCaption{color:rgba(223,252,255,.72);line-height:1.45}
+.deltaReason{border-left:2px solid rgba(255,222,137,.65)}
+.shockCard{border-color:rgba(255,222,137,.42)!important;background:linear-gradient(135deg,rgba(255,222,137,.08),rgba(141,247,255,.04))!important}
+@media(max-width:1000px){.scenarioRail{grid-template-columns:1fr 1fr}.exportRail{display:grid}}
+
+
+/* FINAL EXEC POLISH */
+.active,.scenarioGrid button.active,.scenarioMatrix button.active{
+  background:#a8f7ff !important;
+  color:#02050a !important;
+  box-shadow:0 0 28px rgba(168,247,255,.25);
+}
+.active b,.active span,.active em{
+  color:#02050a !important;
+}
+.scenarioGrid button,.scenarioMatrix button,.card,.v50Kpi{
+  transition:all .28s ease;
+}
+.scenarioGrid button:hover,.scenarioMatrix button:hover{
+  transform:translateY(-2px);
+  box-shadow:0 10px 30px rgba(124,247,255,.12);
+}
+.recharts-cartesian-axis-line,.recharts-cartesian-grid line{
+  stroke-width:1.5;
+}
+.recharts-line-curve,.recharts-area-area{
+  filter:drop-shadow(0 0 6px rgba(168,247,255,.25));
+}
+
+
+/* V106 final demo polish: selected scenario cards must read black on cyan */
+.scenarioRail button.active, .scenarioCompare button.active { color:#02050a !important; }
+.scenarioRail button.active b, .scenarioRail button.active span, .scenarioRail button.active em,
+.scenarioCompare button.active b, .scenarioCompare button.active strong, .scenarioCompare button.active span, .scenarioCompare button.active em { color:#02050a !important; text-shadow:none !important; }
+.exportRail button{white-space:nowrap}
+
+
+/* V107: selected top scenario cards must read as black text on cyan for demo clarity */
+.scenarioRail button.active,
+.scenarioRail button.active b,
+.scenarioRail button.active span,
+.scenarioRail button.active em,
+.scenarioCompare button.active,
+.scenarioCompare button.active b,
+.scenarioCompare button.active strong,
+.scenarioCompare button.active span,
+.scenarioCompare button.active em {
+  color:#02050a !important;
+  text-shadow:none !important;
+}
+.scenarioRail button.active { background:linear-gradient(135deg,#effcff,#8df7ff)!important; }
+
+/* CASEY V113 elite board interpretation layer */
+.confidenceMeaningCard h3{font-size:28px;margin:4px 0 12px;color:#8df7ff;text-transform:uppercase;letter-spacing:.04em}.finalPosition{font-weight:800;border-left:3px solid #8df7ff;padding-left:16px}.eliteLayer .card{background:linear-gradient(135deg,rgba(9,22,39,.98),rgba(6,15,28,.98))}.triLens{display:grid;grid-template-columns:110px 1fr;gap:8px 12px;margin-top:16px}.triLens b{color:#ffd166;text-transform:uppercase;letter-spacing:.08em}.triLens span{display:block;background:#07111f;border:1px solid #203040;padding:9px 11px;margin-bottom:6px}.triLens.full{grid-template-columns:130px 1fr}.scenarioRail button.active b,.scenarioCompare button.active b{color:#02050a!important}.scenarioRail button.active span,.scenarioCompare button.active strong,.scenarioCompare button.active span,.scenarioRail button.active em{color:#07111f!important}.riskHigh b,.riskHigh .lucide{color:#ff5c7a}.riskMedium b,.riskMedium .lucide{color:#ffd166}.riskLow b,.riskLow .lucide{color:#7cffb2}.confidenceEngineBadge b:after{content:' · Confidence = board-defensibility, not generic optimism';font-weight:600;color:#ffd166;margin-left:10px}.chartCaption strong,.reason b{letter-spacing:.01em}.caseyThinking{line-height:1.55}
+
+/* V117 EARTH + SPACE 10/10 UPGRADE LAYER */
+.v50EliteApp:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background:radial-gradient(circle at 18% 12%,rgba(141,247,255,.10),transparent 32%),radial-gradient(circle at 86% 22%,rgba(177,140,255,.12),transparent 34%),linear-gradient(120deg,transparent,rgba(255,217,106,.03),transparent);animation:caseyOrbit 18s ease-in-out infinite alternate}.v50EliteApp:after{content:"";position:fixed;inset:0;pointer-events:none;z-index:1;background:repeating-linear-gradient(0deg,rgba(141,247,255,.018) 0 1px,transparent 1px 7px);mix-blend-mode:screen;opacity:.5}@keyframes caseyOrbit{from{filter:hue-rotate(0deg);transform:scale(1)}to{filter:hue-rotate(12deg);transform:scale(1.04)}}
+.orbitalMetaRail{display:grid;grid-template-columns:repeat(5,minmax(135px,1fr)) 1.8fr;gap:10px;margin:14px 0 16px;position:relative;z-index:2}.orbitalMetaRail>div{border:1px solid rgba(141,247,255,.22);background:linear-gradient(180deg,rgba(12,28,45,.86),rgba(4,12,24,.88));border-radius:14px;padding:10px 12px;box-shadow:0 0 30px rgba(141,247,255,.04)}.orbitalMetaRail b{display:block;color:#ffd96a;font-size:11px;text-transform:uppercase;letter-spacing:.12em}.orbitalMetaRail span{display:block;color:#d7efff;font-size:12px;margin-top:4px}.modeSwitch{display:flex!important;gap:6px;align-items:center;justify-content:flex-end}.modeSwitch button{border:1px solid rgba(141,247,255,.25);background:#071423;color:#9edfec;border-radius:999px;padding:7px 10px;font-weight:800;text-transform:uppercase;font-size:10px;letter-spacing:.08em}.modeSwitch button.active{background:#8df7ff;color:#031019;box-shadow:0 0 24px rgba(141,247,255,.32)}
+.propagationPulse{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:0 0 14px;position:sticky;top:86px;z-index:10}.propagationPulse div{display:flex;align-items:center;gap:9px;padding:11px 12px;border:1px solid rgba(255,217,106,.36);background:linear-gradient(120deg,rgba(255,217,106,.16),rgba(141,247,255,.08));border-radius:12px;color:#fff;font-weight:900;text-transform:uppercase;font-size:11px;letter-spacing:.08em;box-shadow:0 0 28px rgba(255,217,106,.11)}.propagationPulse span{display:grid;place-items:center;width:21px;height:21px;border-radius:50%;background:#8df7ff;color:#06101d}.propagationPulse em{margin-left:auto;color:#ffd96a;font-style:normal;font-size:10px}
+.benchmark2,.causalGraphCard,.boardPressure{overflow:hidden;position:relative}.benchmark2:before,.causalGraphCard:before,.boardPressure:before{content:"";position:absolute;inset:-1px;background:linear-gradient(135deg,rgba(141,247,255,.12),transparent 38%,rgba(255,217,106,.08));pointer-events:none}.benchmarkField{height:315px;border:1px solid rgba(141,247,255,.25);border-radius:24px;position:relative;overflow:hidden;background:radial-gradient(circle at 65% 42%,rgba(141,247,255,.15),transparent 28%),linear-gradient(180deg,#061522,#0b1a29)}.benchmarkField:before{content:"";position:absolute;inset:26px;border-left:1px solid rgba(255,255,255,.3);border-bottom:1px solid rgba(255,255,255,.3);background-image:linear-gradient(rgba(255,255,255,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.07) 1px,transparent 1px);background-size:52px 42px}.density{position:absolute;border-radius:50%;filter:blur(18px);opacity:.42;animation:caseyFloat 6s ease-in-out infinite alternate}.d1{width:240px;height:160px;left:18%;bottom:18%;background:#8df7ff}.d2{width:190px;height:130px;right:17%;bottom:28%;background:#b18cff;animation-delay:.6s}.d3{width:160px;height:110px;right:29%;top:18%;background:#ffd96a;animation-delay:1s}@keyframes caseyFloat{to{transform:translate3d(16px,-12px,0) scale(1.05)}}.axis{position:absolute;color:#b6c9d7;text-transform:uppercase;letter-spacing:.14em;font-size:10px}.axis.y{left:15px;top:94px;writing-mode:vertical-rl;transform:rotate(180deg)}.axis.x{right:26px;bottom:18px}.peerDot{position:absolute;z-index:3;transform:translate(-50%,50%);min-width:70px;border:1px solid rgba(141,247,255,.36);border-radius:14px;background:#020b13;padding:8px 10px;box-shadow:0 0 22px rgba(141,247,255,.13);text-align:center}.peerDot b{display:block;color:#8df7ff}.peerDot span{display:block;color:#ffd96a;font-size:11px;font-weight:800}.caseyDot{min-width:92px;border-color:#8df7ff;box-shadow:0 0 38px rgba(141,247,255,.35),0 0 0 12px rgba(141,247,255,.06)}.benchmarkCards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}.benchmarkCards div{border:1px solid rgba(141,247,255,.18);border-radius:14px;background:rgba(5,17,31,.86);padding:12px}.benchmarkCards b{display:block;color:#fff}.benchmarkCards span{color:#b7c9d8;font-size:12px}
+.causalGraph{height:335px;position:relative;border:1px solid rgba(141,247,255,.25);border-radius:22px;background:radial-gradient(circle at 50% 50%,rgba(141,247,255,.14),transparent 34%),#05111f;overflow:hidden}.causalGraph svg{position:absolute;inset:0;width:100%;height:100%;z-index:1}.causalGraph path{fill:none;stroke:#8df7ff;stroke-width:.45;filter:drop-shadow(0 0 5px #8df7ff)}.causeNode{position:absolute;z-index:2;max-width:160px;border:1px solid rgba(141,247,255,.28);border-radius:14px;background:rgba(2,10,18,.94);padding:10px 12px;box-shadow:0 0 24px rgba(141,247,255,.12)}.causeNode span{display:inline-grid;place-items:center;width:20px;height:20px;margin-right:7px;border-radius:6px;background:#103242;color:#8df7ff;font-weight:900}.causeNode b{font-size:12px}.n0{left:5%;top:16%}.n1{left:18%;bottom:18%}.n2{left:33%;top:28%}.n3{left:48%;bottom:22%}.n4{right:26%;top:16%}.n5{right:12%;bottom:23%}.n6{right:6%;top:43%;border-color:#ffd96a}.causalReadout{margin-top:12px;border-left:3px solid #8df7ff;background:rgba(141,247,255,.07);padding:12px}.causalReadout b{display:block;color:#ffd96a;text-transform:uppercase}.causalReadout span{color:#dff8ff}
+.pressureRow{display:grid;grid-template-columns:34px 130px 1fr;gap:10px;align-items:center;border:1px solid rgba(141,247,255,.16);background:rgba(5,17,31,.7);padding:11px;margin:8px 0;border-radius:12px}.pressureRow span{display:grid;place-items:center;width:25px;height:25px;border-radius:8px;background:#8df7ff;color:#06101d;font-weight:900}.pressureRow b{color:#ffd96a;text-transform:uppercase;font-size:11px}.pressureRow em{font-style:normal;color:#eaf9ff}.lockedExports button{border-color:rgba(141,247,255,.34)!important;background:linear-gradient(135deg,rgba(141,247,255,.14),rgba(255,217,106,.06))!important}.lockedExports button:hover{transform:translateY(-2px);box-shadow:0 0 30px rgba(141,247,255,.2)}
+@media(max-width:1100px){.orbitalMetaRail,.propagationPulse,.benchmarkCards{grid-template-columns:1fr 1fr}.modeSwitch{justify-content:flex-start}.propagationPulse{position:relative;top:auto}.pressureRow{grid-template-columns:30px 1fr}.pressureRow em{grid-column:2}.benchmarkField,.causalGraph{height:360px}}
+
+/* ================= CASEY V119 FINAL DEMO POLISH =================
+   Final demo refinements requested: reduce text density, improve chart breathing,
+   give board screens more space, and make export-heavy views feel less cramped. */
+.card{
+  padding:24px 26px!important;
+  margin-bottom:4px;
+}
+.card h2{
+  margin-top:0!important;
+  margin-bottom:14px!important;
+  line-height:1.05!important;
+}
+.card h3{
+  margin-top:24px!important;
+  margin-bottom:12px!important;
+}
+.chartCaption{
+  max-width:92%;
+  margin:8px 0 18px!important;
+  line-height:1.55!important;
+  color:rgba(223,252,255,.70)!important;
+}
+.reason{
+  padding:10px 13px!important;
+  line-height:1.36!important;
+  margin-bottom:7px!important;
+}
+.reason br + *, .reason b + br{
+  margin-top:2px;
+}
+.layout.two{
+  gap:24px!important;
+}
+.recharts-responsive-container,
+.recharts-wrapper{
+  margin-top:10px!important;
+  margin-bottom:16px!important;
+}
+.recharts-cartesian-axis-tick-value{
+  font-size:11px!important;
+  fill:rgba(223,252,255,.68)!important;
+}
+.recharts-reference-line text{
+  fill:rgba(223,252,255,.74)!important;
+  font-size:10px!important;
+}
+.metrics{
+  margin-bottom:14px!important;
+  gap:14px!important;
+}
+.tableWrap{
+  margin-top:16px!important;
+  max-height:610px!important;
+}
+td, th{
+  padding:10px 12px!important;
+}
+.confidenceEngineBadge,
+.scenarioRail,
+.scenarioMatrix,
+.exports{
+  margin-bottom:18px!important;
+}
+.scenarioCompare.upgraded button,
+.scenarioRail button{
+  min-height:118px!important;
+}
+.shockCard, .executiveShock{
+  margin-bottom:24px!important;
+}
+/* export/analyst views get extra breathing room on wide screens */
+@media(min-width:1200px){
+  main{padding-bottom:46px!important;}
+  .layout.two > .card{min-height:560px;}
+  .layout.two > .card:has(.recharts-wrapper){min-height:620px;}
+}
+/* keep mobile readable after density reduction */
+@media(max-width:950px){
+  .card{padding:18px!important;}
+  .chartCaption{max-width:100%;}
+  .layout.two{gap:16px!important;}
+}
+/* ================= END CASEY V119 FINAL DEMO POLISH ================= */
+
+
+.card{transition:transform .35s ease, box-shadow .35s ease, border-color .35s ease;}
+.card:hover{transform:translateY(-3px);box-shadow:0 18px 40px rgba(0,0,0,.32);} 
+.v50Kpi,.tableWrap table td,.tableWrap table th{letter-spacing:.02em;}
+.tableWrap table td{padding-top:16px;padding-bottom:16px;line-height:1.5;}
+.simOverlay{position:fixed;inset:0;background:rgba(2,6,18,.72);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;z-index:9999;animation:fadeIn .25s ease;}
+.simCard{width:420px;max-width:92vw;background:linear-gradient(180deg,#07101f,#08172b);border:1px solid rgba(120,220,255,.28);padding:32px;border-radius:22px;box-shadow:0 30px 90px rgba(0,0,0,.45);}
+.simCard h3{font-size:22px;margin-bottom:10px;letter-spacing:.04em;text-transform:uppercase;}
+.simCard p{opacity:.8;line-height:1.7;}
+.simSpinner{width:56px;height:56px;border-radius:50%;border:3px solid rgba(120,220,255,.15);border-top-color:#89f1ff;animation:spin 1s linear infinite;margin-bottom:18px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.executiveSummary,.boardNarrative,.methodologyCard,.pricingCard{line-height:1.7;letter-spacing:.015em;}
+
+/* CASEY V123 live calibration demo layer */
+.liveCalStrip{display:grid;grid-template-columns:auto 1.1fr 1.7fr;gap:14px;align-items:center;margin:10px auto 18px;max-width:1180px;padding:12px 16px;border:1px solid rgba(141,247,255,.35);background:linear-gradient(90deg,rgba(141,247,255,.10),rgba(255,217,106,.07),rgba(117,107,255,.07));box-shadow:0 0 28px rgba(141,247,255,.08);text-transform:uppercase;letter-spacing:.08em}
+.liveCalPulse{width:22px;height:22px;border:1px solid rgba(141,247,255,.45);display:grid;place-items:center;border-radius:50%}.liveCalPulse span{width:8px;height:8px;border-radius:50%;background:#8df7ff;box-shadow:0 0 18px #8df7ff;animation:caseyPulse 1.8s infinite}.liveCalStrip b{display:block;color:#8df7ff;font-size:12px}.liveCalStrip em{display:block;color:#b8c7d9;font-style:normal;font-size:11px;text-transform:none;letter-spacing:.02em;margin-top:2px}.liveCalSignals{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.liveCalSignals span{font-size:10px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.20);padding:6px 8px;color:#ffd96a;white-space:nowrap}.liveCalPanelWrap{margin-top:18px}.signalRow{display:grid;grid-template-columns:32px 1.2fr 72px 1fr 1.1fr;gap:10px;align-items:center;padding:12px;border-bottom:1px solid rgba(255,255,255,.10);background:rgba(5,14,25,.44)}.signalRow span{background:rgba(141,247,255,.14);color:#8df7ff;font-weight:900;text-align:center;padding:6px}.signalRow b{color:#fff}.signalRow em{font-style:normal;color:#ffd96a;text-transform:uppercase;font-size:10px;font-weight:900}.signalRow strong{color:#8df7ff;font-size:12px}.signalRow small{color:#b8c7d9}@keyframes caseyPulse{0%{transform:scale(.8);opacity:.7}50%{transform:scale(1.35);opacity:1}100%{transform:scale(.8);opacity:.7}}
+@media(max-width:900px){.liveCalStrip{grid-template-columns:1fr}.liveCalSignals{justify-content:flex-start}.signalRow{grid-template-columns:28px 1fr}.signalRow em,.signalRow strong,.signalRow small{grid-column:2}}

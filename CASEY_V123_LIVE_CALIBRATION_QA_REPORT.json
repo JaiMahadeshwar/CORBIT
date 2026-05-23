@@ -1,0 +1,45 @@
+{
+  "version": "CASEY V123 Live Calibration Demo Layer",
+  "earth_calibration_examples_tested": 10000,
+  "space_calibration_examples_tested": 5000,
+  "full_build_smoke_tests": 90,
+  "scenarios_tested": [
+    "base",
+    "faster",
+    "cheaper",
+    "lower_risk",
+    "premium"
+  ],
+  "earth_archetypes": [
+    "Digital Infrastructure / Hyperscale Data Centre",
+    "Airport / Live Operations",
+    "Semiconductor / Advanced Manufacturing",
+    "Defence / Secure Mission Infrastructure",
+    "Life Sciences / GMP Manufacturing",
+    "Energy / Hydrogen",
+    "Port / Logistics",
+    "Nuclear / SMR",
+    "Rail / Metro",
+    "Healthcare / Hospital"
+  ],
+  "space_archetypes": [
+    "Lunar Surface Habitat/Base",
+    "Mars ISRU/Mining/Propellant",
+    "Orbital AI / Space Data Centre",
+    "Cislunar Logistics Hub",
+    "Deep-Space Mission Systems",
+    "Lunar Mining / Regolith Processing",
+    "Mars Habitat Build",
+    "Orbital Manufacturing Platform"
+  ],
+  "checks": [
+    "live calibration injected",
+    "sector signals present",
+    "scenario overlays applied",
+    "full build smoke across listed sectors"
+  ],
+  "issues": [],
+  "build_smoke_issues": [],
+  "status": "PASS",
+  "elapsed_seconds": 2.77
+}

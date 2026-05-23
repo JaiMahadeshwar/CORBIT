@@ -1,0 +1,57 @@
+
+body {
+  background: radial-gradient(circle at top, #0b1730 0%, #02040a 70%);
+  overflow-x: hidden;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(rgba(0,255,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,255,255,0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+  animation: pulseGrid 8s ease-in-out infinite;
+}
+
+@keyframes pulseGrid {
+  0%,100% { opacity: 0.15; }
+  50% { opacity: 0.35; }
+}
+
+.hero-glow {
+  box-shadow: 0 0 80px rgba(0,180,255,0.35);
+  transition: transform .5s ease, box-shadow .5s ease;
+}
+
+.hero-glow:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 0 0 120px rgba(0,200,255,0.55);
+}
+
+.floating-panel {
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(0,255,255,0.15);
+  background: rgba(5,10,20,0.45);
+  animation: floatPanel 6s ease-in-out infinite;
+}
+
+@keyframes floatPanel {
+  0%,100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(40px);
+  animation: revealUp 1.2s forwards;
+}
+
+@keyframes revealUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

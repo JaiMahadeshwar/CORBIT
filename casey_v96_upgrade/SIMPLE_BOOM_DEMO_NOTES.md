@@ -1,0 +1,1 @@
+Public demo simplified to email + one big programme brief box. CASEY auto-infers the hidden fields.

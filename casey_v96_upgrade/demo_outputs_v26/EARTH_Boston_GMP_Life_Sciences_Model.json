@@ -1,0 +1,2527 @@
+{
+  "version": "v23 Real Deal Edition",
+  "id": "CASEY-155437",
+  "title": "Life Sciences Campus",
+  "prompt": "Boston GMP Biotech Campus 2026 with cleanroom, validation and accelerated delivery",
+  "client": "Global Pharma",
+  "mode": "Earth",
+  "subsector": "Life Sciences / Pharma",
+  "location": "United States",
+  "scale": "Programme",
+  "scenario": "base",
+  "scenario_label": "Base",
+  "scenario_why": "Balanced reference case.",
+  "estimate_class": 3,
+  "estimate_class_name": "Class 3 Budget Authorization",
+  "estimate_maturity": "10-40% definition maturity",
+  "schedule_level": 4,
+  "cost_p10": "$7.6B",
+  "cost_p50": "$9.5B",
+  "cost_p90": "$12.4B",
+  "cost_range": "$7.6B - $12.4B",
+  "schedule": "108 months",
+  "risk": "Medium-High",
+  "risk_score": 51.0,
+  "confidence_pct": 60,
+  "executive_summary": "Life Sciences Campus has been classified as Life Sciences / Pharma in United States. CASEY estimates $9.5B P50 cost, $7.6B to $12.4B range, 108 month baseline, Medium-High risk and 60% confidence under the Base scenario.",
+  "confidence_explanation": [
+    "Class 3 Budget Authorization: 10-40% definition maturity drives the starting confidence level.",
+    "Schedule Level 4: more detailed schedule logic improves QSRA traceability.",
+    "Base: Balanced reference case.",
+    "Location/space factor: United States applies a 1.08 delivery premium.",
+    "accelerated delivery compression",
+    "live environment",
+    "GMP cleanroom",
+    "GMP validation"
+  ],
+  "cost_lines": [
+    {
+      "cbs": "01.01",
+      "description": "Site Preparation / Enabling",
+      "type": "Direct",
+      "basis": "Demolition, enabling, logistics and access",
+      "p10_bn": 0.456,
+      "p50_bn": 0.57,
+      "p90_bn": 0.741,
+      "impact_basis": "Site Preparation / Enabling priced as 6.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93."
+    },
+    {
+      "cbs": "01.02",
+      "description": "Substructure / Foundations",
+      "type": "Direct",
+      "basis": "Piling, groundworks, retaining and foundations",
+      "p10_bn": 0.608,
+      "p50_bn": 0.76,
+      "p90_bn": 0.988,
+      "impact_basis": "Substructure / Foundations priced as 8.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93."
+    },
+    {
+      "cbs": "01.03",
+      "description": "Superstructure / Civil Works",
+      "type": "Direct",
+      "basis": "Frame, civils, primary structures",
+      "p10_bn": 1.064,
+      "p50_bn": 1.33,
+      "p90_bn": 1.729,
+      "impact_basis": "Superstructure / Civil Works priced as 14.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93."
+    },
+    {
+      "cbs": "01.04",
+      "description": "MEP / Systems / Utilities",
+      "type": "Direct",
+      "basis": "Mechanical, electrical, controls and utilities",
+      "p10_bn": 1.064,
+      "p50_bn": 1.33,
+      "p90_bn": 1.729,
+      "impact_basis": "MEP / Systems / Utilities priced as 14.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93."
+    },
+    {
+      "cbs": "01.05",
+      "description": "Specialist Equipment / Fit-Out",
+      "type": "Direct",
+      "basis": "Permanent equipment and specialist fit-out",
+      "p10_bn": 0.912,
+      "p50_bn": 1.14,
+      "p90_bn": 1.482,
+      "impact_basis": "Specialist Equipment / Fit-Out priced as 12.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93."
+    },
+    {
+      "cbs": "01.06",
+      "description": "Cleanroom Envelope",
+      "type": "Direct",
+      "basis": "Cleanroom partitions, finishes and GMP envelope",
+      "p10_bn": 0.912,
+      "p50_bn": 1.14,
+      "p90_bn": 1.482,
+      "impact_basis": "Cleanroom Envelope priced as 12.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93."
+    },
+    {
+      "cbs": "01.07",
+      "description": "Process Utilities",
+      "type": "Direct",
+      "basis": "WFI, gases, clean steam and process utilities",
+      "p10_bn": 0.988,
+      "p50_bn": 1.235,
+      "p90_bn": 1.606,
+      "impact_basis": "Process Utilities priced as 13.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93."
+    },
+    {
+      "cbs": "01.08",
+      "description": "Validation / Qualification",
+      "type": "Indirect",
+      "basis": "IQ/OQ/PQ and GMP readiness",
+      "p10_bn": 0.38,
+      "p50_bn": 0.475,
+      "p90_bn": 0.618,
+      "impact_basis": "Validation / Qualification priced as 5.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93."
+    },
+    {
+      "cbs": "01.09",
+      "description": "Direct Labour",
+      "type": "Direct",
+      "basis": "Productivity, supervision and trade labour",
+      "p10_bn": 0.684,
+      "p50_bn": 0.855,
+      "p90_bn": 1.112,
+      "impact_basis": "Direct Labour priced as 9.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93."
+    },
+    {
+      "cbs": "01.10",
+      "description": "Direct Materials",
+      "type": "Direct",
+      "basis": "Concrete, steel, envelope, MEP materials",
+      "p10_bn": 0.76,
+      "p50_bn": 0.95,
+      "p90_bn": 1.235,
+      "impact_basis": "Direct Materials priced as 10.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93."
+    },
+    {
+      "cbs": "01.11",
+      "description": "Plant / Equipment",
+      "type": "Direct",
+      "basis": "Cranes, heavy plant and site equipment",
+      "p10_bn": 0.304,
+      "p50_bn": 0.38,
+      "p90_bn": 0.494,
+      "impact_basis": "Plant / Equipment priced as 4.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93."
+    },
+    {
+      "cbs": "02.01",
+      "description": "General Conditions / Prelims",
+      "type": "Indirect",
+      "basis": "Site management, safety, offices and temporary services",
+      "p10_bn": 0.532,
+      "p50_bn": 0.665,
+      "p90_bn": 0.865,
+      "impact_basis": "General Conditions / Prelims priced as 7.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93."
+    },
+    {
+      "cbs": "02.02",
+      "description": "Design / Professional Fees",
+      "type": "Indirect",
+      "basis": "Design, QS, controls, assurance and consultants",
+      "p10_bn": 0.532,
+      "p50_bn": 0.665,
+      "p90_bn": 0.865,
+      "impact_basis": "Design / Professional Fees priced as 7.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93."
+    },
+    {
+      "cbs": "02.03",
+      "description": "Permits / Insurance / Bonds",
+      "type": "Indirect",
+      "basis": "Permits, inspections, legal, bonds and insurance",
+      "p10_bn": 0.228,
+      "p50_bn": 0.285,
+      "p90_bn": 0.371,
+      "impact_basis": "Permits / Insurance / Bonds priced as 3.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93."
+    },
+    {
+      "cbs": "03.01",
+      "description": "QCRA Contingency",
+      "type": "Reserve",
+      "basis": "Known-unknown risk allowance",
+      "p10_bn": 0.456,
+      "p50_bn": 0.57,
+      "p90_bn": 0.741,
+      "impact_basis": "QCRA Contingency priced as 6.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93."
+    },
+    {
+      "cbs": "03.02",
+      "description": "Management Reserve",
+      "type": "Reserve",
+      "basis": "Sponsor-held reserve",
+      "p10_bn": 0.228,
+      "p50_bn": 0.285,
+      "p90_bn": 0.371,
+      "impact_basis": "Management Reserve priced as 3.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93."
+    }
+  ],
+  "schedules_by_level": {
+    "1": [
+      {
+        "activity_id": "M100",
+        "phase": "Milestone",
+        "activity": "Investment approval",
+        "predecessor": "",
+        "duration_months": 5,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "M200",
+        "phase": "Milestone",
+        "activity": "Design complete",
+        "predecessor": "M100",
+        "duration_months": 22,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "M300",
+        "phase": "Milestone",
+        "activity": "Procurement complete",
+        "predecessor": "M200",
+        "duration_months": 16,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "M400",
+        "phase": "Milestone",
+        "activity": "Delivery complete",
+        "predecessor": "M300",
+        "duration_months": 43,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "M500",
+        "phase": "Milestone",
+        "activity": "Ready for operations",
+        "predecessor": "M400",
+        "duration_months": 16,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "M600",
+        "phase": "Milestone",
+        "activity": "Handover",
+        "predecessor": "M500",
+        "duration_months": 5,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      }
+    ],
+    "2": [
+      {
+        "activity_id": "A1000",
+        "phase": "Governance",
+        "activity": "Project initiation / controls setup",
+        "predecessor": "",
+        "duration_months": 3,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1100",
+        "phase": "Business Case",
+        "activity": "Strategic brief, funding and approval",
+        "predecessor": "A1000",
+        "duration_months": 5,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1200",
+        "phase": "Scope",
+        "activity": "Requirements definition and scope freeze",
+        "predecessor": "A1100",
+        "duration_months": 5,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1300",
+        "phase": "Design",
+        "activity": "Concept / reference architecture",
+        "predecessor": "A1200",
+        "duration_months": 9,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1400",
+        "phase": "Consents",
+        "activity": "Planning, regulatory and stakeholder approvals",
+        "predecessor": "A1200",
+        "duration_months": 10,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1500",
+        "phase": "Procurement",
+        "activity": "Procurement strategy and tender packaging",
+        "predecessor": "A1300",
+        "duration_months": 6,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1600",
+        "phase": "Design",
+        "activity": "Detailed design / IFC development",
+        "predecessor": "A1300",
+        "duration_months": 11,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1700",
+        "phase": "Procurement",
+        "activity": "Long-lead procurement",
+        "predecessor": "A1500",
+        "duration_months": 10,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1800",
+        "phase": "Enabling",
+        "activity": "Site / launch integration readiness",
+        "predecessor": "A1400;A1500",
+        "duration_months": 8,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1900",
+        "phase": "Delivery",
+        "activity": "Main construction / fabrication / assembly",
+        "predecessor": "A1600;A1700;A1800",
+        "duration_months": 24,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A2000",
+        "phase": "Integration",
+        "activity": "Systems integration and testing",
+        "predecessor": "A1900",
+        "duration_months": 11,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A2100",
+        "phase": "Handover",
+        "activity": "Commissioning, operations readiness and closeout",
+        "predecessor": "A2000",
+        "duration_months": 6,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      }
+    ],
+    "3": [
+      {
+        "activity_id": "A1000",
+        "phase": "Governance",
+        "activity": "Project initiation / controls setup",
+        "predecessor": "",
+        "duration_months": 3,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1100",
+        "phase": "Business Case",
+        "activity": "Strategic brief, funding and approval",
+        "predecessor": "A1000",
+        "duration_months": 5,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1200",
+        "phase": "Scope",
+        "activity": "Requirements definition and scope freeze",
+        "predecessor": "A1100",
+        "duration_months": 5,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1300",
+        "phase": "Design",
+        "activity": "Concept / reference architecture",
+        "predecessor": "A1200",
+        "duration_months": 9,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1400",
+        "phase": "Consents",
+        "activity": "Planning, regulatory and stakeholder approvals",
+        "predecessor": "A1200",
+        "duration_months": 10,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1500",
+        "phase": "Procurement",
+        "activity": "Procurement strategy and tender packaging",
+        "predecessor": "A1300",
+        "duration_months": 6,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1600",
+        "phase": "Design",
+        "activity": "Detailed design / IFC development",
+        "predecessor": "A1300",
+        "duration_months": 11,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1700",
+        "phase": "Procurement",
+        "activity": "Long-lead procurement",
+        "predecessor": "A1500",
+        "duration_months": 10,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1800",
+        "phase": "Enabling",
+        "activity": "Site / launch integration readiness",
+        "predecessor": "A1400;A1500",
+        "duration_months": 8,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1900",
+        "phase": "Delivery",
+        "activity": "Main construction / fabrication / assembly",
+        "predecessor": "A1600;A1700;A1800",
+        "duration_months": 24,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A2000",
+        "phase": "Integration",
+        "activity": "Systems integration and testing",
+        "predecessor": "A1900",
+        "duration_months": 11,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A2100",
+        "phase": "Handover",
+        "activity": "Commissioning, operations readiness and closeout",
+        "predecessor": "A2000",
+        "duration_months": 6,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      }
+    ],
+    "4": [
+      {
+        "activity_id": "A1000",
+        "phase": "Governance",
+        "activity": "Project initiation / controls setup",
+        "predecessor": "",
+        "duration_months": 3,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1100",
+        "phase": "Business Case",
+        "activity": "Strategic brief, funding and approval",
+        "predecessor": "A1000",
+        "duration_months": 5,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1200",
+        "phase": "Scope",
+        "activity": "Requirements definition and scope freeze",
+        "predecessor": "A1100",
+        "duration_months": 5,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1300",
+        "phase": "Design",
+        "activity": "Concept / reference architecture",
+        "predecessor": "A1200",
+        "duration_months": 9,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1400",
+        "phase": "Consents",
+        "activity": "Planning, regulatory and stakeholder approvals",
+        "predecessor": "A1200",
+        "duration_months": 10,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1500",
+        "phase": "Procurement",
+        "activity": "Procurement strategy and tender packaging",
+        "predecessor": "A1300",
+        "duration_months": 6,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1600",
+        "phase": "Design",
+        "activity": "Detailed design / IFC development",
+        "predecessor": "A1300",
+        "duration_months": 11,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1700",
+        "phase": "Procurement",
+        "activity": "Long-lead procurement",
+        "predecessor": "A1500",
+        "duration_months": 10,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1800",
+        "phase": "Enabling",
+        "activity": "Site / launch integration readiness",
+        "predecessor": "A1400;A1500",
+        "duration_months": 8,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1900",
+        "phase": "Delivery",
+        "activity": "Main construction / fabrication / assembly",
+        "predecessor": "A1600;A1700;A1800",
+        "duration_months": 24,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A2000",
+        "phase": "Integration",
+        "activity": "Systems integration and testing",
+        "predecessor": "A1900",
+        "duration_months": 11,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A2100",
+        "phase": "Handover",
+        "activity": "Commissioning, operations readiness and closeout",
+        "predecessor": "A2000",
+        "duration_months": 6,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "P1000",
+        "phase": "Package",
+        "activity": "Civil / structural package",
+        "predecessor": "A1900",
+        "duration_months": 4,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "P2000",
+        "phase": "Package",
+        "activity": "MEP / systems package",
+        "predecessor": "P1000",
+        "duration_months": 4,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "P3000",
+        "phase": "Package",
+        "activity": "Specialist equipment package",
+        "predecessor": "P2000",
+        "duration_months": 4,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "P4000",
+        "phase": "Package",
+        "activity": "Utilities / interfaces package",
+        "predecessor": "P3000",
+        "duration_months": 4,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "P5000",
+        "phase": "Package",
+        "activity": "Testing and commissioning package",
+        "predecessor": "P4000",
+        "duration_months": 4,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      }
+    ],
+    "5": [
+      {
+        "activity_id": "A1000",
+        "phase": "Governance",
+        "activity": "Project initiation / controls setup",
+        "predecessor": "",
+        "duration_months": 3,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1100",
+        "phase": "Business Case",
+        "activity": "Strategic brief, funding and approval",
+        "predecessor": "A1000",
+        "duration_months": 5,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1200",
+        "phase": "Scope",
+        "activity": "Requirements definition and scope freeze",
+        "predecessor": "A1100",
+        "duration_months": 5,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1300",
+        "phase": "Design",
+        "activity": "Concept / reference architecture",
+        "predecessor": "A1200",
+        "duration_months": 9,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1400",
+        "phase": "Consents",
+        "activity": "Planning, regulatory and stakeholder approvals",
+        "predecessor": "A1200",
+        "duration_months": 10,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1500",
+        "phase": "Procurement",
+        "activity": "Procurement strategy and tender packaging",
+        "predecessor": "A1300",
+        "duration_months": 6,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1600",
+        "phase": "Design",
+        "activity": "Detailed design / IFC development",
+        "predecessor": "A1300",
+        "duration_months": 11,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1700",
+        "phase": "Procurement",
+        "activity": "Long-lead procurement",
+        "predecessor": "A1500",
+        "duration_months": 10,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1800",
+        "phase": "Enabling",
+        "activity": "Site / launch integration readiness",
+        "predecessor": "A1400;A1500",
+        "duration_months": 8,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1900",
+        "phase": "Delivery",
+        "activity": "Main construction / fabrication / assembly",
+        "predecessor": "A1600;A1700;A1800",
+        "duration_months": 24,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A2000",
+        "phase": "Integration",
+        "activity": "Systems integration and testing",
+        "predecessor": "A1900",
+        "duration_months": 11,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A2100",
+        "phase": "Handover",
+        "activity": "Commissioning, operations readiness and closeout",
+        "predecessor": "A2000",
+        "duration_months": 6,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "P1000",
+        "phase": "Package",
+        "activity": "Civil / structural package",
+        "predecessor": "A1900",
+        "duration_months": 4,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "P1100",
+        "phase": "Activity",
+        "activity": "Civil / structural package - mobilise / method",
+        "predecessor": "A1900",
+        "duration_months": 1,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "P1200",
+        "phase": "Activity",
+        "activity": "Civil / structural package - execute works",
+        "predecessor": "P1100",
+        "duration_months": 2,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "P1300",
+        "phase": "Activity",
+        "activity": "Civil / structural package - inspect / closeout",
+        "predecessor": "P1200",
+        "duration_months": 1,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "P2000",
+        "phase": "Package",
+        "activity": "MEP / systems package",
+        "predecessor": "P1000",
+        "duration_months": 4,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "P2100",
+        "phase": "Activity",
+        "activity": "MEP / systems package - mobilise / method",
+        "predecessor": "P1000",
+        "duration_months": 1,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "P2200",
+        "phase": "Activity",
+        "activity": "MEP / systems package - execute works",
+        "predecessor": "P2100",
+        "duration_months": 2,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "P2300",
+        "phase": "Activity",
+        "activity": "MEP / systems package - inspect / closeout",
+        "predecessor": "P2200",
+        "duration_months": 1,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "P3000",
+        "phase": "Package",
+        "activity": "Specialist equipment package",
+        "predecessor": "P2000",
+        "duration_months": 4,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "P3100",
+        "phase": "Activity",
+        "activity": "Specialist equipment package - mobilise / method",
+        "predecessor": "P2000",
+        "duration_months": 1,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "P3200",
+        "phase": "Activity",
+        "activity": "Specialist equipment package - execute works",
+        "predecessor": "P3100",
+        "duration_months": 2,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "P3300",
+        "phase": "Activity",
+        "activity": "Specialist equipment package - inspect / closeout",
+        "predecessor": "P3200",
+        "duration_months": 1,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "P4000",
+        "phase": "Package",
+        "activity": "Utilities / interfaces package",
+        "predecessor": "P3000",
+        "duration_months": 4,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "P4100",
+        "phase": "Activity",
+        "activity": "Utilities / interfaces package - mobilise / method",
+        "predecessor": "P3000",
+        "duration_months": 1,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "P4200",
+        "phase": "Activity",
+        "activity": "Utilities / interfaces package - execute works",
+        "predecessor": "P4100",
+        "duration_months": 2,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "P4300",
+        "phase": "Activity",
+        "activity": "Utilities / interfaces package - inspect / closeout",
+        "predecessor": "P4200",
+        "duration_months": 1,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "P5000",
+        "phase": "Package",
+        "activity": "Testing and commissioning package",
+        "predecessor": "P4000",
+        "duration_months": 4,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "P5100",
+        "phase": "Activity",
+        "activity": "Testing and commissioning package - mobilise / method",
+        "predecessor": "P4000",
+        "duration_months": 1,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "P5200",
+        "phase": "Activity",
+        "activity": "Testing and commissioning package - execute works",
+        "predecessor": "P5100",
+        "duration_months": 2,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "P5300",
+        "phase": "Activity",
+        "activity": "Testing and commissioning package - inspect / closeout",
+        "predecessor": "P5200",
+        "duration_months": 1,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      }
+    ]
+  },
+  "schedule_rows": [
+    {
+      "activity_id": "A1000",
+      "phase": "Governance",
+      "activity": "Project initiation / controls setup",
+      "predecessor": "",
+      "duration_months": 3,
+      "critical": "No",
+      "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+    },
+    {
+      "activity_id": "A1100",
+      "phase": "Business Case",
+      "activity": "Strategic brief, funding and approval",
+      "predecessor": "A1000",
+      "duration_months": 5,
+      "critical": "No",
+      "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+    },
+    {
+      "activity_id": "A1200",
+      "phase": "Scope",
+      "activity": "Requirements definition and scope freeze",
+      "predecessor": "A1100",
+      "duration_months": 5,
+      "critical": "No",
+      "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+    },
+    {
+      "activity_id": "A1300",
+      "phase": "Design",
+      "activity": "Concept / reference architecture",
+      "predecessor": "A1200",
+      "duration_months": 9,
+      "critical": "No",
+      "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+    },
+    {
+      "activity_id": "A1400",
+      "phase": "Consents",
+      "activity": "Planning, regulatory and stakeholder approvals",
+      "predecessor": "A1200",
+      "duration_months": 10,
+      "critical": "Yes",
+      "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+    },
+    {
+      "activity_id": "A1500",
+      "phase": "Procurement",
+      "activity": "Procurement strategy and tender packaging",
+      "predecessor": "A1300",
+      "duration_months": 6,
+      "critical": "No",
+      "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+    },
+    {
+      "activity_id": "A1600",
+      "phase": "Design",
+      "activity": "Detailed design / IFC development",
+      "predecessor": "A1300",
+      "duration_months": 11,
+      "critical": "No",
+      "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+    },
+    {
+      "activity_id": "A1700",
+      "phase": "Procurement",
+      "activity": "Long-lead procurement",
+      "predecessor": "A1500",
+      "duration_months": 10,
+      "critical": "Yes",
+      "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+    },
+    {
+      "activity_id": "A1800",
+      "phase": "Enabling",
+      "activity": "Site / launch integration readiness",
+      "predecessor": "A1400;A1500",
+      "duration_months": 8,
+      "critical": "No",
+      "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+    },
+    {
+      "activity_id": "A1900",
+      "phase": "Delivery",
+      "activity": "Main construction / fabrication / assembly",
+      "predecessor": "A1600;A1700;A1800",
+      "duration_months": 24,
+      "critical": "Yes",
+      "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+    },
+    {
+      "activity_id": "A2000",
+      "phase": "Integration",
+      "activity": "Systems integration and testing",
+      "predecessor": "A1900",
+      "duration_months": 11,
+      "critical": "Yes",
+      "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+    },
+    {
+      "activity_id": "A2100",
+      "phase": "Handover",
+      "activity": "Commissioning, operations readiness and closeout",
+      "predecessor": "A2000",
+      "duration_months": 6,
+      "critical": "Yes",
+      "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+    },
+    {
+      "activity_id": "P1000",
+      "phase": "Package",
+      "activity": "Civil / structural package",
+      "predecessor": "A1900",
+      "duration_months": 4,
+      "critical": "Yes",
+      "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+    },
+    {
+      "activity_id": "P2000",
+      "phase": "Package",
+      "activity": "MEP / systems package",
+      "predecessor": "P1000",
+      "duration_months": 4,
+      "critical": "Yes",
+      "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+    },
+    {
+      "activity_id": "P3000",
+      "phase": "Package",
+      "activity": "Specialist equipment package",
+      "predecessor": "P2000",
+      "duration_months": 4,
+      "critical": "Yes",
+      "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+    },
+    {
+      "activity_id": "P4000",
+      "phase": "Package",
+      "activity": "Utilities / interfaces package",
+      "predecessor": "P3000",
+      "duration_months": 4,
+      "critical": "Yes",
+      "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+    },
+    {
+      "activity_id": "P5000",
+      "phase": "Package",
+      "activity": "Testing and commissioning package",
+      "predecessor": "P4000",
+      "duration_months": 4,
+      "critical": "Yes",
+      "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+    }
+  ],
+  "risks": [
+    {
+      "risk_id": "R-002",
+      "title": "Market escalation",
+      "category": "Commercial",
+      "description": "Inflation and commodity escalation exceeds allowance",
+      "impact_area": "Cost",
+      "probability_pct": 45,
+      "activity_id": "A1500",
+      "activity_name": "Procurement strategy and tender packaging",
+      "cbs": "01.05",
+      "cbs_name": "Specialist Equipment / Fit-Out",
+      "schedule_o_days": 0,
+      "schedule_m_days": 0,
+      "schedule_p_days": 0,
+      "cost_o_bn": 0.38,
+      "cost_m_bn": 0.95,
+      "cost_p_bn": 1.9,
+      "cost_emv_bn": 0.428,
+      "schedule_emv_days": 0.0,
+      "driver_score": 42.75,
+      "owner": "Commercial Lead",
+      "trigger": "Index exceeds allowance",
+      "mitigation": "Early procurement, index strategy, market testing",
+      "basis_of_cost_impact": "Cost impact derived from 01.05 Specialist Equipment / Fit-Out exposure, project P50 $9.5B, and risk severity (4%/10%/20%).",
+      "basis_of_schedule_impact": "Schedule impact mapped to A1500 Procurement strategy and tender packaging with O/M/P delay 0/0/0 days and critical path sensitivity."
+    },
+    {
+      "risk_id": "R-004",
+      "title": "Design maturity gap",
+      "category": "Technical",
+      "description": "Design maturity lower than estimate basis",
+      "impact_area": "Both",
+      "probability_pct": 38,
+      "activity_id": "A1700",
+      "activity_name": "Long-lead procurement",
+      "cbs": "01.07",
+      "cbs_name": "Process Utilities",
+      "schedule_o_days": 15,
+      "schedule_m_days": 45,
+      "schedule_p_days": 120,
+      "cost_o_bn": 0.285,
+      "cost_m_bn": 0.855,
+      "cost_p_bn": 1.71,
+      "cost_emv_bn": 0.325,
+      "schedule_emv_days": 17.1,
+      "driver_score": 34.2,
+      "owner": "Design Manager",
+      "trigger": "Deliverables late",
+      "mitigation": "Design maturity gates and independent review",
+      "basis_of_cost_impact": "Cost impact derived from 01.07 Process Utilities exposure, project P50 $9.5B, and risk severity (3%/9%/18%).",
+      "basis_of_schedule_impact": "Schedule impact mapped to A1700 Long-lead procurement with O/M/P delay 15/45/120 days and critical path sensitivity."
+    },
+    {
+      "risk_id": "R-001",
+      "title": "Scope growth",
+      "category": "Scope",
+      "description": "Requirements mature late causing additions and rework",
+      "impact_area": "Both",
+      "probability_pct": 42,
+      "activity_id": "A1400",
+      "activity_name": "Planning, regulatory and stakeholder approvals",
+      "cbs": "01.04",
+      "cbs_name": "MEP / Systems / Utilities",
+      "schedule_o_days": 15,
+      "schedule_m_days": 45,
+      "schedule_p_days": 120,
+      "cost_o_bn": 0.285,
+      "cost_m_bn": 0.76,
+      "cost_p_bn": 1.52,
+      "cost_emv_bn": 0.319,
+      "schedule_emv_days": 18.9,
+      "driver_score": 33.81,
+      "owner": "Project Director",
+      "trigger": "Scope change rate exceeds threshold",
+      "mitigation": "Freeze scope, change board, value gates",
+      "basis_of_cost_impact": "Cost impact derived from 01.04 MEP / Systems / Utilities exposure, project P50 $9.5B, and risk severity (3%/8%/16%).",
+      "basis_of_schedule_impact": "Schedule impact mapped to A1400 Planning, regulatory and stakeholder approvals with O/M/P delay 15/45/120 days and critical path sensitivity."
+    },
+    {
+      "risk_id": "R-006",
+      "title": "Productivity underperformance",
+      "category": "Delivery",
+      "description": "Labour productivity below plan due to access/sequence",
+      "impact_area": "Both",
+      "probability_pct": 35,
+      "activity_id": "A1900",
+      "activity_name": "Main construction / fabrication / assembly",
+      "cbs": "01.09",
+      "cbs_name": "Direct Labour",
+      "schedule_o_days": 15,
+      "schedule_m_days": 50,
+      "schedule_p_days": 130,
+      "cost_o_bn": 0.285,
+      "cost_m_bn": 0.76,
+      "cost_p_bn": 1.52,
+      "cost_emv_bn": 0.266,
+      "schedule_emv_days": 17.5,
+      "driver_score": 28.35,
+      "owner": "Delivery Lead",
+      "trigger": "SPI/CPI deteriorates",
+      "mitigation": "Package productivity controls and daily planning",
+      "basis_of_cost_impact": "Cost impact derived from 01.09 Direct Labour exposure, project P50 $9.5B, and risk severity (3%/8%/16%).",
+      "basis_of_schedule_impact": "Schedule impact mapped to A1900 Main construction / fabrication / assembly with O/M/P delay 15/50/130 days and critical path sensitivity."
+    },
+    {
+      "risk_id": "R-005",
+      "title": "Supply chain delay",
+      "category": "Procurement",
+      "description": "Long-lead equipment or specialist suppliers slip",
+      "impact_area": "Both",
+      "probability_pct": 40,
+      "activity_id": "A1800",
+      "activity_name": "Site / launch integration readiness",
+      "cbs": "01.08",
+      "cbs_name": "Validation / Qualification",
+      "schedule_o_days": 10,
+      "schedule_m_days": 40,
+      "schedule_p_days": 120,
+      "cost_o_bn": 0.19,
+      "cost_m_bn": 0.665,
+      "cost_p_bn": 1.425,
+      "cost_emv_bn": 0.266,
+      "schedule_emv_days": 16.0,
+      "driver_score": 28.2,
+      "owner": "Procurement Lead",
+      "trigger": "Supplier promise date slips",
+      "mitigation": "Alternate suppliers, early orders, expediting",
+      "basis_of_cost_impact": "Cost impact derived from 01.08 Validation / Qualification exposure, project P50 $9.5B, and risk severity (2%/7%/15%).",
+      "basis_of_schedule_impact": "Schedule impact mapped to A1800 Site / launch integration readiness with O/M/P delay 10/40/120 days and critical path sensitivity."
+    },
+    {
+      "risk_id": "R-008",
+      "title": "Interface misalignment",
+      "category": "Integration",
+      "description": "Package interfaces not coordinated",
+      "impact_area": "Both",
+      "probability_pct": 34,
+      "activity_id": "A2100",
+      "activity_name": "Commissioning, operations readiness and closeout",
+      "cbs": "01.11",
+      "cbs_name": "Plant / Equipment",
+      "schedule_o_days": 10,
+      "schedule_m_days": 35,
+      "schedule_p_days": 100,
+      "cost_o_bn": 0.19,
+      "cost_m_bn": 0.665,
+      "cost_p_bn": 1.33,
+      "cost_emv_bn": 0.226,
+      "schedule_emv_days": 11.9,
+      "driver_score": 23.8,
+      "owner": "Integration Manager",
+      "trigger": "Interface actions overdue",
+      "mitigation": "ICDs and weekly interface board",
+      "basis_of_cost_impact": "Cost impact derived from 01.11 Plant / Equipment exposure, project P50 $9.5B, and risk severity (2%/7%/14%).",
+      "basis_of_schedule_impact": "Schedule impact mapped to A2100 Commissioning, operations readiness and closeout with O/M/P delay 10/35/100 days and critical path sensitivity."
+    },
+    {
+      "risk_id": "R-007",
+      "title": "Commissioning delay",
+      "category": "Handover",
+      "description": "Systems integration and tests take longer than plan",
+      "impact_area": "Both",
+      "probability_pct": 32,
+      "activity_id": "A2000",
+      "activity_name": "Systems integration and testing",
+      "cbs": "01.10",
+      "cbs_name": "Direct Materials",
+      "schedule_o_days": 10,
+      "schedule_m_days": 35,
+      "schedule_p_days": 100,
+      "cost_o_bn": 0.19,
+      "cost_m_bn": 0.57,
+      "cost_p_bn": 1.14,
+      "cost_emv_bn": 0.182,
+      "schedule_emv_days": 11.2,
+      "driver_score": 19.36,
+      "owner": "Commissioning Lead",
+      "trigger": "Test failures trend upward",
+      "mitigation": "Commissioning readiness and early test plans",
+      "basis_of_cost_impact": "Cost impact derived from 01.10 Direct Materials exposure, project P50 $9.5B, and risk severity (2%/6%/12%).",
+      "basis_of_schedule_impact": "Schedule impact mapped to A2000 Systems integration and testing with O/M/P delay 10/35/100 days and critical path sensitivity."
+    },
+    {
+      "risk_id": "R-003",
+      "title": "Permits / approvals delay",
+      "category": "Regulatory",
+      "description": "Authorities or stakeholders delay critical approvals",
+      "impact_area": "Schedule",
+      "probability_pct": 35,
+      "activity_id": "A1600",
+      "activity_name": "Detailed design / IFC development",
+      "cbs": "01.06",
+      "cbs_name": "Cleanroom Envelope",
+      "schedule_o_days": 20,
+      "schedule_m_days": 70,
+      "schedule_p_days": 180,
+      "cost_o_bn": 0.095,
+      "cost_m_bn": 0.38,
+      "cost_p_bn": 0.76,
+      "cost_emv_bn": 0.133,
+      "schedule_emv_days": 24.5,
+      "driver_score": 15.75,
+      "owner": "Consents Lead",
+      "trigger": "Consent milestone slips",
+      "mitigation": "Authority plan, consent tracker, early submissions",
+      "basis_of_cost_impact": "Cost impact derived from 01.06 Cleanroom Envelope exposure, project P50 $9.5B, and risk severity (1%/4%/8%).",
+      "basis_of_schedule_impact": "Schedule impact mapped to A1600 Detailed design / IFC development with O/M/P delay 20/70/180 days and critical path sensitivity."
+    }
+  ],
+  "monte_carlo": {
+    "iterations": 10000,
+    "qcra": {
+      "p10": 10.434,
+      "p50": 12.018,
+      "p80": 13.167,
+      "p90": 13.793,
+      "mean": 12.077
+    },
+    "qsra": {
+      "p10": 108.21,
+      "p50": 115.23,
+      "p80": 120.72,
+      "p90": 123.48,
+      "mean": 115.56
+    },
+    "curve": [
+      {
+        "percentile": 1,
+        "cost_bn": 9.326,
+        "schedule_months": 103.75
+      },
+      {
+        "percentile": 5,
+        "cost_bn": 10.022,
+        "schedule_months": 106.41
+      },
+      {
+        "percentile": 10,
+        "cost_bn": 10.434,
+        "schedule_months": 108.21
+      },
+      {
+        "percentile": 20,
+        "cost_bn": 10.96,
+        "schedule_months": 110.44
+      },
+      {
+        "percentile": 30,
+        "cost_bn": 11.341,
+        "schedule_months": 112.08
+      },
+      {
+        "percentile": 40,
+        "cost_bn": 11.678,
+        "schedule_months": 113.67
+      },
+      {
+        "percentile": 50,
+        "cost_bn": 12.018,
+        "schedule_months": 115.23
+      },
+      {
+        "percentile": 60,
+        "cost_bn": 12.36,
+        "schedule_months": 116.86
+      },
+      {
+        "percentile": 70,
+        "cost_bn": 12.741,
+        "schedule_months": 118.62
+      },
+      {
+        "percentile": 80,
+        "cost_bn": 13.167,
+        "schedule_months": 120.72
+      },
+      {
+        "percentile": 90,
+        "cost_bn": 13.793,
+        "schedule_months": 123.48
+      },
+      {
+        "percentile": 95,
+        "cost_bn": 14.313,
+        "schedule_months": 125.7
+      },
+      {
+        "percentile": 99,
+        "cost_bn": 15.402,
+        "schedule_months": 129.22
+      }
+    ],
+    "tornado": [
+      {
+        "risk_id": "R-002",
+        "title": "Market escalation",
+        "activity_id": "A1500",
+        "cbs": "01.05",
+        "cost_mean_bn": 0.479,
+        "schedule_mean_days": 0.0,
+        "driver_score": 47.89
+      },
+      {
+        "risk_id": "R-001",
+        "title": "Scope growth",
+        "activity_id": "A1400",
+        "cbs": "01.04",
+        "cost_mean_bn": 0.358,
+        "schedule_mean_days": 25.3,
+        "driver_score": 38.31
+      },
+      {
+        "risk_id": "R-004",
+        "title": "Design maturity gap",
+        "activity_id": "A1700",
+        "cbs": "01.07",
+        "cost_mean_bn": 0.354,
+        "schedule_mean_days": 22.6,
+        "driver_score": 37.62
+      },
+      {
+        "risk_id": "R-005",
+        "title": "Supply chain delay",
+        "activity_id": "A1800",
+        "cbs": "01.08",
+        "cost_mean_bn": 0.306,
+        "schedule_mean_days": 22.9,
+        "driver_score": 32.86
+      },
+      {
+        "risk_id": "R-006",
+        "title": "Productivity underperformance",
+        "activity_id": "A1900",
+        "cbs": "01.09",
+        "cost_mean_bn": 0.298,
+        "schedule_mean_days": 22.5,
+        "driver_score": 32.05
+      },
+      {
+        "risk_id": "R-008",
+        "title": "Interface misalignment",
+        "activity_id": "A2100",
+        "cbs": "01.11",
+        "cost_mean_bn": 0.25,
+        "schedule_mean_days": 17.0,
+        "driver_score": 26.7
+      },
+      {
+        "risk_id": "R-007",
+        "title": "Commissioning delay",
+        "activity_id": "A2000",
+        "cbs": "01.10",
+        "cost_mean_bn": 0.197,
+        "schedule_mean_days": 15.2,
+        "driver_score": 21.27
+      },
+      {
+        "risk_id": "R-003",
+        "title": "Permits / approvals delay",
+        "activity_id": "A1600",
+        "cbs": "01.06",
+        "cost_mean_bn": 0.143,
+        "schedule_mean_days": 31.5,
+        "driver_score": 17.45
+      }
+    ]
+  },
+  "benchmarks": [
+    {
+      "metric": "Capital project benchmark",
+      "value": "Sector-adjusted range",
+      "why": "Selected based on project type, location, maturity and scale."
+    },
+    {
+      "metric": "Schedule benchmark",
+      "value": "86-140 months",
+      "why": "Derived from maturity and delivery complexity."
+    }
+  ],
+  "peer_competitors": [
+    "Pfizer",
+    "Roche",
+    "Novartis",
+    "AstraZeneca",
+    "Moderna"
+  ],
+  "scenario_comparison": [
+    {
+      "scenario": "base",
+      "label": "Base",
+      "cost": "$9.5B",
+      "schedule_months": 108,
+      "risk": "Medium-High",
+      "confidence": 60,
+      "why": "Balanced reference case."
+    },
+    {
+      "scenario": "faster",
+      "label": "Faster",
+      "cost": "$10.5B",
+      "schedule_months": 89,
+      "risk": "High",
+      "confidence": 51,
+      "why": "Parallel design/procurement, acceleration, premium logistics and higher interface risk."
+    },
+    {
+      "scenario": "cheaper",
+      "label": "Cheaper",
+      "cost": "$8.4B",
+      "schedule_months": 117,
+      "risk": "Medium-High",
+      "confidence": 54,
+      "why": "Value engineering, tighter scope and procurement competition, with schedule/quality exposure."
+    },
+    {
+      "scenario": "lower_risk",
+      "label": "Lower Risk",
+      "cost": "$10.4B",
+      "schedule_months": 119,
+      "risk": "Medium",
+      "confidence": 73,
+      "why": "More surveys, assurance, stage gates, contingency and schedule buffers."
+    },
+    {
+      "scenario": "premium",
+      "label": "Premium",
+      "cost": "$10.9B",
+      "schedule_months": 112,
+      "risk": "Medium",
+      "confidence": 76,
+      "why": "Best assurance, independent review, early procurement and high-confidence governance."
+    },
+    {
+      "scenario": "investor",
+      "label": "Investor",
+      "cost": "$9.3B",
+      "schedule_months": 108,
+      "risk": "Medium-High",
+      "confidence": 63,
+      "why": "Investment-framing case with transparent risk and commercial challenge."
+    },
+    {
+      "scenario": "survival",
+      "label": "Survival",
+      "cost": "$7.4B",
+      "schedule_months": 130,
+      "risk": "High",
+      "confidence": 46,
+      "why": "Minimum viable scope, warning-heavy, high residual risk."
+    }
+  ],
+  "launch_demo_script": [
+    "Open with: 'Give me any project on Earth or in Space.'",
+    "Type the project into CASEY and hit Generate Full Intelligence Pack.",
+    "Show the executive dashboard: cost, schedule, risk, confidence and top drivers.",
+    "Switch to Monte Carlo: show QCRA/QSRA P-curves and tornado drivers linked to activities.",
+    "Show scenarios: Faster, Cheaper, Lower Risk and Premium with why each changed.",
+    "Open Output Centre: Excel, Risk CSV, XER, Word, PDF, PPTX and ZIP are ready.",
+    "Close with: 'Traditional advisory takes weeks. CASEY gives the first board-grade view in seconds.'"
+  ],
+  "red_flags": [
+    "Confidence below board-comfort threshold: improve scope definition, benchmark evidence and supplier quotes."
+  ],
+  "board_challenge_questions": [
+    "What evidence supports the P50 cost and P80 confidence?",
+    "Which five risks create most contingency?",
+    "Which activities drive the QSRA finish-date risk?",
+    "What data would increase confidence before approval?",
+    "What is the fastest credible lower-risk path?"
+  ],
+  "next_best_actions": [
+    "Run a risk workshop to validate probability and O/M/P impacts.",
+    "Confirm top five CBS cost drivers with benchmark or supplier evidence.",
+    "Validate the Level 3/4 schedule logic and critical path assumptions.",
+    "Prepare board decision paper with Base/Faster/Cheaper/Lower-Risk cases.",
+    "Create confidence improvement plan targeting design maturity, consents and procurement evidence."
+  ],
+  "estimates_by_class": {
+    "1": [
+      {
+        "cbs": "01.01",
+        "description": "Site Preparation / Enabling",
+        "type": "Direct",
+        "basis": "Demolition, enabling, logistics and access",
+        "p10_bn": 0.513,
+        "p50_bn": 0.57,
+        "p90_bn": 0.655,
+        "impact_basis": "Site Preparation / Enabling priced as 6.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 1,
+        "maturity": "65-100% definition maturity"
+      },
+      {
+        "cbs": "01.02",
+        "description": "Substructure / Foundations",
+        "type": "Direct",
+        "basis": "Piling, groundworks, retaining and foundations",
+        "p10_bn": 0.684,
+        "p50_bn": 0.76,
+        "p90_bn": 0.874,
+        "impact_basis": "Substructure / Foundations priced as 8.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 1,
+        "maturity": "65-100% definition maturity"
+      },
+      {
+        "cbs": "01.03",
+        "description": "Superstructure / Civil Works",
+        "type": "Direct",
+        "basis": "Frame, civils, primary structures",
+        "p10_bn": 1.197,
+        "p50_bn": 1.33,
+        "p90_bn": 1.529,
+        "impact_basis": "Superstructure / Civil Works priced as 14.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 1,
+        "maturity": "65-100% definition maturity"
+      },
+      {
+        "cbs": "01.04",
+        "description": "MEP / Systems / Utilities",
+        "type": "Direct",
+        "basis": "Mechanical, electrical, controls and utilities",
+        "p10_bn": 1.197,
+        "p50_bn": 1.33,
+        "p90_bn": 1.529,
+        "impact_basis": "MEP / Systems / Utilities priced as 14.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 1,
+        "maturity": "65-100% definition maturity"
+      },
+      {
+        "cbs": "01.05",
+        "description": "Specialist Equipment / Fit-Out",
+        "type": "Direct",
+        "basis": "Permanent equipment and specialist fit-out",
+        "p10_bn": 1.026,
+        "p50_bn": 1.14,
+        "p90_bn": 1.311,
+        "impact_basis": "Specialist Equipment / Fit-Out priced as 12.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 1,
+        "maturity": "65-100% definition maturity"
+      },
+      {
+        "cbs": "01.06",
+        "description": "Cleanroom Envelope",
+        "type": "Direct",
+        "basis": "Cleanroom partitions, finishes and GMP envelope",
+        "p10_bn": 1.026,
+        "p50_bn": 1.14,
+        "p90_bn": 1.311,
+        "impact_basis": "Cleanroom Envelope priced as 12.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 1,
+        "maturity": "65-100% definition maturity"
+      },
+      {
+        "cbs": "01.07",
+        "description": "Process Utilities",
+        "type": "Direct",
+        "basis": "WFI, gases, clean steam and process utilities",
+        "p10_bn": 1.112,
+        "p50_bn": 1.235,
+        "p90_bn": 1.42,
+        "impact_basis": "Process Utilities priced as 13.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 1,
+        "maturity": "65-100% definition maturity"
+      },
+      {
+        "cbs": "01.08",
+        "description": "Validation / Qualification",
+        "type": "Indirect",
+        "basis": "IQ/OQ/PQ and GMP readiness",
+        "p10_bn": 0.427,
+        "p50_bn": 0.475,
+        "p90_bn": 0.546,
+        "impact_basis": "Validation / Qualification priced as 5.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 1,
+        "maturity": "65-100% definition maturity"
+      },
+      {
+        "cbs": "01.09",
+        "description": "Direct Labour",
+        "type": "Direct",
+        "basis": "Productivity, supervision and trade labour",
+        "p10_bn": 0.769,
+        "p50_bn": 0.855,
+        "p90_bn": 0.983,
+        "impact_basis": "Direct Labour priced as 9.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 1,
+        "maturity": "65-100% definition maturity"
+      },
+      {
+        "cbs": "01.10",
+        "description": "Direct Materials",
+        "type": "Direct",
+        "basis": "Concrete, steel, envelope, MEP materials",
+        "p10_bn": 0.855,
+        "p50_bn": 0.95,
+        "p90_bn": 1.092,
+        "impact_basis": "Direct Materials priced as 10.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 1,
+        "maturity": "65-100% definition maturity"
+      },
+      {
+        "cbs": "01.11",
+        "description": "Plant / Equipment",
+        "type": "Direct",
+        "basis": "Cranes, heavy plant and site equipment",
+        "p10_bn": 0.342,
+        "p50_bn": 0.38,
+        "p90_bn": 0.437,
+        "impact_basis": "Plant / Equipment priced as 4.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 1,
+        "maturity": "65-100% definition maturity"
+      },
+      {
+        "cbs": "02.01",
+        "description": "General Conditions / Prelims",
+        "type": "Indirect",
+        "basis": "Site management, safety, offices and temporary services",
+        "p10_bn": 0.599,
+        "p50_bn": 0.665,
+        "p90_bn": 0.765,
+        "impact_basis": "General Conditions / Prelims priced as 7.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 1,
+        "maturity": "65-100% definition maturity"
+      },
+      {
+        "cbs": "02.02",
+        "description": "Design / Professional Fees",
+        "type": "Indirect",
+        "basis": "Design, QS, controls, assurance and consultants",
+        "p10_bn": 0.599,
+        "p50_bn": 0.665,
+        "p90_bn": 0.765,
+        "impact_basis": "Design / Professional Fees priced as 7.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 1,
+        "maturity": "65-100% definition maturity"
+      },
+      {
+        "cbs": "02.03",
+        "description": "Permits / Insurance / Bonds",
+        "type": "Indirect",
+        "basis": "Permits, inspections, legal, bonds and insurance",
+        "p10_bn": 0.257,
+        "p50_bn": 0.285,
+        "p90_bn": 0.328,
+        "impact_basis": "Permits / Insurance / Bonds priced as 3.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 1,
+        "maturity": "65-100% definition maturity"
+      },
+      {
+        "cbs": "03.01",
+        "description": "QCRA Contingency",
+        "type": "Reserve",
+        "basis": "Known-unknown risk allowance",
+        "p10_bn": 0.513,
+        "p50_bn": 0.57,
+        "p90_bn": 0.655,
+        "impact_basis": "QCRA Contingency priced as 6.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 1,
+        "maturity": "65-100% definition maturity"
+      },
+      {
+        "cbs": "03.02",
+        "description": "Management Reserve",
+        "type": "Reserve",
+        "basis": "Sponsor-held reserve",
+        "p10_bn": 0.257,
+        "p50_bn": 0.285,
+        "p90_bn": 0.328,
+        "impact_basis": "Management Reserve priced as 3.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 1,
+        "maturity": "65-100% definition maturity"
+      }
+    ],
+    "2": [
+      {
+        "cbs": "01.01",
+        "description": "Site Preparation / Enabling",
+        "type": "Direct",
+        "basis": "Demolition, enabling, logistics and access",
+        "p10_bn": 0.484,
+        "p50_bn": 0.57,
+        "p90_bn": 0.684,
+        "impact_basis": "Site Preparation / Enabling priced as 6.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 2,
+        "maturity": "30-75% definition maturity"
+      },
+      {
+        "cbs": "01.02",
+        "description": "Substructure / Foundations",
+        "type": "Direct",
+        "basis": "Piling, groundworks, retaining and foundations",
+        "p10_bn": 0.646,
+        "p50_bn": 0.76,
+        "p90_bn": 0.912,
+        "impact_basis": "Substructure / Foundations priced as 8.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 2,
+        "maturity": "30-75% definition maturity"
+      },
+      {
+        "cbs": "01.03",
+        "description": "Superstructure / Civil Works",
+        "type": "Direct",
+        "basis": "Frame, civils, primary structures",
+        "p10_bn": 1.131,
+        "p50_bn": 1.33,
+        "p90_bn": 1.596,
+        "impact_basis": "Superstructure / Civil Works priced as 14.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 2,
+        "maturity": "30-75% definition maturity"
+      },
+      {
+        "cbs": "01.04",
+        "description": "MEP / Systems / Utilities",
+        "type": "Direct",
+        "basis": "Mechanical, electrical, controls and utilities",
+        "p10_bn": 1.131,
+        "p50_bn": 1.33,
+        "p90_bn": 1.596,
+        "impact_basis": "MEP / Systems / Utilities priced as 14.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 2,
+        "maturity": "30-75% definition maturity"
+      },
+      {
+        "cbs": "01.05",
+        "description": "Specialist Equipment / Fit-Out",
+        "type": "Direct",
+        "basis": "Permanent equipment and specialist fit-out",
+        "p10_bn": 0.969,
+        "p50_bn": 1.14,
+        "p90_bn": 1.368,
+        "impact_basis": "Specialist Equipment / Fit-Out priced as 12.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 2,
+        "maturity": "30-75% definition maturity"
+      },
+      {
+        "cbs": "01.06",
+        "description": "Cleanroom Envelope",
+        "type": "Direct",
+        "basis": "Cleanroom partitions, finishes and GMP envelope",
+        "p10_bn": 0.969,
+        "p50_bn": 1.14,
+        "p90_bn": 1.368,
+        "impact_basis": "Cleanroom Envelope priced as 12.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 2,
+        "maturity": "30-75% definition maturity"
+      },
+      {
+        "cbs": "01.07",
+        "description": "Process Utilities",
+        "type": "Direct",
+        "basis": "WFI, gases, clean steam and process utilities",
+        "p10_bn": 1.05,
+        "p50_bn": 1.235,
+        "p90_bn": 1.482,
+        "impact_basis": "Process Utilities priced as 13.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 2,
+        "maturity": "30-75% definition maturity"
+      },
+      {
+        "cbs": "01.08",
+        "description": "Validation / Qualification",
+        "type": "Indirect",
+        "basis": "IQ/OQ/PQ and GMP readiness",
+        "p10_bn": 0.404,
+        "p50_bn": 0.475,
+        "p90_bn": 0.57,
+        "impact_basis": "Validation / Qualification priced as 5.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 2,
+        "maturity": "30-75% definition maturity"
+      },
+      {
+        "cbs": "01.09",
+        "description": "Direct Labour",
+        "type": "Direct",
+        "basis": "Productivity, supervision and trade labour",
+        "p10_bn": 0.727,
+        "p50_bn": 0.855,
+        "p90_bn": 1.026,
+        "impact_basis": "Direct Labour priced as 9.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 2,
+        "maturity": "30-75% definition maturity"
+      },
+      {
+        "cbs": "01.10",
+        "description": "Direct Materials",
+        "type": "Direct",
+        "basis": "Concrete, steel, envelope, MEP materials",
+        "p10_bn": 0.807,
+        "p50_bn": 0.95,
+        "p90_bn": 1.14,
+        "impact_basis": "Direct Materials priced as 10.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 2,
+        "maturity": "30-75% definition maturity"
+      },
+      {
+        "cbs": "01.11",
+        "description": "Plant / Equipment",
+        "type": "Direct",
+        "basis": "Cranes, heavy plant and site equipment",
+        "p10_bn": 0.323,
+        "p50_bn": 0.38,
+        "p90_bn": 0.456,
+        "impact_basis": "Plant / Equipment priced as 4.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 2,
+        "maturity": "30-75% definition maturity"
+      },
+      {
+        "cbs": "02.01",
+        "description": "General Conditions / Prelims",
+        "type": "Indirect",
+        "basis": "Site management, safety, offices and temporary services",
+        "p10_bn": 0.565,
+        "p50_bn": 0.665,
+        "p90_bn": 0.798,
+        "impact_basis": "General Conditions / Prelims priced as 7.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 2,
+        "maturity": "30-75% definition maturity"
+      },
+      {
+        "cbs": "02.02",
+        "description": "Design / Professional Fees",
+        "type": "Indirect",
+        "basis": "Design, QS, controls, assurance and consultants",
+        "p10_bn": 0.565,
+        "p50_bn": 0.665,
+        "p90_bn": 0.798,
+        "impact_basis": "Design / Professional Fees priced as 7.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 2,
+        "maturity": "30-75% definition maturity"
+      },
+      {
+        "cbs": "02.03",
+        "description": "Permits / Insurance / Bonds",
+        "type": "Indirect",
+        "basis": "Permits, inspections, legal, bonds and insurance",
+        "p10_bn": 0.242,
+        "p50_bn": 0.285,
+        "p90_bn": 0.342,
+        "impact_basis": "Permits / Insurance / Bonds priced as 3.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 2,
+        "maturity": "30-75% definition maturity"
+      },
+      {
+        "cbs": "03.01",
+        "description": "QCRA Contingency",
+        "type": "Reserve",
+        "basis": "Known-unknown risk allowance",
+        "p10_bn": 0.484,
+        "p50_bn": 0.57,
+        "p90_bn": 0.684,
+        "impact_basis": "QCRA Contingency priced as 6.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 2,
+        "maturity": "30-75% definition maturity"
+      },
+      {
+        "cbs": "03.02",
+        "description": "Management Reserve",
+        "type": "Reserve",
+        "basis": "Sponsor-held reserve",
+        "p10_bn": 0.242,
+        "p50_bn": 0.285,
+        "p90_bn": 0.342,
+        "impact_basis": "Management Reserve priced as 3.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 2,
+        "maturity": "30-75% definition maturity"
+      }
+    ],
+    "3": [
+      {
+        "cbs": "01.01",
+        "description": "Site Preparation / Enabling",
+        "type": "Direct",
+        "basis": "Demolition, enabling, logistics and access",
+        "p10_bn": 0.456,
+        "p50_bn": 0.57,
+        "p90_bn": 0.741,
+        "impact_basis": "Site Preparation / Enabling priced as 6.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 3,
+        "maturity": "10-40% definition maturity"
+      },
+      {
+        "cbs": "01.02",
+        "description": "Substructure / Foundations",
+        "type": "Direct",
+        "basis": "Piling, groundworks, retaining and foundations",
+        "p10_bn": 0.608,
+        "p50_bn": 0.76,
+        "p90_bn": 0.988,
+        "impact_basis": "Substructure / Foundations priced as 8.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 3,
+        "maturity": "10-40% definition maturity"
+      },
+      {
+        "cbs": "01.03",
+        "description": "Superstructure / Civil Works",
+        "type": "Direct",
+        "basis": "Frame, civils, primary structures",
+        "p10_bn": 1.064,
+        "p50_bn": 1.33,
+        "p90_bn": 1.729,
+        "impact_basis": "Superstructure / Civil Works priced as 14.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 3,
+        "maturity": "10-40% definition maturity"
+      },
+      {
+        "cbs": "01.04",
+        "description": "MEP / Systems / Utilities",
+        "type": "Direct",
+        "basis": "Mechanical, electrical, controls and utilities",
+        "p10_bn": 1.064,
+        "p50_bn": 1.33,
+        "p90_bn": 1.729,
+        "impact_basis": "MEP / Systems / Utilities priced as 14.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 3,
+        "maturity": "10-40% definition maturity"
+      },
+      {
+        "cbs": "01.05",
+        "description": "Specialist Equipment / Fit-Out",
+        "type": "Direct",
+        "basis": "Permanent equipment and specialist fit-out",
+        "p10_bn": 0.912,
+        "p50_bn": 1.14,
+        "p90_bn": 1.482,
+        "impact_basis": "Specialist Equipment / Fit-Out priced as 12.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 3,
+        "maturity": "10-40% definition maturity"
+      },
+      {
+        "cbs": "01.06",
+        "description": "Cleanroom Envelope",
+        "type": "Direct",
+        "basis": "Cleanroom partitions, finishes and GMP envelope",
+        "p10_bn": 0.912,
+        "p50_bn": 1.14,
+        "p90_bn": 1.482,
+        "impact_basis": "Cleanroom Envelope priced as 12.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 3,
+        "maturity": "10-40% definition maturity"
+      },
+      {
+        "cbs": "01.07",
+        "description": "Process Utilities",
+        "type": "Direct",
+        "basis": "WFI, gases, clean steam and process utilities",
+        "p10_bn": 0.988,
+        "p50_bn": 1.235,
+        "p90_bn": 1.606,
+        "impact_basis": "Process Utilities priced as 13.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 3,
+        "maturity": "10-40% definition maturity"
+      },
+      {
+        "cbs": "01.08",
+        "description": "Validation / Qualification",
+        "type": "Indirect",
+        "basis": "IQ/OQ/PQ and GMP readiness",
+        "p10_bn": 0.38,
+        "p50_bn": 0.475,
+        "p90_bn": 0.617,
+        "impact_basis": "Validation / Qualification priced as 5.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 3,
+        "maturity": "10-40% definition maturity"
+      },
+      {
+        "cbs": "01.09",
+        "description": "Direct Labour",
+        "type": "Direct",
+        "basis": "Productivity, supervision and trade labour",
+        "p10_bn": 0.684,
+        "p50_bn": 0.855,
+        "p90_bn": 1.111,
+        "impact_basis": "Direct Labour priced as 9.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 3,
+        "maturity": "10-40% definition maturity"
+      },
+      {
+        "cbs": "01.10",
+        "description": "Direct Materials",
+        "type": "Direct",
+        "basis": "Concrete, steel, envelope, MEP materials",
+        "p10_bn": 0.76,
+        "p50_bn": 0.95,
+        "p90_bn": 1.235,
+        "impact_basis": "Direct Materials priced as 10.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 3,
+        "maturity": "10-40% definition maturity"
+      },
+      {
+        "cbs": "01.11",
+        "description": "Plant / Equipment",
+        "type": "Direct",
+        "basis": "Cranes, heavy plant and site equipment",
+        "p10_bn": 0.304,
+        "p50_bn": 0.38,
+        "p90_bn": 0.494,
+        "impact_basis": "Plant / Equipment priced as 4.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 3,
+        "maturity": "10-40% definition maturity"
+      },
+      {
+        "cbs": "02.01",
+        "description": "General Conditions / Prelims",
+        "type": "Indirect",
+        "basis": "Site management, safety, offices and temporary services",
+        "p10_bn": 0.532,
+        "p50_bn": 0.665,
+        "p90_bn": 0.865,
+        "impact_basis": "General Conditions / Prelims priced as 7.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 3,
+        "maturity": "10-40% definition maturity"
+      },
+      {
+        "cbs": "02.02",
+        "description": "Design / Professional Fees",
+        "type": "Indirect",
+        "basis": "Design, QS, controls, assurance and consultants",
+        "p10_bn": 0.532,
+        "p50_bn": 0.665,
+        "p90_bn": 0.865,
+        "impact_basis": "Design / Professional Fees priced as 7.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 3,
+        "maturity": "10-40% definition maturity"
+      },
+      {
+        "cbs": "02.03",
+        "description": "Permits / Insurance / Bonds",
+        "type": "Indirect",
+        "basis": "Permits, inspections, legal, bonds and insurance",
+        "p10_bn": 0.228,
+        "p50_bn": 0.285,
+        "p90_bn": 0.37,
+        "impact_basis": "Permits / Insurance / Bonds priced as 3.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 3,
+        "maturity": "10-40% definition maturity"
+      },
+      {
+        "cbs": "03.01",
+        "description": "QCRA Contingency",
+        "type": "Reserve",
+        "basis": "Known-unknown risk allowance",
+        "p10_bn": 0.456,
+        "p50_bn": 0.57,
+        "p90_bn": 0.741,
+        "impact_basis": "QCRA Contingency priced as 6.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 3,
+        "maturity": "10-40% definition maturity"
+      },
+      {
+        "cbs": "03.02",
+        "description": "Management Reserve",
+        "type": "Reserve",
+        "basis": "Sponsor-held reserve",
+        "p10_bn": 0.228,
+        "p50_bn": 0.285,
+        "p90_bn": 0.37,
+        "impact_basis": "Management Reserve priced as 3.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 3,
+        "maturity": "10-40% definition maturity"
+      }
+    ],
+    "4": [
+      {
+        "cbs": "01.01",
+        "description": "Site Preparation / Enabling",
+        "type": "Direct",
+        "basis": "Demolition, enabling, logistics and access",
+        "p10_bn": 0.399,
+        "p50_bn": 0.57,
+        "p90_bn": 0.855,
+        "impact_basis": "Site Preparation / Enabling priced as 6.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 4,
+        "maturity": "1-15% definition maturity"
+      },
+      {
+        "cbs": "01.02",
+        "description": "Substructure / Foundations",
+        "type": "Direct",
+        "basis": "Piling, groundworks, retaining and foundations",
+        "p10_bn": 0.532,
+        "p50_bn": 0.76,
+        "p90_bn": 1.14,
+        "impact_basis": "Substructure / Foundations priced as 8.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 4,
+        "maturity": "1-15% definition maturity"
+      },
+      {
+        "cbs": "01.03",
+        "description": "Superstructure / Civil Works",
+        "type": "Direct",
+        "basis": "Frame, civils, primary structures",
+        "p10_bn": 0.931,
+        "p50_bn": 1.33,
+        "p90_bn": 1.995,
+        "impact_basis": "Superstructure / Civil Works priced as 14.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 4,
+        "maturity": "1-15% definition maturity"
+      },
+      {
+        "cbs": "01.04",
+        "description": "MEP / Systems / Utilities",
+        "type": "Direct",
+        "basis": "Mechanical, electrical, controls and utilities",
+        "p10_bn": 0.931,
+        "p50_bn": 1.33,
+        "p90_bn": 1.995,
+        "impact_basis": "MEP / Systems / Utilities priced as 14.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 4,
+        "maturity": "1-15% definition maturity"
+      },
+      {
+        "cbs": "01.05",
+        "description": "Specialist Equipment / Fit-Out",
+        "type": "Direct",
+        "basis": "Permanent equipment and specialist fit-out",
+        "p10_bn": 0.798,
+        "p50_bn": 1.14,
+        "p90_bn": 1.71,
+        "impact_basis": "Specialist Equipment / Fit-Out priced as 12.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 4,
+        "maturity": "1-15% definition maturity"
+      },
+      {
+        "cbs": "01.06",
+        "description": "Cleanroom Envelope",
+        "type": "Direct",
+        "basis": "Cleanroom partitions, finishes and GMP envelope",
+        "p10_bn": 0.798,
+        "p50_bn": 1.14,
+        "p90_bn": 1.71,
+        "impact_basis": "Cleanroom Envelope priced as 12.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 4,
+        "maturity": "1-15% definition maturity"
+      },
+      {
+        "cbs": "01.07",
+        "description": "Process Utilities",
+        "type": "Direct",
+        "basis": "WFI, gases, clean steam and process utilities",
+        "p10_bn": 0.865,
+        "p50_bn": 1.235,
+        "p90_bn": 1.853,
+        "impact_basis": "Process Utilities priced as 13.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 4,
+        "maturity": "1-15% definition maturity"
+      },
+      {
+        "cbs": "01.08",
+        "description": "Validation / Qualification",
+        "type": "Indirect",
+        "basis": "IQ/OQ/PQ and GMP readiness",
+        "p10_bn": 0.332,
+        "p50_bn": 0.475,
+        "p90_bn": 0.712,
+        "impact_basis": "Validation / Qualification priced as 5.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 4,
+        "maturity": "1-15% definition maturity"
+      },
+      {
+        "cbs": "01.09",
+        "description": "Direct Labour",
+        "type": "Direct",
+        "basis": "Productivity, supervision and trade labour",
+        "p10_bn": 0.598,
+        "p50_bn": 0.855,
+        "p90_bn": 1.282,
+        "impact_basis": "Direct Labour priced as 9.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 4,
+        "maturity": "1-15% definition maturity"
+      },
+      {
+        "cbs": "01.10",
+        "description": "Direct Materials",
+        "type": "Direct",
+        "basis": "Concrete, steel, envelope, MEP materials",
+        "p10_bn": 0.665,
+        "p50_bn": 0.95,
+        "p90_bn": 1.425,
+        "impact_basis": "Direct Materials priced as 10.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 4,
+        "maturity": "1-15% definition maturity"
+      },
+      {
+        "cbs": "01.11",
+        "description": "Plant / Equipment",
+        "type": "Direct",
+        "basis": "Cranes, heavy plant and site equipment",
+        "p10_bn": 0.266,
+        "p50_bn": 0.38,
+        "p90_bn": 0.57,
+        "impact_basis": "Plant / Equipment priced as 4.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 4,
+        "maturity": "1-15% definition maturity"
+      },
+      {
+        "cbs": "02.01",
+        "description": "General Conditions / Prelims",
+        "type": "Indirect",
+        "basis": "Site management, safety, offices and temporary services",
+        "p10_bn": 0.465,
+        "p50_bn": 0.665,
+        "p90_bn": 0.998,
+        "impact_basis": "General Conditions / Prelims priced as 7.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 4,
+        "maturity": "1-15% definition maturity"
+      },
+      {
+        "cbs": "02.02",
+        "description": "Design / Professional Fees",
+        "type": "Indirect",
+        "basis": "Design, QS, controls, assurance and consultants",
+        "p10_bn": 0.465,
+        "p50_bn": 0.665,
+        "p90_bn": 0.998,
+        "impact_basis": "Design / Professional Fees priced as 7.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 4,
+        "maturity": "1-15% definition maturity"
+      },
+      {
+        "cbs": "02.03",
+        "description": "Permits / Insurance / Bonds",
+        "type": "Indirect",
+        "basis": "Permits, inspections, legal, bonds and insurance",
+        "p10_bn": 0.199,
+        "p50_bn": 0.285,
+        "p90_bn": 0.427,
+        "impact_basis": "Permits / Insurance / Bonds priced as 3.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 4,
+        "maturity": "1-15% definition maturity"
+      },
+      {
+        "cbs": "03.01",
+        "description": "QCRA Contingency",
+        "type": "Reserve",
+        "basis": "Known-unknown risk allowance",
+        "p10_bn": 0.399,
+        "p50_bn": 0.57,
+        "p90_bn": 0.855,
+        "impact_basis": "QCRA Contingency priced as 6.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 4,
+        "maturity": "1-15% definition maturity"
+      },
+      {
+        "cbs": "03.02",
+        "description": "Management Reserve",
+        "type": "Reserve",
+        "basis": "Sponsor-held reserve",
+        "p10_bn": 0.199,
+        "p50_bn": 0.285,
+        "p90_bn": 0.427,
+        "impact_basis": "Management Reserve priced as 3.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 4,
+        "maturity": "1-15% definition maturity"
+      }
+    ],
+    "5": [
+      {
+        "cbs": "01.01",
+        "description": "Site Preparation / Enabling",
+        "type": "Direct",
+        "basis": "Demolition, enabling, logistics and access",
+        "p10_bn": 0.285,
+        "p50_bn": 0.57,
+        "p90_bn": 1.14,
+        "impact_basis": "Site Preparation / Enabling priced as 6.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 5,
+        "maturity": "0-2% definition maturity"
+      },
+      {
+        "cbs": "01.02",
+        "description": "Substructure / Foundations",
+        "type": "Direct",
+        "basis": "Piling, groundworks, retaining and foundations",
+        "p10_bn": 0.38,
+        "p50_bn": 0.76,
+        "p90_bn": 1.52,
+        "impact_basis": "Substructure / Foundations priced as 8.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 5,
+        "maturity": "0-2% definition maturity"
+      },
+      {
+        "cbs": "01.03",
+        "description": "Superstructure / Civil Works",
+        "type": "Direct",
+        "basis": "Frame, civils, primary structures",
+        "p10_bn": 0.665,
+        "p50_bn": 1.33,
+        "p90_bn": 2.66,
+        "impact_basis": "Superstructure / Civil Works priced as 14.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 5,
+        "maturity": "0-2% definition maturity"
+      },
+      {
+        "cbs": "01.04",
+        "description": "MEP / Systems / Utilities",
+        "type": "Direct",
+        "basis": "Mechanical, electrical, controls and utilities",
+        "p10_bn": 0.665,
+        "p50_bn": 1.33,
+        "p90_bn": 2.66,
+        "impact_basis": "MEP / Systems / Utilities priced as 14.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 5,
+        "maturity": "0-2% definition maturity"
+      },
+      {
+        "cbs": "01.05",
+        "description": "Specialist Equipment / Fit-Out",
+        "type": "Direct",
+        "basis": "Permanent equipment and specialist fit-out",
+        "p10_bn": 0.57,
+        "p50_bn": 1.14,
+        "p90_bn": 2.28,
+        "impact_basis": "Specialist Equipment / Fit-Out priced as 12.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 5,
+        "maturity": "0-2% definition maturity"
+      },
+      {
+        "cbs": "01.06",
+        "description": "Cleanroom Envelope",
+        "type": "Direct",
+        "basis": "Cleanroom partitions, finishes and GMP envelope",
+        "p10_bn": 0.57,
+        "p50_bn": 1.14,
+        "p90_bn": 2.28,
+        "impact_basis": "Cleanroom Envelope priced as 12.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 5,
+        "maturity": "0-2% definition maturity"
+      },
+      {
+        "cbs": "01.07",
+        "description": "Process Utilities",
+        "type": "Direct",
+        "basis": "WFI, gases, clean steam and process utilities",
+        "p10_bn": 0.618,
+        "p50_bn": 1.235,
+        "p90_bn": 2.47,
+        "impact_basis": "Process Utilities priced as 13.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 5,
+        "maturity": "0-2% definition maturity"
+      },
+      {
+        "cbs": "01.08",
+        "description": "Validation / Qualification",
+        "type": "Indirect",
+        "basis": "IQ/OQ/PQ and GMP readiness",
+        "p10_bn": 0.237,
+        "p50_bn": 0.475,
+        "p90_bn": 0.95,
+        "impact_basis": "Validation / Qualification priced as 5.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 5,
+        "maturity": "0-2% definition maturity"
+      },
+      {
+        "cbs": "01.09",
+        "description": "Direct Labour",
+        "type": "Direct",
+        "basis": "Productivity, supervision and trade labour",
+        "p10_bn": 0.427,
+        "p50_bn": 0.855,
+        "p90_bn": 1.71,
+        "impact_basis": "Direct Labour priced as 9.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 5,
+        "maturity": "0-2% definition maturity"
+      },
+      {
+        "cbs": "01.10",
+        "description": "Direct Materials",
+        "type": "Direct",
+        "basis": "Concrete, steel, envelope, MEP materials",
+        "p10_bn": 0.475,
+        "p50_bn": 0.95,
+        "p90_bn": 1.9,
+        "impact_basis": "Direct Materials priced as 10.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 5,
+        "maturity": "0-2% definition maturity"
+      },
+      {
+        "cbs": "01.11",
+        "description": "Plant / Equipment",
+        "type": "Direct",
+        "basis": "Cranes, heavy plant and site equipment",
+        "p10_bn": 0.19,
+        "p50_bn": 0.38,
+        "p90_bn": 0.76,
+        "impact_basis": "Plant / Equipment priced as 4.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 5,
+        "maturity": "0-2% definition maturity"
+      },
+      {
+        "cbs": "02.01",
+        "description": "General Conditions / Prelims",
+        "type": "Indirect",
+        "basis": "Site management, safety, offices and temporary services",
+        "p10_bn": 0.333,
+        "p50_bn": 0.665,
+        "p90_bn": 1.33,
+        "impact_basis": "General Conditions / Prelims priced as 7.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 5,
+        "maturity": "0-2% definition maturity"
+      },
+      {
+        "cbs": "02.02",
+        "description": "Design / Professional Fees",
+        "type": "Indirect",
+        "basis": "Design, QS, controls, assurance and consultants",
+        "p10_bn": 0.333,
+        "p50_bn": 0.665,
+        "p90_bn": 1.33,
+        "impact_basis": "Design / Professional Fees priced as 7.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 5,
+        "maturity": "0-2% definition maturity"
+      },
+      {
+        "cbs": "02.03",
+        "description": "Permits / Insurance / Bonds",
+        "type": "Indirect",
+        "basis": "Permits, inspections, legal, bonds and insurance",
+        "p10_bn": 0.142,
+        "p50_bn": 0.285,
+        "p90_bn": 0.57,
+        "impact_basis": "Permits / Insurance / Bonds priced as 3.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 5,
+        "maturity": "0-2% definition maturity"
+      },
+      {
+        "cbs": "03.01",
+        "description": "QCRA Contingency",
+        "type": "Reserve",
+        "basis": "Known-unknown risk allowance",
+        "p10_bn": 0.285,
+        "p50_bn": 0.57,
+        "p90_bn": 1.14,
+        "impact_basis": "QCRA Contingency priced as 6.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 5,
+        "maturity": "0-2% definition maturity"
+      },
+      {
+        "cbs": "03.02",
+        "description": "Management Reserve",
+        "type": "Reserve",
+        "basis": "Sponsor-held reserve",
+        "p10_bn": 0.142,
+        "p50_bn": 0.285,
+        "p90_bn": 0.57,
+        "impact_basis": "Management Reserve priced as 3.0% of P50 from sector template, location factor 1.08, scale factor 1.90, complexity factor 1.93.",
+        "class": 5,
+        "maturity": "0-2% definition maturity"
+      }
+    ]
+  }
+}

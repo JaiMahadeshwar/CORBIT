@@ -55,3 +55,8 @@ body::before {
     transform: translateY(0);
   }
 }
+
+
+.riskHigh{color:#ff6b6b!important}
+.riskMedium{color:#ffd166!important}
+.riskLow{color:#8df7ff!important}

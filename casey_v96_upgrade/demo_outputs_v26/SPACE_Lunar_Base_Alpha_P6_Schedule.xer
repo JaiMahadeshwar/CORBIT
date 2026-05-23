@@ -1,0 +1,49 @@
+ERMHDR	24.12	2026-05-02	Project	CASEY	CASEY	Project Management	USD
+%T	PROJECT
+%F	proj_id	proj_short_name	proj_name
+%R	1	CASEY	Space Base
+%T	WBS
+%F	wbs_id	proj_id	wbs_short_name	wbs_name
+%R	1	1	CASEY	CASEY Project
+%T	TASK
+%F	task_id	proj_id	wbs_id	task_code	task_name	duration_type	target_drtn_hr_cnt
+%R	1	1	1	A1000	Project initiation / controls setup	Fixed Duration	1120
+%R	2	1	1	A1100	Strategic brief, funding and approval	Fixed Duration	1760
+%R	3	1	1	A1200	Requirements definition and scope freeze	Fixed Duration	1760
+%R	4	1	1	A1300	Concept / reference architecture	Fixed Duration	2880
+%R	5	1	1	A1400	Planning, regulatory and stakeholder approvals	Fixed Duration	3200
+%R	6	1	1	A1500	Procurement strategy and tender packaging	Fixed Duration	2080
+%R	7	1	1	A1600	Detailed design / IFC development	Fixed Duration	3520
+%R	8	1	1	A1700	Long-lead procurement	Fixed Duration	3200
+%R	9	1	1	A1800	Site / launch integration readiness	Fixed Duration	2560
+%R	10	1	1	A1900	Main construction / fabrication / assembly	Fixed Duration	7840
+%R	11	1	1	A2000	Systems integration and testing	Fixed Duration	3520
+%R	12	1	1	A2100	Commissioning, operations readiness and closeout	Fixed Duration	2080
+%R	13	1	1	P1000	Launch campaign	Fixed Duration	1280
+%R	14	1	1	P2000	Payload integration	Fixed Duration	1280
+%R	15	1	1	P3000	Power and ECLSS	Fixed Duration	1280
+%R	16	1	1	P4000	Surface logistics	Fixed Duration	1280
+%R	17	1	1	P5000	Mission operations	Fixed Duration	1280
+%R	18	1	1	P6000	Robotic assembly	Fixed Duration	1280
+%T	TASKPRED
+%F	task_pred_id	task_id	pred_task_id	pred_type
+%R	1	2	1	FS
+%R	2	3	2	FS
+%R	3	4	3	FS
+%R	4	5	3	FS
+%R	5	6	4	FS
+%R	6	7	4	FS
+%R	7	8	6	FS
+%R	8	9	5	FS
+%R	9	9	6	FS
+%R	10	10	7	FS
+%R	11	10	8	FS
+%R	12	10	9	FS
+%R	13	11	10	FS
+%R	14	12	11	FS
+%R	15	13	10	FS
+%R	16	14	13	FS
+%R	17	15	14	FS
+%R	18	16	15	FS
+%R	19	17	16	FS
+%R	20	18	17	FS

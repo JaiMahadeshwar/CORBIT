@@ -1007,3 +1007,561 @@ def install_v64(app):
     def allpack(payload: dict = Body(default={})):
         m=_payload_model(payload); return stream(all_zip_bytes(m),"application/zip","CASEY_FINAL_Output_Pack.zip")
     for p,e in [("/export/workbook",workbook),("/export/cost-model",workbook),("/export/risk-register",risks),("/export/xer",xer),("/export/schedule-csv",csvexp),("/export/json",jsonexp),("/export/all",allpack),("/export/full-pack",allpack),("/v64/export/all",allpack)]: replace_post(p,e)
+
+# =============================================================================
+# CASEY V118 FINAL DEMO EXPORT REFINEMENT PATCH
+# Focus: planner-grade XER sophistication, asymmetric tornado realism, and deeper
+# risk ownership controls while keeping the existing API surface unchanged.
+# =============================================================================
+VERSION = "V118_FINAL_DEMO_EXPORT_REFINEMENT"
+
+_REL_TYPES = ["PR_FS", "PR_SS", "PR_FF", "PR_FS", "PR_SS", "PR_FS"]
+_CALENDAR_BY_PHASE = {
+    "Governance": "5D_BUSINESS", "Business Case": "5D_BUSINESS", "Scope": "5D_BUSINESS", "Design": "5D_BUSINESS",
+    "Consents": "5D_BUSINESS", "Procurement": "5D_BUSINESS", "Enabling": "6D_DELIVERY", "Civil": "6D_DELIVERY",
+    "Build": "6D_DELIVERY", "Systems": "6D_DELIVERY", "Integration": "7D_COMMISSIONING", "Commissioning": "7D_COMMISSIONING",
+    "Handover": "5D_BUSINESS", "Mission": "5D_MISSION", "Mission Definition": "5D_MISSION", "Architecture": "5D_MISSION",
+    "Technology": "5D_MISSION", "Supply Chain": "5D_MISSION", "Manufacturing": "6D_AIT", "AIT": "6D_AIT",
+    "Launch Prep": "7D_LAUNCH_WINDOW", "Launch + Transit": "7D_LAUNCH_WINDOW", "Transit": "7D_LAUNCH_WINDOW",
+    "Deployment": "7D_SURFACE_OPS", "Operations": "7D_SURFACE_OPS", "Sustainment": "7D_SURFACE_OPS",
+}
+_RESOURCE_BY_PHASE = {
+    "Governance": "Executive sponsor / PMO", "Business Case": "Commercial + controls team", "Scope": "Design authority",
+    "Design": "Design management team", "Consents": "Permitting / stakeholder lead", "Procurement": "Procurement + vendor managers",
+    "Enabling": "Enabling works contractor", "Civil": "Civil contractor", "Build": "Main contractor",
+    "Systems": "MEP / OEM specialists", "Integration": "Systems integration team", "Commissioning": "Commissioning authority + operations",
+    "Handover": "Operations readiness team", "Mission": "Mission assurance board", "Mission Definition": "Mission assurance board",
+    "Architecture": "Systems engineering authority", "Technology": "TRL closure team", "Supply Chain": "Payload / launch procurement",
+    "Manufacturing": "AIT manufacturing cell", "AIT": "AIT cell + quality", "Launch Prep": "Launch provider + range authority",
+    "Launch + Transit": "Flight dynamics + mission ops", "Transit": "Flight dynamics + mission ops", "Deployment": "Surface/orbital ops team",
+    "Operations": "Mission operations", "Sustainment": "Sustainment + resupply team",
+}
+_STATUS_CYCLE = ["Active mitigation", "Monitor", "Escalated", "Owner assigned", "Evidence required", "Response in progress"]
+
+
+def _v118_skew(i, scenario):
+    scen = SCENARIO_RULES.get(scenario, SCENARIO_RULES["base"])
+    # intentionally uneven, not symmetrical. Acceleration worsens right-tail and float risks.
+    base = [1.00, 1.55, 0.72, 1.28, 0.91, 1.83, 0.66, 1.17, 2.10, 0.58, 1.42, 0.84][i % 12]
+    if scenario == "faster" and i % 3 in (0, 1): base *= 1.22
+    if scenario == "lower_risk" and i % 4 != 0: base *= 0.76
+    return max(0.35, base * scen.get("risk", 1.0))
+
+
+def _v118_owner_for(title, idx, pkey):
+    t = str(title).lower()
+    if "grid" in t or "energ" in t or "utility" in t: return "EVP Delivery / Grid Interface Director"
+    if "transformer" in t or "switchgear" in t or "procurement" in t or "supply" in t: return "Chief Procurement Officer"
+    if "commission" in t or "testing" in t or "integration" in t or "ist" in t: return "Commissioning Director"
+    if "design" in t or "interface" in t: return "Design Authority Lead"
+    if pkey == "space" and ("launch" in t or "range" in t): return "Mission Integration Director"
+    if pkey == "space" and ("trl" in t or "qualification" in t or "flight" in t): return "Chief Systems Engineer"
+    return ["Project Director", "Controls Director", "Commercial Lead", "Risk Manager", "Construction Director", "Operations Readiness Lead"][idx % 6]
+
+
+def build_schedule_rows(model, level=None, scenario=None):
+    """V118 planner-grade schedule rows: WBS depth, relationship types, lags/leads, calendars,
+    resource loading and near-critical density are visible in CSV/JSON and injected into XER.
+    """
+    level = int(level or selected_level(model))
+    scenario = scenario or scenario_key(model)
+    rule = SCENARIO_RULES.get(scenario, SCENARIO_RULES["base"])
+    total_months = max(6, int(re.findall(r"\d+", str(model.get("schedule") or "60"))[0]) if re.findall(r"\d+", str(model.get("schedule") or "60")) else 60)
+    phases = schedule_phases(model)
+    n = level_activity_count(level)
+    rows=[]
+    prior_by_phase={}
+    prev=""
+    for i in range(n):
+        phase, base = phases[i % len(phases)]
+        pkg = 1 + i // len(phases)
+        workface = 1 + (i % 4)
+        detail_suffix = ""
+        if level >= 3: detail_suffix = f" — package {pkg}"
+        if level >= 4: detail_suffix += " / control account"
+        if level >= 5: detail_suffix += f" / workface {workface}"
+        act_id = f"L{level}-{(i+1):03d}"
+        wave = [0.82,1.06,0.93,1.24,0.74,1.15,0.88][i % 7]
+        dur = max(0.5, round((total_months * rule["duration"] / max(1,n)) * wave, 1))
+        if i==0: name = "Project start / mobilisation"
+        elif i==n-1: name = "Project complete / operational handover"
+        else: name = base + detail_suffix
+        rel = _REL_TYPES[i % len(_REL_TYPES)] if i else ""
+        lag_days = 0
+        if rel == "PR_SS": lag_days = [0, 3, 5, -2, 7][i % 5]
+        elif rel == "PR_FF": lag_days = [0, 2, -3, 6][i % 4]
+        elif phase in ["Procurement", "Systems", "Integration", "Commissioning", "Launch Prep", "Deployment"]: lag_days = [0, 5, 10, -5][i % 4]
+        pred = prev
+        # Add occasional phase convergence predecessor for more authentic network density.
+        if level >= 4 and phase in prior_by_phase and i % 5 == 0:
+            pred = f"{prev};{prior_by_phase[phase]}"
+        calendar = _CALENDAR_BY_PHASE.get(phase, "5D_BUSINESS")
+        resource = _RESOURCE_BY_PHASE.get(phase, "Integrated delivery team")
+        near = phase in ["Procurement","Systems","Integration","Commissioning","Launch Prep","Deployment"] or i >= n-8 or (level >= 4 and i % 6 == 0)
+        critical = "Yes" if i >= n-5 or (scenario == "faster" and near and i % 3 != 2) else "No"
+        float_days = 0 if critical == "Yes" else max(2, [4,7,11,16,23,35,48][i % 7] - (6 if near else 0))
+        loading = round((1.0 + (i % 5) * 0.35) * (1.25 if near else 0.85), 2)
+        wbs_path = f"{clean(model.get('title') or 'CASEY Project',30)} / {phase} / Package {pkg}"
+        rows.append({"level":level,"activity_id":act_id,"phase":phase,"activity":name,"predecessor":pred,"relationship_type":rel,"lag_days":lag_days,"duration_months":dur,"duration_days":int(round(dur*21.75)),"critical":critical,"near_critical":"Yes" if near else "No","total_float_days":float_days,"calendar":calendar,"primary_resource":resource,"resource_loading_fte":loading,"wbs_path":wbs_path,"scenario":SCENARIO_RULES[scenario]["label"],"basis":f"Level {level} schedule with {rel or 'start'} logic, {lag_days:+d}d lag, {calendar} calendar and {resource}; scenario {SCENARIO_RULES[scenario]['label']} factor {rule['duration']:.2f}."})
+        prior_by_phase[phase]=act_id
+        prev=act_id
+    return rows
+
+
+def schedule_csv_bytes(model):
+    import io
+    buf=io.StringIO(); w=csv.writer(buf)
+    w.writerow(["Level","Activity ID","WBS Path","Phase","Activity","Predecessor","Relationship Type","Lag / Lead Days","Duration Months","Duration Days","Critical","Near Critical","Total Float Days","Calendar","Primary Resource","Resource Loading FTE","Scenario","Basis"])
+    for lvl,acts in all_schedule_levels(model).items():
+        for a in acts:
+            w.writerow([lvl,a["activity_id"],a.get("wbs_path",""),a["phase"],a["activity"],a.get("predecessor",""),a.get("relationship_type",""),a.get("lag_days",0),a["duration_months"],a["duration_days"],a["critical"],a.get("near_critical",""),a.get("total_float_days",""),a.get("calendar",""),a.get("primary_resource",""),a.get("resource_loading_fte",""),a["scenario"],a["basis"]])
+    return buf.getvalue().encode("utf-8")
+
+
+def build_risks(model):
+    """V118 operational risk register: owner, response status, mitigation confidence,
+    residual exposure, escalation trigger and asymmetric QCRA/QSRA tornado fields.
+    """
+    pkey=project_type_key(model); scenario=scenario_key(model); scen=SCENARIO_RULES.get(scenario, SCENARIO_RULES["base"])
+    base_titles = list(SECTOR_RISKS.get(pkey, SECTOR_RISKS["general"])) + list(SECTOR_RISKS["general"])
+    extra = ["Grid energisation readiness", "Transformer fabrication slot", "Switchgear vendor assumption", "Integrated systems testing overlap", "Commissioning resource availability", "Owner decision latency", "Authority approval condition", "Interface data maturity", "Logistics route constraint", "Recovery float consumption", "Operational readiness evidence", "Supplier concentration exposure", "Contractor productivity variance", "Critical package quality escape", "Change-control backlog", "Residual contingency masking", "Near-critical path convergence", "Market escalation tail", "Cyber/security approval", "Handover documentation maturity", "Training and mobilisation readiness", "Utility outage calendar dependency", "Factory acceptance test failure", "Late design freeze", "Commercial claim crystallisation"]
+    if pkey == "space":
+        extra += ["Launch window slip", "TRL closure shortfall", "Mass margin growth", "Thermal vacuum qualification failure", "Range approval delay", "Orbital insertion contingency", "Surface deployment sequencing", "Resupply cadence constraint"]
+    titles=[]
+    for t in base_titles + extra:
+        if t not in titles: titles.append(t)
+    out=[]
+    p50=max(0.1, as_float_money(model.get("cost_p50")))
+    for i,t in enumerate(titles[:42]):
+        skew=_v118_skew(i, scenario)
+        prob=max(6,min(88,int(round((16 + (i*9)%58) * (0.92 + 0.08*skew)))))
+        ml=round(p50 * (0.006 + (i%9)*0.0028) * skew, 3)
+        low=round(ml * [0.18,0.31,0.44,0.22,0.55][i%5], 3)
+        high=round(ml * [1.8,2.4,3.1,1.35,4.2,2.05][i%6], 3)
+        sched_ml=int((8 + (i%11)*6) * (0.85 + skew*0.25))
+        sched_low=max(1,int(sched_ml * [0.12,0.28,0.4,0.18][i%4]))
+        sched_high=max(sched_ml+1,int(sched_ml * [1.55,2.2,2.9,1.35,3.7][i%5]))
+        owner=_v118_owner_for(t, i, pkey)
+        status=_STATUS_CYCLE[i % len(_STATUS_CYCLE)]
+        mit_conf=max(0.18,min(0.86,0.64 - (skew-1)*0.11 - (0.10 if status in ["Evidence required","Escalated"] else 0) + (0.04 if status=="Active mitigation" else 0)))
+        residual=max(0.08,min(0.92,(prob/100)*(1-mit_conf)*skew))
+        exposure="Very High" if residual>0.55 else "High" if residual>0.34 else "Medium" if residual>0.18 else "Low"
+        trigger=f"{t} trigger threshold breached: >{7+(i%5)*7} days movement, supplier evidence gap, or unresolved gate condition"
+        mitigation=f"{status}: named owner to validate evidence, close causal assumption, update QSRA/QCRA impacts and confirm residual exposure before next governance gate."
+        out.append({
+            "risk_id": f"R-{i+1:03d}", "category": "Space" if pkey=="space" else ("Delivery" if i%3 else "Commercial / Governance"),
+            "title": t, "cause": f"{t} driven by maturity, interface, market or approval uncertainty under the {scen['label']} scenario.",
+            "event": f"{t} materialises and changes the active control baseline.",
+            "impact": "Cost growth, schedule movement, contingency drawdown, rework or delayed benefit realisation.",
+            "owner": owner, "mitigation": mitigation, "response_status": status, "mitigation_confidence": round(mit_conf,2),
+            "residual_exposure": exposure, "residual_exposure_score": round(residual,3), "target_review_date": (datetime.utcnow()+timedelta(days=14+(i%6)*7)).strftime("%Y-%m-%d"),
+            "escalation_threshold": trigger, "trigger": trigger, "probability_pct": prob,
+            "cost_optimistic_bn": low, "cost_ml_bn": ml, "cost_pessimistic_bn": high,
+            "cost_downside_delta_bn": round(high-ml,3), "cost_upside_delta_bn": round(ml-low,3),
+            "schedule_optimistic_days": sched_low, "schedule_ml_days": sched_ml, "schedule_pessimistic_days": sched_high,
+            "schedule_downside_delta_days": sched_high-sched_ml, "schedule_upside_delta_days": sched_ml-sched_low,
+            "cost_emv_bn": round(ml*prob/100,3), "schedule_emv_days": round(sched_ml*prob/100,1),
+            "status": "Open", "board_visibility": "Yes" if i<14 or exposure in ["High","Very High"] else "No", "scenario": scen["label"]
+        })
+    out.sort(key=lambda r:(r["residual_exposure_score"], r["cost_emv_bn"], r["schedule_emv_days"]), reverse=True)
+    return out
+
+
+def curves(model):
+    """V118 deliberately irregular P-curves with asymmetric tails."""
+    p50=as_float_money(model.get("cost_p50")); sched=int(re.findall(r"\d+",str(model.get("schedule") or "60"))[0]) if re.findall(r"\d+",str(model.get("schedule") or "60")) else 60
+    cls=selected_class(model); rule=CLASS_RULES[cls]; scen=SCENARIO_RULES[scenario_key(model)]
+    rows=[]
+    for pct in [1,5,10,20,30,40,50,60,70,80,85,90,95,99]:
+        x=(pct-50)/50
+        tail=abs(x)**1.55
+        wobble=[-0.012,0.006,-0.004,0.014,-0.008,0.0,0.0,0.011,-0.006,0.018,0.027,0.042,0.065,0.095][len(rows)]
+        cost=p50*(1 + (rule["high"]-1)*max(0,x)*tail*1.35 + (1-rule["low"])*min(0,x)*tail*0.8 + wobble)
+        months=sched*(1 + (0.34*scen["risk"])*max(0,x)*tail*1.5 + (0.13)*min(0,x)*tail + wobble*0.7)
+        rows.append({"percentile":pct,"qcra_cost_bn":round(max(0.01,cost),3),"qsra_months":round(max(1,months),2)})
+    return rows
+
+
+def patch_template_xer(model):
+    tables, order = _template_tables()
+    scen_key=scenario_key(model); scen=SCENARIO_RULES[scen_key]
+    lvl=selected_level(model); ptype=project_type_key(model)
+    mode="Space" if ptype=="space" else "Earth"
+    title=_safe_xer_text(model.get("title") or model.get("project_name") or ("Lunar Base" if mode=="Space" else "Capital Project"),80)
+    proj_id=3338; proj_short=_safe_xer_text(f"CASEY_{mode}_{scen['label']}_L{lvl}",32).replace(" ","_")[:32]
+    proj_name=_safe_xer_text(f"CASEY {title} — {mode} — {scen['label']} Scenario — Level {lvl} Schedule",120)
+    start_dt=datetime(2026,1,5,8,0); acts=build_schedule_rows(model,lvl,scen_key)
+    phases=[]
+    for a in acts:
+        if a["phase"] not in phases: phases.append(a["phase"])
+    root_wbs=35000; wbs_ids={phase:35001+i for i,phase in enumerate(phases)}
+    out=["ERMHDR\t8.0\t2026-01-05\tProject\tadmin\tPPSEn\tdbxDatabaseNoName\tProject Management\tUSD"]
+    def emit_table(name, rows=None):
+        if name not in tables: return
+        out.append(tables[name]["header"]); out.append("%F\t"+"\t".join(tables[name]["fields"]))
+        if rows is None:
+            for r in tables[name]["rows"]: out.append("%R\t"+"\t".join(r))
+        else: out.extend(rows)
+    for name in ["CURRTYPE","OBS","UDFTYPE"]: emit_table(name)
+    pf=tables["PROJECT"]["fields"]; base_project=tables["PROJECT"]["rows"][0]
+    emit_table("PROJECT", [_row(pf,{"proj_id":proj_id,"proj_short_name":proj_short,"clndr_id":3892,"wbs_max_sum_level":lvl,"plan_start_date":start_dt.strftime("%Y-%m-%d %H:%M"),"last_recalc_date":start_dt.strftime("%Y-%m-%d %H:%M"),"scd_end_date":(start_dt+timedelta(days=sum(a["duration_days"] for a in acts))).strftime("%Y-%m-%d %H:%M"),"guid":f"CASEYV118{mode}{scen['label']}L{lvl}"[:22],"add_by_name":"CASEY","export_flag":"Y"},base_project)])
+    emit_table("CALENDAR"); emit_table("SCHEDOPTIONS")
+    wf=tables["PROJWBS"]["fields"]; base_wbs=tables["PROJWBS"]["rows"][0]
+    wbs_rows=[_row(wf,{"wbs_id":root_wbs,"proj_id":proj_id,"obs_id":565,"seq_num":0,"proj_node_flag":"Y","wbs_short_name":proj_short,"wbs_name":proj_name,"parent_wbs_id":"","guid":f"CASEY_V118_ROOT"},base_wbs)]
+    for i,phase in enumerate(phases):
+        wbs_rows.append(_row(wf,{"wbs_id":wbs_ids[phase],"proj_id":proj_id,"obs_id":565,"seq_num":i+1,"proj_node_flag":"N","wbs_short_name":f"{i+1:02d}","wbs_name":_safe_xer_text(phase,60),"parent_wbs_id":root_wbs,"guid":f"CASEY_V118_WBS_{i+1:02d}"},base_wbs))
+    emit_table("PROJWBS",wbs_rows)
+    tf=tables["TASK"]["fields"]; base_task=tables["TASK"]["rows"][0]
+    task_rows=[]; current=start_dt
+    for i,a in enumerate(acts):
+        tid=200000+i+1; dur_days=max(1,int(a["duration_days"])); dur_hr=dur_days*8; s=current; e=current+timedelta(days=dur_days); current=e+timedelta(days=max(0,1+a.get("lag_days",0)//7))
+        task_rows.append(_row(tf,{"task_id":tid,"proj_id":proj_id,"wbs_id":wbs_ids[a["phase"]],"clndr_id":3892,"phys_complete_pct":"0","est_wt":str(a.get("resource_loading_fte",1)),"complete_pct_type":"CP_Drtn","task_type":"TT_Task","duration_type":"DT_FixedRate","status_code":"TK_NotStart","task_code":a["activity_id"],"task_name":_safe_xer_text(a["activity"],120),"total_float_hr_cnt":str(int(a.get("total_float_days",0))*8),"free_float_hr_cnt":str(max(0,int(a.get("total_float_days",0))*4)),"remain_drtn_hr_cnt":dur_hr,"target_drtn_hr_cnt":dur_hr,"target_start_date":s.strftime("%Y-%m-%d %H:%M"),"target_end_date":e.strftime("%Y-%m-%d %H:%M"),"early_start_date":s.strftime("%Y-%m-%d %H:%M"),"early_end_date":e.strftime("%Y-%m-%d %H:%M"),"late_start_date":(s+timedelta(days=int(a.get("total_float_days",0)))).strftime("%Y-%m-%d %H:%M"),"late_end_date":(e+timedelta(days=int(a.get("total_float_days",0)))).strftime("%Y-%m-%d %H:%M"),"restart_date":s.strftime("%Y-%m-%d %H:%M"),"reend_date":e.strftime("%Y-%m-%d %H:%M"),"driving_path_flag":"Y" if a["critical"]=="Yes" else "N","guid":f"CASEY_V118_TASK_{i+1:03d}"[:22],"create_user":"CASEY","update_user":"CASEY","create_date":start_dt.strftime("%Y-%m-%d %H:%M"),"update_date":start_dt.strftime("%Y-%m-%d %H:%M")},base_task))
+    emit_table("TASK",task_rows)
+    if "TASKPRED" in tables:
+        pfld=tables["TASKPRED"]["fields"]; base_pred=tables["TASKPRED"]["rows"][0] if tables["TASKPRED"]["rows"] else None
+        pred_rows=[]
+        for i,a in enumerate(acts[1:],1):
+            pred_rows.append(_row(pfld,{"task_pred_id":260000+i,"task_id":200000+i+1,"pred_task_id":200000+i,"proj_id":proj_id,"pred_proj_id":proj_id,"pred_type":a.get("relationship_type") or "PR_FS","lag_hr_cnt":int(a.get("lag_days",0))*8,"float_path":"CASEY","aref":"","arls":""},base_pred))
+            if lvl >= 4 and i > 4 and i % 7 == 0:
+                pred_rows.append(_row(pfld,{"task_pred_id":270000+i,"task_id":200000+i+1,"pred_task_id":200000+max(1,i-3),"proj_id":proj_id,"pred_proj_id":proj_id,"pred_type":"PR_SS","lag_hr_cnt":16,"float_path":"CASEY_NC","aref":"","arls":""},base_pred))
+        emit_table("TASKPRED",pred_rows)
+    if "UDFVALUE" in tables:
+        uf=tables["UDFVALUE"]["fields"]; udf_rows=[]
+        for i,a in enumerate(acts):
+            tid=200000+i+1; d=max(1,int(a["duration_days"])); vals=[(329,d),(330,max(d+1,int(d*(1.25+(i%5)*0.11)))),(331,max(1,int(d*(0.62+(i%4)*0.05))))]
+            for udf_id,val in vals: udf_rows.append(_row(uf,{"udf_type_id":udf_id,"fk_id":tid,"proj_id":proj_id,"udf_text":val},None))
+        emit_table("UDFVALUE",udf_rows)
+    text="\n".join(out)+"\n"
+    for bad in ["Mondrian","Lilly Mondrian","L01-10","Shire"]: text=text.replace(bad, proj_short if bad=="L01-10" else "CASEY")
+    return text.encode("latin1",errors="ignore")
+
+
+def model_json_bytes(model):
+    m=_payload_model(model)
+    enriched=dict(m); enriched["casey_version"]="V118 Final Demo Export Refinement"; enriched["schedule_levels"]=all_schedule_levels(m); enriched["risks"]=build_risks(m); enriched["p_curves"]=curves(m); enriched["basis"]=basis_rows(m); enriched["benchmarks"]=benchmark_rows(m); enriched["recommendation"]=_final_recommendation(m); enriched["export_refinements"]=["XER relationship types/lags/calendars/resource loading","near-critical density","asymmetric tornado drivers","risk owner/status/mitigation confidence/residual exposure"]
+    return json.dumps(enriched,indent=2,default=str).encode("utf-8")
+
+def risk_workbook_bytes(model):
+    """V118 risk register with operational ownership, mitigation confidence and residual exposure."""
+    if xlsxwriter is None: raise RuntimeError("xlsxwriter not installed")
+    m=_payload_model(model); scen=SCENARIO_RULES[scenario_key(m)]; risks=build_risks(m); title=clean(m.get("title") or m.get("project_name") or "CASEY Project",80)
+    bio=BytesIO(); wb=xlsxwriter.Workbook(bio,{"in_memory":True,"strings_to_urls":False}); fmt=_final_formats(wb)
+    ws=wb.add_worksheet("00 Risk Control Centre"); ws.hide_gridlines(2); ws.merge_range("A1:J1",f"V118 RISK CONTROL CENTRE — {title}",fmt["title"])
+    ws.merge_range("A2:J2",f"Scenario: {scen['label']} | Risk count: {len(risks)} | Generated {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')} | Includes owner, response status, mitigation confidence and residual exposure",fmt["subtle"])
+    total_cost=sum(r["cost_emv_bn"] for r in risks); total_days=sum(r["schedule_emv_days"] for r in risks); high=sum(1 for r in risks if r.get("residual_exposure") in ["High","Very High"])
+    kpis=[("Open Risks",len(risks)),("Board Visible",sum(1 for r in risks if r["board_visibility"]=="Yes")),("High Residual",high),("Total Cost EMV",money(total_cost)),("Total Schedule EMV",f"{total_days:.0f} days"),("Top Risk",risks[0]["title"] if risks else "n/a")]
+    for i,(label,val) in enumerate(kpis):
+        r=4+(i//3)*3; c=(i%3)*3
+        ws.merge_range(r,c,r,c+2,label,fmt["kpi_label"]); ws.merge_range(r+1,c,r+2,c+2,val,fmt["kpi"])
+    ws.merge_range("A12:J12","TOP BOARD RISKS — OWNER / ACTION / RESIDUAL EXPOSURE",fmt["section"])
+    top=[[r["risk_id"],r["category"],r["title"],r["probability_pct"]/100,r["cost_emv_bn"],r["schedule_emv_days"],r["owner"],r.get("response_status"),r.get("mitigation_confidence"),r.get("residual_exposure")] for r in risks[:12]]
+    _write_mck_table(ws,13,0,["ID","Category","Risk","Likelihood","Cost EMV BN","Schedule EMV Days","Owner","Response Status","Mitigation Confidence","Residual Exposure"],top,fmt,[10,18,34,12,14,18,26,22,18,18],money_cols={4},num_cols={5,8},pct_cols={3})
+    ws=wb.add_worksheet("01 Full Risk Register"); ws.hide_gridlines(2); ws.freeze_panes(5,0); ws.merge_range("A1:Z1",f"V118 FULL RISK REGISTER — {scen['label']} SCENARIO",fmt["title"])
+    rows=[]
+    for r in risks:
+        rows.append([r["risk_id"],r["category"],r["title"],r["cause"],r["event"],r["impact"],r["owner"],r.get("response_status"),r["mitigation"],r.get("mitigation_confidence"),r.get("residual_exposure"),r.get("residual_exposure_score"),r.get("target_review_date"),r.get("escalation_threshold"),r["trigger"],r["probability_pct"]/100,r["cost_optimistic_bn"],r["cost_ml_bn"],r["cost_pessimistic_bn"],r.get("cost_upside_delta_bn"),r.get("cost_downside_delta_bn"),r["schedule_optimistic_days"],r["schedule_ml_days"],r["schedule_pessimistic_days"],r.get("schedule_downside_delta_days"),r["board_visibility"]])
+    _write_mck_table(ws,4,0,["ID","Category","Risk","Cause","Event","Impact","Owner","Response Status","Mitigation","Mitigation Confidence","Residual Exposure","Residual Score","Target Review","Escalation Threshold","Trigger","Likelihood","Cost Low BN","Cost ML BN","Cost High BN","Cost Upside BN","Cost Downside BN","Sched Low Days","Sched ML Days","Sched High Days","Schedule Downside Days","Board"],rows,fmt,[10,18,30,42,42,48,26,22,54,18,18,14,14,44,38,12,12,12,12,14,16,14,14,14,18,10],money_cols={16,17,18,19,20},num_cols={9,11,21,22,23,24},pct_cols={15})
+    ws=wb.add_worksheet("02 Asymmetric Tornadoes"); ws.hide_gridlines(2); ws.merge_range("A1:N1","V118 ASYMMETRIC QCRA / QSRA TORNADO DRIVERS",fmt["title"])
+    qcra=sorted(risks,key=lambda r:r.get("cost_downside_delta_bn",0),reverse=True); qsra=sorted(risks,key=lambda r:r.get("schedule_downside_delta_days",0),reverse=True)
+    qrows=[[i+1,r["title"],r["risk_id"],r.get("cost_upside_delta_bn"),r.get("cost_downside_delta_bn"),r["cost_emv_bn"],r["owner"],r.get("residual_exposure")] for i,r in enumerate(qcra[:16])]
+    srows=[[i+1,r["title"],r["risk_id"],r.get("schedule_upside_delta_days"),r.get("schedule_downside_delta_days"),r["schedule_emv_days"],r["owner"],r.get("residual_exposure")] for i,r in enumerate(qsra[:16])]
+    _write_mck_table(ws,4,0,["Rank","QCRA Cost Driver","ID","Upside BN","Downside BN","EMV BN","Owner","Residual"],qrows,fmt,[8,34,10,12,14,12,24,14],money_cols={3,4,5})
+    _write_mck_table(ws,4,9,["Rank","QSRA Driver","ID","Upside Days","Downside Days","EMV Days","Owner","Residual"],srows,fmt,[8,34,10,12,14,12,24,14],num_cols={3,4,5})
+    chart=wb.add_chart({"type":"bar"}); chart.add_series({"name":"Cost downside BN","categories":"='02 Asymmetric Tornadoes'!$B$6:$B$21","values":"='02 Asymmetric Tornadoes'!$E$6:$E$21","fill":{"color":"#0B5CAD"}}); chart.set_title({"name":"QCRA asymmetric downside tornado"}); chart.set_legend({"none":True}); ws.insert_chart("A24",chart,{"x_scale":1.25,"y_scale":1.15})
+    chart2=wb.add_chart({"type":"bar"}); chart2.add_series({"name":"Schedule downside days","categories":"='02 Asymmetric Tornadoes'!$K$6:$K$21","values":"='02 Asymmetric Tornadoes'!$N$6:$N$21","fill":{"color":"#00A6C8"}}); chart2.set_title({"name":"QSRA asymmetric downside tornado"}); chart2.set_legend({"none":True}); ws.insert_chart("J24",chart2,{"x_scale":1.25,"y_scale":1.15})
+    ws=wb.add_worksheet("03 Response Plan"); ws.hide_gridlines(2); ws.merge_range("A1:I1","MITIGATION RESPONSE PLAN",fmt["title"])
+    resp=[[r["risk_id"],r["title"],r["owner"],r.get("response_status"),r.get("mitigation_confidence"),r.get("residual_exposure"),r.get("target_review_date"),r.get("escalation_threshold"),r["mitigation"]] for r in risks[:25]]
+    _write_mck_table(ws,4,0,["ID","Risk","Owner","Status","Mitigation Confidence","Residual","Review Date","Escalation Threshold","Action"],resp,fmt,[10,34,26,22,18,14,14,42,56],num_cols={4})
+    for sheet in wb.worksheets(): sheet.set_margins(0.25,0.25,0.35,0.35)
+    wb.close(); bio.seek(0); return bio.getvalue()
+
+
+def all_zip_bytes(model):
+    m=_payload_model(model); bio=BytesIO()
+    with zipfile.ZipFile(bio,"w",zipfile.ZIP_DEFLATED) as z:
+        z.writestr("00_READ_ME_V118_FINAL_DEMO.txt", "CASEY V118 final demo output pack. Refinements: planner-grade XER with relationship types, lags/leads, calendars, resource loading and near-critical density; asymmetric tornado risk logic; risk owners, mitigation confidence, response status and residual exposure. Demo-watermarked first-pass intelligence, not certified commercial reliance.\n")
+        z.writestr("01_CASEY_V118_Cost_Model.xlsx",cost_workbook_bytes(m))
+        z.writestr("02_CASEY_V118_Risk_Register_Operational.xlsx",risk_workbook_bytes(m))
+        z.writestr("03_CASEY_V118_Planner_Grade_Schedule.xer",patch_template_xer(m))
+        z.writestr("04_CASEY_V118_Schedule_Levels_Resource_Loaded.csv",schedule_csv_bytes(m))
+        z.writestr("05_CASEY_V118_Model_Audit.json",model_json_bytes(m))
+    bio.seek(0); return bio.getvalue()
+# =============================================================================
+# END CASEY V118 FINAL DEMO EXPORT REFINEMENT PATCH
+# =============================================================================
+
+# V118.1 compatibility override: handles both tuple phase rows and UNIVERSAL_WBS package lists.
+def build_schedule_rows(model, level=None, scenario=None):
+    level = int(level or selected_level(model))
+    scenario = scenario or scenario_key(model)
+    rule = SCENARIO_RULES.get(scenario, SCENARIO_RULES["base"])
+    total_months = max(6, int(re.findall(r"\d+", str(model.get("schedule") or "60"))[0]) if re.findall(r"\d+", str(model.get("schedule") or "60")) else 60)
+    raw_phases = schedule_phases(model)
+    flat=[]
+    for item in raw_phases:
+        if isinstance(item, (list, tuple)) and len(item)>=2:
+            phase=item[0]; payload=item[1]
+            if isinstance(payload, list):
+                for act in payload: flat.append((phase, str(act)))
+            else:
+                flat.append((phase, str(payload)))
+    if not flat: flat=[("Governance","Project controls setup"),("Delivery","Main works"),("Commissioning","Testing and handover")]
+    n = level_activity_count(level)
+    rows=[]; prior_by_phase={}; prev=""
+    for i in range(n):
+        phase, base = flat[i % len(flat)]
+        pkg = 1 + i // len(flat); workface = 1 + (i % 4)
+        detail_suffix = ""
+        if level >= 3: detail_suffix = f" — package {pkg}"
+        if level >= 4: detail_suffix += " / control account"
+        if level >= 5: detail_suffix += f" / workface {workface}"
+        act_id = f"L{level}-{(i+1):03d}"
+        wave = [0.82,1.06,0.93,1.24,0.74,1.15,0.88][i % 7]
+        dur = max(0.5, round((total_months * rule["duration"] / max(1,n)) * wave, 1))
+        if i==0: name = "Project start / mobilisation"
+        elif i==n-1: name = "Project complete / operational handover"
+        else: name = str(base) + detail_suffix
+        rel = _REL_TYPES[i % len(_REL_TYPES)] if i else ""
+        lag_days = 0
+        if rel == "PR_SS": lag_days = [0, 3, 5, -2, 7][i % 5]
+        elif rel == "PR_FF": lag_days = [0, 2, -3, 6][i % 4]
+        elif phase in ["Procurement", "Systems", "Integration", "Commissioning", "Launch Prep", "Deployment", "AIT", "Launch + Transit"]: lag_days = [0, 5, 10, -5][i % 4]
+        pred = prev
+        if level >= 4 and phase in prior_by_phase and i % 5 == 0: pred = f"{prev};{prior_by_phase[phase]}"
+        calendar = _CALENDAR_BY_PHASE.get(phase, "5D_BUSINESS")
+        resource = _RESOURCE_BY_PHASE.get(phase, "Integrated delivery team")
+        near = phase in ["Procurement","Systems","Integration","Commissioning","Launch Prep","Deployment","AIT","Launch + Transit"] or i >= n-8 or (level >= 4 and i % 6 == 0)
+        critical = "Yes" if i >= n-5 or (scenario == "faster" and near and i % 3 != 2) else "No"
+        float_days = 0 if critical == "Yes" else max(2, [4,7,11,16,23,35,48][i % 7] - (6 if near else 0))
+        loading = round((1.0 + (i % 5) * 0.35) * (1.25 if near else 0.85), 2)
+        wbs_path = f"{clean(model.get('title') or 'CASEY Project',30)} / {phase} / Package {pkg}"
+        rows.append({"level":level,"activity_id":act_id,"phase":phase,"activity":name,"predecessor":pred,"relationship_type":rel,"lag_days":lag_days,"duration_months":dur,"duration_days":int(round(dur*21.75)),"critical":critical,"near_critical":"Yes" if near else "No","total_float_days":float_days,"calendar":calendar,"primary_resource":resource,"resource_loading_fte":loading,"wbs_path":wbs_path,"scenario":SCENARIO_RULES[scenario]["label"],"basis":f"Level {level} schedule with {rel or 'start'} logic, {lag_days:+d}d lag, {calendar} calendar and {resource}; scenario {SCENARIO_RULES[scenario]['label']} factor {rule['duration']:.2f}."})
+        prior_by_phase[phase]=act_id; prev=act_id
+    return rows
+
+# =============================================================================
+# CASEY V119 FINAL DEMO LOCK — EARTH + SPACE REFINEMENT PATCH
+# Adds final requested refinements:
+# - uglier asymmetric tornadoes
+# - deeper risk ownership/status/residual exposure
+# - richer XER/Schedule near-critical narrative and relationship diversity
+# - separate QCRA/QSRA workbook in the final pack
+# =============================================================================
+VERSION = "V119_FINAL_EARTH_SPACE_DEMO_LOCK"
+
+_V119_REL_TYPES = ["PR_FS", "PR_SS", "PR_FF", "PR_FS", "PR_SS", "PR_FS", "PR_FF"]
+_V119_STATUS = ["Active mitigation", "Evidence required", "Escalated", "Owner assigned", "Response in progress", "Monitor", "Governance decision required"]
+
+
+def _v119_space_terms(title: str, field: str) -> str:
+    t = str(title).lower()
+    if "launch" in t:
+        return {
+            "owner": "Mission Integration Director",
+            "mitigation": "Maintain secondary launch-window option, confirm range/readiness evidence, and preserve manifest contingency before mission gate.",
+            "trigger": "Launch provider, range or payload readiness moves by more than one manifest review cycle."
+        }[field]
+    if "thermal" in t or "radiation" in t:
+        return {
+            "owner": "Chief Systems Engineer",
+            "mitigation": "Close thermal-vacuum/radiation evidence, verify design margin, and update mass/power reserve before qualification freeze.",
+            "trigger": "Thermal, power or shielding margin falls below mission-assurance threshold."
+        }[field]
+    if "mass" in t or "payload" in t:
+        return {
+            "owner": "Payload Integration Lead",
+            "mitigation": "Reconcile mass-growth log, confirm payload interface control documents, and protect launch vehicle allocation.",
+            "trigger": "Payload mass or interface change exceeds allocated reserve."
+        }[field]
+    if "surface" in t or "deployment" in t or "resupply" in t:
+        return {
+            "owner": "Surface Operations Director",
+            "mitigation": "Validate deployment sequence, autonomous recovery modes and resupply cadence against mission survival criteria.",
+            "trigger": "Surface operations readiness score falls below board-comfort threshold."
+        }[field]
+    return {
+        "owner": "Mission Assurance Board",
+        "mitigation": "Assign named mission owner, close evidence gap, update QCRA/QSRA and confirm residual exposure before next gate.",
+        "trigger": "Mission assurance evidence or autonomous recovery basis remains unresolved at gate review."
+    }[field]
+
+
+def _v119_owner(title, idx, pkey):
+    if pkey == "space":
+        return _v119_space_terms(title, "owner")
+    return _v118_owner_for(title, idx, pkey)
+
+
+def build_risks(model):
+    """V119 operational risk model with intentionally irregular/asymmetric tornado inputs."""
+    pkey = project_type_key(model); scenario = scenario_key(model); scen = SCENARIO_RULES.get(scenario, SCENARIO_RULES["base"])
+    base_titles = list(SECTOR_RISKS.get(pkey, SECTOR_RISKS["general"])) + list(SECTOR_RISKS["general"])
+    if pkey == "space":
+        extra = [
+            "Launch window slip", "Launch manifest dependency", "TRL closure shortfall", "Mass margin growth", "Thermal-power balance", "Thermal vacuum qualification failure",
+            "Radiation-hardening qualification", "Payload interface maturity", "Autonomous recovery evidence", "Surface deployment sequencing", "Resupply cadence constraint",
+            "Ground segment dependency", "Orbital insertion contingency", "Mission operations staffing", "Range approval delay", "Dust contamination and surface logistics"
+        ]
+    else:
+        extra = [
+            "Grid energisation readiness", "Transformer fabrication slot", "Switchgear vendor assumption", "Integrated systems testing overlap", "Commissioning resource availability",
+            "Owner decision latency", "Authority approval condition", "Interface data maturity", "Logistics route constraint", "Recovery float consumption",
+            "Operational readiness evidence", "Supplier concentration exposure", "Contractor productivity variance", "Critical package quality escape", "Change-control backlog",
+            "Residual contingency masking", "Near-critical path convergence", "Market escalation tail", "Cyber/security approval", "Handover documentation maturity",
+            "Training and mobilisation readiness", "Utility outage calendar dependency", "Factory acceptance test failure", "Late design freeze", "Commercial claim crystallisation"
+        ]
+    titles=[]
+    for t in base_titles + extra:
+        if t and t not in titles:
+            titles.append(t)
+    p50=max(0.1, as_float_money(model.get("cost_p50")))
+    out=[]
+    for i,t in enumerate(titles[:46]):
+        skew = _v118_skew(i, scenario) * [0.83, 1.41, 0.61, 1.96, 0.74, 1.18, 2.37, 0.52, 1.66, 0.91, 1.12, 2.05, 0.69][i % 13]
+        if pkey == "space" and i % 4 in (1,2): skew *= 1.18
+        prob = max(5, min(89, int(round((13 + (i*11)%63) * (0.88 + 0.07*skew)))))
+        # ugly/non-symmetric uncertainty shape: high side is not a simple multiple of ML
+        ml = round(p50 * (0.0048 + (i%10)*0.0026) * skew, 3)
+        low = round(max(0.001, ml * [0.11, 0.34, 0.21, 0.58, 0.08, 0.47, 0.29][i%7]), 3)
+        high = round(max(ml + 0.002, ml * [1.42, 2.85, 1.76, 4.65, 2.18, 3.35, 1.29, 5.10][i%8]), 3)
+        sched_ml = int((6 + (i%13)*5.7) * (0.72 + skew*0.31))
+        sched_low = max(1, int(sched_ml * [0.09,0.36,0.18,0.49,0.25][i%5]))
+        sched_high = max(sched_ml+1, int(sched_ml * [1.28,2.65,1.83,3.55,1.49,4.25][i%6]))
+        owner = _v119_owner(t, i, pkey)
+        status = _V119_STATUS[(i + (2 if scenario == "faster" else 0)) % len(_V119_STATUS)]
+        mit_conf = max(0.12, min(0.88, 0.66 - (skew-1)*0.075 - (0.13 if status in ["Evidence required","Escalated","Governance decision required"] else 0) + (0.06 if status == "Active mitigation" else 0)))
+        residual = max(0.07, min(0.96, (prob/100) * (1-mit_conf) * min(2.5, skew)))
+        exposure = "Very High" if residual > .58 else "High" if residual > .35 else "Medium" if residual > .18 else "Low"
+        if pkey == "space":
+            mitigation = _v119_space_terms(t, "mitigation")
+            trigger = _v119_space_terms(t, "trigger")
+            cause = f"{t} is driven by mission-assurance evidence maturity, launch cadence, qualification burden or autonomous recovery uncertainty under the {scen['label']} scenario."
+            impact = "Mission readiness movement, launch/re-manifest cost, qualification rework, mass/power reserve drawdown or loss of autonomous recovery confidence."
+        else:
+            trigger = f"{t} threshold breached: >{7+(i%6)*6} days movement, unresolved supplier evidence, or gate condition not closed."
+            mitigation = f"{status}: named owner to close evidence, test mitigation credibility, update QCRA/QSRA impacts and confirm residual exposure before governance release."
+            cause = f"{t} is driven by maturity, supplier, interface, market or approval uncertainty under the {scen['label']} scenario."
+            impact = "Cost growth, schedule movement, contingency drawdown, rework, operational-readiness delay or confidence deterioration."
+        out.append({
+            "risk_id": f"R-{i+1:03d}", "category": "Space" if pkey=="space" else ("Commercial / Governance" if i%5==0 else "Delivery"),
+            "title": t, "cause": cause, "event": f"{t} materialises and changes the active control baseline.", "impact": impact,
+            "owner": owner, "mitigation": mitigation, "response_status": status, "mitigation_confidence": round(mit_conf,2),
+            "residual_exposure": exposure, "residual_exposure_score": round(residual,3), "target_review_date": (datetime.utcnow()+timedelta(days=10+(i%7)*8)).strftime("%Y-%m-%d"),
+            "escalation_threshold": trigger, "trigger": trigger, "probability_pct": prob,
+            "cost_optimistic_bn": low, "cost_ml_bn": ml, "cost_pessimistic_bn": high,
+            "cost_downside_delta_bn": round(high-ml,3), "cost_upside_delta_bn": round(ml-low,3),
+            "schedule_optimistic_days": sched_low, "schedule_ml_days": sched_ml, "schedule_pessimistic_days": sched_high,
+            "schedule_downside_delta_days": sched_high-sched_ml, "schedule_upside_delta_days": sched_ml-sched_low,
+            "cost_emv_bn": round(ml*prob/100,3), "schedule_emv_days": round(sched_ml*prob/100,1),
+            "status": "Open", "board_visibility": "Yes" if i<14 or exposure in ["High","Very High"] else "No", "scenario": scen["label"]
+        })
+    out.sort(key=lambda r:(r["residual_exposure_score"]*1.7 + r["cost_downside_delta_bn"]/(p50+0.01) + r["schedule_downside_delta_days"]/500), reverse=True)
+    return out
+
+
+def build_schedule_rows(model, level=None, scenario=None):
+    """V119 schedule rows with richer near-critical network narrative and messy relationship logic."""
+    level = int(level or selected_level(model)); scenario = scenario or scenario_key(model)
+    rule = SCENARIO_RULES.get(scenario, SCENARIO_RULES["base"])
+    total_months = max(6, int(re.findall(r"\d+", str(model.get("schedule") or "60"))[0]) if re.findall(r"\d+", str(model.get("schedule") or "60")) else 60)
+    raw_phases = schedule_phases(model)
+    flat=[]
+    for item in raw_phases:
+        if isinstance(item, (list, tuple)) and len(item)>=2:
+            phase=item[0]; payload=item[1]
+            if isinstance(payload, list):
+                for act in payload: flat.append((phase, str(act)))
+            else: flat.append((phase, str(payload)))
+    if not flat: flat=[("Governance","Project controls setup"),("Delivery","Main works"),("Commissioning","Testing and handover")]
+    n=level_activity_count(level); rows=[]; prior_by_phase={}; prev=""
+    for i in range(n):
+        phase, base = flat[i % len(flat)]; pkg=1+i//len(flat); workface=1+(i%4)
+        suffix = (f" — package {pkg}" if level>=3 else "") + (" / control account" if level>=4 else "") + (f" / workface {workface}" if level>=5 else "")
+        act_id=f"L{level}-{(i+1):03d}"
+        wave=[0.78,1.13,0.91,1.36,0.67,1.21,0.84,1.52,0.73][i%9]
+        dur=max(0.5, round((total_months*rule["duration"]/max(1,n))*wave,1))
+        name = "Project start / mobilisation" if i==0 else ("Project complete / operational handover" if i==n-1 else str(base)+suffix)
+        rel=_V119_REL_TYPES[i % len(_V119_REL_TYPES)] if i else ""
+        lag_days=0
+        if rel == "PR_SS": lag_days=[0,4,-3,9,2,-6][i%6]
+        elif rel == "PR_FF": lag_days=[0,3,-4,7,12,-2][i%6]
+        elif phase in ["Procurement","Systems","Integration","Commissioning","Launch Prep","Deployment","AIT","Launch + Transit","Transit","Operations"]: lag_days=[0,6,11,-5,17][i%5]
+        pred=prev
+        # more realistic convergence: occasional dual predecessor from same phase or previous package
+        if level>=4 and phase in prior_by_phase and i%5==0: pred=f"{prev};{prior_by_phase[phase]}"
+        if level>=5 and i>8 and i%11==0: pred=f"{pred};L{level}-{max(1,i-7):03d}"
+        calendar=_CALENDAR_BY_PHASE.get(phase,"5D_BUSINESS")
+        resource=_RESOURCE_BY_PHASE.get(phase,"Integrated delivery team")
+        near = phase in ["Procurement","Systems","Integration","Commissioning","Launch Prep","Deployment","AIT","Launch + Transit","Transit","Operations"] or i>=n-10 or (level>=4 and i%5 in (0,1))
+        critical = "Yes" if i>=n-5 or (scenario=="faster" and near and i%4!=2) else "No"
+        float_days = 0 if critical=="Yes" else max(1, [2,5,9,14,21,32,46,7,18][i%9] - (7 if near else 0))
+        loading=round((0.9+(i%6)*0.31)*(1.35 if near else 0.82),2)
+        wbs_path=f"{clean(model.get('title') or 'CASEY Project',30)} / {phase} / Package {pkg}"
+        nc_note = "Near-critical: convergence risk, float fragmentation and gate dependency." if near and critical != "Yes" else ("Critical path driver." if critical == "Yes" else "Non-critical support logic.")
+        rows.append({"level":level,"activity_id":act_id,"phase":phase,"activity":name,"predecessor":pred,"relationship_type":rel,"lag_days":lag_days,"duration_months":dur,"duration_days":int(round(dur*21.75)),"critical":critical,"near_critical":"Yes" if near else "No","total_float_days":float_days,"calendar":calendar,"primary_resource":resource,"resource_loading_fte":loading,"wbs_path":wbs_path,"near_critical_narrative":nc_note,"scenario":SCENARIO_RULES[scenario]["label"],"basis":f"Level {level} schedule with {rel or 'start'} logic, {lag_days:+d}d lag/lead, {calendar} calendar and {resource}. {nc_note} Scenario {SCENARIO_RULES[scenario]['label']} factor {rule['duration']:.2f}."})
+        prior_by_phase[phase]=act_id; prev=act_id
+    return rows
+
+
+def schedule_csv_bytes(model):
+    import io
+    buf=io.StringIO(); w=csv.writer(buf)
+    w.writerow(["Level","Activity ID","WBS Path","Phase","Activity","Predecessor","Relationship Type","Lag / Lead Days","Duration Months","Duration Days","Critical","Near Critical","Total Float Days","Calendar","Primary Resource","Resource Loading FTE","Near-Critical Narrative","Scenario","Basis"])
+    for lvl,acts in all_schedule_levels(model).items():
+        for a in acts:
+            w.writerow([lvl,a["activity_id"],a.get("wbs_path",""),a["phase"],a["activity"],a.get("predecessor",""),a.get("relationship_type",""),a.get("lag_days",0),a["duration_months"],a["duration_days"],a["critical"],a.get("near_critical",""),a.get("total_float_days",""),a.get("calendar",""),a.get("primary_resource",""),a.get("resource_loading_fte",""),a.get("near_critical_narrative",""),a["scenario"],a["basis"]])
+    return buf.getvalue().encode("utf-8")
+
+
+def qcra_qsra_workbook_bytes(model):
+    """Standalone V119 QCRA/QSRA export with ugly/asymmetric tornadoes and percentile curves."""
+    if xlsxwriter is None: raise RuntimeError("xlsxwriter not installed")
+    m=_payload_model(model); risks=build_risks(m); curve=curves(m); title=clean(m.get("title") or "CASEY Project",80); scen=SCENARIO_RULES[scenario_key(m)]
+    bio=BytesIO(); wb=xlsxwriter.Workbook(bio,{"in_memory":True,"strings_to_urls":False}); fmt=_final_formats(wb)
+    ws=wb.add_worksheet("00 QCRA QSRA Control"); ws.hide_gridlines(2); ws.merge_range("A1:H1",f"V119 QCRA / QSRA CONTROL — {title}",fmt["title"])
+    ws.merge_range("A2:H2",f"Scenario: {scen['label']} | Asymmetric tornadoes | Separate cost and schedule risk | Generated {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}",fmt["subtle"])
+    q80=next((x["qcra_cost_bn"] for x in curve if x["percentile"]==80), None); q90=next((x["qcra_cost_bn"] for x in curve if x["percentile"]==90), None)
+    s80=next((x["qsra_months"] for x in curve if x["percentile"]==80), None); s90=next((x["qsra_months"] for x in curve if x["percentile"]==90), None)
+    kpis=[("QCRA P50",m.get("cost_p50")),("QCRA P80",money(q80 or 0)),("QCRA P90",money(q90 or 0)),("QSRA P50",m.get("schedule")),("QSRA P80",f"{s80} months"),("QSRA P90",f"{s90} months")]
+    for i,(label,val) in enumerate(kpis):
+        r=4+(i//3)*3; c=(i%3)*2; ws.merge_range(r,c,r,c+1,label,fmt["kpi_label"]); ws.merge_range(r+1,c,r+2,c+1,val,fmt["kpi"])
+    ws.merge_range("A12:H12","BOARD INTERPRETATION",fmt["section"])
+    ws.merge_range("A13:H15","P50 is the reference control case. P80/P90 represent board downside exposure. Tornado bars are intentionally asymmetric: drivers are ranked by downside tail, not clean average movement.",fmt["warning"])
+    ws=wb.add_worksheet("01 P-Curves"); ws.hide_gridlines(2)
+    rows=[[x["percentile"],x["qcra_cost_bn"],x["qsra_months"]] for x in curve]
+    _write_mck_table(ws,0,0,["Percentile","QCRA Cost BN","QSRA Months"],rows,fmt,[12,16,16],money_cols={1},num_cols={2})
+    ch=wb.add_chart({"type":"area"}); ch.add_series({"name":"QCRA Cost BN","categories":"='01 P-Curves'!$A$2:$A$15","values":"='01 P-Curves'!$B$2:$B$15","fill":{"color":"#9DECF5","transparency":35},"line":{"color":"#0B5CAD","width":2.0}}); ch.set_title({"name":"QCRA cost confidence curve"}); ws.insert_chart("E2",ch,{"x_scale":1.25,"y_scale":1.15})
+    ch2=wb.add_chart({"type":"line"}); ch2.add_series({"name":"QSRA Months","categories":"='01 P-Curves'!$A$2:$A$15","values":"='01 P-Curves'!$C$2:$C$15","line":{"color":"#7030A0","width":2.5},"marker":{"type":"circle","size":5}}); ch2.set_title({"name":"QSRA finish-date curve"}); ws.insert_chart("E20",ch2,{"x_scale":1.25,"y_scale":1.15})
+    ws=wb.add_worksheet("02 Ugly Tornado Drivers"); ws.hide_gridlines(2); ws.merge_range("A1:P1","V119 ASYMMETRIC TORNADOES — DOWNSIDE TAIL RANKING",fmt["title"])
+    q=sorted(risks,key=lambda r:r.get("cost_downside_delta_bn",0),reverse=True)[:18]; s=sorted(risks,key=lambda r:r.get("schedule_downside_delta_days",0),reverse=True)[:18]
+    _write_mck_table(ws,4,0,["Rank","QCRA Driver","ID","Upside BN","Downside BN","EMV BN","Owner","Residual"],[[i+1,r["title"],r["risk_id"],r["cost_upside_delta_bn"],r["cost_downside_delta_bn"],r["cost_emv_bn"],r["owner"],r["residual_exposure"]] for i,r in enumerate(q)],fmt,[8,34,10,12,14,12,26,14],money_cols={3,4,5})
+    _write_mck_table(ws,4,9,["Rank","QSRA Driver","ID","Upside Days","Downside Days","EMV Days","Owner","Residual"],[[i+1,r["title"],r["risk_id"],r["schedule_upside_delta_days"],r["schedule_downside_delta_days"],r["schedule_emv_days"],r["owner"],r["residual_exposure"]] for i,r in enumerate(s)],fmt,[8,34,10,12,14,12,26,14],num_cols={3,4,5})
+    ch=wb.add_chart({"type":"bar"}); ch.add_series({"name":"Cost downside BN","categories":"='02 Ugly Tornado Drivers'!$B$6:$B$23","values":"='02 Ugly Tornado Drivers'!$E$6:$E$23","fill":{"color":"#0B5CAD"}}); ch.set_title({"name":"QCRA ugly/asymmetric downside tornado"}); ch.set_legend({"none":True}); ws.insert_chart("A27",ch,{"x_scale":1.35,"y_scale":1.25})
+    ch2=wb.add_chart({"type":"bar"}); ch2.add_series({"name":"Schedule downside days","categories":"='02 Ugly Tornado Drivers'!$K$6:$K$23","values":"='02 Ugly Tornado Drivers'!$N$6:$N$23","fill":{"color":"#00A6C8"}}); ch2.set_title({"name":"QSRA ugly/asymmetric downside tornado"}); ch2.set_legend({"none":True}); ws.insert_chart("J27",ch2,{"x_scale":1.35,"y_scale":1.25})
+    ws=wb.add_worksheet("03 Board Drivers"); ws.hide_gridlines(2)
+    rows=[[r["risk_id"],r["title"],r["owner"],r["response_status"],r["mitigation_confidence"],r["residual_exposure"],r["mitigation"],r["escalation_threshold"]] for r in risks[:24]]
+    _write_mck_table(ws,0,0,["ID","Driver","Owner","Status","Mitigation Confidence","Residual","Mitigation","Escalation Threshold"],rows,fmt,[10,32,26,22,18,14,56,48],num_cols={4})
+    for sheet in wb.worksheets(): sheet.set_margins(0.25,0.25,0.35,0.35)
+    wb.close(); bio.seek(0); return bio.getvalue()
+
+
+def model_json_bytes(model):
+    m=_payload_model(model)
+    enriched=dict(m); enriched["casey_version"]="V119 Final Earth + Space Demo Lock"; enriched["schedule_levels"]=all_schedule_levels(m); enriched["risks"]=build_risks(m); enriched["p_curves"]=curves(m); enriched["basis"]=basis_rows(m); enriched["benchmarks"]=benchmark_rows(m); enriched["recommendation"]=_final_recommendation(m); enriched["export_refinements"]=["V119 planner-grade XER with relationship types, lags/leads, calendars, resource loading and near-critical density","uglier asymmetric tornado drivers ranked by downside tail","risk owners, response status, mitigation confidence and residual exposure","space-specific mission assurance owners, triggers and mitigation language"]
+    return json.dumps(enriched,indent=2,default=str).encode("utf-8")
+
+
+def all_zip_bytes(model):
+    m=_payload_model(model); bio=BytesIO()
+    with zipfile.ZipFile(bio,"w",zipfile.ZIP_DEFLATED) as z:
+        z.writestr("00_READ_ME_V119_FINAL_EARTH_SPACE_DEMO.txt", "CASEY V119 final Earth + Space demo output pack. Final refinements: uglier asymmetric tornadoes, reduced output density, irregular scenario deltas in model evidence, chart spacing uplift, risk owners/status/mitigation confidence/residual exposure, planner-grade XER plus near-critical schedule narrative, and space-specific mission assurance logic. Demo-watermarked first-pass intelligence, not certified commercial reliance.\n")
+        z.writestr("01_CASEY_V119_Cost_Model.xlsx",cost_workbook_bytes(m))
+        z.writestr("02_CASEY_V119_Risk_Register_Operational.xlsx",risk_workbook_bytes(m))
+        z.writestr("03_CASEY_V119_Planner_Grade_Schedule.xer",patch_template_xer(m))
+        z.writestr("04_CASEY_V119_Schedule_Levels_Resource_Loaded.csv",schedule_csv_bytes(m))
+        z.writestr("05_CASEY_V119_QCRA_QSRA_Asymmetric_Tornado.xlsx",qcra_qsra_workbook_bytes(m))
+        z.writestr("06_CASEY_V119_Model_Audit.json",model_json_bytes(m))
+    bio.seek(0); return bio.getvalue()
+# =============================================================================
+# END CASEY V119 FINAL DEMO LOCK PATCH
+# =============================================================================
