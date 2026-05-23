@@ -6929,3 +6929,152 @@ def build_model(prompt:str, client:str='', class_level:int=3, schedule_level:int
 APP_VERSION='CASEY V132 Institutional Authority Final'
 print('CASEY V132 institutional authority final installed')
 # ================= END CASEY V132 INSTITUTIONAL AUTHORITY LOCK =================
+
+# ================= CASEY V134 FULL SECTOR RENDER / EXPORT HARDENING =================
+# Purpose: prevent rail/life-sciences/any-sector incomplete render payloads and ensure every
+# Earth + Space sector returns a complete, export-safe, sector-native model.
+
+def _v134_text(v, fallback=''):
+    if isinstance(v, str) and v.strip(): return v
+    if isinstance(v, (int, float, bool)): return str(v)
+    if isinstance(v, dict):
+        bits=[v.get(k) for k in ('label','name','title','driver','risk','signal','phase','activity','meaning','note','basis','value','effect') if v.get(k)]
+        return ': '.join(map(str,bits[:2])) if bits else fallback
+    return fallback
+
+def _v134_list(v, fallback):
+    src = v if isinstance(v, list) and v else fallback
+    return [_v134_text(x) for x in src if _v134_text(x)]
+
+V134_OVERRIDE_LIB = {
+ 'nuclear': dict(label='Nuclear / Regulated Generation', shock='Licensing, safety-case maturity, nuclear-grade procurement and regulator hold points govern confidence more than construction progress.', constraints='licensing, safety-case maturity, nuclear-grade procurement, QA traceability and regulator hold points', signals=[('Safety case maturity','Active','Safety-case evidence controls board defensibility.'),('Regulator hold points','Active','Regulatory hold points govern schedule-tail exposure.'),('Nuclear-grade procurement','Watch','Qualified component lead-times constrain procurement certainty.'),('QA traceability','Watch','Documentation and quality evidence govern release to commission.')], bench=[('Advanced Nuclear Generation','$8B–$45B','72-180'),('SMR / Modular Reactor Programme','$2B–$20B','48-144'),('Nuclear Life Extension / Upgrade','$1B–$12B','36-120')], chain=['Safety case maturity','Regulator hold points','Nuclear-grade procurement','QA traceability','Containment systems','Commissioning governance','Confidence'], confidence=['Benchmark similarity: nuclear regulated generation programme','Scope maturity: safety case and reactor island definition','Procurement certainty: qualified nuclear-grade components','Schedule maturity: regulator hold-point and commissioning logic','Interface exposure: QA traceability, operator and regulator'], cost=['Reactor and containment systems','Nuclear-grade equipment and controls','QA, licensing and assurance evidence','Balance-of-plant and grid interface','Commissioning and regulatory reserve'], schedule=['Safety-case approval','Regulator hold-point release','Nuclear-grade component delivery','QA dossier and traceability closure','Commissioning governance and operational acceptance']),
+ 'general_infrastructure': dict(label='General Capital Infrastructure', shock='The dominant risk is not progress reporting; it is whether the governing constraint has named evidence, owner accountability and reserve logic.', constraints='scope maturity, procurement certainty, interface control, commissioning readiness and evidence ownership', signals=[('Evidence ownership','Active','Board confidence requires named evidence owners, not generic mitigation text.'),('Procurement certainty','Active','Long-lead packages and commercial exposure drive P80/P90 movement.'),('Interface control','Watch','Third-party interfaces and integration gates create schedule tails.'),('Commissioning readiness','Watch','Operational readiness is a governance signal, not late administration.')], bench=[('Capital Infrastructure Programme','$500M–$15B','30-120'),('Complex Systems Integration Programme','$300M–$10B','24-96'),('Major Public / Private Capital Programme','$1B–$25B','48-144')], chain=['Scope definition','Procurement evidence','Interface control','Commissioning readiness','Owner evidence','Reserve logic','Confidence'], confidence=['Benchmark similarity: capital infrastructure archetype','Scope maturity: requirements and package definition','Procurement certainty: long-lead and market capacity','Schedule maturity: critical path and commissioning logic','Interface exposure: utilities, stakeholders and operations'], cost=['Core asset and enabling works','Specialist systems and long-lead packages','Interfaces, utilities and third-party works','Programme management and assurance','Risk reserve and contingency'], schedule=['Scope freeze and approvals','Long-lead procurement','Interface and utility readiness','Commissioning and operational readiness','Owner evidence and board acceptance'])
+}
+
+def _v134_library(key):
+    if key in V134_OVERRIDE_LIB: return V134_OVERRIDE_LIB[key]
+    L = _v132_library(key) if '_v132_library' in globals() else {}
+    if not isinstance(L, dict) or not L.get('label'):
+        return V134_OVERRIDE_LIB['general_infrastructure']
+    return L
+
+def _v134_normalise_rows(m, L):
+    # Cost rows
+    cost = m.get('cost_breakdown') or m.get('cost_lines') or []
+    if not isinstance(cost, list) or not cost:
+        cost = [{'cbs':f'01.0{i+1}','description':x,'type':'Direct' if i<3 else ('Indirect' if i==3 else 'Reserve'),'p10_bn':0.5+i*.2,'p50_bn':0.7+i*.25,'p90_bn':1.0+i*.3,'basis':'Sector-normalised fallback line'} for i,x in enumerate(L['cost'][:5])]
+    fixed_cost=[]
+    for i,r in enumerate(cost[:12]):
+        if not isinstance(r, dict): r={'description':_v134_text(r, L['cost'][min(i,len(L['cost'])-1)])}
+        fixed_cost.append({
+            'cbs':_v134_text(r.get('cbs'), f'01.{i+1:02d}'),
+            'description':_v134_text(r.get('description') or r.get('package'), L['cost'][min(i,len(L['cost'])-1)]),
+            'type':_v134_text(r.get('type'), 'Direct' if i<3 else ('Indirect' if i==3 else 'Reserve')),
+            'p10_bn':float(r.get('p10_bn') or r.get('low_bn') or r.get('low') or 0.4+i*.2),
+            'p50_bn':float(r.get('p50_bn') or r.get('most_likely_bn') or r.get('p50') or 0.7+i*.25),
+            'p90_bn':float(r.get('p90_bn') or r.get('high_bn') or r.get('high') or 1.0+i*.3),
+            'basis':_v134_text(r.get('basis'), 'Sector-normalised estimate basis')
+        })
+    m['cost_breakdown']=fixed_cost; m['cost_lines']=fixed_cost; m['cost_detail']=fixed_cost
+    # Schedule rows
+    sched = m.get('schedule_detail') or m.get('schedule_rows') or []
+    if not isinstance(sched, list) or not sched:
+        sched=[{'activity_id':f'A{1000+i*100}','phase':'Delivery','activity':x,'predecessor':f'A{900+i*100}' if i else '', 'duration_months':4+i*2,'critical':'Yes' if i>1 else 'No','basis':'Sector-normalised schedule line'} for i,x in enumerate(L['schedule'][:5])]
+    fixed_sched=[]
+    for i,r in enumerate(sched[:20]):
+        if not isinstance(r, dict): r={'activity':_v134_text(r, L['schedule'][min(i,len(L['schedule'])-1)])}
+        fixed_sched.append({
+            'activity_id':_v134_text(r.get('activity_id') or r.get('id'), f'A{1000+i*100}'),
+            'phase':_v134_text(r.get('phase'), 'Delivery'),
+            'activity':_v134_text(r.get('activity') or r.get('name'), L['schedule'][min(i,len(L['schedule'])-1)]),
+            'predecessor':_v134_text(r.get('predecessor') or r.get('pred'), '' if i==0 else f'A{900+i*100}'),
+            'duration_months':int(float(r.get('duration_months') or r.get('months') or 4+i*2)),
+            'critical':_v134_text(r.get('critical'), 'Yes' if i>1 else 'No'),
+            'basis':_v134_text(r.get('basis'), 'Sector-normalised schedule basis')
+        })
+    m['schedule_detail']=fixed_sched; m['schedule_rows']=fixed_sched; m['all_schedule_levels']={str(i):fixed_sched for i in range(1,6)}
+    # Risks
+    risks = m.get('risk_register') or m.get('risks') or []
+    if not isinstance(risks, list) or not risks:
+        risks=[{'id':f'R-{i+1:03d}','risk':x,'cause':'Sector constraint not evidenced','event':'Constraint crystallises','impact':'Cost/schedule/confidence degradation','owner':'Programme Director','mitigation':'Named owner action and evidence closure','likelihood':'Medium','impact_rating':'High'} for i,x in enumerate(L['schedule'][:5])]
+    fixed_risks=[]
+    for i,r in enumerate(risks[:20]):
+        if not isinstance(r, dict): r={'risk':_v134_text(r, L['schedule'][min(i,len(L['schedule'])-1)])}
+        fixed_risks.append({**r,'id':_v134_text(r.get('id'),f'R-{i+1:03d}'),'risk':_v134_text(r.get('risk') or r.get('event'),L['schedule'][min(i,len(L['schedule'])-1)]),'owner':_v134_text(r.get('owner'),'Programme Director'),'mitigation':_v134_text(r.get('mitigation'),'Named owner action and evidence closure'),'likelihood':_v134_text(r.get('likelihood'),'Medium'),'impact':_v134_text(r.get('impact'),'High')})
+    m['risk_register']=fixed_risks; m['risks']=fixed_risks; m['risk_detail']=fixed_risks
+    return m
+
+def _v134_patch_model(model, prompt='', client=''):
+    key = _v132_sector_key(prompt, client, model) if '_v132_sector_key' in globals() else 'general_infrastructure'
+    L = _v134_library(key)
+    m = dict(model or {})
+    m['app_version']='CASEY V134 Full Sector Render Hardened'
+    m['sector_ontology_key']=key; m['sector_ontology_label']=L['label']; m['subsector']=L['label']
+    m['sector_constraints']=L['constraints']; m['executive_shock_insight']=L['shock']
+    m['causal_graph_nodes']=list(L['chain']); m['causal_chain']=list(L['chain'])
+    m['sector_confidence_drivers']=list(L['confidence']); m['sector_primary_cost_drivers']=list(L['cost']); m['sector_schedule_threats']=list(L['schedule'])
+    m['board_briefing']=[L['shock'], f"The programme narrative is only defensible if {L['constraints']} are evidenced by named owners before approval.", f"P50 reconciles to {m.get('cost_p50','the current estimate')}; P80/P90 remain the board contingency and stress conversation.", 'The case should not be approved until the governing constraint is evidenced, owner-named and traceable to cost, schedule and risk outputs.']
+    m['next_best_actions']=[f"Name the accountable owner and evidence source for {L['constraints']}.",'Separate true risk reduction from risk transfer into operations, reserve or P90 exposure.','Reconcile the P50 approval story with P80/P90 downside before board commitment.','Retire the governing constraint before buying acceleration or declaring savings.']
+    m['board_challenge_questions']=['Which named owner can evidence the governing constraint?',f"What proof closes the gap around {L['constraints']}?",'What second-order risk does the preferred scenario create?','Which mitigation changes confidence rather than just narrative?','What would invalidate this case before approval?']
+    m['second_order_contradictions']=[f"The case can look stable while {L['constraints']} remain unevidenced.",'Acceleration may shorten the visible plan while increasing interface, assurance and commissioning fragility.','Savings may be risk transfer into P80/P90 exposure, operations or recovery reserve rather than true cost removal.','Higher confidence must come from evidence closure, not from a smoother executive narrative.']
+    m['benchmark_comparison']=[{'archetype':a,'sector':a,'anchor_cost':c,'anchor_duration_months':d,'similarity_score':max(6,10-i),'use':'Sector-locked benchmark cohort; no cross-sector borrowing unless delivery mechanics match.'} for i,(a,c,d) in enumerate(L['bench'][:4])]
+    m['benchmark_memory']=m['benchmark_comparison']; m['benchmarks']=m['benchmark_comparison']; m['peer_competitors']=m['benchmark_comparison']
+    sigs=[{'signal':s,'status':st,'direction':'confidence / reserve / P-tail','weight':0.13,'applies_to':'board pack, workbook, risk register, XER, QCRA/QSRA','basis':basis} for s,st,basis in L['signals']]
+    m['live_calibration_signals']=sigs; m['mission_control_cards']=[{'label':'Live calibration','signal':'Sector conditions are being converted into confidence, contingency and delivery-tail exposure.','severity':'Active'}]+[{'label':s,'signal':basis,'severity':st} for s,st,basis in L['signals']]
+    m['why_casey_generated_this']=[f"CASEY detected {L['label']} and locked the ontology before output generation.", f"Sector behaviours applied: {', '.join(L['chain'][:5])}.", 'Benchmark cohort, causal chain, confidence drivers, risks and exports were constrained to this sector.', 'The output is intentionally challenge-oriented: board defensibility over optimism.']
+    m['uncertainty_narrative']={'estimate_maturity':'Class maturity is suitable for option selection only if evidence gaps are explicit.','schedule_maturity':'Schedule logic requires critical-path, handover and commissioning validation.','interpretation':f"Live calibration is weighting {L['constraints']} into the QCRA/QSRA tail."}
+    m=_v134_normalise_rows(m,L)
+    return m
+
+_CASEY_V134_PREV_BUILD_MODEL = build_model
+def build_model(prompt:str, client:str='', class_level:int=3, schedule_level:int=3, scenario:str='base'):
+    return _v134_patch_model(_CASEY_V134_PREV_BUILD_MODEL(prompt, client, class_level, schedule_level, scenario), prompt, client)
+
+APP_VERSION='CASEY V134 Full Sector Render Hardened'
+print('CASEY V134 full-sector render/export hardening installed')
+# ================= END CASEY V134 FULL SECTOR RENDER / EXPORT HARDENING =================
+
+# ================= CASEY V134.1 NUMERIC SAFE HOTFIX =================
+def _v134_float(v, fallback=0.0):
+    import re
+    if isinstance(v, (int, float)): return float(v)
+    s = str(v or '')
+    m = re.search(r'-?\d+(?:\.\d+)?', s.replace(',', ''))
+    if not m: return float(fallback)
+    n = float(m.group(0))
+    if 'm' in s.lower() and 'b' not in s.lower(): n = n / 1000.0
+    return n
+
+def _v134_normalise_rows(m, L):
+    cost = m.get('cost_breakdown') or m.get('cost_lines') or []
+    if not isinstance(cost, list) or not cost:
+        cost = [{'cbs':f'01.0{i+1}','description':x,'type':'Direct' if i<3 else ('Indirect' if i==3 else 'Reserve'),'p10_bn':0.5+i*.2,'p50_bn':0.7+i*.25,'p90_bn':1.0+i*.3,'basis':'Sector-normalised fallback line'} for i,x in enumerate(L['cost'][:5])]
+    fixed_cost=[]
+    for i,r in enumerate(cost[:12]):
+        if not isinstance(r, dict): r={'description':_v134_text(r, L['cost'][min(i,len(L['cost'])-1)])}
+        fixed_cost.append({'cbs':_v134_text(r.get('cbs'), f'01.{i+1:02d}'),'description':_v134_text(r.get('description') or r.get('package'), L['cost'][min(i,len(L['cost'])-1)]),'type':_v134_text(r.get('type'), 'Direct' if i<3 else ('Indirect' if i==3 else 'Reserve')),'p10_bn':_v134_float(r.get('p10_bn') or r.get('low_bn') or r.get('low'), 0.4+i*.2),'p50_bn':_v134_float(r.get('p50_bn') or r.get('most_likely_bn') or r.get('p50'), 0.7+i*.25),'p90_bn':_v134_float(r.get('p90_bn') or r.get('high_bn') or r.get('high'), 1.0+i*.3),'basis':_v134_text(r.get('basis'), 'Sector-normalised estimate basis')})
+    m['cost_breakdown']=fixed_cost; m['cost_lines']=fixed_cost; m['cost_detail']=fixed_cost
+    sched = m.get('schedule_detail') or m.get('schedule_rows') or []
+    if not isinstance(sched, list) or not sched:
+        sched=[{'activity_id':f'A{1000+i*100}','phase':'Delivery','activity':x,'predecessor':f'A{900+i*100}' if i else '', 'duration_months':4+i*2,'critical':'Yes' if i>1 else 'No','basis':'Sector-normalised schedule line'} for i,x in enumerate(L['schedule'][:5])]
+    fixed_sched=[]
+    for i,r in enumerate(sched[:20]):
+        if not isinstance(r, dict): r={'activity':_v134_text(r, L['schedule'][min(i,len(L['schedule'])-1)])}
+        fixed_sched.append({'activity_id':_v134_text(r.get('activity_id') or r.get('id'), f'A{1000+i*100}'),'phase':_v134_text(r.get('phase'), 'Delivery'),'activity':_v134_text(r.get('activity') or r.get('name'), L['schedule'][min(i,len(L['schedule'])-1)]),'predecessor':_v134_text(r.get('predecessor') or r.get('pred'), '' if i==0 else f'A{900+i*100}'),'duration_months':int(_v134_float(r.get('duration_months') or r.get('months'), 4+i*2)),'critical':_v134_text(r.get('critical'), 'Yes' if i>1 else 'No'),'basis':_v134_text(r.get('basis'), 'Sector-normalised schedule basis')})
+    m['schedule_detail']=fixed_sched; m['schedule_rows']=fixed_sched; m['all_schedule_levels']={str(i):fixed_sched for i in range(1,6)}
+    risks = m.get('risk_register') or m.get('risks') or []
+    if not isinstance(risks, list) or not risks:
+        risks=[{'id':f'R-{i+1:03d}','risk':x,'cause':'Sector constraint not evidenced','event':'Constraint crystallises','impact':'Cost/schedule/confidence degradation','owner':'Programme Director','mitigation':'Named owner action and evidence closure','likelihood':'Medium','impact_rating':'High'} for i,x in enumerate(L['schedule'][:5])]
+    fixed_risks=[]
+    for i,r in enumerate(risks[:20]):
+        if not isinstance(r, dict): r={'risk':_v134_text(r, L['schedule'][min(i,len(L['schedule'])-1)])}
+        fixed_risks.append({**r,'id':_v134_text(r.get('id'),f'R-{i+1:03d}'),'risk':_v134_text(r.get('risk') or r.get('event'),L['schedule'][min(i,len(L['schedule'])-1)]),'owner':_v134_text(r.get('owner'),'Programme Director'),'mitigation':_v134_text(r.get('mitigation'),'Named owner action and evidence closure'),'likelihood':_v134_text(r.get('likelihood'),'Medium'),'impact':_v134_text(r.get('impact'),'High')})
+    m['risk_register']=fixed_risks; m['risks']=fixed_risks; m['risk_detail']=fixed_risks
+    return m
+
+_CASEY_V1341_PREV_BUILD_MODEL = _CASEY_V134_PREV_BUILD_MODEL if '_CASEY_V134_PREV_BUILD_MODEL' in globals() else build_model
+def build_model(prompt:str, client:str='', class_level:int=3, schedule_level:int=3, scenario:str='base'):
+    return _v134_patch_model(_CASEY_V1341_PREV_BUILD_MODEL(prompt, client, class_level, schedule_level, scenario), prompt, client)
+APP_VERSION='CASEY V134.1 Full Sector Render Hardened'
+print('CASEY V134.1 numeric-safe hardening installed')
+# ================= END CASEY V134.1 NUMERIC SAFE HOTFIX =================

@@ -75,7 +75,21 @@ const DEFAULT_CURVE = [
   { percentile: 99, cost_bn: 2.3, schedule_months: 30 },
 ];
 function asArray(v) { return Array.isArray(v) ? v : []; }
-function asText(v, fallback = '') { return typeof v === 'string' && v.trim() ? v : fallback; }
+function asText(v, fallback = '') {
+  if (typeof v === 'string' && v.trim()) return v;
+  if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+  if (v && typeof v === 'object') {
+    try {
+      if (v.label || v.name || v.title || v.driver || v.risk || v.meaning || v.note || v.signal || v.basis) {
+        return [v.label || v.name || v.title || v.driver || v.risk || v.signal, v.value || v.effect || v.meaning || v.note || v.basis].filter(Boolean).join(': ');
+      }
+      return JSON.stringify(v);
+    } catch (_) { return fallback; }
+  }
+  return fallback;
+}
+function listText(v, fallback = []) { return (Array.isArray(v) && v.length ? v : fallback).map(x => asText(x)).filter(Boolean); }
+function safeObj(v, fallback = {}) { return v && typeof v === 'object' && !Array.isArray(v) ? v : fallback; }
 function num(v, fallback = 0) { const n = Number(v); return Number.isFinite(n) ? n : fallback; }
 function sectorKey(model = {}, prompt = '') {
   const t = `${model.subsector || ''} ${model.title || ''} ${model.prompt || ''} ${prompt || ''}`.toLowerCase();
@@ -261,7 +275,35 @@ function normaliseModel(raw, prompt = '') {
     schedule_maturity: 'Schedule logic requires critical-path, handover and commissioning validation.',
     interpretation: `Live calibration is weighting ${sector.threats.slice(0,3).join(', ')} into the QCRA/QSRA tail.`
   };
-  m.why_casey_generated_this = asArray(m.why_casey_generated_this).length ? asArray(m.why_casey_generated_this).map(String) : [
+
+  // V134: normalise every field that can be rendered as text or chart data.
+  // This prevents object-as-child React failures across rail, life sciences and any future sector payload.
+  m.board_challenge_questions = listText(m.board_challenge_questions, []);
+  m.top_decisions_required = listText(m.top_decisions_required, ['Accept or reject the scenario trade-off explicitly at board level.','Confirm the critical-path and near-critical path evidence.','Assign named owners to the governing constraints.']);
+  m.outputs_board_memo = listText(m.outputs_board_memo, m.board_briefing);
+  m.critical_path_narrative = listText(m.critical_path_narrative, sector.threats.map(x => `${x} is near-critical until evidenced.`));
+  m.red_flags = listText(m.red_flags, ['Unevidenced confidence around the governing constraint.','Scenario benefit may be risk transfer rather than risk reduction.']);
+  m.scenario_delta_intelligence = asArray(m.scenario_delta_intelligence).length ? asArray(m.scenario_delta_intelligence).map((x,i) => ({
+    label: asText(x?.label || x?.driver, `Delta ${i+1}`), value: asText(x?.value || x?.effect, '—'), meaning: asText(x?.meaning || x?.note || x, 'Scenario movement requires board challenge.')
+  })) : [
+    { label: 'Capital movement', value: '+0%', meaning: 'Balanced cost, time and evidence posture.' },
+    { label: 'Schedule movement', value: '+0%', meaning: 'Maintains a credible reference case for board challenge.' },
+    { label: 'Confidence movement', value: '+0 pts', meaning: 'Confidence moves only when evidence improves.' }
+  ];
+  m.confidence_breakdown = asArray(m.confidence_breakdown).length ? asArray(m.confidence_breakdown).map((x,i) => ({
+    driver: asText(x?.driver || x?.label, `Confidence driver ${i+1}`), effect: asText(x?.effect || x?.value, '—'), note: asText(x?.note || x?.meaning || x, 'Evidence must support this movement.')
+  })) : sector.drivers.slice(0,5).map((driver,i)=>({driver, effect: i ? '-3' : '+6', note: 'Sector-specific confidence weighting applied.'}));
+  m.live_calibration_signals = asArray(m.live_calibration_signals).length ? asArray(m.live_calibration_signals).map((x,i)=>({
+    signal: asText(x?.signal || x?.label || x, `Signal ${i+1}`), status: asText(x?.status, 'Active'), direction: asText(x?.direction, 'confidence / reserve / P-tail'), applies_to: asText(x?.applies_to, 'board pack, workbook, risk register, XER, QCRA/QSRA'), basis: asText(x?.basis || x?.note || x, 'Sector condition is being weighted into the model.')
+  })) : sector.threats.slice(0,4).map((signal,i)=>({signal, status:i<2?'Active':'Watch', direction:'confidence / reserve / P-tail', applies_to:'board pack, workbook, risk register, XER, QCRA/QSRA', basis:`${signal} is a sector-native delivery constraint.`}));
+  m.mission_control_cards = asArray(m.mission_control_cards).length ? asArray(m.mission_control_cards).map((x,i)=>({
+    label: asText(x?.label || x?.signal, `Signal ${i+1}`), signal: asText(x?.signal || x?.basis || x, 'Sector condition is active.'), severity: asText(x?.severity || x?.status, 'ACTIVE')
+  })) : m.mission_control_cards;
+  m.benchmark_comparison = asArray(m.benchmark_comparison).length ? asArray(m.benchmark_comparison).map((x,i)=>({
+    archetype: asText(x?.archetype || x?.sector || x?.name, `Sector benchmark ${i+1}`), anchor_cost: asText(x?.anchor_cost || x?.cost, '$1B-$10B'), anchor_duration_months: asText(x?.anchor_duration_months || x?.duration || x?.months, '36-96'), similarity_score: num(x?.similarity_score, Math.max(6, 9-i)), use: asText(x?.use, 'Sector-locked benchmark cohort.')
+  })) : m.benchmark_comparison;
+
+  m.why_casey_generated_this = asArray(m.why_casey_generated_this).length ? asArray(m.why_casey_generated_this).map(x => asText(x)) : [
     `CASEY detected ${m.subsector} from the project brief and routed it to the ${m.mode} sector model.`,
     `Sector behaviours applied: ${sector.nodes.slice(0,4).join(', ')}.`,
     'Cost, schedule and risk were calibrated against estimate class, schedule level, complexity and delivery environment.',
@@ -269,13 +311,23 @@ function normaliseModel(raw, prompt = '') {
   ];
   return m;
 }
+
+function EmergencyDashboard() {
+  let model = null;
+  try { model = window.__CASEY_LAST_MODEL__ || JSON.parse(sessionStorage.getItem('CASEY_LAST_MODEL') || 'null'); } catch (_) {}
+  if (!model) return <div className="app v50EliteApp"><main className="console"><section className="layout one"><Card className="shockCard"><h2>CASEY recovered the demo session</h2><p>The previous project payload could not be displayed. Refresh and run again.</p><button className="primary" onClick={() => window.location.reload()}>Recover session</button></Card></section></main></div>;
+  const nodes = listText(model.causal_graph_nodes, ['Scope definition','Procurement evidence','Interface control','Commissioning readiness','Confidence']).slice(0,7);
+  const threats = listText(model.sector_schedule_threats, ['Critical path constraint','Procurement evidence gap','Commissioning readiness']).slice(0,5);
+  return <div className="app v50EliteApp"><main className="console"><section className="layout one"><Card className="shockCard"><h2>CASEY intelligence recovered</h2><p className="big">{asText(model.executive_summary, `${asText(model.subsector,'Sector model')} generated successfully. The full payload has been normalised for demo continuity.`)}</p><div className="miniMetrics"><b><span>P50 cost</span>{asText(model.cost_p50,'—')}</b><b><span>Schedule</span>{asText(model.schedule,'—')}</b><b><span>Confidence</span>{asText(model.confidence_pct,'—')}%</b></div><h3>Sector causal chain</h3>{nodes.map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}<h3>Top schedule threats</h3>{threats.map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}<button className="primary" onClick={() => { window.location.hash=''; window.location.reload(); }}>Continue demo</button><p className="chartCaption">Render guard: recovered from incomplete component path without losing the generated project model.</p></Card></section></main></div>;
+}
+
 class ErrorBoundary extends React.Component {
   constructor(props) { super(props); this.state = { failed: false, error: null }; }
   static getDerivedStateFromError(error) { return { failed: true, error }; }
   componentDidCatch(error, info) { console.error('CASEY render guard caught:', error, info); }
   render() {
     if (!this.state.failed) return this.props.children;
-    return <div className="app v50EliteApp"><main className="console"><section className="layout one"><Card className="shockCard"><h2>CASEY recovered the demo session</h2><p>The previous project payload contained an incomplete render object. The product did not lose data; refresh and rerun the same brief or switch to another sector example.</p><button className="primary" onClick={() => { this.setState({failed:false,error:null}); window.location.reload(); }}>Recover session</button><p className="chartCaption">Render guard: no blank-screen failure.</p></Card></section></main></div>;
+    return <EmergencyDashboard/>;
   }
 }
 
@@ -892,7 +944,7 @@ function scenarioAdjustedModel(currentModel, nextScenario) {
       };
       const m = await post('/generate', payload);
       const nextContext = lockedProjectContext(m, canonicalPrompt);
-      const safe = normaliseModel(m, canonicalPrompt); const nextContextSafe = lockedProjectContext(safe, canonicalPrompt); setModel(safe); setProjectContext(nextContextSafe); setScenario(nextScenario); setPrompt(canonicalPrompt);
+      const safe = normaliseModel(m, canonicalPrompt); window.__CASEY_LAST_MODEL__ = safe; try { sessionStorage.setItem('CASEY_LAST_MODEL', JSON.stringify(safe)); } catch (_) {} const nextContextSafe = lockedProjectContext(safe, canonicalPrompt); setModel(safe); setProjectContext(nextContextSafe); setScenario(nextScenario); setPrompt(canonicalPrompt);
     } catch (e) { setError(String(e.message || e)); }
     finally { setLoading(false); setSimulationStage(''); setConfidencePulse(false); }
   }
@@ -936,7 +988,7 @@ function scenarioAdjustedModel(currentModel, nextScenario) {
 
   return <div className="app v50EliteApp">
     <Briefing open={briefing} onClose={() => setBriefing(false)} onEarth={runEarth} onSpace={runSpace}/>
-    <OneShotDemo open={trialOpen} onClose={() => setTrialOpen(false)} onComplete={(m) => { const safe = normaliseModel(m, m?.prompt || prompt); setModel(safe); setProjectContext(lockedProjectContext(safe, safe?.prompt || prompt)); setShow(false); setTrialOpen(false); setTab('overview'); }} />
+    <OneShotDemo open={trialOpen} onClose={() => setTrialOpen(false)} onComplete={(m) => { const safe = normaliseModel(m, m?.prompt || prompt); window.__CASEY_LAST_MODEL__ = safe; try { sessionStorage.setItem('CASEY_LAST_MODEL', JSON.stringify(safe)); } catch (_) {} setModel(safe); setProjectContext(lockedProjectContext(safe, safe?.prompt || prompt)); setShow(false); setTrialOpen(false); setTab('overview'); }} />
     <AnimatePresence>{loading && <Loading text="Building full CASEY intelligence pack..."/>}</AnimatePresence>
     {show && !model && <Hero onBriefing={() => setBriefing(true)} onEarth={runEarth} onSpace={runSpace} onConsole={() => setShow(false)} onTryDemo={() => setTrialOpen(true)}/>} 
     <header className="v50ConsoleTop"><Logo/><nav><button onClick={() => { setModel(null); setProjectContext(null); setShow(true); }}>Home</button><button onClick={() => setBriefing(true)}>Film</button><button onClick={() => setTrialOpen(true)}>Free run</button><button onClick={runEarth}>Earth demo</button><button onClick={runSpace}>Space demo</button><a href={emailLink}>Request access</a></nav></header>
@@ -1038,7 +1090,7 @@ function scenarioAdjustedModel(currentModel, nextScenario) {
           <button onClick={() => download('/export/all', model, `${model.id || 'casey'}_FULL_BOARD_PACK.zip`)}><Download/> Generate Full Pack ZIP</button>
           <a className="contactBtn" href={emailLink}><Mail/> Request Enterprise Review</a></div></Card><Card><h2>What the pack delivers</h2>{['Executive control centre with project, scenario, class, level and confidence clearly identified','Scenario comparison covering Base, Faster, Cheaper, Lower Risk and Premium cases','Selected estimate class plus all class levels for audit and challenge','Direct, indirect and reserve cost views with QCRA cost curve and cost tornado','All schedule levels with QSRA schedule curve and schedule tornado','Risk register with cause, event, impact, owner, mitigation, trigger and quantified likelihood','Basis of Estimate, assumptions, exclusions and benchmark validation','Commercial next steps: buyer action, procurement challenge and board decision path'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card></section>}
 
-        {tab === 'advisor' && <section className="layout two"><Card><h2>Ask CASEY</h2><div className="chatBox">{chat.map((m,i)=><div key={i} className={`msg ${m.role}`}>{m.text}</div>)}</div><div className="ask"><input value={chatQ} onChange={e=>setChatQ(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')ask()}} placeholder="Ask why the cost or risk moved..."/><button onClick={ask}>Ask</button></div></Card><Card><h2>Upload estimate challenge</h2><p>Use this to show buyers how CASEY can challenge a Tier 1 estimate.</p><label className="upload"><Upload size={18}/> Upload file<input type="file" onChange={upload}/></label><button className="secondary" onClick={()=>setUploadResult({review:'Sample contractor estimate challenge', findings:['Direct costs above benchmark in power train and cooling package','Indirects and preliminaries need clearer split from reserves','Schedule contingency understated against critical path risks','Risk allowance should separate QCRA cost and QSRA schedule exposure'], next_action:'Request rate build-up, supplier quotes, basis of estimate and revised risk register.'})}>Run sample challenge</button>{uploadResult && <pre>{JSON.stringify(uploadResult,null,2)}</pre>}</Card></section>}
+        {tab === 'advisor' && <section className="layout two"><Card><h2>Ask CASEY</h2><div className="chatBox">{chat.map((m,i)=><div key={i} className={`msg ${m.role}`}>{asText(m.text)}</div>)}</div><div className="ask"><input value={chatQ} onChange={e=>setChatQ(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')ask()}} placeholder="Ask why the cost or risk moved..."/><button onClick={ask}>Ask</button></div></Card><Card><h2>Upload estimate challenge</h2><p>Use this to show buyers how CASEY can challenge a Tier 1 estimate.</p><label className="upload"><Upload size={18}/> Upload file<input type="file" onChange={upload}/></label><button className="secondary" onClick={()=>setUploadResult({review:'Sample contractor estimate challenge', findings:['Direct costs above benchmark in power train and cooling package','Indirects and preliminaries need clearer split from reserves','Schedule contingency understated against critical path risks','Risk allowance should separate QCRA cost and QSRA schedule exposure'], next_action:'Request rate build-up, supplier quotes, basis of estimate and revised risk register.'})}>Run sample challenge</button>{uploadResult && <pre>{JSON.stringify(uploadResult,null,2)}</pre>}</Card></section>}
 
         {tab === 'method' && <section className="layout two"><Card><h2>How CASEY calculated this</h2>{['Cost model: selected class estimate, sector template, location factor, complexity factor and scenario modifier.','Schedule model: level-based delivery logic, phase durations, critical path sensitivity and scenario acceleration/delay factors.','QCRA: cost exposure model using low / most likely / high impacts and risk-weighted contingency.','QSRA: schedule exposure model using activity-linked O/M/P delay ranges and critical path sensitivity.','Confidence score translated for executives: board-defensibility based on benchmark similarity, evidence maturity, procurement certainty, schedule logic, contingency adequacy and scenario posture.'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card><Card><h2>Commercial readiness</h2><p className="big">This is first-pass project controls intelligence. It is designed to accelerate challenge, option testing and board preparation before final contractor tender or signed cost plan.</p><a className="contactBtn huge" href={emailLink}><Mail/> Send project for review</a></Card></section>}
         {tab === 'pricing' && <section className="layout two"><Card><h2>CASEY Access</h2><div className="pricingGrid"><div className="priceCard"><b>Pilot</b><strong>Request pricing</strong><span>Guided project review, sample outputs and executive walkthrough.</span><a href={emailLink}>Request pilot</a></div><div className="priceCard hot"><b>Professional</b><strong>Full project pack</strong><span>Cost, schedule, risk, QCRA/QSRA and export pack.</span><a href={emailLink}>Request access</a></div><div className="priceCard"><b>Enterprise</b><strong>Private deployment</strong><span>SSO, teams, benchmark library, private models and audit trail.</span><a href={emailLink}>Book demo</a></div></div></Card><Card><h2>Send this project</h2><p className="big">Turn demo interest into pipeline immediately.</p><a className="contactBtn huge" href={emailLink}><Mail/> Send project to CASEY</a><button className="primary" onClick={() => download('/export/all', model, 'CASEY_Output_Pack.zip')}>Download full pack</button></Card></section>}
