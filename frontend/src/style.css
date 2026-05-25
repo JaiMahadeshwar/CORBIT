@@ -2709,17 +2709,341 @@ body{overflow-x:hidden!important;}
   .v50Kpi{min-height:92px!important;}
 }
 
-/* CASEY V130 institutional polish: premium chart feel, lower density, sharper board silence */
-.card, .panel, .exportPanel { letter-spacing: -0.01em; }
-.card p.big, .chartCaption { max-width: 78ch; line-height: 1.55; }
-.reason { min-height: 38px; padding-top: 12px; padding-bottom: 12px; }
-.reason span { box-shadow: 0 0 18px rgba(124,246,255,.08); }
-.recharts-cartesian-grid line { stroke-opacity: .18; }
-.recharts-cartesian-axis-line, .recharts-cartesian-axis-tick-line { stroke-opacity: .32; }
-.recharts-text { font-size: 11px; letter-spacing: .02em; }
-.recharts-tooltip-wrapper .recharts-default-tooltip { border: 1px solid rgba(124,246,255,.28)!important; background: rgba(3,12,24,.96)!important; box-shadow: 0 20px 60px rgba(0,0,0,.45); }
-.liveCalPanel, .boardPressure { animation: caseyFadeUp .45s ease both; }
-.scenarioCompare button, .exportBtn, .topBtn, button { transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease, background .16s ease; }
-.scenarioCompare button:hover, .exportBtn:hover, .topBtn:hover, button:hover { transform: translateY(-1px); }
-.kpis .kpi strong, .confidenceNumber { text-shadow: 0 0 18px rgba(124,246,255,.18); }
-@keyframes caseyFadeUp { from { opacity:0; transform: translateY(8px); } to { opacity:1; transform: translateY(0); } }
+
+/* CASEY V125 advisor intimidation layer */
+.advisorElite .advisorIntro{color:#aab8cc;margin-top:-4px;margin-bottom:12px}
+.advisorPrompts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0 14px}
+.advisorPrompts button{border:1px solid #7cf7ff33;background:linear-gradient(180deg,#102139,#071426);color:#dff8ff;border-radius:14px;padding:10px 12px;font-weight:800;text-align:left;box-shadow:0 10px 28px #0005}
+.advisorPrompts button:hover{border-color:#7cf7ff99;box-shadow:0 0 0 1px #7cf7ff33,0 18px 42px #00d9ff18}
+.msg{white-space:pre-wrap;line-height:1.45}
+.msg.assistant{border:1px solid #7cf7ff22}
+@media(max-width:900px){.advisorPrompts{grid-template-columns:1fr}}
+
+/* CASEY V134 competitive assurance layer */
+.incumbentPressure{margin-top:16px!important}
+.threatCard{border-color:#ff6b7a55!important;box-shadow:0 0 0 1px #ff6b7a22,0 24px 70px #0008!important;background:linear-gradient(135deg,#071421 0%,#0b1020 55%,#20101a 100%)!important}
+.threatCard h2{color:#fff!important;text-shadow:0 0 20px #ff6b7a44!important}
+.versusRow{display:grid;grid-template-columns:28px 1fr 22px 1.45fr;gap:10px;align-items:center;padding:12px 14px;margin:8px 0;border:1px solid #7cf7ff22;background:#061322cc;border-radius:14px;box-shadow:inset 3px 0 0 #ff6b7a99}
+.versusRow span,.auditSpine span{display:grid;place-items:center;width:24px;height:24px;border-radius:4px;background:#14394a;color:#8df7ff;font-weight:900}
+.versusRow b{color:#ffb4bd;text-transform:uppercase;font-size:11px;letter-spacing:.08em}.versusRow strong{color:#eaffff;font-size:13px;line-height:1.35}.versusRow svg{color:#8df7ff}
+.auditSpine{display:grid;grid-template-columns:28px 1fr;gap:10px;padding:11px 12px;margin:7px 0;border:1px solid #ffffff14;background:#050d19;border-radius:12px}.auditSpine b{color:#fff}.auditSpine em{grid-column:2;color:#aab8cc;font-style:normal;line-height:1.35}.auditSpine.pass{border-color:#8df7ff55;box-shadow:0 0 24px #00e5ff12}.auditSpine.pass b{color:#8df7ff}
+@media(max-width:900px){.versusRow{grid-template-columns:28px 1fr}.versusRow svg{display:none}.versusRow strong{grid-column:2}}
+
+/* V144 clickable global showcase library */
+.showcaseLibrary{display:flex;flex-direction:column;gap:18px;width:100%;padding-bottom:60px;}
+.showcaseHero{display:grid;grid-template-columns:1.7fr .8fr;gap:22px;align-items:stretch;background:radial-gradient(circle at 15% 0%,rgba(141,247,255,.18),transparent 38%),linear-gradient(135deg,rgba(7,17,31,.96),rgba(2,5,10,.98));border:1px solid rgba(141,247,255,.24)!important;}
+.showcaseHero .eyebrow{color:#8df7ff;text-transform:uppercase;letter-spacing:.24em;font-size:12px;margin:0 0 10px;}
+.showcaseHero h1{font-size:clamp(38px,5vw,74px);line-height:.92;margin:0 0 14px;text-transform:uppercase;letter-spacing:-.06em;color:#fff;}
+.showcaseHero p{max-width:900px;font-size:18px;line-height:1.5;color:#d9e9f8;}
+.phaseStack{display:grid;grid-template-columns:auto 1fr;gap:10px 14px;padding:18px;background:rgba(2,5,10,.55);border:1px solid rgba(255,255,255,.13);align-self:stretch;align-content:center;}
+.phaseStack b{color:#8df7ff;text-transform:uppercase;letter-spacing:.16em;font-size:12px;}
+.phaseStack span{color:#fff;font-weight:750;}
+.showcaseControls{display:flex;gap:12px;align-items:center;}
+.showcaseControls input{flex:1;min-height:50px;background:rgba(2,5,10,.78);border:1px solid rgba(255,255,255,.18);color:#fff;padding:0 16px;font-size:15px;}
+.showcaseControls button,.sectorPills button,.showcaseCard{font-family:"Aptos Display","Segoe UI",Arial,sans-serif;text-transform:uppercase;letter-spacing:.08em;font-weight:850;border-radius:0;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px);}
+.showcaseControls button{min-height:50px;background:rgba(7,17,31,.9);color:#fff;border:1px solid rgba(141,247,255,.3);padding:0 18px;}
+.sectorPills{display:flex;gap:10px;flex-wrap:wrap;}
+.sectorPills button{background:rgba(7,17,31,.82);border:1px solid rgba(255,255,255,.18);color:#d9e9f8;padding:12px 14px;display:flex;gap:10px;align-items:center;}
+.sectorPills button.active{background:linear-gradient(90deg,#f7fbff,#8df7ff);color:#02050a;border-color:#8df7ff;}
+.sectorPills span{font-size:11px;padding:3px 7px;background:rgba(255,255,255,.12);}
+.showcaseGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;}
+.showcaseCard{text-align:left;background:linear-gradient(180deg,rgba(7,17,31,.94),rgba(3,8,19,.98));border:1px solid rgba(255,255,255,.16);color:#fff;padding:18px;min-height:270px;display:flex;flex-direction:column;gap:12px;box-shadow:0 24px 70px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.06);}
+.showcaseCard:hover{border-color:rgba(141,247,255,.65);box-shadow:0 0 42px rgba(141,247,255,.16),0 24px 80px rgba(0,0,0,.56);}
+.showcaseIcon{width:54px;height:54px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(141,247,255,.42);background:rgba(141,247,255,.10);color:#8df7ff;font-weight:950;letter-spacing:.04em;}
+.showcaseMeta{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+.showcaseMeta span,.showcaseMeta em{font-style:normal;font-size:11px;color:#9fb3c8;letter-spacing:.12em;text-transform:uppercase;}
+.showcaseMeta span{color:#8df7ff;}
+.showcaseCard h3{font-size:22px;line-height:1.05;margin:0;color:#fff;letter-spacing:-.03em;text-transform:none;}
+.showcaseCard p{font-size:13px;line-height:1.45;color:#cbd8e8;text-transform:none;letter-spacing:0;font-weight:500;margin:0;flex:1;}
+.showcaseFooter{display:flex;gap:12px;justify-content:space-between;align-items:center;border-top:1px solid rgba(255,255,255,.12);padding-top:12px;}
+.showcaseFooter b{font-size:12px;color:#fff;text-transform:none;letter-spacing:.02em;}
+.showcaseFooter strong{font-size:11px;color:#8df7ff;display:flex;gap:6px;align-items:center;}
+@media(max-width:1100px){.showcaseGrid{grid-template-columns:repeat(2,minmax(0,1fr));}.showcaseHero{grid-template-columns:1fr;}}
+@media(max-width:720px){.showcaseGrid{grid-template-columns:1fr;}.showcaseControls{flex-direction:column;align-items:stretch;}.showcaseHero h1{font-size:38px;}}
+
+/* ── CASEY GATE — shown when public demo limit reached ─────────────── */
+.caseyGate{position:fixed;top:0;left:0;right:0;z-index:9999;padding:0 20px;pointer-events:none;}
+.caseyGateInner{max-width:720px;margin:24px auto 0;background:linear-gradient(135deg,rgba(10,15,30,.97),rgba(18,28,55,.97));border:1px solid rgba(245,158,11,.5);border-radius:4px;padding:28px 32px;box-shadow:0 12px 60px rgba(0,0,0,.6),0 0 40px rgba(245,158,11,.08);pointer-events:all;text-align:center;}
+.caseyGateIcon{display:block;font-size:22px;color:#f59e0b;margin-bottom:12px;}
+.caseyGateInner h3{margin:0 0 10px;font-size:20px;font-weight:700;color:#fff;letter-spacing:-.02em;}
+.caseyGateInner p{margin:0 0 22px;font-size:14px;color:#94a3b8;line-height:1.55;}
+.caseyGateCtas{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+.caseyGateBtn{display:inline-flex;align-items:center;gap:8px;padding:11px 22px;border-radius:3px;font-size:13px;font-weight:700;text-decoration:none;letter-spacing:.03em;transition:opacity .15s;}
+.caseyGateBtn.primary{background:#f59e0b;color:#0a0f1e;}
+.caseyGateBtn.secondary{background:rgba(255,255,255,.08);color:#e2e8f0;border:1px solid rgba(255,255,255,.2);}
+.caseyGateBtn:hover{opacity:.85;}
+
+/* CASEY V150 Enterprise Trust Runtime Bar */
+.trustRuntimeBar{display:grid;grid-template-columns:1.35fr repeat(6,minmax(0,1fr));gap:10px;margin:12px 0 16px;padding:12px;border:1px solid rgba(141,247,255,.24);background:linear-gradient(90deg,rgba(3,8,19,.96),rgba(8,20,36,.88));box-shadow:0 20px 70px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.06)}
+.trustRuntimeLead,.trustRuntimeMetric{border:1px solid rgba(255,255,255,.12);background:rgba(2,5,10,.56);padding:10px 12px;min-height:62px;display:flex;flex-direction:column;justify-content:center;gap:4px}.trustRuntimeLead b{color:#8df7ff;text-transform:uppercase;letter-spacing:.16em;font-size:12px}.trustRuntimeLead span,.trustRuntimeMetric span{color:#9fb3c8;font-size:11px;text-transform:uppercase;letter-spacing:.12em}.trustRuntimeMetric strong{color:#fff;font-size:18px;line-height:1.1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.trustRuntimeMetric:last-child strong{font-size:10px;color:#8df7ff;letter-spacing:.08em}@media(max-width:1100px){.trustRuntimeBar{grid-template-columns:repeat(2,minmax(0,1fr))}.trustRuntimeLead{grid-column:1/-1}}@media(max-width:650px){.trustRuntimeBar{grid-template-columns:1fr}}
+
+/* ── Programme Health Signal ────────────────────────────────────────── */
+.healthSignal { margin-top: 16px; }
+.healthProgrammes { display: flex; flex-direction: column; gap: 10px; margin: 16px 0; }
+.healthRow { display: grid; grid-template-columns: 180px 1fr 32px auto; align-items: center; gap: 12px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); border-radius: 4px; padding: 12px 16px; transition: border-color .2s; }
+.healthRow.active { border-color: rgba(245,158,11,.5); }
+.healthMeta b { display:block; font-size:14px; color:#e2e8f0; font-weight:700; }
+.healthSector { font-size:10px; color:#64748b; text-transform:uppercase; letter-spacing:.08em; }
+.healthReported { display:flex; flex-wrap:wrap; gap:4px 12px; align-items:baseline; }
+.healthReported label { font-size:9px; text-transform:uppercase; letter-spacing:.1em; color:#64748b; width:100%; }
+.reportedCost { font-size:16px; font-weight:700; color:#fff; }
+.reportedSched { font-size:12px; color:#94a3b8; }
+.reportedConf { font-size:11px; color:#f59e0b; font-style:normal; }
+.healthReported small { font-size:9px; color:#475569; width:100%; }
+.healthVs { font-size:10px; color:#475569; text-align:center; font-weight:700; }
+.healthRunBtn { background:#f59e0b; color:#0a0f1e; border:none; border-radius:3px; padding:8px 14px; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; transition:opacity .15s; }
+.healthRunBtn:hover { opacity:.85; }
+.healthDisclaimer { font-size:10px; color:#475569; margin-top:12px; line-height:1.5; border-top:1px solid rgba(255,255,255,.06); padding-top:10px; }
+
+/* ── Health signal upgrade ──────────────────────────────────────────── */
+.healthHeader{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:12px}
+.healthCount{display:flex;flex-direction:column;gap:4px;text-align:right;min-width:80px}
+.healthCount b{font-size:24px;font-weight:700;color:#f59e0b;line-height:1}
+.healthCount span{font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.08em}
+.healthControls{display:flex;flex-direction:column;gap:10px;margin-bottom:14px}
+.healthSearch{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:3px;padding:9px 14px;color:#e2e8f0;font-size:13px;outline:none}
+.healthSearch:focus{border-color:rgba(245,158,11,.4)}
+.healthSectorPills{display:flex;flex-wrap:wrap;gap:6px}
+.healthPill{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:30px;padding:4px 12px;font-size:11px;color:#94a3b8;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:5px}
+.healthPill.active{background:rgba(245,158,11,.15);border-color:#f59e0b;color:#f59e0b}
+.healthPill span{font-size:10px;opacity:.7}
+.healthTags{display:flex;gap:6px;margin-top:3px}
+.healthRegion{font-size:10px;color:#475569;background:rgba(255,255,255,.05);border-radius:3px;padding:1px 6px}
+.healthShowMore{width:100%;margin-top:10px;background:transparent;border:1px solid rgba(255,255,255,.1);border-radius:3px;padding:8px;color:#64748b;font-size:12px;cursor:pointer;transition:all .15s}
+.healthShowMore:hover{border-color:rgba(245,158,11,.3);color:#f59e0b}
+.healthEmpty{text-align:center;color:#475569;padding:24px;font-size:13px}
+.healthRow{display:grid;grid-template-columns:220px 1fr 28px 110px;align-items:center;gap:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:3px;padding:10px 14px;transition:border-color .15s}
+.healthRow.active{border-color:rgba(245,158,11,.5);background:rgba(245,158,11,.04)}
+
+/* ── Advisory Fee Counter ────────────────────────────────────────────── */
+.feeCounter{margin-top:8px}
+.feeHeader{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:16px}
+.feeHeader h2{margin:0 0 4px;font-size:18px;color:#fff}
+.feeSubtitle{font-size:12px;color:#64748b;margin:0}
+.feeTotalBox{text-align:right;min-width:160px;flex-shrink:0}
+.feeLabel{display:block;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:#64748b;margin-bottom:4px}
+.feeTotalLow{font-size:20px;font-weight:700;color:#94a3b8}
+.feeTotalHigh{font-size:28px;font-weight:800;color:#ef4444;letter-spacing:-.02em}
+.feeTimeLabel{display:block;font-size:10px;color:#f59e0b;margin-top:2px}
+.feeItems{display:flex;flex-direction:column;gap:0}
+.feeRow{display:grid;grid-template-columns:20px 1fr 100px 110px 60px;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:12px}
+.feeRow:last-child{border-bottom:none}
+.feeCheck{color:#10b981;font-size:14px;font-weight:700}
+.feeItemLabel{color:#e2e8f0}
+.feeItemTrad{color:#ef4444;font-weight:700;text-align:right}
+.feeItemTime{color:#64748b;font-size:11px}
+.feeItemCasey{color:#10b981;font-weight:700;font-size:11px}
+.feeDemoLine{margin-top:14px;padding:12px 16px;border-left:3px solid #f59e0b;background:rgba(245,158,11,.06);font-size:12px;color:#e2e8f0;font-style:italic;line-height:1.5}
+
+/* ── if_this_fails card ──────────────────────────────────────────────── */
+.ifFailsCard { border-left: 4px solid #ef4444; background: rgba(239,68,68,.04); }
+.ifFailsStatement { font-size: 15px; line-height: 1.65; color: #e2e8f0; font-style: italic; margin: 0 0 12px; padding: 12px 0; }
+.ifFailsNote { font-size: 10px; color: #475569; margin: 0; }
+
+/* CASEY V163 visible Holy Grail runtime + professional intake */
+.intakeResult{margin-top:16px;border:1px solid rgba(141,247,255,.28);background:linear-gradient(145deg,rgba(4,12,24,.96),rgba(7,18,34,.9));padding:16px;box-shadow:0 20px 60px rgba(0,0,0,.28)}
+.intakeHeader{display:grid;grid-template-columns:1fr;gap:5px;padding:12px;border-left:3px solid #8df7ff;background:rgba(141,247,255,.06);margin-bottom:12px}.intakeHeader span{color:#8df7ff;font-size:10px;letter-spacing:.18em;text-transform:uppercase;font-weight:800}.intakeHeader b{color:white;font-size:15px}.intakeHeader em{color:#f7d774;font-style:normal;font-size:11px}.intakeMetrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0}.intakeMetrics div{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);padding:10px}.intakeMetrics span{display:block;color:#8ca0b5;font-size:9px;text-transform:uppercase;letter-spacing:.12em}.intakeMetrics b{color:#fff;font-size:13px}.reason.danger{border-left:2px solid #ff6b7d;background:rgba(255,75,105,.06)}.traceStep{display:grid;grid-template-columns:34px 1fr;gap:10px;align-items:center;margin:8px 0;padding:10px;background:rgba(141,247,255,.045);border:1px solid rgba(141,247,255,.16)}.traceStep span{width:24px;height:24px;display:grid;place-items:center;background:rgba(141,247,255,.18);color:#8df7ff;font-weight:900}.traceStep b{font-size:12px;color:#dbeafe;line-height:1.35}.runtimePanel .card{border-color:rgba(247,215,116,.25)}.runtimeButtons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:14px 0}.runtimeButtons button{display:grid;grid-template-columns:22px 1fr;gap:6px;text-align:left;align-items:start;padding:14px;background:linear-gradient(135deg,rgba(141,247,255,.12),rgba(247,215,116,.06));border:1px solid rgba(141,247,255,.28);color:#fff;cursor:pointer}.runtimeButtons button b{text-transform:uppercase;letter-spacing:.08em;font-size:12px}.runtimeButtons button span{grid-column:2;color:#9fb3c8;font-size:11px;line-height:1.4}.runtimeButtons button:hover{border-color:#8df7ff;box-shadow:0 0 25px rgba(141,247,255,.16)}.runtimeScenarioRow{display:flex;flex-wrap:wrap;gap:8px}.runtimeScenarioRow button{padding:9px 12px;text-transform:uppercase;font-weight:900;letter-spacing:.08em;background:#08111f;color:#dbeafe;border:1px solid rgba(255,255,255,.12);cursor:pointer}.runtimeScenarioRow button.active{background:#8df7ff;color:#06111c}
+@media(max-width:800px){.intakeMetrics,.runtimeButtons{grid-template-columns:1fr}}
+
+/* V164 visible holy-grail and intake challenge polish */
+.intakeEmpty{border:1px solid #2d6d7a;background:#06131e;padding:18px;margin-top:16px;color:#dffbff;display:grid;gap:8px}.intakeEmpty span{color:#9ab1bd}
+.challengeButtons,.runtimeInline{display:grid;grid-template-columns:1fr;gap:12px;margin:16px 0}.challengeButtons button,.runtimeInline button{display:flex;align-items:center;gap:10px;justify-content:flex-start;text-align:left;border:1px solid #55e9ff66;background:linear-gradient(135deg,#081525,#102238);color:#eaffff;padding:16px 18px;text-transform:uppercase;font-weight:900;letter-spacing:.08em;clip-path:polygon(0 0,96% 0,100% 24%,100% 100%,4% 100%,0 76%);cursor:pointer}.challengeButtons button:hover,.runtimeInline button:hover{background:#8df7ff;color:#001018;box-shadow:0 0 28px #8df7ff55}.advisorPrompts.bigButtons button{display:flex;align-items:center;gap:9px;justify-content:flex-start;min-height:52px}.challengeVerdict{border:1px solid #ffd85a66;background:linear-gradient(135deg,#2d2507,#071927);padding:16px;margin:14px 0}.challengeVerdict span{color:#ffd85a;font-size:11px;letter-spacing:.16em;font-weight:900}.challengeVerdict b{display:block;color:#fff;font-size:20px;margin:5px 0}.challengeVerdict p{margin:0;color:#c4d4dd}.proChallenge h3{color:#8df7ff;margin-top:18px}.reason.danger{border-left:3px solid #ff5d7a}.runtimePanel .runtimeButtons button{min-height:72px}.runtimeScenarioRow button.active,.runtimeInline button:first-child{border-color:#8df7ff;background:#13323b}.tabs button{white-space:nowrap}.tabs button:nth-last-child(3){border-color:#ffd85a88;color:#ffd85a}
+
+/* V166 professional challenge room polish */
+.challengeRoom .card{border-color:rgba(141,247,255,.24)}
+.challengeHero{margin:12px 0 14px;padding:14px 16px;border:1px solid rgba(247,215,116,.35);background:linear-gradient(135deg,rgba(247,215,116,.10),rgba(141,247,255,.05));display:grid;gap:7px}
+.challengeHero span{color:#f7d774;font-weight:900;font-size:10px;letter-spacing:.18em;text-transform:uppercase}
+.challengeHero b{color:#fff;font-size:13px;line-height:1.45}
+.challengeButtons.pro{display:grid;grid-template-columns:1fr;gap:10px;margin:12px 0 16px}
+.challengeButtons.pro button{display:grid;grid-template-columns:28px 1fr;gap:7px;text-align:left;padding:15px 16px;background:linear-gradient(135deg,rgba(141,247,255,.12),rgba(6,14,26,.96));border:1px solid rgba(141,247,255,.34);color:#fff;cursor:pointer;box-shadow:0 10px 34px rgba(0,0,0,.22)}
+.challengeButtons.pro button:hover{border-color:#8df7ff;box-shadow:0 0 28px rgba(141,247,255,.20);transform:translateY(-1px)}
+.challengeButtons.pro button svg{color:#8df7ff;margin-top:2px}.challengeButtons.pro button b{text-transform:uppercase;letter-spacing:.08em;font-size:12px}.challengeButtons.pro button span{grid-column:2;color:#9fb3c8;font-size:11px;line-height:1.35}.proUpload{background:rgba(141,247,255,.08)!important;border-color:rgba(141,247,255,.35)!important}.boardInterrogation{min-height:260px}.proChallenge{border:1px solid rgba(247,215,116,.32);background:linear-gradient(145deg,rgba(7,16,30,.98),rgba(10,21,36,.94))}.challengeVerdict{border:1px solid rgba(255,107,125,.42);background:rgba(255,107,125,.08);padding:12px;margin:10px 0}.challengeVerdict span{display:block;color:#ff9aa8;font-size:10px;letter-spacing:.16em;font-weight:900}.challengeVerdict b{display:block;color:#fff;font-size:18px;margin:4px 0}.challengeVerdict p{margin:0;color:#c9d6e2;font-size:12px}
+
+/* ── Chat message body formatting ───────────────────────────────────── */
+.msgBody p { margin: 3px 0; line-height: 1.55; color: #e2e8f0; }
+.msg.assistant .msgBody strong { color: #8df7ff; }
+.msg.user .msgBody p { color: #f7d774; }
+.msg.assistant { border-left: 2px solid rgba(141,247,255,0.3); padding-left: 10px; }
+.msg.user { border-left: 2px solid rgba(247,215,116,0.4); padding-left: 10px; }
+
+/* ══════════════════════════════════════════════════════════════════
+   CASEY CHALLENGE INTERROGATION ROOM
+   ══════════════════════════════════════════════════════════════════ */
+
+.intakeEmpty {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 40px 20px; text-align: center; gap: 10px;
+  border: 1px dashed rgba(141,247,255,0.2); border-radius: 4px;
+  background: rgba(141,247,255,0.02);
+}
+.intakeEmptyIcon { font-size: 28px; color: #8df7ff; }
+.intakeEmpty b { color: #e2e8f0; font-size: 15px; }
+.intakeEmpty span { color: #64748b; font-size: 12px; max-width: 340px; line-height: 1.5; }
+
+.intakeResult.proChallenge {
+  display: flex; flex-direction: column; gap: 0;
+  border: 1px solid rgba(141,247,255,0.2);
+  border-radius: 4px; overflow: hidden;
+  margin-top: 12px;
+}
+
+/* File header bar */
+.challengeFileBar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 14px;
+  background: rgba(141,247,255,0.06);
+  border-bottom: 1px solid rgba(141,247,255,0.15);
+}
+.challengeFileInfo { display: flex; flex-direction: column; gap: 2px; }
+.challengeFileTag {
+  font-size: 9px; font-weight: 900; letter-spacing: .18em; color: #8df7ff;
+  text-transform: uppercase;
+}
+.challengeFileName { color: #fff; font-size: 13px; font-weight: 700; }
+.challengeFileInfo em { color: #64748b; font-style: normal; font-size: 10px; }
+.challengeLiveTag {
+  font-size: 9px; font-weight: 900; letter-spacing: .12em;
+  color: #10b981; background: rgba(16,185,129,0.12);
+  border: 1px solid rgba(16,185,129,0.3); border-radius: 2px;
+  padding: 3px 8px;
+}
+
+/* Big verdict */
+.challengeVerdictBig {
+  padding: 16px 14px; border-left: 4px solid;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.verdictLabel {
+  font-size: 9px; font-weight: 900; letter-spacing: .2em;
+  color: #94a3b8; text-transform: uppercase; margin-bottom: 6px;
+}
+.verdictResult {
+  font-size: 20px; font-weight: 900; letter-spacing: -.01em;
+  text-transform: uppercase; margin-bottom: 6px;
+}
+.verdictSub { font-size: 11px; color: #94a3b8; }
+
+/* Live metrics row */
+.challengeMetricRow {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.cm {
+  padding: 10px 14px; border-right: 1px solid rgba(255,255,255,0.05);
+  display: flex; flex-direction: column; gap: 2px;
+}
+.cm:last-child { border-right: none; }
+.cm span { font-size: 9px; text-transform: uppercase; letter-spacing: .1em; color: #64748b; }
+.cm b { font-size: 16px; font-weight: 800; color: #fff; }
+
+/* Challenge section */
+.challengeSection {
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  padding: 12px 14px;
+}
+.challengeSectionHead {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 9px; font-weight: 900; letter-spacing: .18em;
+  color: #8df7ff; text-transform: uppercase; margin-bottom: 10px;
+}
+.challengeSectionHead.danger { color: #ff6b7d; }
+.challengeSectionHead.attack { color: #f7d774; }
+.challengeSectionHead.ifFails { color: #ff9940; }
+.challengeSectionHead.next { color: #10b981; }
+.csh-num {
+  width: 20px; height: 20px; border-radius: 2px; display: grid; place-items: center;
+  font-size: 10px; font-weight: 900;
+  background: rgba(141,247,255,0.1); color: #8df7ff;
+}
+.challengeSectionHead.danger .csh-num { background: rgba(255,107,125,0.15); color: #ff6b7d; }
+.challengeSectionHead.attack .csh-num { background: rgba(247,215,116,0.12); color: #f7d774; }
+.challengeSectionHead.ifFails .csh-num { background: rgba(255,153,64,0.12); color: #ff9940; }
+.challengeSectionHead.next .csh-num { background: rgba(16,185,129,0.12); color: #10b981; }
+
+/* Finding rows */
+.challengeFinding {
+  display: grid; grid-template-columns: 22px 1fr 16px;
+  gap: 8px; align-items: start;
+  padding: 8px 6px; cursor: pointer;
+  border: 1px solid transparent; border-radius: 3px;
+  margin-bottom: 4px; transition: all .15s;
+}
+.challengeFinding:hover { background: rgba(141,247,255,0.04); border-color: rgba(141,247,255,0.15); }
+.cfNum {
+  width: 20px; height: 20px; border-radius: 2px; display: grid; place-items: center;
+  background: rgba(141,247,255,0.1); color: #8df7ff; font-size: 10px; font-weight: 900;
+}
+.cfText { font-size: 12px; color: #dbeafe; line-height: 1.45; }
+.cfChev { font-size: 9px; color: #475569; margin-top: 2px; }
+.cfExpand {
+  grid-column: 2 / 4; font-size: 11px; color: #94a3b8;
+  line-height: 1.5; padding: 6px 0 2px;
+  border-top: 1px solid rgba(141,247,255,0.1); margin-top: 4px;
+}
+
+/* Red flags */
+.challengeFlag {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 6px 0; font-size: 12px; color: #ff9aa8;
+  border-bottom: 1px solid rgba(255,107,125,0.08);
+}
+.challengeFlag:last-child { border-bottom: none; }
+.cfFlag { color: #ff6b7d; font-size: 10px; margin-top: 1px; flex-shrink: 0; }
+
+/* Board attacks */
+.challengeAttack {
+  display: grid; grid-template-columns: 22px 1fr;
+  gap: 8px; align-items: start;
+  padding: 7px 0; border-bottom: 1px solid rgba(247,215,116,0.06);
+}
+.challengeAttack:last-child { border-bottom: none; }
+.caNum {
+  width: 20px; height: 20px; border-radius: 2px; display: grid; place-items: center;
+  background: rgba(247,215,116,0.1); color: #f7d774; font-size: 10px; font-weight: 900;
+}
+.caQ { font-size: 12px; color: #e2e8f0; line-height: 1.45; }
+
+/* If fails */
+.challengeIfFails {
+  padding: 12px 14px;
+  background: rgba(255,153,64,0.06);
+  border-bottom: 1px solid rgba(255,153,64,0.15);
+  border-left: 3px solid #ff9940;
+}
+.challengeIfFails p { margin: 6px 0 0; font-size: 12px; color: #dbeafe; line-height: 1.55; font-style: italic; }
+
+/* Next actions */
+.challengeNext {
+  display: grid; grid-template-columns: 22px 1fr;
+  gap: 8px; align-items: start;
+  padding: 6px 0; font-size: 12px; color: #a7f3d0;
+  border-bottom: 1px solid rgba(16,185,129,0.06);
+}
+.challengeNext:last-child { border-bottom: none; }
+.challengeNext span:first-child {
+  width: 20px; height: 20px; border-radius: 2px; display: grid; place-items: center;
+  background: rgba(16,185,129,0.1); color: #10b981; font-size: 10px; font-weight: 900;
+}
+
+/* Holy Grail runtime */
+.runtimePanel .runtimeButtons {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 14px 0;
+}
+.runtimeButtons button {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 14px; text-align: left;
+  background: linear-gradient(135deg, rgba(141,247,255,0.08), rgba(247,215,116,0.04));
+  border: 1px solid rgba(141,247,255,0.25); border-radius: 3px;
+  color: #fff; cursor: pointer; transition: all .15s;
+}
+.runtimeButtons button b { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+.runtimeButtons button span { font-size: 10px; color: #94a3b8; line-height: 1.4; }
+.runtimeButtons button:hover { border-color: #8df7ff; background: rgba(141,247,255,0.12); transform: translateY(-1px); }
+
+/* Chat formatting */
+.chatHeading { font-size: 11px; font-weight: 900; letter-spacing: .12em; color: #8df7ff; text-transform: uppercase; margin: 8px 0 4px; }
+.chatLine { margin: 3px 0; font-size: 12px; line-height: 1.55; color: #e2e8f0; }
+.chatLine strong { color: #8df7ff; }
+.msg.user .chatLine { color: #f7d774; }
+.msg.user .chatHeading { color: #f7d774; }
+

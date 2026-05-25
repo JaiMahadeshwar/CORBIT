@@ -1,0 +1,17 @@
+
+/* CASEY V114: elite P80 / confidence translation layer */
+.p80Translation {
+  border-left: 3px solid rgba(141,247,255,.85) !important;
+  background: linear-gradient(90deg, rgba(141,247,255,.10), rgba(255,255,255,.02)) !important;
+}
+.confidenceMeaningCard h3 {
+  color: #8df7ff;
+  letter-spacing: .03em;
+}
+.scenarioRail button.active b,
+.scenarioCompare button.active b,
+.scenarioRail button.active span,
+.scenarioCompare button.active strong,
+.scenarioCompare button.active span {
+  color: #020812 !important;
+}

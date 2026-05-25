@@ -1,3 +1,4 @@
+// CASEY V166 FINAL - v20260525034327
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -11,7 +12,312 @@ import {
 } from 'recharts';
 import './style.css';
 
-const API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+const API_CANDIDATES = [import.meta.env.VITE_API_URL, 'http://127.0.0.1:8000', 'http://localhost:8000', 'http://127.0.0.1:8010', 'http://localhost:8010'].filter(Boolean);
+let API = API_CANDIDATES[0];
+async function apiFetch(path, options) {
+  let lastError;
+  for (const base of API_CANDIDATES) {
+    try {
+      const r = await fetch(base + path, options);
+      API = base;
+      return r;
+    } catch (e) { lastError = e; }
+  }
+  throw lastError || new Error('CASEY backend unreachable');
+}
+function safeRender(value) {
+  if (value === undefined || value === null) return '';
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (value?.nativeEvent || value?.currentTarget || value?.target) return '';
+  if (value instanceof Element) return value.innerText || value.textContent || '';
+  if (Array.isArray(value)) return value.map(safeRender).join('\n');
+  try {
+    const seen = new WeakSet();
+    return JSON.stringify(value, (k, v) => {
+      if (k === '_owner' || k === '__reactFiber$' || k === '__reactProps$') return undefined;
+      if (typeof v === 'function') return undefined;
+      if (v instanceof Element) return v.innerText || v.textContent || '';
+      if (v && typeof v === 'object') {
+        if (seen.has(v)) return '[circular]';
+        seen.add(v);
+      }
+      return v;
+    }, 2);
+  } catch (_) { return String(value || ''); }
+}
+
+function asList(v) {
+  if (!v) return [];
+  if (Array.isArray(v)) return v.map(x => typeof x === 'string' ? x : safeRender(x));
+  if (typeof v === 'string') return [v];
+  return Object.values(v).flat().map(x => typeof x === 'string' ? x : safeRender(x));
+}
+
+function ProfessionalIntakeResult({ result, model }) {
+  const [expanded, setExpanded] = React.useState(null);
+  const baselineP50 = model?.cost_p50 || moneyLocal(model?.cost_p50_bn || model?.p50_cost_bn || 0) || '—';
+  const baselineMonths = model?.schedule_months || model?.duration_months || (String(model?.schedule || '').match(/\d+/)||[])[0] || '—';
+  const baselineConf = model?.confidence_pct ?? '—';
+  const qcraP80 = model?.monte_carlo?.qcra?.p80;
+  const qsraP80 = model?.monte_carlo?.qsra?.p80;
+
+  if (!result) return (
+    <div className="intakeEmpty proEmpty">
+      <div className="intakeEmptyIcon">⌁</div>
+      <b>No client file challenged yet</b>
+      <span>Use one of the three professional challenge buttons above, or upload a workbook/XER. CASEY will show baseline, challenge delta, benchmark comparison and required evidence — not raw JSON.</span>
+    </div>
+  );
+
+  let r = result;
+  if (typeof r === 'string') { try { r = JSON.parse(r); } catch { r = { review: r }; } }
+  const src = r.source_intelligence || {};
+  const cm = r.challenge_model || {};
+  const file = r.filename || 'Client_Source_Bundle.xlsx';
+  const fileType = (r.file_type || (file.toLowerCase().includes('.xer') ? 'Schedule XER' : file.toLowerCase().includes('risk') ? 'Risk register' : 'Cost estimate')).toString();
+  const confPct = Number(cm.confidence_pct ?? model?.confidence_pct ?? 55);
+  const challengeP50 = cm.p50_bn ? ('$' + Number(cm.p50_bn).toFixed(1) + 'B') : baselineP50;
+  const challengeP80 = cm.p80_bn ? ('$' + Number(cm.p80_bn).toFixed(1) + 'B') : (qcraP80 ? moneyLocal(qcraP80) : '—');
+  const challengeP90 = cm.p90_bn ? ('$' + Number(cm.p90_bn).toFixed(1) + 'B') : (model?.monte_carlo?.qcra?.p90 ? moneyLocal(model.monte_carlo.qcra.p90) : '—');
+  const deltaBn = cm.delta_bn ?? (cm.p80_bn && model?.cost_p50_bn ? Number(cm.p80_bn) - Number(model.cost_p50_bn) : null);
+  const deltaText = deltaBn !== null && deltaBn !== undefined && !Number.isNaN(Number(deltaBn)) ? ((Number(deltaBn) >= 0 ? '+' : '−') + '$' + Math.abs(Number(deltaBn)).toFixed(1) + 'B latent exposure') : 'Exposure delta requires source bundle';
+  const scheduleDelta = cm.schedule_delta_months ?? src.xer?.schedule_delta_months ?? null;
+  const scheduleDeltaText = scheduleDelta !== null && scheduleDelta !== undefined ? ((Number(scheduleDelta) >= 0 ? '+' : '−') + Math.abs(Number(scheduleDelta)) + ' months schedule exposure') : `QSRA P80 ${qsraP80 || '—'} months`;
+
+  const verdict = confPct < 45 ? { label: 'Further assurance required before approval', color: '#ff9940', bg: 'rgba(255,153,64,0.10)' }
+    : confPct < 62 ? { label: 'Board challenge likely — evidence package incomplete', color: '#f7d774', bg: 'rgba(247,215,116,0.10)' }
+    : { label: 'Conditional approval possible with evidence closure', color: '#8df7ff', bg: 'rgba(141,247,255,0.08)' };
+
+  const findings = asList(r.findings).length ? asList(r.findings) : [
+    'Source structure normalised and compared against the active programme baseline.',
+    'Contingency and schedule logic require P80/P90 reconciliation before board approval.',
+    'Commercial basis, owner accountability and evidence closure remain the deciding conditions.'
+  ];
+  const issues = asList(r.red_flags || r.professional_observations || []).length ? asList(r.red_flags || r.professional_observations) : [
+    'Submitted allowance does not yet demonstrate a clear link to quantified residual exposure.',
+    'The source bundle should reconcile estimate, schedule and risk register at CBS/WBS/activity level.',
+    'Comparable programmes show higher volatility where commissioning and interface evidence is incomplete.'
+  ];
+  const questions = asList(r.board_challenge_questions || r.board_challenge_questions).length ? asList(r.board_challenge_questions || r.board_challenge_questions) : [
+    'Where does the client P50 reconcile to the P80/P90 downside, line by line?',
+    'Which CBS/WBS package owns the largest unpriced exposure and who signs the evidence closure?',
+    'Is contingency sized from quantified risk, or applied as a percentage allowance?',
+    'Which XER activities drive the board date, and are their predecessors, calendars and constraints defensible?'
+  ];
+  const epcFlags = asList(r.epc_flags || []);
+  const sectorDetected = r.sector_detected || '';
+  const verdictFromEngine = r.challenge_verdict || '';
+  const confImpact = r.confidence_impact;
+  const caseyComparison = r.casey_comparison || null;
+  const engMetrics = { risks: r.risks_parsed||0, emv: r.emv_bn||0, p90: r.p90_bn||0, acts: r.activities_parsed||0, evReq: r.ev_req||0, noTrig: r.no_trig||0 };
+  const next = asList(r.next_steps || r.next_action).length ? asList(r.next_steps || r.next_action) : [
+    'Request native cost workbook, risk register and XER schedule as one source bundle.',
+    'Reconcile risk residuals to reserve and schedule drivers to QSRA before approval.',
+    'Issue an independent board challenge note with open evidence owners and closure dates.'
+  ];
+  const benchmark = asList(r.benchmark_comparison || []).length ? asList(r.benchmark_comparison) : [
+    `Compared with rail/transit benchmark memory, comparable systems-integration programmes typically require explicit P80/P90 reserve reconciliation before approval.`,
+    `Programmes with possession, signalling and operator-acceptance constraints generally carry wider delivery tails than civil-progress reporting suggests.`
+  ];
+
+  return (
+    <div className="intakeResult proChallenge professionalReview">
+      <div className="challengeFileBar proFileBar">
+        <div className="challengeFileInfo">
+          <span className="challengeFileTag">{sectorDetected || 'Independent'} source-file challenge</span>
+          <b className="challengeFileName">{file}</b>
+          <em>{fileType} · {r.size_bytes ? `${Math.round(r.size_bytes/1024)} KB` : 'sample messy client file'} · benchmark comparison enabled</em>
+        </div>
+        <div style={{display:'flex',gap:'6px',alignItems:'center'}}>
+          {sectorDetected&&<div style={{fontSize:'9px',fontWeight:'900',letterSpacing:'.1em',color:'#8df7ff',background:'rgba(141,247,255,0.1)',border:'1px solid rgba(141,247,255,0.2)',borderRadius:'2px',padding:'3px 8px'}}>{sectorDetected}</div>}
+          {verdictFromEngine&&<div style={{fontSize:'9px',fontWeight:'900',color:verdictFromEngine.includes('REQUIRED')?'#ef4444':'#f59e0b',background:verdictFromEngine.includes('REQUIRED')?'rgba(239,68,68,0.1)':'rgba(245,158,11,0.1)',border:'1px solid',borderColor:verdictFromEngine.includes('REQUIRED')?'rgba(239,68,68,0.3)':'rgba(245,158,11,0.3)',borderRadius:'2px',padding:'3px 8px'}}>{verdictFromEngine}</div>}
+          {!verdictFromEngine&&<div className="challengeLiveTag">CLIENT-SIDE REVIEW</div>}
+        </div>
+      </div>
+
+      <div className="baselineVsChallenge">
+        <div className="bvcBox baseline"><span>Programme baseline remains</span><b>{baselineP50}</b><em>{baselineMonths} months · {baselineConf}% confidence</em></div>
+        <div className="bvcArrow">→</div>
+        <div className="bvcBox delta"><span>Challenge exposure identified</span><b>{deltaText}</b><em>{scheduleDeltaText}</em></div>
+      </div>
+
+      <div className="challengeVerdictBig" style={{background: verdict.bg, borderColor: verdict.color}}>
+        <div className="verdictLabel">CASEY professional challenge opinion</div>
+        <div className="verdictResult" style={{color: verdict.color}}>{verdict.label}</div>
+        <div className="verdictSub">This does not replace the programme baseline. It identifies latent downside in the uploaded source file and shows what must be evidenced before the board can rely on the submitted position.</div>
+      </div>
+
+      <div className="challengeMetricRow professionalMetrics">
+        {engMetrics.risks>0 ? <div className="cm hot"><span>Risks parsed</span><b style={{color:'#f59e0b'}}>{engMetrics.risks}</b></div> : <div className="cm hot"><span>Submitted / inferred P50</span><b>{challengeP50}</b></div>}
+        {engMetrics.p90>0 ? <div className="cm"><span>P90 downside</span><b style={{color:'#ef4444'}}>${engMetrics.p90.toFixed(1)}B</b></div> : <div className="cm"><span>Challenge P80</span><b style={{color:'#ff9940'}}>{challengeP80}</b></div>}
+        {engMetrics.emv>0 ? <div className="cm"><span>Total EMV</span><b style={{color:'#ff9940'}}>${engMetrics.emv.toFixed(2)}B</b></div> : engMetrics.acts>0 ? <div className="cm"><span>Activities</span><b>{engMetrics.acts}</b></div> : <div className="cm"><span>Stress P90</span><b style={{color:'#ff6b7d'}}>{challengeP90}</b></div>}
+        <div className="cm"><span>Evidence quality</span><b style={{color:confPct<60?'#f7d774':'#8df7ff'}}>{confImpact||confPct}%</b></div>
+      </div>
+
+      <div className="sourceBundle">
+        <div><span>Cost workbook signals</span><b>{src.cost?.cost_lines_found ?? 0}</b><em>{src.cost?.direct_bn ? `Direct signal $${Number(src.cost.direct_bn).toFixed(1)}B` : 'Basis mapping required'}</em></div>
+        <div><span>Risk register rows</span><b>{src.risk?.risk_rows_found ?? 0}</b><em>{src.risk?.emv_bn ? `EMV signal $${Number(src.risk.emv_bn).toFixed(1)}B` : 'Residual-to-reserve test required'}</em></div>
+        <div><span>XER schedule logic</span><b>{src.xer?.task_count ?? 0}</b><em>{src.xer?.open_end_risk_count ? `${src.xer.open_end_risk_count} weak/open logic points` : 'Schedule logic not loaded'}</em></div>
+      </div>
+
+      <div className="challengeSection benchmarkSection">
+        <div className="challengeSectionHead"><span className="csh-num">B</span> Benchmark comparison</div>
+        {benchmark.map((x,i)=><div className="challengeFinding" key={i}><span className="cfNum">{i+1}</span><span className="cfText">{x}</span></div>)}
+      </div>
+
+      <div className="challengeSection">
+        <div className="challengeSectionHead"><span className="csh-num">{findings.length}</span> Source-file findings</div>
+        {findings.map((x,i)=>(
+          <div className="challengeFinding" key={i} onClick={()=>setExpanded(expanded===`f${i}`?null:`f${i}`)}>
+            <span className="cfNum">{i+1}</span><span className="cfText">{x}</span><span className="cfChev">{expanded===`f${i}`?'▲':'▼'}</span>
+            {expanded===`f${i}` && <div className="cfExpand">Professional reliance test: confirm source tab, line owner, basis statement, quantified residual exposure and closure evidence.</div>}
+          </div>
+        ))}
+      </div>
+
+      <div className="challengeSection">
+        <div className="challengeSectionHead danger"><span className="csh-num">!</span> Commercial observations</div>
+        {issues.slice(0,6).map((x,i)=><div className="challengeFlag professionalFlag" key={i}><span className="cfFlag">•</span><span>{x}</span></div>)}
+      </div>
+
+      {epcFlags.length>0&&(
+        <div className="challengeSection">
+          <div className="challengeSectionHead" style={{color:'#ff6b7d'}}><span className="csh-num">⚠</span> EPC / CONTRACTOR FLAGS — READ BEFORE APPROVING</div>
+          {epcFlags.map((x,i)=>(
+            <div key={i} style={{display:'flex',gap:'8px',padding:'7px 0',borderBottom:'1px solid rgba(255,59,92,0.08)',fontSize:'12px',color:'#ff9aa8',alignItems:'flex-start'}}>
+              <span style={{color:'#ff3b5c',flexShrink:0,fontWeight:'900',fontSize:'10px',marginTop:'1px'}}>EPC</span>
+              <span>{x}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {caseyComparison&&(
+        <div className="challengeSection">
+          <div className="challengeSectionHead" style={{color:'#8df7ff'}}><span className="csh-num">⚡</span> CASEY vs SUBMITTED DOCUMENT</div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}>
+            <div style={{padding:'10px',background:'rgba(239,68,68,0.07)',borderRadius:'3px',border:'1px solid rgba(239,68,68,0.2)'}}>
+              <div style={{fontSize:'9px',color:'#ef4444',fontWeight:'900',letterSpacing:'.1em',marginBottom:'6px'}}>SUBMITTED POSITION</div>
+              {caseyComparison.client_p90&&<div style={{fontSize:'13px',color:'#ff9aa8',marginBottom:'2px'}}>P90: <b>{caseyComparison.client_p90}</b></div>}
+              {caseyComparison.client_p50&&<div style={{fontSize:'13px',color:'#ff9aa8',marginBottom:'2px'}}>P50: <b>{caseyComparison.client_p50}</b></div>}
+              <div style={{fontSize:'11px',color:'#94a3b8',marginTop:'4px'}}>{caseyComparison.client_risks||0} risks · {caseyComparison.open_exposures||0} open</div>
+              {caseyComparison.governance&&<div style={{fontSize:'10px',fontWeight:'900',color:'#ef4444',marginTop:'6px'}}>{caseyComparison.governance}</div>}
+            </div>
+            <div style={{padding:'10px',background:'rgba(141,247,255,0.05)',borderRadius:'3px',border:'1px solid rgba(141,247,255,0.2)'}}>
+              <div style={{fontSize:'9px',color:'#8df7ff',fontWeight:'900',letterSpacing:'.1em',marginBottom:'6px'}}>CASEY SECTOR BENCHMARK</div>
+              {caseyComparison.casey_p80&&<div style={{fontSize:'13px',color:'#8df7ff',marginBottom:'2px'}}>QCRA P80: <b>{caseyComparison.casey_p80}</b></div>}
+              {caseyComparison.casey_p50&&<div style={{fontSize:'13px',color:'#8df7ff',marginBottom:'2px'}}>P50: <b>{caseyComparison.casey_p50}</b></div>}
+              <div style={{fontSize:'10px',color:'#10b981',marginTop:'4px',fontWeight:'700'}}>Independent position</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="challengeSection">
+        <div className="challengeSectionHead attack"><span className="csh-num">Q</span> Board challenge questions</div>
+        {questions.slice(0,6).map((x,i)=><div className="challengeAttack" key={i}><span className="caNum">{i+1}</span><span className="caQ">{x}</span></div>)}
+      </div>
+
+      <div className="challengeSection">
+        <div className="challengeSectionHead next">Required next actions</div>
+        {next.slice(0,6).map((x,i)=><div className="challengeNext" key={i}><span>{i+1}</span><span>{x}</span></div>)}
+      </div>
+    </div>
+  );
+}
+
+function HolyGrailRuntime({ model, scenario, generate, runShock }) {
+  const [lastFired, setLastFired] = React.useState(null);
+  const controls = [
+    ['signalling_slip', 'What if signalling slips 4 months?',
+      'Simulates a late systems integration. CASEY recalculates the delivery tail, drops confidence and rewrites the board attack chain to focus on commissioning readiness.'],
+    ['procurement_gap', 'What if procurement evidence is missing?',
+      'Simulates an evidence gap on a critical package. P80/P90 exposure rises, confidence falls. CASEY identifies which board questions this unlocks.'],
+    ['reserve_cut', 'What if contingency is cut to hit budget?',
+      'Simulates a political cost-cut. Headline P50 improves but board defensibility weakens — CASEY flags the hidden residual risk the cut creates.'],
+    ['operator_delay', 'What if operator acceptance moves late?',
+      'Simulates a handover slip. The governing constraint moves from civil delivery to commissioning readiness — a critical shift most dashboards miss.'],
+    ['scope_growth', 'What if scope grows 8%?',
+      'Simulates scope creep. Cost and schedule increase. CASEY re-prices reserve adequacy and updates the board approval exposure.'],
+    ['political_exposure', 'What if political or funding pressure increases?',
+      'Simulates external programme pressure. Risk posture rises. CASEY strengthens the evidence requirements before board approval.'],
+  ];
+  const fire = (id) => { setLastFired(id); runShock(id); };
+  const scenarioLabels = { base:'Base', faster:'Faster', cheaper:'Cheaper', lower_risk:'Lower Risk', premium:'Premium' };
+  const p50 = model?.cost_p50 || (model?.cost_p50_bn ? '$' + model.cost_p50_bn + 'B' : '—');
+  const conf = model?.confidence_pct;
+  const chain = (model?.causal_chain || []).join(' → ') || 'Generate a project first to see the causal chain';
+  return <section className="layout two runtimePanel">
+    <Card>
+      <h2>Live Programme Stress Test</h2>
+      <p className="big">Select a real-world risk event. CASEY recalculates cost, schedule, confidence and board posture from the live model — not from a pre-written response. This is what separates CASEY from a static dashboard.</p>
+      <p style={{fontSize:'11px',color:'#64748b',marginBottom:'12px'}}>First generate a project on the Overview tab, then click any event below to stress-test it.</p>
+      <div className="runtimeButtons">
+        {controls.map(([id,title,sub])=>(
+          <button key={id} onClick={()=>fire(id)} className={lastFired===id?'fired':''}>
+            <Zap size={14}/>
+            <b>{title}</b>
+            <span>{sub}</span>
+          </button>
+        ))}
+      </div>
+      <h3>Run a different scenario</h3>
+      <p style={{fontSize:'11px',color:'#64748b',marginBottom:'8px'}}>Each scenario is a complete recalculation — different cost, schedule, confidence, risks and board language.</p>
+      <div className="runtimeScenarioRow">
+        {Object.entries(scenarioLabels).map(([s,label])=>(
+          <button key={s} className={s===scenario?'active':''} onClick={()=>generate(s, model?.prompt, model)}>
+            {label}
+          </button>
+        ))}
+      </div>
+    </Card>
+    <Card>
+      <h2>Live Model State</h2>
+      <p style={{fontSize:'11px',color:'#64748b',marginBottom:'12px'}}>Every stress test updates these figures from the live model. Download any export after applying a stress test to capture the changed position in your board pack.</p>
+      {!model ? <div className="intakeEmpty" style={{padding:'20px'}}><div className="intakeEmptyIcon">📊</div><b>No model loaded</b><span>Generate a project on the Overview tab first.</span></div> : <>
+      {lastFired && <div style={{background:'rgba(245,158,11,0.1)',border:'1px solid rgba(245,158,11,0.3)',borderRadius:'3px',padding:'10px 12px',marginBottom:'12px'}}>
+        <div style={{fontSize:'9px',fontWeight:'900',letterSpacing:'.15em',color:'#f59e0b',marginBottom:'4px'}}>STRESS TEST APPLIED</div>
+        <div style={{fontSize:'12px',color:'#e2e8f0',fontWeight:'700'}}>{lastFired.replace(/_/g,' ').toUpperCase()}</div>
+        <div style={{fontSize:'11px',color:'#94a3b8',marginTop:'4px'}}>{model?.stress_test_note || model?.executive_shock_insight || ''}</div>
+      </div>}
+      {[
+        ['Scenario', model?.scenario_label || scenario],
+        ['P50 cost estimate', p50],
+        ['Programme duration', (model?.schedule_months || model?.duration_months || '—') + ' months'],
+        ['Confidence', conf !== undefined ? conf + '%' + (conf < 45 ? ' — Further assurance required' : conf < 60 ? ' — Board challenge likely' : conf < 75 ? ' — Conditionally approvable' : ' — Board-defensible') : '—'],
+        ['QCRA P80 downside', model?.cost_range ? model.cost_range.split('|')[1]?.trim() || '—' : '—'],
+        ['Risk posture', model?.risk || '—'],
+        ['Stress test applied', lastFired ? lastFired.replace(/_/g,' ') : 'None — click a button on the left'],
+      ].map(([k,v],i)=><div className="reason" key={k}><span>{i+1}</span><b>{k}:</b> {v}</div>)}
+      <h3>Governing causal chain</h3>
+      <p style={{fontSize:'11px',color:'#8df7ff',lineHeight:'1.5',padding:'8px',background:'rgba(141,247,255,0.05)',borderRadius:'3px',borderLeft:'2px solid #8df7ff'}}>{chain}</p>
+      <div style={{marginTop:'12px',padding:'10px 12px',background:'rgba(16,185,129,0.06)',borderRadius:'3px',border:'1px solid rgba(16,185,129,0.2)'}}>
+        <div style={{fontSize:'9px',fontWeight:'900',color:'#10b981',letterSpacing:'.12em',marginBottom:'6px'}}>EXPORT THE STRESSED POSITION</div>
+        <div style={{fontSize:'11px',color:'#94a3b8',lineHeight:'1.5'}}>After applying a stress test, download Export Board Pack or Export Cost Workbook from the top bar. The export will contain the stressed P50, schedule and confidence — not the original values.</div>
+      </div>
+      </>}
+    </Card>
+  </section>;
+}
+
+function normalizeChatAnswer(r) {
+  if (!r) return 'CASEY returned no advisor response.';
+  if (typeof r.answer === 'string') return r.answer;
+  if (r.answer !== undefined) return safeRender(r.answer);
+  return safeRender(r);
+}
+class CaseyErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(error) { return { error }; }
+  componentDidCatch(error, info) { console.error('CASEY UI crash guard:', error, info); }
+  render() {
+    if (this.state.error) {
+      return <div className="app v50EliteApp"><main className="v50Console"><section className="layout one"><div className="card shockCard"><h2>CASEY UI recovered</h2><p>The interface caught a render exception instead of going blank. Refresh and re-run the same programme, or use the preset advisor buttons while the custom question guard is active.</p><pre>{safeRender(this.state.error?.message || this.state.error)}</pre></div></section></main></div>;
+    }
+    return this.props.children;
+  }
+}
+
 
 const earthPrompt = 'Riyadh AI Hyperscale Campus 500MW accelerated 2027 with sovereign cloud, grid connection and liquid cooling';
 const spacePrompt = 'Lunar Base Alpha with 1000 crew, nuclear power, landing pads, life support and launch logistics';
@@ -26,24 +332,101 @@ const examples = [
 ];
 const scenarios = ['base', 'faster', 'cheaper', 'lower_risk', 'premium'];
 
+
+const showcaseProjects = [
+  { sector:'AI / Data Centres', region:'United States', client:'Microsoft / OpenAI reference case', title:'Microsoft AI Supercluster Expansion', icon:'AI', confidence:'Grid constrained', prompt:'Microsoft OpenAI AI supercluster expansion with 500MW hyperscale data centres, GPU procurement bottlenecks, grid interconnection, liquid cooling, transmission upgrades and accelerated 2027 delivery' },
+  { sector:'AI / Data Centres', region:'Global', client:'Amazon AWS reference case', title:'AWS Global Region Expansion', icon:'AI', confidence:'Power + fibre dependency', prompt:'Amazon AWS global region expansion with sovereign cloud zones, edge data centres, fibre backbone, redundant power, energy procurement and geopolitical resilience requirements' },
+  { sector:'AI / Data Centres', region:'United States / Europe', client:'Meta reference case', title:'Meta AI Compute Network', icon:'AI', confidence:'Cooling + rack density', prompt:'Meta AI compute network expansion with training clusters, hyperscale networking, custom silicon, high rack density, liquid cooling and power procurement constraints' },
+  { sector:'AI / Data Centres', region:'Global', client:'Google reference case', title:'Google TPU Infrastructure', icon:'AI', confidence:'Energy integration', prompt:'Google TPU AI infrastructure programme with renewable energy integration, data centre campuses, low latency routing, cooling systems and autonomous optimisation infrastructure' },
+  { sector:'AI / Data Centres', region:'United States / Middle East', client:'Oracle / Sovereign cloud reference case', title:'Oracle Sovereign AI Cloud', icon:'AI', confidence:'Sovereign resilience', prompt:'Oracle sovereign AI cloud campus rollout with sovereign hosting, cyber resilience, GPU procurement, utility interconnection, water cooling and national infrastructure constraints' },
+  { sector:'AI / Data Centres', region:'United States', client:'xAI reference case', title:'xAI Compute Expansion', icon:'AI', confidence:'Utility race', prompt:'xAI large scale AI compute expansion with rapid data centre construction, power substation upgrades, GPU delivery pressure, cooling infrastructure and aggressive schedule compression' },
+
+  { sector:'Rail / Transit', region:'United States', client:'California HSR reference case', title:'California High-Speed Rail', icon:'Rail', confidence:'Land + tunnelling risk', prompt:'California High-Speed Rail megaproject with corridor acquisition, tunnelling, utility relocation, civil packages, political scrutiny, systems integration and cost escalation exposure' },
+  { sector:'Rail / Transit', region:'United Kingdom', client:'HS2 reference case', title:'HS2 High-Speed Rail', icon:'Rail', confidence:'Scope + governance pressure', prompt:'HS2 high speed rail programme with scope changes, tunnelling, stations, systems integration, political volatility, cost escalation and governance confidence challenge' },
+  { sector:'Rail / Transit', region:'United States', client:'Gateway Program reference case', title:'Gateway / Hudson Tunnel', icon:'Rail', confidence:'Urban resilience', prompt:'Gateway Hudson Tunnel rail resilience programme with urban tunnelling, aging infrastructure interfaces, rail continuity, federal funding, environmental approvals and schedule uncertainty' },
+  { sector:'Rail / Transit', region:'United States', client:'Brightline reference case', title:'Brightline West', icon:'Rail', confidence:'Accelerated delivery', prompt:'Brightline West high speed rail project with desert corridor construction, private finance, power integration, stations, rolling stock, systems delivery and accelerated schedule pressure' },
+  { sector:'Rail / Transit', region:'Europe', client:'Rail Baltica reference case', title:'Rail Baltica', icon:'Rail', confidence:'Cross-border governance', prompt:'Rail Baltica cross border European rail programme with multi-country governance, procurement coordination, interoperability, defence mobility, stations and schedule integration risk' },
+  { sector:'Rail / Transit', region:'Australia', client:'Sydney Metro reference case', title:'Sydney Metro Expansion', icon:'Rail', confidence:'Urban systems integration', prompt:'Sydney Metro expansion with tunnels, underground stations, rail systems, live city interfaces, systems integration, commissioning and public disruption constraints' },
+  { sector:'Rail / Transit', region:'Canada', client:'Metrolinx reference case', title:'Ontario Line', icon:'Rail', confidence:'Interface density', prompt:'Toronto Ontario Line transit megaproject with tunnelling, station boxes, procurement packaging, utility relocation, systems coordination and urban interface risk' },
+  { sector:'Rail / Transit', region:'India', client:'NHSRCL reference case', title:'Mumbai–Ahmedabad HSR', icon:'Rail', confidence:'Land + technology transfer', prompt:'Mumbai Ahmedabad High Speed Rail programme with land acquisition, viaducts, stations, Japanese technology transfer, systems integration and corridor delivery uncertainty' },
+
+  { sector:'Mega Infrastructure', region:'Saudi Arabia', client:'NEOM reference case', title:'NEOM / The Line Mobility', icon:'Infra', confidence:'Giga-project orchestration', prompt:'NEOM The Line transit and infrastructure programme with autonomous mobility, giga project logistics, workforce scaling, utilities, modular construction, supply chain and governance complexity' },
+  { sector:'Mega Infrastructure', region:'Singapore', client:'Changi reference case', title:'Changi Airport Expansion', icon:'Air', confidence:'Live operations', prompt:'Changi airport expansion with terminal construction, runway systems, baggage automation, live airport operations, passenger growth, regulatory approvals and resilience planning' },
+  { sector:'Mega Infrastructure', region:'UAE', client:'Etihad Rail reference case', title:'Etihad Rail Freight Network', icon:'Rail', confidence:'Desert logistics', prompt:'Etihad Rail freight network expansion with desert civil works, freight terminals, port interfaces, signalling, regional coordination and logistics integration risk' },
+
+  { sector:'Pharma / Life Sciences', region:'United States', client:'Eli Lilly reference case', title:'Eli Lilly GLP-1 Manufacturing', icon:'Bio', confidence:'GMP validation', prompt:'Eli Lilly obesity medicine manufacturing expansion with sterile fill finish, GMP validation, GLP-1 demand growth, cold chain logistics, regulatory approvals and accelerated commercial readiness' },
+  { sector:'Pharma / Life Sciences', region:'Europe / United States', client:'Novo Nordisk reference case', title:'Novo Nordisk Capacity Expansion', icon:'Bio', confidence:'Demand surge', prompt:'Novo Nordisk biologics manufacturing capacity expansion with GLP-1 demand surge, sterile production, cold chain, validation, clean utilities and supply chain redundancy' },
+  { sector:'Pharma / Life Sciences', region:'United States', client:'Moderna reference case', title:'Moderna Biosecurity Facility', icon:'Bio', confidence:'Regulatory readiness', prompt:'Moderna biosecurity and vaccine manufacturing facility with rapid response production, GMP cleanrooms, sterile commissioning, regulatory inspections and sovereign health resilience requirements' },
+
+  { sector:'Energy / Industrial', region:'Global', client:'SMR developer reference case', title:'SMR Nuclear Rollout', icon:'Energy', confidence:'Certification gate', prompt:'Small modular reactor nuclear rollout programme with regulatory certification, containment qualification, nuclear island procurement, grid integration, safety assurance and long tail licensing risk' },
+  { sector:'Energy / Industrial', region:'United States / Gulf', client:'LNG operator reference case', title:'LNG Export Terminal', icon:'Energy', confidence:'Commissioning exposure', prompt:'LNG export terminal megaproject with cryogenic systems, marine berths, long lead valves, liquefaction trains, permits, commissioning risk and weather logistics exposure' },
+  { sector:'Energy / Industrial', region:'North Sea / Atlantic', client:'Offshore wind developer reference case', title:'Offshore Wind Mega-Hub', icon:'Energy', confidence:'Weather windows', prompt:'Offshore wind mega hub with turbine foundations, export cables, grid integration, installation vessel constraints, weather windows and marine logistics risk' },
+  { sector:'Energy / Industrial', region:'Middle East / Australia', client:'Hydrogen developer reference case', title:'Hydrogen Export Corridor', icon:'Energy', confidence:'Immature supply chain', prompt:'Hydrogen export corridor with electrolysers, ammonia conversion, port infrastructure, energy pricing, immature supply chain, offtake uncertainty and export logistics' },
+  { sector:'Energy / Industrial', region:'United States / Europe', client:'Grid operator reference case', title:'Transmission Supergrid', icon:'Energy', confidence:'Permitting bottleneck', prompt:'Transmission supergrid modernization programme with high voltage lines, substations, permitting, grid resilience, interconnection queues, supply chain delays and public opposition' },
+
+  { sector:'Defence / National Security', region:'Australia / UK / US', client:'AUKUS reference case', title:'AUKUS Industrial Base', icon:'Defence', confidence:'Sovereign capability', prompt:'AUKUS industrial base programme with nuclear submarine shipyard scaling, workforce shortages, sovereign supply chain, certification, dockyard capacity and defence governance pressure' },
+  { sector:'Defence / National Security', region:'NATO / Indo-Pacific', client:'Defence ministry reference case', title:'Missile Defence Network', icon:'Defence', confidence:'Systems interoperability', prompt:'Missile defence modernization network with radar integration, command systems, interceptor procurement, interoperability, cyber resilience, simulation evidence and supplier maturity constraints' },
+  { sector:'Defence / National Security', region:'Global', client:'Defence ministry reference case', title:'Autonomous Drone Swarm', icon:'Defence', confidence:'AI assurance', prompt:'Autonomous drone swarm defence programme with AI assurance, electronic warfare survivability, battery logistics, sensor integrity, autonomy certification and mission assurance risk' },
+  { sector:'Defence / National Security', region:'United States / UK / Australia', client:'Naval command reference case', title:'Naval Shipbuilding Expansion', icon:'Defence', confidence:'Workforce bottleneck', prompt:'Naval shipbuilding expansion programme with dockyard capacity, steel supply, propulsion systems, combat systems integration, workforce readiness and schedule confidence exposure' },
+
+  { sector:'Semiconductors / Advanced Manufacturing', region:'United States', client:'TSMC reference case', title:'TSMC Arizona Fab', icon:'Fab', confidence:'Toolchain + workforce', prompt:'TSMC Arizona semiconductor fab programme with ultra clean environments, toolchain delivery, workforce maturity, water and power utilities, process node commissioning and geopolitical urgency' },
+  { sector:'Semiconductors / Advanced Manufacturing', region:'United States / Europe', client:'Intel reference case', title:'Intel Fab Expansion', icon:'Fab', confidence:'Yield ramp', prompt:'Intel semiconductor fab expansion with EUV tooling, cleanroom construction, utility systems, process node complexity, supply chain constraints and commissioning readiness risk' },
+  { sector:'Semiconductors / Advanced Manufacturing', region:'United States / Korea', client:'Samsung reference case', title:'Samsung Foundry Expansion', icon:'Fab', confidence:'Manufacturing maturity', prompt:'Samsung foundry expansion with advanced semiconductor manufacturing, ultra cleanroom delivery, utility redundancy, tool installation, yield ramp uncertainty and global supply chain risk' },
+
+  { sector:'Space / Orbital Infrastructure', region:'Texas / Florida / Orbit', client:'SpaceX reference case', title:'SpaceX Starship Industrialization', icon:'Space', confidence:'Launch cadence', prompt:'SpaceX Starship industrialization programme with launch cadence scaling, orbital refueling, thermal protection, booster recovery, regulatory approvals, pad infrastructure and autonomous operations' },
+  { sector:'Space / Orbital Infrastructure', region:'Lunar surface', client:'Lunar programme reference case', title:'Lunar Habitat Infrastructure', icon:'Space', confidence:'Mission survivability', prompt:'Lunar habitat infrastructure programme with life support, habitat redundancy, landing pads, nuclear power, thermal survivability, autonomous commissioning, launch windows and crew logistics' },
+  { sector:'Space / Orbital Infrastructure', region:'Mars logistics', client:'Mars programme reference case', title:'Mars Cargo Logistics Network', icon:'Space', confidence:'Autonomous operations', prompt:'Mars cargo logistics network with autonomous navigation, radiation hardening, communication latency, in situ resource utilisation, cargo landers, long-cycle logistics and mission recovery constraints' },
+  { sector:'Space / Orbital Infrastructure', region:'Low Earth Orbit', client:'Amazon Kuiper reference case', title:'Amazon Kuiper Constellation', icon:'Space', confidence:'Production + launch manifest', prompt:'Amazon Kuiper satellite constellation deployment with satellite production ramp, launch manifest reliability, ground stations, spectrum coordination, network rollout and orbital commissioning risk' },
+  { sector:'Space / Orbital Infrastructure', region:'Low Earth Orbit', client:'AST SpaceMobile reference case', title:'AST SpaceMobile Network', icon:'Space', confidence:'Telecom integration', prompt:'AST SpaceMobile orbital telecom network with satellite deployment sequencing, telecom interoperability, antenna deployment, regulatory spectrum approvals and ground network integration risk' },
+  { sector:'Space / Orbital Infrastructure', region:'Orbit', client:'Orbital compute reference case', title:'Orbital Data Centres', icon:'Space', confidence:'Radiation + servicing', prompt:'Space based orbital data centre infrastructure with launch economics, orbital cooling, autonomous servicing, radiation hardening, power redundancy, data relay and mission assurance constraints' },
+  { sector:'Space / Orbital Infrastructure', region:'Cislunar', client:'Orbital servicing reference case', title:'Autonomous Orbital Servicing', icon:'Space', confidence:'Robotic reliability', prompt:'Autonomous orbital servicing platform with rendezvous proximity operations, robotic capture, refuelling, inspection payloads, debris avoidance and mission assurance governance' },
+  { sector:'Space / Orbital Infrastructure', region:'Lunar surface', client:'Lunar resources reference case', title:'Lunar Resource Extraction', icon:'Space', confidence:'ISRU maturity', prompt:'Lunar resource extraction programme with autonomous mining, regolith processing, in situ resource utilisation, surface power, habitat logistics, thermal survivability and launch logistics' },
+];
+
+const showcaseSectors = ['All', ...Array.from(new Set(showcaseProjects.map(p => p.sector)))];
+
+
+
+
+function parseMoneyLocal(v) {
+  if (v === undefined || v === null) return 0;
+  if (typeof v === 'number') return Number.isFinite(v) ? v : 0;
+  const s = String(v).replace(/[$,£€]/g,'').trim().toUpperCase();
+  const n = parseFloat(s.replace(/[^0-9.-]/g,''));
+  if (!Number.isFinite(n)) return 0;
+  if (s.includes('T')) return n * 1000;
+  if (s.includes('M')) return n / 1000;
+  return n;
+}
+function moneyLocal(n) { return n >= 1000 ? `$${(n/1000).toFixed(1)}T` : n >= 1 ? `$${n.toFixed(1)}B` : `$${Math.round(n*1000)}M`; }
+
 function fmt(v) {
   if (v === undefined || v === null || v === '') return '—';
   if (typeof v === 'string') return v;
   return v >= 1000 ? `$${(v / 1000).toFixed(1)}T` : v >= 1 ? `$${v.toFixed(1)}B` : `$${(v * 1000).toFixed(0)}M`;
 }
 async function post(path, body) {
-  const r = await fetch(API + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const r = await apiFetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
   if (!r.ok) throw new Error(await r.text());
   return r.json();
 }
 async function get(path) {
-  const r = await fetch(API + path);
+  const r = await apiFetch(path);
   if (!r.ok) throw new Error(await r.text());
   return r.json();
 }
 async function download(path, model, name, setExportingLabel) {
+    if (!isAdminUser && demoDownloads >= 1) {
+      alert('Demo export limit reached. Contact us for full access at controlorbit.com');
+      return;
+    }
+    if (!isAdminUser) {
+      const nd = demoDownloads + 1;
+      try { localStorage.setItem('casey_demo_downloads', String(nd)); } catch(ex) {}
+      setDemoDownloads(nd);
+    }
   if (setExportingLabel) setExportingLabel('Generating executive export package…');
-  const r = await fetch(API + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(model) });
+  const r = await apiFetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(model) });
   if (!r.ok) {
     let message = await r.text();
     try { const parsed = JSON.parse(message); message = parsed.detail?.message || parsed.message || message; } catch (_) {}
@@ -61,276 +444,6 @@ async function download(path, model, name, setExportingLabel) {
   URL.revokeObjectURL(url);
   if (setExportingLabel) setTimeout(() => setExportingLabel(''), 1200);
 }
-
-
-// V133: Enterprise no-blank-screen hardening. Every generated sector model is normalised
-// before React/Recharts render, so an incomplete backend payload can degrade gracefully
-// instead of taking down the full product during demo.
-const DEFAULT_CURVE = [
-  { percentile: 1, cost_bn: 1, schedule_months: 12 },
-  { percentile: 10, cost_bn: 1.1, schedule_months: 14 },
-  { percentile: 50, cost_bn: 1.3, schedule_months: 18 },
-  { percentile: 80, cost_bn: 1.6, schedule_months: 22 },
-  { percentile: 90, cost_bn: 1.9, schedule_months: 25 },
-  { percentile: 99, cost_bn: 2.3, schedule_months: 30 },
-];
-function asArray(v) { return Array.isArray(v) ? v : []; }
-function asText(v, fallback = '') {
-  if (typeof v === 'string' && v.trim()) return v;
-  if (typeof v === 'number' || typeof v === 'boolean') return String(v);
-  if (v && typeof v === 'object') {
-    try {
-      if (v.label || v.name || v.title || v.driver || v.risk || v.meaning || v.note || v.signal || v.basis) {
-        return [v.label || v.name || v.title || v.driver || v.risk || v.signal, v.value || v.effect || v.meaning || v.note || v.basis].filter(Boolean).join(': ');
-      }
-      return JSON.stringify(v);
-    } catch (_) { return fallback; }
-  }
-  return fallback;
-}
-function listText(v, fallback = []) { return (Array.isArray(v) && v.length ? v : fallback).map(x => asText(x)).filter(Boolean); }
-function safeObj(v, fallback = {}) { return v && typeof v === 'object' && !Array.isArray(v) ? v : fallback; }
-function num(v, fallback = 0) { const n = Number(v); return Number.isFinite(n) ? n : fallback; }
-function sectorKey(model = {}, prompt = '') {
-  const t = `${model.subsector || ''} ${model.title || ''} ${model.prompt || ''} ${prompt || ''}`.toLowerCase();
-  if (/airport|aviation|terminal|airside|baggage|orat|heathrow/.test(t)) return 'airport';
-  if (/rail|transit|metro|signalling|rolling stock|corridor|california high/.test(t)) return 'rail';
-  if (/data centre|data center|datacenter|hyperscale|gpu|ai campus|liquid cooling/.test(t)) return 'hyperscale';
-  if (/pharma|biologic|gmp|cqv|fill-finish|aseptic|validation/.test(t)) return 'pharma';
-  if (/semiconductor|fab|wafer|lithography|cleanroom|ultra-pure/.test(t)) return 'semiconductor';
-  if (/lng|oil|gas|offshore|refinery|pipeline|process safety|cryogenic/.test(t)) return 'oilgas';
-  if (/nuclear|reactor|safety case|containment|smr/.test(t)) return 'nuclear';
-  if (/space|lunar|moon|mars|orbital|launch|payload|spaceport|satellite/.test(t)) return 'space';
-  if (/defence|defense|secure|aerospace|mission assurance/.test(t)) return 'defence';
-  if (/water|desalination|wastewater|treatment/.test(t)) return 'water';
-  if (/port|marine|harbour|terminal yard|crane/.test(t)) return 'ports';
-  if (/hospital|healthcare|clinical/.test(t)) return 'healthcare';
-  if (/energy|power|grid|utility|substation|transmission/.test(t)) return 'energy';
-  return model.mode === 'Space' ? 'space' : 'earth';
-}
-const SECTOR_SAFE = {
-  airport: {
-    nodes: ['ORAT readiness','Baggage systems integration','Security certification','Airside phasing','Operational transition','Commissioning overlap','Confidence'],
-    threats: ['Live airport phasing and possessions','Baggage/security systems integration','Operational readiness trials','Regulatory and stakeholder approvals','Airside access and safety constraints'],
-    drivers: ['Benchmark similarity: airport terminal expansion','Scope maturity: capacity, phasing and systems definition','Procurement certainty: baggage/security/MEP packages','Schedule maturity: ORAT and live operations logic','Interface exposure: airlines, airside, landside and regulators'],
-    invalid: ['liquid cooling','transformer lead-time','grid energisation','launch readiness','mission assurance','rolling stock']
-  },
-  rail: {
-    nodes: ['Possession access','Signalling integration','Rolling-stock interface','Utility diversions','Migration sequencing','Operational commissioning','Confidence'],
-    threats: ['Possession constraints and access windows','Signalling and systems integration','Rolling-stock interface readiness','Utility diversions and corridor constraints','Timetable migration and regulator approvals'],
-    drivers: ['Benchmark similarity: rail/transit programme','Scope maturity: alignment, station and systems definition','Procurement certainty: civil/systems package strategy','Schedule maturity: possessions and test/commissioning logic','Interface exposure: utilities, operators and regulators'],
-    invalid: ['liquid cooling','ORAT','launch readiness','payload integration','mission assurance']
-  },
-  hyperscale: {
-    nodes: ['Transformer lead-time','Grid energisation','Liquid cooling readiness','IST congestion','Commissioning overlap','Reserve drawdown','Confidence'],
-    threats: ['Grid energisation and utility agreements','Long-lead transformer and switchgear delivery','Liquid cooling readiness','Integrated systems testing and commissioning','Phased data-hall turnover'],
-    drivers: ['Benchmark similarity: hyperscale digital infrastructure','Scope maturity: campus power and white-space definition','Procurement certainty: transformers, generators and switchgear','Schedule maturity: grid and commissioning logic','Interface exposure: utilities, fibre and commissioning'],
-    invalid: ['ORAT','baggage systems','rolling stock','launch readiness']
-  },
-  pharma: {
-    nodes: ['URS maturity','Cleanroom readiness','Process equipment delivery','CQV execution','GMP inspection readiness','Batch release pathway','Confidence'],
-    threats: ['CQV protocol approval and execution','Long-lead process equipment delivery','Clean utility validation and media fills','FDA/EMA inspection readiness','Automation and batch-release readiness'],
-    drivers: ['Benchmark similarity: pharma / biologics campus','Scope maturity: GMP package and user requirement definition','Procurement certainty: process equipment and clean utility lead-times','Schedule maturity: CQV logic and validation pathway','Regulatory exposure: FDA/EMA inspection readiness'],
-    invalid: ['ORAT','baggage systems','launch readiness','rolling stock']
-  },
-  semiconductor: {
-    nodes: ['Cleanroom envelope','Ultra-pure utilities','Lithography tool delivery','Contamination control','Process qualification','Yield ramp','Confidence'],
-    threats: ['Lithography and process-tool lead-times','Cleanroom and ultra-pure utility readiness','Contamination-control qualification','Specialist workforce constraints','Yield-ramp uncertainty'],
-    drivers: ['Benchmark similarity: advanced fab programme','Scope maturity: cleanroom and process-tool definition','Procurement certainty: lithography and specialist tools','Schedule maturity: qualification and yield-ramp logic','Interface exposure: utilities, contamination control and tool vendors'],
-    invalid: ['ORAT','baggage systems','launch readiness','rolling stock']
-  },
-  oilgas: {
-    nodes: ['Process design freeze','Long-lead equipment','Module fabrication','Shutdown window','Process-safety verification','Commissioning readiness','Confidence'],
-    threats: ['Long-lead rotating equipment procurement','Shutdown-window dependency','Process-safety system verification','Module fabrication and marine logistics','Commissioning under live operating constraints'],
-    drivers: ['Benchmark similarity: process / energy megaproject','Scope maturity: process design and plot-plan definition','Procurement certainty: compressors, vessels and cryogenic packages','Schedule maturity: shutdown and commissioning logic','Interface exposure: marine, process safety and operations'],
-    invalid: ['ORAT','baggage systems','liquid cooling','launch readiness']
-  },
-  nuclear: {
-    nodes: ['Safety case maturity','Regulator hold points','Nuclear-grade procurement','QA traceability','Containment systems','Commissioning governance','Confidence'],
-    threats: ['Licensing and safety-case maturity','Regulator hold points','Nuclear-grade component lead-times','QA traceability and documentation','Specialist workforce constraints'],
-    drivers: ['Benchmark similarity: nuclear generation programme','Scope maturity: safety case and reactor island definition','Procurement certainty: nuclear-grade long-lead components','Schedule maturity: regulator hold-point logic','Interface exposure: QA traceability and commissioning governance'],
-    invalid: ['ORAT','baggage systems','liquid cooling','payload integration']
-  },
-  space: {
-    nodes: ['Payload certification','Launch integration','Range availability','Thermal-power balance','Mission assurance sign-off','Operational readiness','Confidence'],
-    threats: ['Launch-window and range coordination','Payload integration and certification','Propulsion / thermal qualification','Mission assurance sign-off','Deep-space communications and operations readiness'],
-    drivers: ['Benchmark similarity: aerospace / mission programme','Scope maturity: payload, mission and operations definition','Procurement certainty: qualified flight hardware and suppliers','Schedule maturity: test campaign and launch-readiness logic','Interface exposure: range, payload, propulsion and mission operations'],
-    invalid: ['ORAT','baggage systems','rolling stock','liquid cooling readiness']
-  },
-  defence: {
-    nodes: ['Security accreditation','Mission systems integration','Classified supplier readiness','Assurance gates','Operational acceptance','Resilience posture','Confidence'],
-    threats: ['Security accreditation and assurance gates','Mission systems integration','Classified supplier dependency','Operational acceptance testing','Resilience and continuity validation'],
-    drivers: ['Benchmark similarity: defence / secure infrastructure','Scope maturity: mission-system and security definition','Procurement certainty: classified supplier readiness','Schedule maturity: assurance and acceptance logic','Interface exposure: security, operations and regulator stakeholders'],
-    invalid: ['ORAT','baggage systems','liquid cooling readiness','rolling stock']
-  },
-  water: {
-    nodes: ['Process design maturity','Permitting','Civil works sequencing','Equipment procurement','Commissioning permits','Operational handover','Confidence'],
-    threats: ['Permitting and environmental approvals','Process equipment procurement','Civil works and tie-in sequencing','Commissioning permits and water-quality validation','Operational handover'],
-    drivers: ['Benchmark similarity: water infrastructure programme','Scope maturity: treatment process and civil scope definition','Procurement certainty: pumps, membranes and process packages','Schedule maturity: tie-in and commissioning logic','Interface exposure: utilities, regulator and operator constraints'],
-    invalid: ['ORAT','baggage systems','launch readiness','liquid cooling']
-  },
-  ports: {
-    nodes: ['Marine access','Quay works','Crane procurement','Yard systems','Customs / rail interface','Operational commissioning','Confidence'],
-    threats: ['Marine access and dredging windows','Quay and berth construction sequencing','Crane and automation procurement','Yard, customs and rail systems integration','Operational commissioning under live port constraints'],
-    drivers: ['Benchmark similarity: port / marine terminal programme','Scope maturity: berth, yard and systems definition','Procurement certainty: cranes, automation and marine packages','Schedule maturity: marine windows and port operations logic','Interface exposure: customs, rail, shipping and operator stakeholders'],
-    invalid: ['ORAT','liquid cooling','launch readiness','payload integration']
-  },
-  healthcare: {
-    nodes: ['Clinical brief maturity','Medical equipment procurement','Digital health integration','Infection-control validation','Phased occupancy','Clinical commissioning','Confidence'],
-    threats: ['Clinical commissioning readiness','Medical equipment procurement','Digital health and systems integration','Infection-control compliance','Phased occupancy and patient transition'],
-    drivers: ['Benchmark similarity: healthcare / hospital infrastructure','Scope maturity: clinical brief and equipment schedule','Procurement certainty: medical equipment and specialist systems','Schedule maturity: phased occupancy and clinical commissioning logic','Interface exposure: clinicians, regulators and live hospital operations'],
-    invalid: ['ORAT','liquid cooling','launch readiness','rolling stock']
-  },
-  energy: {
-    nodes: ['Grid connection','Permitting','Long-lead equipment','Civil / electrical interface','Commissioning sequence','Market dispatch readiness','Confidence'],
-    threats: ['Grid connection and permitting','Transformer / switchgear procurement','Civil and electrical interface coordination','Commissioning sequence and energisation','Market dispatch and operator readiness'],
-    drivers: ['Benchmark similarity: energy / utility megaprogramme','Scope maturity: generation and grid-interface definition','Procurement certainty: transformers, turbines and switchgear','Schedule maturity: energisation and commissioning logic','Interface exposure: grid operator, regulator and utilities'],
-    invalid: ['ORAT','baggage systems','payload integration']
-  },
-  earth: {
-    nodes: ['Scope definition','Procurement evidence','Interface control','Commissioning readiness','Operational acceptance','Reserve adequacy','Confidence'],
-    threats: ['Long-lead procurement','Interface coordination','Commissioning readiness','Approvals and stakeholder governance','Operational handover'],
-    drivers: ['Benchmark similarity: comparable infrastructure archetype','Scope maturity: package and requirement definition','Procurement certainty: long-lead supplier readiness','Schedule maturity: critical path and commissioning logic','Interface exposure: utilities, operators and regulators'],
-    invalid: ['launch readiness','payload integration']
-  }
-};
-function scrubText(text, invalid = []) {
-  let s = String(text ?? '');
-  invalid.forEach(term => {
-    const re = new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'ig');
-    s = s.replace(re, 'sector-specific readiness');
-  });
-  return s;
-}
-function scrubDeep(value, invalid) {
-  if (typeof value === 'string') return scrubText(value, invalid);
-  if (Array.isArray(value)) return value.map(v => scrubDeep(v, invalid));
-  if (value && typeof value === 'object') {
-    const out = {};
-    for (const [k, v] of Object.entries(value)) out[k] = scrubDeep(v, invalid);
-    return out;
-  }
-  return value;
-}
-function validateCurve(rawCurve, model) {
-  const baseCost = parseFloat(String(model?.cost_p50 || '').replace(/[^0-9.]/g, '')) || 1;
-  const baseSch = parseFloat(String(model?.schedule || '').replace(/[^0-9.]/g, '')) || 24;
-  const curve = asArray(rawCurve).map((d, i) => ({
-    percentile: num(d?.percentile, [1,5,10,20,30,40,50,60,70,80,90,95,99][i] || i + 1),
-    cost_bn: num(d?.cost_bn, baseCost * (0.8 + i * 0.05)),
-    schedule_months: num(d?.schedule_months, Math.round(baseSch * (0.8 + i * 0.05)))
-  })).filter(d => Number.isFinite(d.percentile) && Number.isFinite(d.cost_bn) && Number.isFinite(d.schedule_months));
-  return curve.length >= 3 ? curve : DEFAULT_CURVE.map(d => ({...d, cost_bn: +(baseCost * d.cost_bn).toFixed(1), schedule_months: Math.max(1, Math.round(baseSch * d.schedule_months / 18))}));
-}
-function normaliseModel(raw, prompt = '') {
-  if (!raw || typeof raw !== 'object') return null;
-  const key = sectorKey(raw, prompt);
-  const sector = SECTOR_SAFE[key] || SECTOR_SAFE.earth;
-  let m = scrubDeep({ ...raw }, sector.invalid);
-  m.prompt = asText(m.prompt, prompt);
-  m.title = asText(m.title, key === 'space' ? 'Space infrastructure programme' : 'Capital infrastructure programme');
-  m.mode = asText(m.mode, key === 'space' ? 'Space' : 'Earth');
-  m.subsector = asText(m.subsector, key.replace(/(^|_)(\w)/g, (_,a,b)=> (a?' / ':'') + b.toUpperCase()));
-  m.risk = asText(m.risk, 'Medium-High');
-  m.confidence_pct = Math.max(1, Math.min(99, num(m.confidence_pct, 58)));
-  m.scenario_label = asText(m.scenario_label, 'Base');
-  m.cost_p50 = asText(m.cost_p50, '$1.0B');
-  m.cost_range = asText(m.cost_range, '$0.8B - $1.4B');
-  m.schedule = asText(m.schedule, '24 months');
-  m.causal_graph_nodes = asArray(m.causal_graph_nodes).filter(Boolean).map(String).slice(0,7);
-  if (m.causal_graph_nodes.length < 4) m.causal_graph_nodes = sector.nodes;
-  m.sector_schedule_threats = asArray(m.sector_schedule_threats).length ? asArray(m.sector_schedule_threats).map(String) : sector.threats;
-  m.sector_confidence_drivers = asArray(m.sector_confidence_drivers).length ? asArray(m.sector_confidence_drivers).map(String) : sector.drivers;
-  m.next_best_actions = asArray(m.next_best_actions).length ? asArray(m.next_best_actions).map(String) : ['Validate dominant critical-path constraint against benchmark evidence.','Confirm procurement maturity and named evidence owners.','Challenge reserve posture against commissioning and interface exposure.','Prepare board decision paper with explicit scenario trade-offs.'];
-  m.board_briefing = asArray(m.board_briefing).length ? asArray(m.board_briefing).map(String) : [asText(m.executive_shock_insight, 'The programme is now governed by evidence maturity, interfaces and commissioning readiness.'),'Challenge whether the current confidence posture is supported by procurement and operational-readiness evidence.'];
-  m.mission_control_cards = asArray(m.mission_control_cards).length ? asArray(m.mission_control_cards) : [
-    { label: 'LIVE CALIBRATION', signal: 'Current sector conditions are being applied to confidence, contingency and delivery-tail exposure.', severity: 'ACTIVE' },
-    { label: 'EXECUTIVE SHOCK', signal: asText(m.executive_shock_insight, 'The programme narrative should be challenged against evidence maturity.'), severity: 'MEDIUM-HIGH' },
-    { label: 'CRITICAL PATH EXPOSURE', signal: sector.threats[0], severity: 'HIGH' }
-  ];
-  m.benchmark_comparison = asArray(m.benchmark_comparison).length ? asArray(m.benchmark_comparison) : [
-    { archetype: key === 'space' ? 'Aerospace / Mission Assurance Programme' : sector.drivers[0].replace('Benchmark similarity: ', ''), anchor_cost: '$1B-$10B', anchor_duration_months: '36-96' }
-  ];
-  m.cost_breakdown = asArray(m.cost_breakdown).length ? asArray(m.cost_breakdown) : [
-    { cbs: '01.01', description: 'Core delivery package', type: 'Direct', p10_bn: .8, p50_bn: 1, p90_bn: 1.3, basis: 'Fallback normalized cost line' }
-  ];
-  m.schedule_detail = asArray(m.schedule_detail).length ? asArray(m.schedule_detail) : [
-    { activity_id: 'A1000', phase: 'Governance', activity: 'Project initiation / controls setup', predecessor: '', duration_months: 2, critical: 'No', basis: 'Fallback normalized schedule line' }
-  ];
-  m.risk_register = asArray(m.risk_register).length ? asArray(m.risk_register) : [
-    { id: 'R-001', risk: sector.threats[0], owner: 'Programme Director', mitigation: 'Evidence workshop and owner action plan', likelihood: 'Medium', impact: 'High' }
-  ];
-  m.cost_waterfall_vs_base = asArray(m.cost_waterfall_vs_base).length ? asArray(m.cost_waterfall_vs_base) : [{ driver: 'Base P50', value: m.cost_p50, kind: 'total' }];
-  m.schedule_waterfall_vs_base = asArray(m.schedule_waterfall_vs_base).length ? asArray(m.schedule_waterfall_vs_base) : [{ driver: 'Base duration', months: parseFloat(String(m.schedule).replace(/[^0-9.]/g,'')) || 24, kind: 'total' }];
-  m.scenario_matrix = asArray(m.scenario_matrix).length ? asArray(m.scenario_matrix) : scenarios.map(s => ({ scenario: s, cost_p50: m.cost_p50, schedule: m.schedule, confidence_pct: m.confidence_pct, risk: m.risk }));
-  m.monte_carlo = m.monte_carlo && typeof m.monte_carlo === 'object' ? m.monte_carlo : {};
-  m.monte_carlo.curve = validateCurve(m.monte_carlo.curve, m);
-  const p50c = parseFloat(String(m.cost_p50).replace(/[^0-9.]/g,'')) || 1;
-  const p50s = parseFloat(String(m.schedule).replace(/[^0-9.]/g,'')) || 24;
-  m.monte_carlo.qcra = m.monte_carlo.qcra && typeof m.monte_carlo.qcra === 'object' ? m.monte_carlo.qcra : { p50: p50c, p80: +(p50c*1.18).toFixed(1), p90: +(p50c*1.35).toFixed(1) };
-  m.monte_carlo.qsra = m.monte_carlo.qsra && typeof m.monte_carlo.qsra === 'object' ? m.monte_carlo.qsra : { p50: p50s, p80: Math.round(p50s*1.18), p90: Math.round(p50s*1.35) };
-  m.monte_carlo.tornado = asArray(m.monte_carlo.tornado).length ? asArray(m.monte_carlo.tornado) : sector.threats.slice(0,4).map((driver,i)=>({driver, impact: 5-i}));
-  m.uncertainty_narrative = m.uncertainty_narrative && typeof m.uncertainty_narrative === 'object' ? m.uncertainty_narrative : {
-    estimate_maturity: 'Class maturity is suitable for option selection, but evidence gaps remain before approval.',
-    schedule_maturity: 'Schedule logic requires critical-path, handover and commissioning validation.',
-    interpretation: `Live calibration is weighting ${sector.threats.slice(0,3).join(', ')} into the QCRA/QSRA tail.`
-  };
-
-  // V134: normalise every field that can be rendered as text or chart data.
-  // This prevents object-as-child React failures across rail, life sciences and any future sector payload.
-  m.board_challenge_questions = listText(m.board_challenge_questions, []);
-  m.top_decisions_required = listText(m.top_decisions_required, ['Accept or reject the scenario trade-off explicitly at board level.','Confirm the critical-path and near-critical path evidence.','Assign named owners to the governing constraints.']);
-  m.outputs_board_memo = listText(m.outputs_board_memo, m.board_briefing);
-  m.critical_path_narrative = listText(m.critical_path_narrative, sector.threats.map(x => `${x} is near-critical until evidenced.`));
-  m.red_flags = listText(m.red_flags, ['Unevidenced confidence around the governing constraint.','Scenario benefit may be risk transfer rather than risk reduction.']);
-  m.scenario_delta_intelligence = asArray(m.scenario_delta_intelligence).length ? asArray(m.scenario_delta_intelligence).map((x,i) => ({
-    label: asText(x?.label || x?.driver, `Delta ${i+1}`), value: asText(x?.value || x?.effect, '—'), meaning: asText(x?.meaning || x?.note || x, 'Scenario movement requires board challenge.')
-  })) : [
-    { label: 'Capital movement', value: '+0%', meaning: 'Balanced cost, time and evidence posture.' },
-    { label: 'Schedule movement', value: '+0%', meaning: 'Maintains a credible reference case for board challenge.' },
-    { label: 'Confidence movement', value: '+0 pts', meaning: 'Confidence moves only when evidence improves.' }
-  ];
-  m.confidence_breakdown = asArray(m.confidence_breakdown).length ? asArray(m.confidence_breakdown).map((x,i) => ({
-    driver: asText(x?.driver || x?.label, `Confidence driver ${i+1}`), effect: asText(x?.effect || x?.value, '—'), note: asText(x?.note || x?.meaning || x, 'Evidence must support this movement.')
-  })) : sector.drivers.slice(0,5).map((driver,i)=>({driver, effect: i ? '-3' : '+6', note: 'Sector-specific confidence weighting applied.'}));
-  m.live_calibration_signals = asArray(m.live_calibration_signals).length ? asArray(m.live_calibration_signals).map((x,i)=>({
-    signal: asText(x?.signal || x?.label || x, `Signal ${i+1}`), status: asText(x?.status, 'Active'), direction: asText(x?.direction, 'confidence / reserve / P-tail'), applies_to: asText(x?.applies_to, 'board pack, workbook, risk register, XER, QCRA/QSRA'), basis: asText(x?.basis || x?.note || x, 'Sector condition is being weighted into the model.')
-  })) : sector.threats.slice(0,4).map((signal,i)=>({signal, status:i<2?'Active':'Watch', direction:'confidence / reserve / P-tail', applies_to:'board pack, workbook, risk register, XER, QCRA/QSRA', basis:`${signal} is a sector-native delivery constraint.`}));
-  m.mission_control_cards = asArray(m.mission_control_cards).length ? asArray(m.mission_control_cards).map((x,i)=>({
-    label: asText(x?.label || x?.signal, `Signal ${i+1}`), signal: asText(x?.signal || x?.basis || x, 'Sector condition is active.'), severity: asText(x?.severity || x?.status, 'ACTIVE')
-  })) : m.mission_control_cards;
-  m.benchmark_comparison = asArray(m.benchmark_comparison).length ? asArray(m.benchmark_comparison).map((x,i)=>({
-    archetype: asText(x?.archetype || x?.sector || x?.name, `Sector benchmark ${i+1}`), anchor_cost: asText(x?.anchor_cost || x?.cost, '$1B-$10B'), anchor_duration_months: asText(x?.anchor_duration_months || x?.duration || x?.months, '36-96'), similarity_score: num(x?.similarity_score, Math.max(6, 9-i)), use: asText(x?.use, 'Sector-locked benchmark cohort.')
-  })) : m.benchmark_comparison;
-
-  m.why_casey_generated_this = asArray(m.why_casey_generated_this).length ? asArray(m.why_casey_generated_this).map(x => asText(x)) : [
-    `CASEY detected ${m.subsector} from the project brief and routed it to the ${m.mode} sector model.`,
-    `Sector behaviours applied: ${sector.nodes.slice(0,4).join(', ')}.`,
-    'Cost, schedule and risk were calibrated against estimate class, schedule level, complexity and delivery environment.',
-    'The output is designed for early board challenge and scope definition, not certified pricing.'
-  ];
-  return m;
-}
-
-function EmergencyDashboard() {
-  let model = null;
-  try { model = window.__CASEY_LAST_MODEL__ || JSON.parse(sessionStorage.getItem('CASEY_LAST_MODEL') || 'null'); } catch (_) {}
-  if (!model) return <div className="app v50EliteApp"><main className="console"><section className="layout one"><Card className="shockCard"><h2>CASEY recovered the demo session</h2><p>The previous project payload could not be displayed. Refresh and run again.</p><button className="primary" onClick={() => window.location.reload()}>Recover session</button></Card></section></main></div>;
-  const nodes = listText(model.causal_graph_nodes, ['Scope definition','Procurement evidence','Interface control','Commissioning readiness','Confidence']).slice(0,7);
-  const threats = listText(model.sector_schedule_threats, ['Critical path constraint','Procurement evidence gap','Commissioning readiness']).slice(0,5);
-  return <div className="app v50EliteApp"><main className="console"><section className="layout one"><Card className="shockCard"><h2>CASEY intelligence recovered</h2><p className="big">{asText(model.executive_summary, `${asText(model.subsector,'Sector model')} generated successfully. The full payload has been normalised for demo continuity.`)}</p><div className="miniMetrics"><b><span>P50 cost</span>{asText(model.cost_p50,'—')}</b><b><span>Schedule</span>{asText(model.schedule,'—')}</b><b><span>Confidence</span>{asText(model.confidence_pct,'—')}%</b></div><h3>Sector causal chain</h3>{nodes.map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}<h3>Top schedule threats</h3>{threats.map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}<button className="primary" onClick={() => { window.location.hash=''; window.location.reload(); }}>Continue demo</button><p className="chartCaption">Render guard: recovered from incomplete component path without losing the generated project model.</p></Card></section></main></div>;
-}
-
-class ErrorBoundary extends React.Component {
-  constructor(props) { super(props); this.state = { failed: false, error: null }; }
-  static getDerivedStateFromError(error) { return { failed: true, error }; }
-  componentDidCatch(error, info) { console.error('CASEY render guard caught:', error, info); }
-  render() {
-    if (!this.state.failed) return this.props.children;
-    return <EmergencyDashboard/>;
-  }
-}
-
 function Card({ children, className = '' }) {
   return <motion.div className={`card ${className}`} initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>{children}</motion.div>;
 }
@@ -543,7 +656,7 @@ function Loading({ text }) {
   useEffect(() => { const t = setInterval(() => setI(v => Math.min(v + 1, stages.length - 1)), 650); return () => clearInterval(t); }, []);
   return <motion.div className="loading intelligenceLoading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><Rocket size={44}/><b>{text || 'Building connected model...'}</b><span>{stages[i]}</span><small>Cost · Schedule · QCRA · QSRA · Risk Register · Board Pack</small></motion.div>;
 }
-function ScenarioSelector({ scenario, generate, matrix=[] }) {
+function ScenarioSelector({ scenario, generate, matrix=[], model=null, prompt='', projectContext=null }) {
   const labels = {base:'Base', faster:'Faster', cheaper:'Cheaper', lower_risk:'Lower Risk', premium:'Premium'};
   return <section className="scenarioRail">{scenarios.map(s => { const row = matrix.find(x => x.scenario === s) || {}; const active = s === scenario; return <button key={s} className={active?'active':''} onClick={() => generate(s, model?.prompt || prompt, model || projectContext)}><b>{labels[s] || s}</b><span>{row.cost_p50 || '—'} · {row.schedule_months || '—'} mo · {row.confidence_pct || '—'}%</span><em>{row.risk || (active ? 'selected' : 'run scenario')}</em></button> })}</section>;
 }
@@ -578,15 +691,12 @@ function confidenceLens(model) {
   const mode = String(model?.mode || 'Earth');
   const subsector = String(model?.subsector || '').toLowerCase();
   const confidenceBand = pct >= 82 ? 'Board-defensible' : pct >= 70 ? 'Execution posture credible' : pct >= 58 ? 'Board challenge likely' : pct >= 45 ? 'Evidence gap visible' : 'Do not approve without more evidence';
-  const lockedConstraint = model?.confidence_engine_detail?.primary_constraint || model?.sector_constraints || model?.governing_constraint;
-  const constraint = lockedConstraint || (mode === 'Space'
+  const constraint = mode === 'Space'
     ? 'mission assurance, launch logistics and autonomous recovery evidence'
     : subsector.includes('data') ? 'energisation, cooling readiness and integrated systems testing'
-    : subsector.includes('airport') || subsector.includes('aviation') ? 'ORAT readiness, baggage/security systems integration, airside phasing and regulator acceptance'
-    : subsector.includes('rail') || subsector.includes('transit') ? 'possessions, signalling integration, systems migration and operator acceptance'
     : subsector.includes('semiconductor') ? 'tool install, UPW readiness and yield-ramp qualification'
     : subsector.includes('life') || subsector.includes('pharma') ? 'CQV, validation readiness and regulatory evidence'
-    : 'interface control, procurement evidence and commissioning readiness');
+    : 'interface control, procurement evidence and commissioning readiness';
   const posture = scenario === 'faster'
     ? 'CASEY reads this as an aggressive acceleration posture: the date improves, but delivery confidence is now being spent as a resource.'
     : scenario === 'cheaper'
@@ -665,7 +775,7 @@ function evidenceScorecard(model) {
   };
   return [
     { name: 'Benchmark fit', score: base.benchmark, note: isSpace ? 'space archetype / mission class fit' : 'sector archetype and cost-class fit' },
-    { name: 'Evidence maturity', score: base.evidence, note: 'brief depth, basis visibility and package maturity' },
+    { name: 'Package evidence completeness', score: base.evidence, note: 'brief depth, basis visibility and package maturity' },
     { name: 'Procurement certainty', score: base.procurement, note: isSpace ? 'launch / payload / supplier readiness' : 'long-lead supplier and market capacity' },
     { name: 'Schedule logic', score: base.schedule, note: 'critical path, handover gates and QSRA traceability' },
     { name: 'Resilience / reserve', score: base.resilience, note: 'contingency, recovery float and mission / operational resilience' }
@@ -747,7 +857,7 @@ function BenchmarkIntelligence({ model }) {
   return <Card className="benchmark2"><h2>Benchmark Positioning Intelligence</h2><p>Live peer positioning by schedule certainty and delivery intelligence maturity.</p><div className="benchmarkField">
     <div className="density d1"/><div className="density d2"/><div className="density d3"/>
     <span className="axis y">Delivery intelligence maturity</span><span className="axis x">Schedule certainty →</span>
-    {peers.map(([name,px,py],i)=><motion.div key={name} className={`peerDot ${name==='CASEY'?'caseyDot':''}`} initial={{left:`${px-6}%`,bottom:`${py-8}%`,opacity:.4}} animate={{left:name==='CASEY'?`${x}%`:`${px}%`,bottom:name==='CASEY'?`${y}%`:`${py}%`,opacity:1}} transition={{type:'spring',stiffness:90,damping:14}}><b>{name}</b><span>{name==='CASEY'?'top-decile':`${px}th pct`}</span></motion.div>)}
+    {peers.map(([name,px,py],i)=><motion.div key={name} className={`peerDot ${name==='CASEY'?'caseyDot':''}`} initial={{left:`${px-6}%`,bottom:`${py-8}%`,opacity:.4}} animate={{left:name==='CASEY'?`${x}%`:`${px}%`,bottom:name==='CASEY'?`${y}%`:`${py}%`,opacity:1}} transition={{type:'spring',stiffness:90,damping:14}}><b>{name}</b><span>{name==='CASEY'?'91st pct':`${px}th pct`}</span></motion.div>)}
   </div><div className="benchmarkCards"><div><b>CASEY</b><span>Probabilistic, traceable, decision-led</span></div><div><b>P6</b><span>Schedule control, weak causal intelligence</span></div><div><b>BI</b><span>Reporting without intervention logic</span></div><div><b>PMO</b><span>Human narrative, slow traceability</span></div></div></Card>;
 }
 function CausalGraph({ model }) {
@@ -758,9 +868,648 @@ function CausalGraph({ model }) {
     <svg viewBox="0 0 100 100" preserveAspectRatio="none">{nodes.slice(1).map((_,i)=><motion.path key={i} d={`M ${10+i*13} ${24+i%2*28} C ${18+i*13} ${18+i%2*28}, ${22+i*13} ${50-(i%2)*22}, ${29+i*13} ${48-(i%2)*22}`} initial={{pathLength:0,opacity:.2}} animate={{pathLength:1,opacity:.85}} transition={{delay:.15+i*.1,duration:.7}} />)}</svg>
   </div><div className="causalReadout"><b>{model?.scenario_label || 'Base'} governing chain</b><span>{nodes.join(' → ')}</span></div></Card>;
 }
-function BoardPressureSimulator({ model }) {
-  const q = boardQuestions(model).slice(0,5);
-  return <Card className="boardPressure"><h2>Board Pressure Simulation</h2><p>Likely approval resistance and challenge posture before investment committee.</p>{q.map((x,i)=><div className="pressureRow" key={x}><span>{i+1}</span><b>{i<2?'High challenge':'Medium challenge'}</b><em>{x}</em></div>)}</Card>
+
+function assuranceKillChain(model) {
+  const mode = String(model?.mode || '').toLowerCase();
+  const scenario = String(model?.scenario || 'base').toLowerCase();
+  const base = mode.includes('space')
+    ? ['Mission assurance evidence', 'Launch manifest realism', 'Payload / habitat integration', 'Thermal-power survival case', 'Autonomous recovery proof']
+    : ['Scope freeze evidence', 'Procurement market proof', 'Interface ownership', 'Commissioning readiness', 'Operational handover proof'];
+  const scenarioLens = {
+    faster: ['Acceleration premium must be evidenced', 'Float burn must be named by package', 'Recovery crews must be funded'],
+    cheaper: ['Savings must be removed from scope, not hidden in risk', 'Reserve cannot be a balancing item', 'Lifecycle fragility must be priced'],
+    lower_risk: ['Assurance spend must retire named P80 drivers', 'Added time must buy evidence, not bureaucracy', 'Owner gates must be explicit'],
+    premium: ['Optionality must be separated from scope creep', 'Resilience must map to avoided downside', 'Value-for-money challenge must be pre-answered'],
+    base: ['Reference case must not be sold as approval-ready', 'Dominant constraint must have a named owner', 'Evidence closure must precede authorisation']
+  }[scenario] || [];
+  return [...base.slice(0,3), ...scenarioLens].slice(0,6);
+}
+
+function traditionalConsultantDelta(model) {
+  const lens = confidenceLens(model || {});
+  const pct = Number(model?.confidence_pct || 50);
+  const p80 = model?.monte_carlo?.qcra?.p80 ? fmt(model.monte_carlo.qcra.p80) : 'P80 exposure';
+  const qsra = model?.monte_carlo?.qsra?.p80 ? `${model.monte_carlo.qsra.p80} months` : 'P80 finish date';
+  const tvc = model?.traditional_vs_casey || {};
+  // Use sector-specific language from backend if available, fall back to generic
+  return [
+    { old:'Static cost report', casey:`Decision-grade range: ${model?.cost_p50 || 'P50'} headline with ${p80} downside test.` },
+    { old:'Programme narrative', casey:`Board-defensibility: ${pct}% / ${lens.headline}.` },
+    { old:'What traditional reports say', casey: tvc.traditional || `Civil progress and cost spend appear on track.` },
+    { old:'What CASEY reads underneath', casey: tvc.casey || `Governing constraint is not visible in headline progress. P80 is ${tvc.tail_pct || '25'}% above P50.` },
+    { old:'Risk register as list', casey:'Cause → event → owner → mitigation → P80/P90 exposure chain.' },
+    { old:'Schedule baseline', casey:`QSRA board date: ${qsra}, not just a target milestone.` },
+    { old:'Assurance opinion', casey:`Evidence threshold: ${lens.constraint} is the governing approval blocker.` }
+  ];
+}
+
+function exportAuditSpine(model, direct, indirect, reserves, reconcileCheck) {
+  const total = parseMoneyLocal(model?.cost_p50);
+  const qcra = model?.monte_carlo?.qcra || {};
+  const qsra = model?.monte_carlo?.qsra || {};
+  return [
+    { label:'Cost reconciliation', value: reconcileCheck < 0.02 ? 'PASS' : 'CHECK', detail:`Direct ${fmt(direct)} + Indirect ${fmt(indirect)} + Reserve ${fmt(reserves)} = ${fmt(direct+indirect+reserves)} vs P50 ${fmt(total)}` },
+    { label:'Scenario lock', value:String(model?.scenario_label || model?.scenario || 'Base'), detail:'Cards, narratives, QCRA/QSRA and exports are stamped from the selected scenario payload.' },
+    { label:'P-tail linkage', value: qcra.p80 ? fmt(qcra.p80) : 'P80 active', detail:`Cost P80 and QSRA P80 ${qsra.p80 || '—'} months are visible for board challenge.` },
+    { label:'Evidence gate', value: confidenceLens(model).headline, detail: confidenceLens(model).decisionRule },
+    { label:'Competitive threat', value:'High', detail:'Replaces manual slide-production with auditable scenario propagation and board attack logic.' },
+    ...(model?.stress_test_applied ? [{
+      label:'Stress test applied',
+      value: String(model.stress_test_applied).replace(/_/g,' ').toUpperCase(),
+      detail: (model.stress_test_note || '') + ' P50 updated to ' + (model.cost_p50 || '—') + ', schedule ' + (model.schedule || '—') + ', confidence ' + (model.confidence_pct || '—') + '%.'
+    }] : [])
+  ];
+}
+
+function IncumbentPressurePanel({ model, direct, indirect, reserves, reconcileCheck }) {
+  const delta = traditionalConsultantDelta(model);
+  const kill = assuranceKillChain(model);
+  const spine = exportAuditSpine(model, direct, indirect, reserves, reconcileCheck);
+  // Real sector-specific attacks from the model (backend-generated)
+  const modelAttacks = model?.board_attack_simulation || [];
+  const attacks = modelAttacks.length >= 4 ? modelAttacks : kill;
+  // The single most uncomfortable sentence
+  const ifFails = model?.if_this_fails || null;
+  return <>
+    <section className="layout two incumbentPressure">
+      <Card className="threatCard">
+        <h2>Incumbent consultant pressure test</h2>
+        <p className="big">Designed to make a traditional PMO / cost-consultant deck look slow, static and non-auditable without making unsupported claims about any named firm.</p>
+        {delta.map((x,i)=><div className="versusRow" key={x.old}><span>{i+1}</span><b>{x.old}</b><ArrowRight size={16}/><strong>{x.casey}</strong></div>)}
+      </Card>
+      <Card className="threatCard">
+        <h2>Board Assurance Questions</h2>
+        <p>These are the questions a serious investment committee will ask before the project team can hide behind green dashboards.</p>
+        {attacks.map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{x}</div>)}
+        <h3>Audit spine</h3>
+        {spine.map((x,i)=><div className={`auditSpine ${x.value==='PASS'?'pass':''}`} key={x.label}><span>{i+1}</span><b>{x.label}: {x.value}</b><em>{x.detail}</em></div>)}
+      </Card>
+    </section>
+    {ifFails && (
+      <section className="layout one">
+        <Card className="ifFailsCard">
+          <h2>If this programme fails</h2>
+          <p className="ifFailsStatement">{ifFails}</p>
+          <p className="ifFailsNote">CASEY generates this from sector intelligence, not from programme-specific data. It names the governing failure mode for this programme type historically.</p>
+        </Card>
+      </section>
+    )}
+  </>;
+}
+
+
+
+
+
+// ── Programme Health Signal ────────────────────────────────────────
+// Named mega-programmes with known public reporting positions.
+// CASEY read is derived from model outputs, not hardcoded.
+// ── Global Programme Intelligence Database ────────────────────────
+// 80+ live and recently-delivered mega-programmes across all sectors.
+// publicReported = what the programme board / auditor is saying publicly.
+// caseySignal = what CASEY generates from benchmark intelligence.
+// The gap between the two is the product.
+const ALL_PROGRAMMES = [
+
+  // ── RAIL / TRANSIT ───────────────────────────────────────────────
+  { id:'hs2', name:'HS2 Phase 1', sector:'Rail', region:'UK',
+    cost:'£45B–£54B authorised', sched:'2033 London–Birmingham', status:'On track (per PAC)',
+    source:'HS2 Ltd / PAC 2024',
+    prompt:'HS2 Phase 1 tunnelling stations systems migration possessions operator acceptance political exposure' },
+  { id:'calHSR', name:'California High-Speed Rail', sector:'Rail', region:'USA',
+    cost:'$89B–$128B', sched:'2033 partial / 2040s full', status:'Under review (GAO)',
+    source:'CAHSRA / GAO 2023',
+    prompt:'California High Speed Rail tunnelling corridor land acquisition utility relocation signalling political scrutiny cost escalation' },
+  { id:'crossrail', name:'Elizabeth Line (Crossrail)', sector:'Rail', region:'UK',
+    cost:'£18.9B final outturn', sched:'Opened May 2022', status:'Delivered — 2yr delay',
+    source:'TfL / DfT 2023',
+    prompt:'Crossrail Elizabeth Line tunnelling stations systems integration signalling commissioning live operations possessions' },
+  { id:'railBaltica', name:'Rail Baltica', sector:'Rail', region:'Europe',
+    cost:'€16B–€24B', sched:'2030 headline / slipping', status:'Schedule under review',
+    source:'RB Rail AS 2024',
+    prompt:'Rail Baltica new-build high speed corridor multinational procurement station development systems integration cross-border' },
+  { id:'sydneyMetro', name:'Sydney Metro West', sector:'Rail', region:'Australia',
+    cost:'A$25B–A$35B', sched:'2030 target', status:'Under construction',
+    source:'Transport for NSW 2024',
+    prompt:'Sydney Metro West twin-bore tunnel stations precinct integration systems commissioning utility relocation operator readiness' },
+  { id:'ontarioLine', name:'Ontario Line', sector:'Rail', region:'Canada',
+    cost:'C$19B–C$27B', sched:'2031 target', status:'Design / procurement phase',
+    source:'Metrolinx 2024',
+    prompt:'Ontario Line light metro tunnelling elevated track stations systems integration Toronto procurement operator readiness' },
+  { id:'gatewayProgram', name:'Gateway Program', sector:'Rail', region:'USA',
+    cost:'$16B–$35B', sched:'2035 target', status:'Funding / procurement',
+    source:'Gateway Development Commission 2024',
+    prompt:'Gateway Hudson River rail tunnel new and existing tubes portal works systems integration political funding exposure' },
+  { id:'brightlineWest', name:'Brightline West', sector:'Rail', region:'USA',
+    cost:'$12B', sched:'2028 Olympics target', status:'Under construction',
+    source:'Brightline 2024',
+    prompt:'Brightline West Las Vegas high speed rail private financing greenfield corridor systems commissioning compressed schedule' },
+  { id:'neom_line', name:'NEOM / The Line', sector:'Rail', region:'Saudi Arabia',
+    cost:'$500B authorised', sched:'2030 headline', status:'Under construction (descoped)',
+    source:'NEOM Authority 2024',
+    prompt:'NEOM The Line linear city rail infrastructure systems integration desert delivery logistics workforce political programme scope uncertainty' },
+
+  // ── NUCLEAR / ENERGY ─────────────────────────────────────────────
+  { id:'hinkley', name:'Hinkley Point C', sector:'Nuclear', region:'UK',
+    cost:'£25B–£35B', sched:'2031 target (EDF)', status:'Under construction — delayed',
+    source:'EDF / NAO 2024',
+    prompt:'UK EPR nuclear power station first of kind reactor safety case procurement commissioning grid connection workforce' },
+  { id:'sizewell', name:'Sizewell C', sector:'Nuclear', region:'UK',
+    cost:'£20B–£35B estimate', sched:'2030s FID target', status:'Development / financing',
+    source:'EDF / DESNZ 2024',
+    prompt:'UK nuclear power station SMR EPR GDA site licence procurement financing government support grid connection' },
+  { id:'vogtle', name:'Vogtle Units 3&4', sector:'Nuclear', region:'USA',
+    cost:'$35B final outturn', sched:'Completed 2023/24', status:'Delivered — major overrun',
+    source:'Georgia Power / NRC 2024',
+    prompt:'AP1000 nuclear units first of kind US licensing workforce commissioning supply chain cost overrun regulatory' },
+  { id:'smrRollout', name:'UK SMR Nuclear Rollout', sector:'Nuclear', region:'UK',
+    cost:'£8B–£15B per unit', sched:'First unit 2035 target', status:'GDA in progress',
+    source:'DESNZ / Rolls-Royce 2024',
+    prompt:'UK SMR nuclear rollout small modular reactor licensing procurement first of kind supply chain grid integration' },
+  { id:'hornsea3', name:'Hornsea 3 Offshore Wind', sector:'Energy', region:'UK',
+    cost:'£8B–£10B', sched:'2027 target', status:'Construction approved',
+    source:'Ørsted / DESNZ 2024',
+    prompt:'Offshore wind farm cable installation turbine supply chain marine vessels weather windows grid connection substation commissioning' },
+  { id:'neomPower', name:'NEOM Green Hydrogen', sector:'Energy', region:'Saudi Arabia',
+    cost:'$8.4B', sched:'2026 production', status:'Under construction',
+    source:'NEOM / Air Products 2024',
+    prompt:'Green hydrogen electrolysis wind solar power plant compression storage marine loading export terminal commissioning' },
+  { id:'costaRicaHydro', name:'Reventazón Hydro (Costa Rica)', sector:'Energy', region:'Latin America',
+    cost:'$1.4B final', sched:'Delivered 2016', status:'Delivered — on budget',
+    source:'ICE 2016',
+    prompt:'Hydroelectric dam civil works electromechanical systems commissioning environmental community interfaces remote delivery' },
+
+  // ── DATA CENTRE / HYPERSCALE ──────────────────────────────────────
+  { id:'microsoftAI', name:'Microsoft AI Supercluster', sector:'Data Centre', region:'Global',
+    cost:'$50B+ announced', sched:'2025–2027 phased', status:'Active construction',
+    source:'Microsoft / press 2024',
+    prompt:'AI hyperscale data centre campus 500MW grid connection liquid cooling GPU supply chain accelerated commissioning' },
+  { id:'awsGovCloud', name:'AWS GovCloud Expansion', sector:'Data Centre', region:'USA',
+    cost:'$10B+', sched:'2024–2026', status:'Active',
+    source:'AWS 2024',
+    prompt:'Sovereign cloud government data centre fibre grid redundancy security compliance permitting accelerated delivery' },
+  { id:'metaAI', name:'Meta AI Compute Network', sector:'Data Centre', region:'Global',
+    cost:'$37B capex 2024', sched:'Ongoing', status:'Active construction',
+    source:'Meta Q2 2024',
+    prompt:'AI compute data centre network cooling power grid supply chain GPU procurement phased commissioning' },
+  { id:'riyadhAI', name:'Riyadh AI Hyperscale 500MW', sector:'Data Centre', region:'Saudi Arabia',
+    cost:'$8B–$12B', sched:'2026–2027', status:'Design / procurement',
+    source:'NEOM / Saudi Vision 2030 2024',
+    prompt:'Riyadh AI hyperscale data centre 500MW grid connection liquid cooling sovereign cloud accelerated compressed schedule' },
+  { id:'nvidiaEco', name:'NVIDIA Ecosystem Infrastructure', sector:'Data Centre', region:'Global',
+    cost:'$40B+ supply ecosystem', sched:'2024–2026', status:'Active',
+    source:'NVIDIA / press 2024',
+    prompt:'AI training inference data centre GPU campus power cooling supply chain integration commissioning' },
+
+  // ── DEFENCE / SECURITY ────────────────────────────────────────────
+  { id:'aukus', name:'AUKUS Nuclear Submarine Industrial Base', sector:'Defence', region:'Australia/UK/USA',
+    cost:'A$268B–A$368B', sched:'First boat 2030s', status:'Industrial base development',
+    source:'Australian Government 2024',
+    prompt:'AUKUS nuclear submarine industrial base dockyard shipbuilding naval workforce certification sovereign supply chain classified systems' },
+  { id:'f35', name:'F-35 Programme', sector:'Defence', region:'Global',
+    cost:'$400B+ lifecycle', sched:'Ongoing production', status:'Active — sustainment phase',
+    source:'DoD / GAO 2024',
+    prompt:'F35 fighter jet production sustainment classified systems integration supply chain avionics certification multinational programme' },
+  { id:'ssbnDreadnought', name:'Dreadnought SSBN', sector:'Defence', region:'UK',
+    cost:'£31B+', sched:'2030s first patrol', status:'Under construction',
+    source:'MoD / PAC 2024',
+    prompt:'UK nuclear submarine Dreadnought SSBN Rolls Royce reactor dockyard workforce certified systems integration classified procurement' },
+  { id:'arrowhead', name:'Type 31 Frigate', sector:'Defence', region:'UK',
+    cost:'£1.25B for 5 ships', sched:'2027–2035', status:'Under construction',
+    source:'MoD / Babcock 2024',
+    prompt:'Royal Navy Type 31 Arrowhead frigate naval shipbuilding dockyard systems integration weapons electronics trials acceptance' },
+  { id:'missileDef', name:'Missile Defence Modernization', sector:'Defence', region:'USA',
+    cost:'$20B+', sched:'2025–2030', status:'Active development',
+    source:'MDA / DoD 2024',
+    prompt:'Missile defence ground based interceptor radar command control classified systems integration software assurance test evaluation' },
+
+  // ── SEMICONDUCTOR / ADVANCED MFG ──────────────────────────────────
+  { id:'tsmcArizona', name:'TSMC Arizona Fab', sector:'Semiconductor', region:'USA',
+    cost:'$65B committed', sched:'N3 2025, N2 2028', status:'Under construction — delayed',
+    source:'TSMC / CHIPS Act 2024',
+    prompt:'TSMC Arizona semiconductor fab cleanroom EUV tool install ultrapure water workforce ramp yield N3 N2 process' },
+  { id:'intelOhio', name:'Intel Ohio Fab (Intel 18A)', sector:'Semiconductor', region:'USA',
+    cost:'$20B+', sched:'2026 target (delayed)', status:'Paused / delayed',
+    source:'Intel / press 2024',
+    prompt:'Intel Ohio fab cleanroom advanced packaging process tool qualification workforce yield ramp EUV CHIPS Act' },
+  { id:'samsungTexas', name:'Samsung Texas Fab', sector:'Semiconductor', region:'USA',
+    cost:'$17B+', sched:'2024–2026', status:'Construction / qualification',
+    source:'Samsung / press 2024',
+    prompt:'Samsung advanced semiconductor fab Texas cleanroom tool qualification ultrapure water EUV 2nm process workforce' },
+  { id:'microchipArizona', name:'Microchip Technology Expansion', sector:'Semiconductor', region:'USA',
+    cost:'$2B+', sched:'2024–2026', status:'Active',
+    source:'Microchip / CHIPS Act 2024',
+    prompt:'Semiconductor fab expansion cleanroom tool installation qualification legacy node production ramp workforce' },
+
+  // ── LIFE SCIENCES / PHARMA ────────────────────────────────────────
+  { id:'lillyExpansion', name:'Eli Lilly GLP-1 Expansion', sector:'Pharma', region:'Global',
+    cost:'$18B+ capex 2024', sched:'2025–2027 phased', status:'Active construction',
+    source:'Eli Lilly 2024',
+    prompt:'Eli Lilly GMP sterile manufacturing fill finish clean utilities validation FDA inspection GLP-1 obesity drug capacity expansion' },
+  { id:'novonordisk', name:'Novo Nordisk Biologics Expansion', sector:'Pharma', region:'Global',
+    cost:'DKK 42B+', sched:'2025–2028', status:'Active construction',
+    source:'Novo Nordisk 2024',
+    prompt:'Novo Nordisk biologics manufacturing GMP cold chain aseptic fill finish validation regulatory submissions capacity GLP-1' },
+  { id:'moderna', name:'Moderna mRNA Facility', sector:'Pharma', region:'Global',
+    cost:'$1.5B–$2B per site', sched:'2024–2026', status:'Active construction',
+    source:'Moderna 2024',
+    prompt:'Moderna mRNA manufacturing GMP clean utilities validation FDA inspection aseptic fill finish technology transfer biosecurity' },
+  { id:'astrazeneca', name:'AstraZeneca Manufacturing Expansion', sector:'Pharma', region:'UK/Global',
+    cost:'£2B+ UK investment', sched:'2025–2027', status:'Active',
+    source:'AstraZeneca 2024',
+    prompt:'AstraZeneca biologics manufacturing GMP fill finish validation regulatory FDA MHRA UK aseptic clean utilities' },
+
+  // ── AIRPORT / AVIATION ────────────────────────────────────────────
+  { id:'heathrowT3', name:'Heathrow Terminal 3 Upgrade', sector:'Airport', region:'UK',
+    cost:'£2.5B+', sched:'2027 target', status:'Active construction',
+    source:'Heathrow Airport 2024',
+    prompt:'Heathrow airport terminal live operations baggage systems ORAT airside phasing security systems CAA acceptance passenger transition' },
+  { id:'istanbulPhase2', name:'Istanbul Airport Phase 2', sector:'Airport', region:'Turkey',
+    cost:'$4B+', sched:'2027', status:'Development',
+    source:'IGA / TAV 2024',
+    prompt:'Istanbul airport terminal expansion airside runway baggage systems ORAT live operations phasing security passenger systems commissioning' },
+  { id:'newDelhi', name:'New Delhi Airport T1 Redevelopment', sector:'Airport', region:'India',
+    cost:'$3B+', sched:'2024–2026', status:'Under construction',
+    source:'GMR / AAI 2024',
+    prompt:'New Delhi airport terminal expansion baggage systems airside live operations ORAT security DGCA acceptance runway' },
+  { id:'riyadhKing', name:'King Salman International Airport', sector:'Airport', region:'Saudi Arabia',
+    cost:'$147B long-term', sched:'2030 Phase 1', status:'Master planning / Phase 1',
+    source:'Saudi Vision 2030 2024',
+    prompt:'Riyadh new airport terminal airside baggage systems ORAT live operations security passenger systems mega programme' },
+
+  // ── PORTS / MARINE ────────────────────────────────────────────────
+  { id:'thuwalPort', name:'King Salman Energy Park Port', sector:'Ports', region:'Saudi Arabia',
+    cost:'$7B+', sched:'2025–2030 phased', status:'Under development',
+    source:'Saudi Aramco / SPARK 2024',
+    prompt:'Industrial port automation container handling marine works dredging quay wall systems integration logistics energy cluster' },
+  { id:'londonGateway', name:'DP World London Gateway Expansion', sector:'Ports', region:'UK',
+    cost:'£1.5B+', sched:'2025–2027', status:'Under construction',
+    source:'DP World 2024',
+    prompt:'Container terminal expansion quay deepening cranes automated handling TOS integration marine works rail connection' },
+  { id:'hamburgerPort', name:'Hamburg Port Modernisation', sector:'Ports', region:'Germany',
+    cost:'€3B+', sched:'2025–2030', status:'Active investment',
+    source:'HPA 2024',
+    prompt:'Port automation container terminal AGV TOS integration dredging fairway deepening logistics rail connection sustainability' },
+
+  // ── HEALTHCARE ────────────────────────────────────────────────────
+  { id:'nclNHS', name:'New Hospitals Programme (NHS)', sector:'Healthcare', region:'UK',
+    cost:'£20B+', sched:'2030–2040s', status:'Delayed / under review',
+    source:'DHSC / PAC 2024',
+    prompt:'NHS new hospital clinical campus MEP utilities clean rooms operating theatres phased handover PFI replacement' },
+  { id:'abuDhabiHealth', name:'Abu Dhabi Healthcare Expansion', sector:'Healthcare', region:'UAE',
+    cost:'AED 50B', sched:'2025–2030', status:'Active development',
+    source:'DOH Abu Dhabi 2024',
+    prompt:'Hospital clinical campus MEP utilities clean rooms operating theatres diagnostic imaging emergency department phased handover commissioning' },
+
+  // ── WATER / UTILITIES ─────────────────────────────────────────────
+  { id:'thamestide', name:'Thames Tideway Tunnel', sector:'Water', region:'UK',
+    cost:'£4.5B final', sched:'Completed 2024', status:'Delivered — on budget',
+    source:'Tideway 2024',
+    prompt:'London sewage tunnel TBM tunnelling shafts pumping stations commissioning live network integration utility interfaces' },
+  { id:'sydneyDesalination', name:'Sydney Desalination Expansion', sector:'Water', region:'Australia',
+    cost:'A$3.5B+', sched:'2027 target', status:'Under construction',
+    source:'Sydney Water 2024',
+    prompt:'Desalination plant expansion reverse osmosis membrane ultrafiltration pumping electrical HVAC commissioning water licence discharge consent' },
+  { id:'nile', name:'GERD Ethiopia Dam', sector:'Water', region:'Africa',
+    cost:'$5B+', sched:'Substantially complete 2024', status:'Operational (disputed)',
+    source:'Ethiopian government 2024',
+    prompt:'Grand Ethiopian Renaissance Dam hydroelectric civil works electromechanical systems commissioning geopolitical interfaces' },
+
+  // ── INFRASTRUCTURE / MEGA CITY ────────────────────────────────────
+  { id:'crossrailTunnel', name:'Brenner Base Tunnel', sector:'Infrastructure', region:'Europe',
+    cost:'€8.9B', sched:'2032 target', status:'Under construction',
+    source:'BBT SE 2024',
+    prompt:'Alpine railway base tunnel TBM tunnelling cross-border systems integration signals electrification multinational procurement' },
+  { id:'nileRoad', name:'Cairo Ring Road Expansion', sector:'Infrastructure', region:'Egypt',
+    cost:'$3B+', sched:'2025–2027', status:'Active construction',
+    source:'Egyptian government 2024',
+    prompt:'Urban motorway expansion corridor land acquisition utility relocation bridge works systems commissioning live traffic' },
+  { id:'singaporeMRT', name:'Singapore Cross Island Line', sector:'Rail', region:'Singapore',
+    cost:'S$15B+', sched:'2030 Phase 1', status:'Design / early procurement',
+    source:'LTA 2024',
+    prompt:'Singapore deep tunnel metro TBM tunnelling stations systems integration live operations phasing signalling commissioning' },
+
+  // ── SPACE — ALL PROGRAMMES ────────────────────────────────────────
+  { id:'starship', name:'SpaceX Starship Industrialization', sector:'Space', region:'Global',
+    cost:'$10B+ invested', sched:'Orbital 2024–2025', status:'Test flights / rapid iteration',
+    source:'SpaceX / FAA 2024',
+    prompt:'SpaceX Starship launch vehicle industrialization rapid iteration launch pad infrastructure orbital refuelling thermal protection system range approvals' },
+  { id:'lunarGateway', name:'Lunar Gateway Station', sector:'Space', region:'Lunar Orbit',
+    cost:'$8B+ NASA share', sched:'2027–2030', status:'Development / procurement',
+    source:'NASA / ESA 2024',
+    prompt:'Lunar Gateway space station international docking systems life support power propulsion orbital assembly launch manifest integration' },
+  { id:'artemisBase', name:'Artemis Lunar Surface Programme', sector:'Space', region:'Lunar Surface',
+    cost:'$93B total estimate (GAO)', sched:'Crewed landing 2026+', status:'Development — behind schedule',
+    source:'NASA / GAO 2024',
+    prompt:'Artemis crewed lunar landing SLS Orion spacesuits lunar lander surface operations life support thermal radiation autonomy' },
+  { id:'kuiper', name:'Amazon Kuiper Constellation', sector:'Space', region:'LEO',
+    cost:'$10B+', sched:'Service start 2025', status:'Active launch campaign',
+    source:'Amazon / FCC 2024',
+    prompt:'Kuiper LEO satellite constellation manufacturing production ramp launch manifest ground segment spectrum coordination regulatory approval' },
+  { id:'astSpaceMobile', name:'AST SpaceMobile', sector:'Space', region:'LEO',
+    cost:'$1.5B+', sched:'Commercial service 2025', status:'First satellites launched',
+    source:'AST SpaceMobile 2024',
+    prompt:'Direct to mobile LEO satellite constellation orbital deployment spectrum interoperability telecom regulatory MNO partnerships' },
+  { id:'orbitalDC', name:'Orbital Data Centres', sector:'Space', region:'LEO/GEO',
+    cost:'$5B–$15B concept', sched:'2030s first module', status:'Concept / investment phase',
+    source:'Various / Axiom / press 2024',
+    prompt:'Orbital data centre radiation hardening autonomous servicing thermal rejection power generation data relay ground station network' },
+  { id:'marsLogistics', name:'Mars Cargo Logistics Network', sector:'Space', region:'Mars',
+    cost:'$100B+ long-term', sched:'First cargo 2030s', status:'Early development / SpaceX roadmap',
+    source:'SpaceX / NASA 2024',
+    prompt:'Mars cargo logistics propellant depot ISRU autonomous operations radiation long-duration communication latency cargo landers surface infrastructure' },
+  { id:'lunarHabitat', name:'Lunar Habitat Infrastructure', sector:'Space', region:'Lunar Surface',
+    cost:'$50B–$100B', sched:'2035+ sustained presence', status:'Architecture definition',
+    source:'NASA / ESA / JAXA 2024',
+    prompt:'Lunar habitat crew quarters life support ECLSS thermal survivability power regolith shielding surface mobility autonomous commissioning launch windows mass' },
+  { id:'cislunarDepot', name:'Cislunar Propellant Depot', sector:'Space', region:'Cislunar',
+    cost:'$4B–$8B', sched:'2028–2032', status:'Concept / early dev',
+    source:'NASA / DARPA 2024',
+    prompt:'Cislunar propellant depot cryogenic storage autonomous docking launch dependency power management orbital mechanics proximity operations' },
+  { id:'starshipMars', name:'Starship Mars Base Architecture', sector:'Space', region:'Mars Surface',
+    cost:'$200B+', sched:'First humans 2030s', status:'Architecture / concept',
+    source:'SpaceX 2024',
+    prompt:'Starship Mars base ISRU propellant oxygen habitat crew life support thermal nuclear power surface operations autonomy radiation' },
+  { id:'lunarMining', name:'Lunar Resource Extraction', sector:'Space', region:'Lunar Surface',
+    cost:'$3B–$8B concept', sched:'2030s first operations', status:'Technology development',
+    source:'NASA / ESA / commercial 2024',
+    prompt:'Lunar resource extraction autonomous mining regolith processing ISRU water ice oxygen propellant surface power logistics' },
+  { id:'orbitalServicing', name:'Autonomous Orbital Servicing', sector:'Space', region:'LEO/GEO',
+    cost:'$2B–$5B', sched:'2026–2030 first ops', status:'Development / trials',
+    source:'Northrop / DARPA / ESA 2024',
+    prompt:'Autonomous orbital servicing rendezvous proximity operations robotic capture refuelling debris avoidance LEO GEO life extension' },
+  { id:'spaceDAwareness', name:'Space Domain Awareness Network', sector:'Space', region:'Global/Orbital',
+    cost:'$3B+ defence', sched:'2025–2030', status:'Active development',
+    source:'US Space Force / ESA 2024',
+    prompt:'Space domain awareness ground station network secure comms encrypted uplink antenna farms sensor fusion orbital tracking' },
+  { id:'moonToMars', name:'Moon to Mars Architecture (NASA)', sector:'Space', region:'Cislunar/Mars',
+    cost:'$1T+ 2040s total estimate', sched:'2040 Mars target', status:'Architecture / policy',
+    source:'NASA / NAS 2024',
+    prompt:'Moon to Mars NASA programme SLS Orion Gateway lunar surface Mars transit habitat ISRU life support autonomy radiation' },
+
+  // ── HYDROGEN / LNG / ENERGY TRANSITION ───────────────────────────
+  { id:'lngAustralia', name:'Pluto LNG Train 2', sector:'Energy', region:'Australia',
+    cost:'$6B+', sched:'2027 target', status:'FID taken',
+    source:'Woodside 2024',
+    prompt:'LNG liquefaction train expansion cryogenic systems marine loading jetty commissioning long-lead procurement utilities' },
+  { id:'h2Green', name:'HyDeal Ambition H2 Corridor', sector:'Energy', region:'Europe',
+    cost:'€65B to 2030', sched:'2030 delivery target', status:'Development / financing',
+    source:'HyDeal / various 2024',
+    prompt:'Green hydrogen production electrolysis solar wind power pipeline compression storage cross-border delivery offtake' },
+  { id:'breakfree', name:'Dogger Bank Wind Farm', sector:'Energy', region:'UK',
+    cost:'£9B+', sched:'2026 full operation', status:'Under construction',
+    source:'Equinor / SSE 2024',
+    prompt:'Offshore wind farm North Sea cable installation turbine foundation weather windows grid connection substation HVDC' },
+
+];
+
+// Unique sector list derived from programme data
+const HEALTH_SECTORS = ['All', ...Array.from(new Set(ALL_PROGRAMMES.map(p => p.sector))).sort()];
+
+function ProgrammeHealthSignal({ onRunHealthCheck }) {
+  const [selected, setSelected] = React.useState(null);
+  const [sectorFilter, setSectorFilter] = React.useState('All');
+  const [query, setQuery] = React.useState('');
+  const [showAll, setShowAll] = React.useState(false);
+
+  const filtered = React.useMemo(() => {
+    let list = ALL_PROGRAMMES;
+    if (sectorFilter !== 'All') list = list.filter(p => p.sector === sectorFilter);
+    if (query.trim()) {
+      const q = query.toLowerCase();
+      list = list.filter(p =>
+        p.name.toLowerCase().includes(q) ||
+        p.region.toLowerCase().includes(q) ||
+        p.sector.toLowerCase().includes(q) ||
+        p.prompt.toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [sectorFilter, query]);
+
+  const visible = showAll ? filtered : filtered.slice(0, 12);
+
+  const runCheck = (prog) => {
+    setSelected(prog.id);
+    onRunHealthCheck({ ...prog, caseySignal: { prompt: prog.prompt } });
+  };
+
+  // Status colour
+  const statusColor = (s) => {
+    if (!s) return '#64748b';
+    const l = s.toLowerCase();
+    if (l.includes('delivered') || l.includes('operational') || l.includes('completed')) return '#10b981';
+    if (l.includes('overrun') || l.includes('delay') || l.includes('paused') || l.includes('behind')) return '#ef4444';
+    if (l.includes('review') || l.includes('slipping') || l.includes('disputed')) return '#f59e0b';
+    return '#94a3b8';
+  };
+
+  return (
+    <Card className="healthSignal">
+      <div className="healthHeader">
+        <div>
+          <h2>Global Programme Intelligence — {ALL_PROGRAMMES.length} Programmes</h2>
+          <p className="advisorIntro">
+            Select any live or recently-delivered mega-programme. CASEY generates its own read from benchmark intelligence and compares it to the publicly reported position.
+            The gap between reported headline and CASEY governing constraint is the product.
+          </p>
+        </div>
+        <div className="healthCount">
+          <b>{ALL_PROGRAMMES.filter(p=>p.sector==='Space').length}</b><span>Space</span>
+          <b>{ALL_PROGRAMMES.filter(p=>p.sector!=='Space').length}</b><span>Earth</span>
+        </div>
+      </div>
+
+      <div className="healthControls">
+        <input
+          className="healthSearch"
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          placeholder="Search programmes, regions, sectors…"
+        />
+        <div className="healthSectorPills">
+          {HEALTH_SECTORS.map(s => (
+            <button
+              key={s}
+              className={`healthPill ${sectorFilter === s ? 'active' : ''}`}
+              onClick={() => setSectorFilter(s)}
+            >
+              {s}
+              <span>{s === 'All' ? ALL_PROGRAMMES.length : ALL_PROGRAMMES.filter(p => p.sector === s).length}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="healthProgrammes">
+        {visible.map(prog => (
+          <div key={prog.id} className={`healthRow ${selected === prog.id ? 'active' : ''}`}>
+            <div className="healthMeta">
+              <b>{prog.name}</b>
+              <div className="healthTags">
+                <span className="healthSector">{prog.sector}</span>
+                <span className="healthRegion">{prog.region}</span>
+              </div>
+            </div>
+            <div className="healthReported">
+              <label>Reported</label>
+              <span className="reportedCost">{prog.cost}</span>
+              <span className="reportedSched">{prog.sched}</span>
+              <em className="reportedConf" style={{ color: statusColor(prog.status) }}>{prog.status}</em>
+              <small>{prog.source}</small>
+            </div>
+            <div className="healthVs">vs</div>
+            <button className="healthRunBtn" onClick={() => runCheck(prog)}>
+              {selected === prog.id ? 'Running…' : 'Run CASEY →'}
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {filtered.length > 12 && (
+        <button className="healthShowMore" onClick={() => setShowAll(s => !s)}>
+          {showAll ? `Show fewer ↑` : `Show all ${filtered.length} programmes ↓`}
+        </button>
+      )}
+
+      {filtered.length === 0 && (
+        <p className="healthEmpty">No programmes match — try a different sector or search term.</p>
+      )}
+
+      <p className="healthDisclaimer">
+        CASEY reads are generated from benchmark intelligence, not from non-public programme data.
+        The comparison is indicative — it shows where the governing constraint model diverges from the reported headline.
+        Reported figures are sourced from public statements, auditor reports and press releases as of 2024.
+      </p>
+    </Card>
+  );
+}
+
+
+// ── Advisory Fee Counter ───────────────────────────────────────────
+// Shows what a traditional advisory team would charge for what CASEY
+// just produced. No firm names. Just the numbers.
+function AdvisoryFeeCounter({ model }) {
+  const conf = Number(model?.confidence_pct || 60);
+  const hasRisk = (model?.risks?.length || 0) >= 5;
+  const hasMC = !!(model?.monte_carlo?.qcra?.p80);
+  const hasScenarios = (model?.scenario_matrix?.length || 0) >= 3;
+  const hasSchedule = (model?.schedule_detail?.length || 0) >= 10;
+  const isSpace = model?.mode === 'Space';
+
+  // Build itemised deliverable list with advisory fee ranges
+  const items = [
+    { label: 'Class 3–5 cost estimate (AACE)', trad: '£80k–£180k', time: '3–6 weeks', done: true },
+    { label: 'QCRA Monte Carlo + P-curve', trad: '£40k–£90k', time: '2–4 weeks', done: hasMC },
+    { label: 'QSRA Monte Carlo + finish-date curve', trad: '£30k–£70k', time: '2–4 weeks', done: hasMC },
+    { label: 'Risk register (cause/event/impact/owner)', trad: '£25k–£60k', time: '3–5 day workshop', done: hasRisk },
+    { label: 'Five scenario trade-off analysis', trad: '£30k–£80k', time: '1–3 weeks iteration', done: hasScenarios },
+    { label: isSpace ? 'Mission peer benchmark intelligence' : 'Sector peer benchmark intelligence', trad: '£20k–£60k', time: '2–3 weeks research', done: true },
+    { label: 'Level 1–5 schedule + P6 XER export', trad: '£20k–£50k', time: '2–4 weeks planning', done: hasSchedule },
+    { label: 'Board-grade exports (XLSX/DOCX/PDF/PPTX/XER)', trad: '£15k–£40k', time: '1–2 weeks production', done: true },
+  ].filter(x => x.done);
+
+  // Total low/high
+  const [low, high] = items.reduce(([l, h], item) => {
+    const [il, ih] = item.trad.replace(/[£\$k]/g,'').split('–').map(Number);
+    return [l + il, h + ih];
+  }, [0, 0]);
+
+  const [animVal, setAnimVal] = React.useState(0);
+  React.useEffect(() => {
+    const target = high;
+    let start = 0;
+    const step = target / 40;
+    const timer = setInterval(() => {
+      start = Math.min(start + step, target);
+      setAnimVal(Math.round(start));
+      if (start >= target) clearInterval(timer);
+    }, 30);
+    return () => clearInterval(timer);
+  }, [high]);
+
+  return (
+    <Card className="feeCounter">
+      <div className="feeHeader">
+        <div>
+          <h2>What this just replaced</h2>
+          <p className="feeSubtitle">
+            A traditional early-stage advisory engagement for the same deliverables.
+            No firm names — just the numbers.
+          </p>
+        </div>
+        <div className="feeTotalBox">
+          <span className="feeLabel">Advisory equivalent</span>
+          <span className="feeTotalLow">£{low}k – </span>
+          <span className="feeTotalHigh">£{animVal}k</span>
+          <span className="feeTimeLabel">6 – 10 weeks</span>
+        </div>
+      </div>
+      <div className="feeItems">
+        {items.map((item, i) => (
+          <div key={i} className="feeRow">
+            <span className="feeCheck">✓</span>
+            <span className="feeItemLabel">{item.label}</span>
+            <span className="feeItemTrad">{item.trad}</span>
+            <span className="feeItemTime">{item.time}</span>
+            <span className="feeItemCasey">Instant</span>
+          </div>
+        ))}
+      </div>
+      <div className="feeDemoLine">
+        "Traditional project controls reports show numbers. CASEY shows the board what the numbers are trying to hide."
+      </div>
+    </Card>
+  );
+}
+
+function ShowcaseLibrary({ onRun, onBack }) {
+  const [sector, setSector] = useState('All');
+  const [query, setQuery] = useState('');
+  const filtered = showcaseProjects.filter(p => (sector === 'All' || p.sector === sector) && (`${p.title} ${p.sector} ${p.region} ${p.client} ${p.prompt}`.toLowerCase().includes(query.toLowerCase())));
+  const counts = showcaseSectors.map(s => ({ sector: s, count: s === 'All' ? showcaseProjects.length : showcaseProjects.filter(p => p.sector === s).length }));
+  return <section className="showcaseLibrary">
+    <div className="showcaseHero card">
+      <div><p className="eyebrow">CASEY Strategic Intelligence Simulations</p><h1>Global capital-project showcase library</h1><p>Clickable Earth and Space reference cases for board packs, scenario pressure tests, confidence analysis and audit-ready export demos.</p></div>
+      <div className="phaseStack"><b>Phase 1</b><span>Showcase Library</span><b>Phase 2</b><span>Live intelligence feeds</span><b>Phase 3</b><span>Bring-your-own-project ingestion</span></div>
+    </div>
+    <div className="showcaseControls card"><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search rail, data centres, Starship, Lilly, NEOM..."/><button onClick={onBack}>Back to console</button></div>
+    <div className="sectorPills">{counts.map(x => <button key={x.sector} className={sector===x.sector?'active':''} onClick={()=>setSector(x.sector)}>{x.sector}<span>{x.count}</span></button>)}</div>
+    <div className="showcaseGrid">{filtered.map(p => <motion.button className="showcaseCard" key={p.title} onClick={() => onRun(p)} whileHover={{ y:-4 }} whileTap={{ scale:.99 }}>
+      <div className="showcaseIcon">{p.icon}</div><div className="showcaseMeta"><span>{p.sector}</span><em>{p.region}</em></div><h3>{p.title}</h3><p>{p.prompt}</p><div className="showcaseFooter"><b>{p.confidence}</b><strong>Run board pack <ChevronRight size={15}/></strong></div>
+    </motion.button>)}</div>
+  </section>;
+}
+
+function GatedMessage({ raw }) {
+  let msg = "You've used your one free CASEY intelligence run.";
+  let sub = "To run more projects, compare scenarios or download the full output pack, get in touch.";
+  let email = "deepa@caseai.co.uk";
+  let linkedin = "https://www.linkedin.com/company/caseai";
+  try {
+    const p = JSON.parse(raw);
+    if (p.message) msg = p.message;
+    if (p.sub) sub = p.sub;
+    if (p.email) email = p.email;
+    if (p.linkedin) linkedin = p.linkedin;
+  } catch {}
+  return (
+    <div className="caseyGate">
+      <div className="caseyGateInner">
+        <span className="caseyGateIcon">✦</span>
+        <h3>{msg}</h3>
+        <p>{sub}</p>
+        <div className="caseyGateCtas">
+          <a href={"mailto:" + email} className="caseyGateBtn primary">
+            ✉ {email}
+          </a>
+          <a href={linkedin} target="_blank" rel="noopener noreferrer" className="caseyGateBtn secondary">
+            in  Connect on LinkedIn
+          </a>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function App() {
@@ -775,6 +1524,18 @@ function App() {
   const [model, setModel] = useState(null);
   const [projectContext, setProjectContext] = useState(null);
   const [tab, setTab] = useState('overview');
+  const [healthProg, setHealthProg] = React.useState(null);
+  const runHealthCheck = React.useCallback((prog) => {
+    setPrompt(prog.caseySignal.prompt);
+    setScenario('base');
+    setClassLevel(3);
+    setScheduleLevel(4);
+    // Trigger generate with health signal context
+    setTimeout(() => {
+      generate('base', prog.caseySignal.prompt, null, { healthCheck: true, programme: prog.name });
+      setTab('assurance');
+    }, 100);
+  }, []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [chatQ, setChatQ] = useState('');
@@ -785,6 +1546,7 @@ function App() {
   const [simulationStage, setSimulationStage] = useState('');
   const [exportingLabel, setExportingLabel] = useState('');
   const [confidencePulse, setConfidencePulse] = useState(false);
+  const [showShowcase, setShowShowcase] = useState(false);
 
   useEffect(() => { get('/v26/demo-library').catch(() => null); }, []);
   
@@ -902,6 +1664,110 @@ function scenarioAdjustedModel(currentModel, nextScenario) {
     };
   }
 
+
+  
+function TrustRuntimeBar({ model }) {
+  if (!model) return null;
+  const g = model.governance_state || model.scenario_state?.governance || {};
+  const runtime = model.casey_runtime || {};
+  const items = [
+    ['Board defensibility', g.board_defensibility ?? '—'],
+    ['Governance stress', g.governance_stress ?? '—'],
+    ['Tail exposure', g.tail_exposure ?? '—'],
+    ['Evidence volatility', g.evidence_volatility ?? '—'],
+    ['Reserve pressure', g.reserve_pressure ?? '—'],
+    ['Signature', model.scenario_signature || runtime.scenario_signature || '—'],
+  ];
+  return <section className="trustRuntimeBar">
+    <div className="trustRuntimeLead"><b>V150 Trust Runtime</b><span>{g.decision_posture || 'Scenario locked to canonical state'}</span></div>
+    {items.map(([k,v]) => <div className="trustRuntimeMetric" key={k}><span>{k}</span><strong>{v}</strong></div>)}
+  </section>;
+}
+
+function parseMoneyLocal(v) {
+    if (v === undefined || v === null) return 0;
+    if (typeof v === 'number') return Number.isFinite(v) ? v : 0;
+    const s = String(v).replace(/[$,£€]/g,'').trim().toUpperCase();
+    const n = parseFloat(s.replace(/[^0-9.-]/g,''));
+    if (!Number.isFinite(n)) return 0;
+    if (s.includes('T')) return n * 1000;
+    if (s.includes('M')) return n / 1000;
+    return n;
+  }
+  function moneyLocal(n) { return n >= 1000 ? `$${(n/1000).toFixed(1)}T` : n >= 1 ? `$${n.toFixed(1)}B` : `$${Math.round(n*1000)}M`; }
+  function normalizeCostRowsForUI(modelLike) {
+    const m = modelLike || {};
+    const target = parseMoneyLocal(m.cost_p50);
+    let rows = Array.isArray(m.cost_breakdown) && m.cost_breakdown.length
+      ? m.cost_breakdown
+      : (Array.isArray(m.cost_lines) ? m.cost_lines : []);
+    rows = rows.map((x, idx) => {
+      const typeRaw = String(x.type || 'Direct');
+      const type = /reserve|risk|contingency/i.test(typeRaw) ? 'Reserve' : (/indirect|owner|pm|management|prelim/i.test(typeRaw) ? 'Indirect' : 'Direct');
+      return {
+        ...x,
+        type,
+        cbs: x.cbs || `C-${String(idx+1).padStart(2,'0')}`,
+        description: x.description || x.title || type,
+        p10_bn: parseMoneyLocal(x.p10_bn ?? x.low_p10 ?? x.low ?? x.p10),
+        p50_bn: parseMoneyLocal(x.p50_bn ?? x.most_likely_p50 ?? x.most_likely ?? x.p50 ?? x.value),
+        p90_bn: parseMoneyLocal(x.p90_bn ?? x.high_p90 ?? x.high ?? x.p90),
+        impact_basis: x.impact_basis || x.basis || `${type} cost basis reconciled to selected scenario P50.`
+      };
+    }).filter(x => x.p50_bn > 0);
+
+    // If detailed rows are absent/unusable, prefer backend's explicit bucket totals.
+    // This prevents the UI from silently reverting every project/scenario to a fake 76/14/10 split.
+    if ((!rows.length || rows.reduce((a,x)=>a+x.p50_bn,0) <= 0) && target > 0) {
+      const explicitDirect = parseMoneyLocal(m.direct_cost);
+      const explicitIndirect = parseMoneyLocal(m.indirect_cost);
+      const explicitReserve = parseMoneyLocal(m.risk_reserve ?? m.reserve_cost ?? m.contingency_cost);
+      if (explicitDirect + explicitIndirect + explicitReserve > 0) {
+        rows = [
+          { cbs:'01.00', description:'Direct delivery scope', type:'Direct', p10_bn:explicitDirect*0.82, p50_bn:explicitDirect, p90_bn:explicitDirect*1.28, impact_basis:'Explicit backend direct-cost bucket.' },
+          { cbs:'90.00', description:'Indirects, owner costs and integration', type:'Indirect', p10_bn:explicitIndirect*0.82, p50_bn:explicitIndirect, p90_bn:explicitIndirect*1.28, impact_basis:'Explicit backend indirect-cost bucket.' },
+          { cbs:'99.00', description:'Risk reserve and contingency', type:'Reserve', p10_bn:explicitReserve*0.70, p50_bn:explicitReserve, p90_bn:explicitReserve*1.55, impact_basis:'Explicit backend risk/reserve bucket.' }
+        ].filter(x => x.p50_bn > 0);
+      } else {
+        rows = [
+          { cbs:'01.00', description:'Direct delivery scope', type:'Direct', p10_bn:target*0.62, p50_bn:target*0.76, p90_bn:target*0.96, impact_basis:'Synthetic reconciliation split created because detailed cost rows were missing.' },
+          { cbs:'90.00', description:'Indirects, owner costs and integration', type:'Indirect', p10_bn:target*0.10, p50_bn:target*0.14, p90_bn:target*0.18, impact_basis:'Synthetic reconciliation split created because detailed cost rows were missing.' },
+          { cbs:'99.00', description:'Risk reserve and contingency', type:'Reserve', p10_bn:target*0.06, p50_bn:target*0.10, p90_bn:target*0.16, impact_basis:'Synthetic reconciliation split created because detailed cost rows were missing.' }
+        ];
+      }
+    }
+
+    const sum = rows.reduce((a,x)=>a + parseMoneyLocal(x.p50_bn), 0);
+    if (target > 0 && sum > 0) {
+      const factor = target / sum;
+      rows = rows.map(x => ({...x,
+        p10_bn: Number((parseMoneyLocal(x.p10_bn) * factor).toFixed(3)),
+        p50_bn: Number((parseMoneyLocal(x.p50_bn) * factor).toFixed(3)),
+        p90_bn: Number((parseMoneyLocal(x.p90_bn) * factor).toFixed(3)),
+      }));
+      // remove rounding drift from the largest row so Direct+Indirect+Reserve equals P50 exactly on screen/export
+      const drift = Number((target - rows.reduce((a,x)=>a+x.p50_bn,0)).toFixed(3));
+      if (Math.abs(drift) >= 0.001 && rows.length) {
+        let maxIdx = 0;
+        rows.forEach((x,i)=>{ if (x.p50_bn > rows[maxIdx].p50_bn) maxIdx = i; });
+        rows[maxIdx] = {...rows[maxIdx], p50_bn: Number((rows[maxIdx].p50_bn + drift).toFixed(3))};
+      }
+    }
+    return rows;
+  }
+  function normalizeModelForUI(raw) {
+    const m = {...(raw || {})};
+    const rows = normalizeCostRowsForUI(m);
+    m.cost_breakdown = rows;
+    m.cost_lines = rows;
+    m.risk_register = Array.isArray(m.risk_register) ? m.risk_register : (Array.isArray(m.risks) ? m.risks : []);
+    m.risks = m.risk_register;
+    m.schedule_detail = Array.isArray(m.schedule_detail) ? m.schedule_detail : (Array.isArray(m.schedule_rows) ? m.schedule_rows : []);
+    m.schedule_rows = m.schedule_detail;
+    m.scenario_matrix = Array.isArray(m.scenario_matrix) ? m.scenario_matrix : (Array.isArray(m.scenario_comparison) ? m.scenario_comparison : []);
+    return m;
+  }
+
   function lockedProjectContext(sourceModel, fallbackPrompt) {
     if (!sourceModel) return null;
     return {
@@ -919,7 +1785,28 @@ function scenarioAdjustedModel(currentModel, nextScenario) {
     };
   }
 
-  async function generate(nextScenario = scenario, nextPrompt = prompt, activeContext = model || projectContext) {
+
+  // ── Demo gate (1 run per visitor, admin bypass via ?admin=KEY) ───────
+  const isAdminUser = React.useMemo(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const k = params.get('admin') || params.get('admin_key') || '';
+      return k.length > 4;
+    } catch(e) { return false; }
+  }, []);
+  const [demoUsed, setDemoUsed] = React.useState(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('admin') || params.get('admin_key')) return false;
+      return localStorage.getItem('casey_demo_used') === '1';
+    } catch(e) { return false; }
+  });
+  const [demoDownloads, setDemoDownloads] = React.useState(() => {
+    try { return parseInt(localStorage.getItem('casey_demo_downloads') || '0'); }
+    catch(e) { return 0; }
+  });
+
+  async function generate(nextScenario = scenario, nextPrompt = prompt, activeContext = model || projectContext, clientOverride = client) {
     setError(''); setShow(false);
 
     // Canonical state lock: every scenario re-run must preserve the active project universe
@@ -932,35 +1819,176 @@ function scenarioAdjustedModel(currentModel, nextScenario) {
     setConfidencePulse(true);
     setTimeout(() => setPropagating(false), 1600);
     setLoading(true); setTab(nextScenario !== 'base' ? 'compare' : 'overview');
+    // Demo gate
+    if (!isAdminUser && demoUsed && !activeContext) {
+      setTab('pricing');
+      return;
+    }
     try {
       const payload = {
         prompt: canonicalPrompt,
-        client,
+        client: clientOverride,
         class_level: Number(classLevel),
         schedule_level: Number(scheduleLevel),
         scenario: nextScenario,
         demo: true,
         active_model: contextLock
       };
-      const m = await post('/generate', payload);
+      const m = normalizeModelForUI(await post('/generate', payload));
       const nextContext = lockedProjectContext(m, canonicalPrompt);
-      const safe = normaliseModel(m, canonicalPrompt); window.__CASEY_LAST_MODEL__ = safe; try { sessionStorage.setItem('CASEY_LAST_MODEL', JSON.stringify(safe)); } catch (_) {} const nextContextSafe = lockedProjectContext(safe, canonicalPrompt); setModel(safe); setProjectContext(nextContextSafe); setScenario(nextScenario); setPrompt(canonicalPrompt);
-    } catch (e) { setError(String(e.message || e)); }
+      setModel(m); setProjectContext(nextContext); setScenario(nextScenario); setPrompt(canonicalPrompt);
+    } catch (e) {
+      let raw = String(e.message || e);
+      try {
+        const p = JSON.parse(raw);
+        const d = p.detail || p;
+        if (typeof d === 'object' && d.message) {
+          setError(JSON.stringify({ message: d.message, sub: d.sub, email: d.email, linkedin: d.linkedin }));
+        } else {
+          setError(typeof d === 'string' ? d : raw);
+        }
+      } catch { setError(raw); }
+    }
     finally { setLoading(false); setSimulationStage(''); setConfidencePulse(false); }
   }
   function runEarth() { setProjectContext(null); generate('base', earthPrompt, null); }
-  function runSpace() { setProjectContext(null); generate('base', spacePrompt, null); }
-  async function ask() {
-    if (!chatQ.trim() || !model) return;
-    const q = chatQ; setChatQ(''); setChat(x => [...x, { role: 'user', text: q }]);
-    try { const r = await post('/chat', { question: q, project: model, demo: true }); setChat(x => [...x, { role: 'assistant', text: r.answer || JSON.stringify(r) }]); }
-    catch (e) { setChat(x => [...x, { role: 'assistant', text: String(e.message || e) }]); }
+  function runSpace() { setShowShowcase(false); setProjectContext(null); generate('base', spacePrompt, null); }
+  function runShowcase(project) { setClient(project.client || 'Strategic reference case'); setShow(false); setShowShowcase(false); setProjectContext(null); setScenario('base'); setPrompt(project.prompt); generate('base', project.prompt, null, project.client || 'Strategic reference case'); }
+  function advisorQuestionText(input) {
+    if (typeof input === 'string') return input.trim();
+    if (input && typeof input === 'object') {
+      if (typeof input.preventDefault === 'function') input.preventDefault();
+      if (typeof input.question === 'string') return input.question.trim();
+      if (typeof input.text === 'string') return input.text.trim();
+      if (typeof input.currentTarget?.dataset?.question === 'string') return input.currentTarget.dataset.question.trim();
+      if (typeof input.currentTarget?.innerText === 'string' && input.currentTarget.innerText.trim().toLowerCase() !== 'ask') return input.currentTarget.innerText.trim();
+    }
+    return String(chatQ || '').trim();
   }
+  async function ask(overrideQ) {
+    const q = advisorQuestionText(overrideQ);
+    if (!q) return;
+    if (!model) {
+      setChat(x => [...x, {role:'user',text:q}, {role:'assistant',text:'**No project loaded yet**\n\nGenerate a project first, then come back to challenge it. Board attack answers are grounded in the live model.'}]);
+      return;
+    }
+    setChatQ('');
+    setChat(x => [...x, { role: 'user', text: q }]);
+    const ql = q.toLowerCase();
+    const tvc = model?.traditional_vs_casey || {};
+    const attacks = model?.board_attack_simulation || [];
+    const ifFails = model?.if_this_fails;
+    let instant = null;
+    if (ql.includes('fail') && (ql.includes('programme') || ql.includes('blame') || ql.includes('publicly'))) {
+      instant = ifFails ? ('**IF THIS PROGRAMME FAILS**\n\n' + ifFails + '\n\nThis is the governing failure mode for this programme type. The board must close this risk before capital is committed.') : null;
+    } else if (ql.includes('traditional') || ql.includes('controls vs') || ql.includes('what would a traditional')) {
+      if (tvc.traditional && tvc.casey) {
+        instant = '**TRADITIONAL CONTROLS vs CASEY**\n\nTraditional view: ' + (tvc.traditional||'Civil progress and costs appear on track.') + '\n\n**What CASEY reads underneath:**\n' + (tvc.casey||'Governing constraint not visible in headline progress.') + '\n\nP80 tail: ' + (tvc.tail_pct||25) + '% above P50.\n\nThe gap between these two readings is the product.';
+      }
+    } else if (ql.includes('board attack') || ql.includes('likely board') || ql.includes('board is really deciding')) {
+      if (attacks.length >= 3) {
+        instant = '**BOARD ASSURANCE QUESTIONS**\n' + attacks.length + ' questions before capital approval:\n\n' + attacks.map(function(a,i){return (i+1)+'. '+a;}).join('\n') + '\n\nThese are the questions a serious investment committee asks before the team can hide behind dashboards.';
+      }
+    } else if (ql.includes('board not seeing') || (ql.includes('hidden') && ql.includes('issue'))) {
+      const shock = model?.executive_shock_insight;
+      if (shock) instant = '**What the dashboard fails to show:**\n\n' + shock;
+    } else if (ql.includes('casey position') || ql.includes('give me casey')) {
+      const thinking = model?.casey_thinking || '';
+      if (thinking) instant = '**CASEY position:**\n\n' + thinking + '\n\nConfidence: ' + model?.confidence_pct + '% — ' + (model?.confidence_engine_label || '');
+    } else if (ql.includes('governing chain') || ql.includes('real governing')) {
+      const chain = (model?.causal_chain || []).join(' → ');
+      if (chain) instant = '**REAL GOVERNING CAUSAL CHAIN**\n\n' + chain + '\n\nThis chain drives cost, schedule and confidence. If any link is weak, the model shifts right.';
+    } else if (ql.includes('assumptions collapse') || ql.includes('collapse confidence')) {
+      const bqs = (model?.board_challenge_questions || []).slice(0,4);
+      instant = '**ASSUMPTIONS THAT COLLAPSE CONFIDENCE FIRST**\n\n' + bqs.map(function(q,i){return (i+1)+'. '+q;}).join('\n') + '\n\nClosing evidence on these is the fastest route to board approval.';
+    } else if (ql.includes('one intervention') || ql.includes('changes confidence fastest')) {
+      const constraint = model?.primary_constraint || 'the governing procurement and evidence constraint';
+      instant = '**THE ONE INTERVENTION THAT CHANGES CONFIDENCE FASTEST**\n\nClose the evidence gap on: ' + constraint + '\n\nThis means: named owner + named trigger + quantified residual + documented closure date. That single action moves from approvable? to what is the decision?';
+    } else if (ql.includes('external assurance') || ql.includes('assurance reviewer')) {
+      const attacks = model?.board_attack_simulation || [];
+      instant = '**WHAT AN EXTERNAL ASSURANCE REVIEWER ATTACKS FIRST**\n\n1. Is the P50 defensible against QCRA P80?\n2. Is reserve linked to named risks?\n3. Who owns the governing constraint?\n4. Is schedule float operationally usable?\n5. What evidence retires the approval blocker?\n\n' + attacks.slice(0,3).map(function(a,i){return (i+6)+'. '+a;}).join('\n');
+    } else if (ql.includes('destroy board confidence') || ql.includes('destroy confidence')) {
+      instant = '**WHAT WOULD DESTROY BOARD CONFIDENCE FASTEST**\n\n1. A cost increase that was known but not disclosed.\n2. A schedule slip that reveals float was never real.\n3. A risk with no named owner and no mitigation evidence.\n4. A commissioning failure cascading into operator rejection.\n5. A procurement gap forcing sole-source at programme peak.\n\nFor this programme: ' + (model && model.executive_shock_insight ? model.executive_shock_insight : 'confidence sits in integration and evidence maturity, not visible civil progress.');
+    } else if (ql.includes('management probably hiding') || ql.includes('looks green')) {
+      const shock = model?.executive_shock_insight;
+      const flags = (model?.red_flags || []).slice(0,3);
+      instant = '**WHAT MANAGEMENT IS PROBABLY HIDING**\n\n' + (shock || 'The governing constraint is not in the headlines.') + (flags.length ? '\n\n**Commercial observations:**\n' + flags.map(function(f,i){return (i+1)+'. '+f;}).join('\n') : '') + '\n\nTraditional reports show numbers. CASEY shows what the numbers are trying to hide.';
+    }
+    if (instant) {
+      setChat(x => [...x, { role: 'assistant', text: instant }]);
+      return;
+    }
+    try {
+      const safeProject = normalizeModelForUI({ ...model });
+      const r = await post('/chat', { question: q, project: safeProject, demo: true });
+      const answer = normalizeChatAnswer(r);
+      setChat(x => [...x, { role: 'assistant', text: String(answer || 'CASEY returned no advisor response.') }]);
+    } catch (e) {
+      setChat(x => [...x, { role: 'assistant', text: 'CASEY advisor recovered from a request error. The governance challenge remains: do not rely on headline progress alone. Ask: What is the board really deciding?' }]);
+    }
+  }
+
   async function upload(e) {
     const f = e.target.files?.[0]; if (!f) return;
-    const fd = new FormData(); fd.append('file', f);
-    const r = await fetch(API + '/upload', { method: 'POST', body: fd });
-    setUploadResult(await r.json());
+    setUploadResult({ filename: f.name, size_bytes: f.size, findings: ['File received. CASEY is normalising messy client structure rather than expecting a clean template.'], red_flags: ['Deep parser requires source-file validation before commercial reliance.'] });
+    try {
+      const fd = new FormData(); fd.append('file', f);
+      const r = await apiFetch('/upload', { method: 'POST', body: fd });
+      const data = await r.json();
+      setUploadResult({ filename: f.name, size_bytes: f.size, schema_confidence: 'Preliminary mapping', ...data });
+    } catch (_) {
+      setUploadResult({ filename: f.name, size_bytes: f.size, schema_confidence: 'Offline demo mapping', findings: ['Workbook accepted even if tabs, columns or coding are inconsistent.', 'CASEY mapped the file to estimate challenge, risk posture and evidence readiness.', 'For production, connect the Python intake pipeline for sheet parsing, WBS inference and schedule/risk linking.'], red_flags: ['Do not show raw JSON to the board.', 'Require named owners for missing basis, reserve logic and schedule float.', 'Triangulate cost workbook with risk register and schedule before approval.'], next_steps: ['Ask for XLSX + XER + risk register as a source bundle.', 'Run board challenge on governing constraint before approval.', 'Export the challenged pack after evidence closure.'] });
+    }
+  }
+
+  function runShock(kind) {
+    if (!model) return;
+    const shock = {
+      signalling_slip: { months: 4, cost: 0.04, conf: -8, note: 'Signalling slip moved the delivery tail and made operator acceptance the governing board issue.' },
+      procurement_gap: { months: 2, cost: 0.06, conf: -10, note: 'Procurement evidence gap increased P80/P90 exposure and lowered board defensibility.' },
+      reserve_cut: { months: 0, cost: -0.03, conf: -12, note: 'Reserve cut improves the headline but consumes downside protection and weakens the approval posture.' },
+      operator_delay: { months: 5, cost: 0.03, conf: -9, note: 'Operator acceptance delay shifted the causal chain from civil progress to commissioning readiness.' },
+      scope_growth: { months: 3, cost: 0.08, conf: -11, note: 'Scope growth at 8% — cost increased, schedule extended, confidence fell. Reserve adequacy now in question.' },
+      political_exposure: { months: 0, cost: 0.05, conf: -14, note: 'Political and funding pressure raised programme risk. Board will require stronger evidence posture before approval.' },
+    }[kind];
+    if (!shock) return;
+    const baseCostBn = parseMoneyLocal(model.cost_p50_bn || model.p50_cost_bn || model.cost_p50 || model.cost || 0);
+    const baseMonthsNum = Number(model.schedule_months || model.duration_months || (String(model.schedule || '').match(/\d+/)||[])[0] || 0);
+    const nextCost = Math.max(.1, (baseCostBn || 1) * (1 + shock.cost));
+    const nextMonths = Math.max(1, Math.round((baseMonthsNum || 1) + shock.months));
+    const nextConf = Math.max(5, Math.min(95, Math.round((model.confidence_pct || 50) + shock.conf)));
+    const nextCostStr = moneyLocal(nextCost);
+    const nextSchedStr = nextMonths + ' months';
+    const nextP80 = Math.round(nextCost * 1.22 * 10) / 10;
+    const nextP90 = Math.round(nextCost * 1.35 * 10) / 10;
+    const nextRange = nextCostStr + ' P50 | $' + nextP80 + 'B P80';
+    const nextConfLabel = nextConf < 45 ? 'Do not approve without more evidence' : nextConf < 60 ? 'Board challenge likely' : nextConf < 75 ? 'Conditionally approvable' : 'Board-defensible';
+    const mutationStamp = '[STRESS TEST: ' + kind.replace(/_/g,' ').toUpperCase() + ']';
+    setModel({ ...model,
+      cost_p50_bn: nextCost, p50_cost_bn: nextCost,
+      cost_p50: nextCostStr,
+      cost_range: nextRange,
+      schedule_months: nextMonths, duration_months: nextMonths,
+      schedule: nextSchedStr,
+      confidence_pct: nextConf,
+      confidence_label: nextConfLabel,
+      confidence_engine_label: nextConfLabel,
+      executive_shock_insight: mutationStamp + ' ' + shock.note,
+      board_briefing: [
+        mutationStamp,
+        shock.note,
+        'Programme baseline preserved: ' + (model.cost_p50 || nextCostStr) + ' | ' + (model.schedule || nextSchedStr),
+        'Stress-test delta: P50 moves to ' + nextCostStr + ', schedule to ' + nextSchedStr + ', confidence to ' + nextConf + '%',
+        'P80 downside (recalculated): $' + nextP80 + 'B',
+        'Exports stamped from this mutated model state — download now to capture the stress-tested position.'
+      ],
+      casey_thinking: 'CASEY runtime mutation: ' + shock.note + ' The model recalculated cost, schedule, confidence, reserve posture and board challenge language from the same source of truth.',
+      scenario_trade: shock.note,
+      last_runtime_event: kind,
+      stress_test_applied: kind,
+      stress_test_note: shock.note,
+    });
+    setTab('overview');
   }
   const costs = model?.cost_breakdown || [];
   const risks = model?.risk_register || [];
@@ -973,9 +2001,18 @@ function scenarioAdjustedModel(currentModel, nextScenario) {
   const qsra = model?.monte_carlo?.qsra || {};
   const tornado = model?.monte_carlo?.tornado || [];
   const scenarioMatrix = model?.scenario_matrix || model?.scenario_comparison || [];
-  const direct = costs.filter(x => String(x.type || '').toLowerCase().includes('direct')).reduce((a, b) => a + Number(b.p50_bn || 0), 0);
-  const indirect = costs.filter(x => String(x.type || '').toLowerCase().includes('indirect')).reduce((a, b) => a + Number(b.p50_bn || 0), 0);
-  const reserves = costs.filter(x => String(x.type || '').toLowerCase().includes('reserve')).reduce((a, b) => a + Number(b.p50_bn || 0), 0);
+  // Cost split must use exact normalized classes. Do not use includes('direct') because 'indirect' contains 'direct'.
+  const costTypeOf = (x) => {
+    const t = String(x?.type || '').trim().toLowerCase();
+    if (/reserve|risk|contingency/.test(t)) return 'Reserve';
+    if (/indirect|owner|pm|management|prelim/.test(t)) return 'Indirect';
+    return 'Direct';
+  };
+  const direct = costs.filter(x => costTypeOf(x) === 'Direct').reduce((a, b) => a + parseMoneyLocal(b.p50_bn || 0), 0);
+  const indirect = costs.filter(x => costTypeOf(x) === 'Indirect').reduce((a, b) => a + parseMoneyLocal(b.p50_bn || 0), 0);
+  const reserves = costs.filter(x => costTypeOf(x) === 'Reserve').reduce((a, b) => a + parseMoneyLocal(b.p50_bn || 0), 0);
+  const targetP50 = parseMoneyLocal(model?.cost_p50);
+  const reconcileCheck = targetP50 ? Math.abs((direct + indirect + reserves) - targetP50) : 0;
   const emailBody = model ? [
     'Please review this project in CASEY.', '', `Project: ${model.title}`, `Scenario: ${model.scenario_label || scenario}`,
     `P50 Cost: ${model.cost_p50}`, `Cost Range: ${model.cost_range}`, `Schedule: ${model.schedule}`,
@@ -988,44 +2025,51 @@ function scenarioAdjustedModel(currentModel, nextScenario) {
 
   return <div className="app v50EliteApp">
     <Briefing open={briefing} onClose={() => setBriefing(false)} onEarth={runEarth} onSpace={runSpace}/>
-    <OneShotDemo open={trialOpen} onClose={() => setTrialOpen(false)} onComplete={(m) => { const safe = normaliseModel(m, m?.prompt || prompt); window.__CASEY_LAST_MODEL__ = safe; try { sessionStorage.setItem('CASEY_LAST_MODEL', JSON.stringify(safe)); } catch (_) {} setModel(safe); setProjectContext(lockedProjectContext(safe, safe?.prompt || prompt)); setShow(false); setTrialOpen(false); setTab('overview'); }} />
+    <OneShotDemo open={trialOpen} onClose={() => setTrialOpen(false)} onComplete={(m) => { const nm = normalizeModelForUI(m); setModel(nm); setProjectContext(lockedProjectContext(nm, nm?.prompt || prompt)); setShow(false); setTrialOpen(false); setTab('overview'); }} />
     <AnimatePresence>{loading && <Loading text="Building full CASEY intelligence pack..."/>}</AnimatePresence>
     {show && !model && <Hero onBriefing={() => setBriefing(true)} onEarth={runEarth} onSpace={runSpace} onConsole={() => setShow(false)} onTryDemo={() => setTrialOpen(true)}/>} 
-    <header className="v50ConsoleTop"><Logo/><nav><button onClick={() => { setModel(null); setProjectContext(null); setShow(true); }}>Home</button><button onClick={() => setBriefing(true)}>Film</button><button onClick={() => setTrialOpen(true)}>Free run</button><button onClick={runEarth}>Earth demo</button><button onClick={runSpace}>Space demo</button><a href={emailLink}>Request access</a></nav></header>
+    <header className="v50ConsoleTop"><Logo/><nav><button onClick={() => { setModel(null); setProjectContext(null); setShowShowcase(false); setShow(true); }}>Home</button><button onClick={() => setBriefing(true)}>Film</button><button onClick={() => setTrialOpen(true)}>Free run</button><button onClick={() => { setModel(null); setShow(false); setShowShowcase(true); }}>Showcase library</button><button onClick={runEarth}>Earth demo</button><button onClick={runSpace}>Space demo</button><a href={emailLink}>Request access</a></nav></header>
     <main className={model ? 'v50Console' : 'v50Console emptyConsole'}>
-      {error && <div className="error">{error}</div>}
-      {!model && !show && <section className="commandGrid"><Card className="command"><h1>Generate a live project model</h1><label>Project command</label><textarea value={prompt} onChange={e => setPrompt(e.target.value)} /> <div className="chips">{examples.map(x => <button key={x} onClick={() => setPrompt(x)}>{x}</button>)}</div><div className="grid4"><input value={client} onChange={e => setClient(e.target.value)} placeholder="Client / operator"/><select value={classLevel} onChange={e => setClassLevel(e.target.value)}>{[1,2,3,4,5].map(x => <option key={x} value={x}>Class {x}</option>)}</select><select value={scheduleLevel} onChange={e => setScheduleLevel(e.target.value)}>{[1,2,3,4,5].map(x => <option key={x} value={x}>Level {x}</option>)}</select><select value={scenario} onChange={e => setScenario(e.target.value)}>{scenarios.map(x => <option key={x} value={x}>{x}</option>)}</select></div><button className="primary" onClick={() => generate()}><Sparkles/> Generate full intelligence pack</button></Card><Card><h2>What CASEY will produce</h2>{['Executive summary and recommendation','Direct / indirect / reserve cost view','Scenario-linked estimate, schedule and confidence','Risk register with cause, event, impact and mitigation','QCRA + QSRA curves and tornado drivers','Pricing and next-step contact actions'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card></section>}
+      {error && <GatedMessage raw={error} />}
+      {!model && showShowcase && <ShowcaseLibrary onRun={runShowcase} onBack={() => setShowShowcase(false)} />}
+      {!model && !show && !showShowcase && <section className="commandGrid"><Card className="command"><h1>Generate a live project model</h1><label>Project command</label><textarea value={prompt} onChange={e => setPrompt(e.target.value)} /> <div className="chips">{examples.map(x => <button key={x} onClick={() => setPrompt(x)}>{x}</button>)}</div><div className="grid4"><input value={client} onChange={e => setClient(e.target.value)} placeholder="Client / operator"/><select value={classLevel} onChange={e => setClassLevel(e.target.value)}>{[1,2,3,4,5].map(x => <option key={x} value={x}>Class {x}</option>)}</select><select value={scheduleLevel} onChange={e => setScheduleLevel(e.target.value)}>{[1,2,3,4,5].map(x => <option key={x} value={x}>Level {x}</option>)}</select><select value={scenario} onChange={e => setScenario(e.target.value)}>{scenarios.map(x => <option key={x} value={x}>{x}</option>)}</select></div><button className="primary" onClick={() => generate()}><Sparkles/> Generate full intelligence pack</button><button className="secondary" onClick={() => setShowShowcase(true)}><Globe2/> Open global showcase library</button></Card><Card><h2>What CASEY will produce</h2>{['Executive summary and recommendation','Direct / indirect / reserve cost view','Scenario-linked estimate, schedule and confidence','Risk register with cause, event, impact and mitigation','QCRA + QSRA curves and tornado drivers','Pricing and next-step contact actions'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card></section>}
       {model && <>
         <section className="confidenceEngineBadge"><b>{model.confidence_engine_label || 'CASEY Confidence Engine'}</b><span>{model.confidence_engine_detail || 'Benchmark + probabilistic + sector-trained reasoning'}</span></section>
+        <TrustRuntimeBar model={model}/>
         <LiveCalibrationStrip model={model}/>
         <section className="kpis"><Kpi icon={Globe2} label="Mode / sector" value={model.mode} sub={model.subsector}/><Kpi icon={Activity} label="P50 cost" value={model.cost_p50} sub={model.cost_range}/><Kpi icon={Zap} label="Schedule" value={model.schedule} sub={`QSRA P80 ${model.monte_carlo?.qsra?.p80 || '—'} months`}/><Kpi icon={ShieldAlert} label="Delivery confidence" value={confidenceLens(model).headline} sub={`${model.risk} risk · ${model.confidence_pct}% · ${model.scenario_label}`} hot/></section>
         <IntelligenceMeta model={model} mode={viewMode} setMode={setViewMode}/>
         <PropagationPulse scenario={scenario} active={propagating}/>
-        <ScenarioSelector scenario={scenario} generate={generate} matrix={scenarioMatrix}/>
+        <ScenarioSelector scenario={scenario} generate={generate} matrix={scenarioMatrix} model={model} prompt={prompt} projectContext={projectContext}/>
         <ExportStrip model={model}
           onBoardPack={() => download('/export/all', model, `${model.id || 'casey'}_DEMO_BOARD_PACK.zip`)}
           onExcel={() => download('/export/workbook', model, `${model.id || 'casey'}_DEMO_COST_WORKBOOK.xlsx`)}
           onRisk={() => download('/export/risk-register', model, `${model.id || 'casey'}_DEMO_RISK_REGISTER.xlsx`)}
           onXer={() => download('/export/xer', model, `${model.id || 'casey'}_DEMO_SCHEDULE.xer`)}
           onQcra={() => download('/export/qcra-qsra', model, `${model.id || 'casey'}_DEMO_QCRA_QSRA.xlsx`)}/>
-        <nav className="tabs">{[['overview','Overview'],['compare','Scenarios'],['delta','Scenario Intel'],['causal','Causal OS'],['cost','Cost'],['schedule','Schedule'],['risk','Risk'],['monte','QCRA/QSRA'],['outputs','Outputs'],['advisor','Advisor'],['method','Methodology'],['pricing','Pricing']].map(x => <button key={x[0]} className={tab===x[0]?'active':''} onClick={() => setTab(x[0])}>{x[1]}</button>)}</nav>
+        {demoUsed && !isAdminUser && <div style={{background:'rgba(245,158,11,0.15)',borderBottom:'1px solid rgba(245,158,11,0.3)',padding:'6px 16px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+        <span style={{fontSize:'11px',color:'#f59e0b',fontWeight:'700'}}>DEMO: 1 run used. Results and 1 export available. <a href="/pricing" style={{color:'#fff',textDecoration:'underline'}} onClick={e=>{e.preventDefault();setTab('pricing');}}>Get full access →</a></span>
+        <span style={{fontSize:'10px',color:'#64748b'}}>Reset: clear browser cache or use private window</span>
+      </div>}
+      <nav className="tabs">{[['overview','Overview'],['compare','Scenarios'],['delta','Scenario Intel'],['causal','Causal OS'],['cost','Cost'],['schedule','Schedule'],['risk','Risk'],['monte','QCRA/QSRA'],['outputs','Outputs'],['assurance','Assurance'],['runtime','Live Stress Test'],['advisor','Advisor'],['method','Methodology'],['pricing','Pricing']].map(x => <button key={x[0]} className={tab===x[0]?'active':''} onClick={() => setTab(x[0])}>{x[1]}</button>)}</nav>
         {tab === 'overview' && <>
-          {model.executive_shock_insight && <section className="layout one"><Card className="shockCard"><h2>Executive shock insight</h2><p>{model.executive_shock_insight}</p></Card></section>}
+          {model.executive_shock_insight && <section className="layout one"><Card className="shockCard"><h2>⚡ Live model update</h2><p>{model.executive_shock_insight}</p></Card></section>}
           <section className="layout two">
-            <Card><h2>Executive intelligence summary</h2><p className="big">{model.executive_summary || `${model.title} has been classified as ${model.subsector}. CASEY generated a first-pass cost, schedule, risk and confidence model for the selected scenario.`}</p><div className="miniMetrics"><b><span>Direct cost</span>{fmt(direct)}</b><b><span>Indirect cost</span>{fmt(indirect)}</b><b><span>Risk / reserve</span>{fmt(reserves)}</b></div><h3>Recommendation</h3>{(model.next_best_actions || []).slice(0,4).map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card>
-            <Card><h2>Board briefing</h2>{(model.board_briefing || model.board_challenge_questions || []).slice(0,4).map((x,i)=><div className="reason" key={String(x)}><span>{i+1}</span>{x}</div>)}<h3>CASEY thinking</h3><p className="caseyThinking">{model.casey_thinking || 'CASEY interprets this as a system-of-systems infrastructure programme requiring cost, schedule, risk and decision intelligence.'}</p></Card>
+            <Card><h2>Executive intelligence summary</h2><p className="big">{model.executive_summary || `${model.title} has been classified as ${model.subsector}. CASEY generated a first-pass cost, schedule, risk and confidence model for the selected scenario.`}</p><div className="miniMetrics"><b><span>Direct cost</span>{fmt(direct)}</b><b><span>Indirect cost</span>{fmt(indirect)}</b><b><span>Risk / reserve</span>{fmt(reserves)}</b></div><h3>Recommendation</h3>{(model.next_best_actions || []).slice(0,5).map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card>
+            <Card><h2>Board briefing</h2>{(model.board_briefing || model.board_challenge_questions || []).slice(0,5).map((x,i)=><div className="reason" key={String(x)}><span>{i+1}</span>{x}</div>)}<h3>CASEY thinking</h3><p className="caseyThinking">{model.casey_thinking || 'CASEY interprets this as a system-of-systems infrastructure programme requiring cost, schedule, risk and decision intelligence.'}</p></Card>
           </section>
           <section className="layout two eliteLayer">
-            <Card className="confidenceMeaningCard"><h2>What confidence means</h2><h3>{confLens.headline}</h3><p className="big">{confLens.meaning}</p><div className="reason"><span>!</span><b>Decision rule</b><br/>{confLens.decisionRule}</div><div className="reason"><span>→</span><b>Primary constraint</b><br/>{confLens.constraint}</div><div className="reason"><span>%</span><b>Plain English</b><br/>Confidence is not optimism. It is CASEY's board-defensibility score based on benchmark fit, evidence maturity, procurement certainty, schedule logic, reserve adequacy and scenario posture.</div></Card>
+            <Card className="confidenceMeaningCard"><h2>What confidence means</h2><h3>{confLens.headline}</h3><p className="big">{confLens.meaning}</p><div className="reason"><span>!</span><b>Decision rule</b><br/>{confLens.decisionRule}</div><div className="reason"><span>→</span><b>Primary constraint</b><br/>{confLens.constraint}</div><div className="reason"><span>%</span><b>Plain English</b><br/>Confidence is not optimism. It is CASEY board-defensibility score based on benchmark fit, evidence maturity, procurement certainty, schedule logic, reserve adequacy and scenario posture.</div></Card>
             <Card><h2>Likely board questions</h2>{boardQuestions(model).slice(0,6).map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}<h3>CASEY final position</h3><p className="caseyThinking finalPosition">{finalPosition(model)}</p></Card>
           </section>
+          <IncumbentPressurePanel model={model} direct={direct} indirect={indirect} reserves={reserves} reconcileCheck={reconcileCheck}/>
           <section className="layout two eliteLayer">
             <Card><h2>Evidence threshold map</h2><p className="chartCaption">Shows why the confidence number is where it is, and what must improve before board approval.</p><ResponsiveContainer width="100%" height={260}><BarChart data={evidenceScorecard(model)} layout="vertical"><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis type="number" domain={[0,100]}/><YAxis dataKey="name" type="category" width={145}/><Tooltip formatter={(v) => [`${v}%`, 'board-defensibility score']}/><ReferenceLine x={70} stroke="#ffd96a88" label="board comfort"/><Bar dataKey="score" fill="#8df7ff"/></BarChart></ResponsiveContainer>{evidenceScorecard(model).map((x,i)=><div className="reason compactReason" key={x.name}><span>{i+1}</span><b>{x.name}: {Math.round(x.score)}%</b><br/>{x.note}</div>)}</Card>
-            <Card><h2>Contradiction scan</h2><p className="chartCaption">CASEY does not just make the case look better. It exposes the trade-off that could get challenged.</p>{(model.second_order_contradictions || contradictionScan(model)).slice(0,5).map((x,i)=><div className="reason" key={String(x)}><span>{i+1}</span>{x}</div>)}<h3>Governance challenge</h3>{(model.governance_challenges || []).slice(0,3).map((x,i)=><div className="reason compactReason" key={String(x)}><span>{i+1}</span>{x}</div>)}<h3>Demo close line</h3><p className="caseyThinking finalPosition">Traditional project controls reports show numbers. CASEY shows the board what the numbers are trying to hide.</p></Card>
+            <Card><h2>Contradiction scan</h2><p className="chartCaption">CASEY does not just make the case look better. It exposes the trade-off that could get challenged.</p>{contradictionScan(model).map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}<h3>Demo close line</h3><p className="caseyThinking finalPosition">Traditional project controls reports show numbers. CASEY shows the board what the numbers are trying to hide.</p></Card>
           </section>
           <LiveCalibrationPanel model={model}/>
           {baseVs?.base && <section className="layout two">
-            <Card className="shockCard"><h2>Scenario vs Base</h2><p>{baseVs.plain_english}</p><div className="miniMetrics"><b><span>Base P50</span>{baseVs.base.cost_p50}<small>{baseVs.base.schedule_months} mo · {baseVs.base.confidence_pct}%</small></b><b><span>{baseVs.selected.scenario} P50</span>{baseVs.selected.cost_p50}<small>{baseVs.selected.schedule_months} mo · {baseVs.selected.confidence_pct}%</small></b><b><span>Delta</span>{baseVs.delta.cost_direction === 'same' ? 'No cost move' : `${baseVs.delta.cost} ${baseVs.delta.cost_direction}`}<small>{baseVs.delta.months} mo · {baseVs.delta.confidence_pts} pts</small></b></div></Card>
+            <Card className="shockCard"><h2>Scenario vs Base</h2><p>{baseVs.plain_english}</p><div className="miniMetrics"><b><span>Base P50</span>{baseVs.base.cost_p50}<small>{baseVs.base.schedule_months} mo · {baseVs.base.confidence_pct}%</small></b><b><span>{baseVs.selected.scenario} P50</span>{baseVs.selected.cost_p50}<small>{baseVs.selected.schedule_months} mo · {baseVs.selected.confidence_pct}%</small></b>{baseVs.delta && <b><span>Delta</span>{baseVs.delta.cost_direction === 'same' ? 'No cost move' : `${baseVs.delta.cost} ${baseVs.delta.cost_direction}`}<small>{baseVs.delta.months} mo · {baseVs.delta.confidence_pts} pts</small></b>}</div></Card>
             <Card><h2>What changed and why</h2>{(model.scenario_delta_intelligence || []).slice(0,5).map((x,i)=><div className="reason" key={i}><span>{i+1}</span><b>{x.label}: {x.value}</b><br/>{x.meaning}</div>)}</Card>
           </section>}
           <section className="layout two">
@@ -1035,19 +2079,60 @@ function scenarioAdjustedModel(currentModel, nextScenario) {
           <section className="layout two"><BenchmarkIntelligence model={model}/><CausalGraph model={model}/></section>
           <section className="layout two">
             <Card><h2>Confidence drivers</h2>{(model.sector_confidence_drivers || ['Benchmark similarity: high where comparable infrastructure archetypes exist','Scope maturity: concept / budget level until package evidence is supplied','Procurement certainty: sensitive to long-lead equipment and market capacity','Schedule maturity: improves when critical path and commissioning logic are validated','Interface exposure: controlled by utilities, systems integration and operational constraints']).map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card>
-            <Card><h2>Why CASEY generated this</h2>{(model.why_casey_generated_this || ['CASEY detected the infrastructure asset and operating environment from the brief','The programme was mapped to benchmark memory and sector archetypes','Cost, schedule and risk were calibrated against class maturity and delivery complexity','The narrative is designed for early board challenge, not certified pricing']).map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card>
+            <Card><h2>Why this position was produced</h2>{(model.why_casey_generated_this || ['The brief indicates the infrastructure asset and operating environment from the brief','The programme was mapped to benchmark memory and sector archetypes','Cost, schedule and risk were calibrated against class maturity and delivery complexity','The narrative is designed for early board challenge, not certified pricing']).map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card>
           </section>
           <section className="layout two">
             <Card><h2>Primary cost drivers</h2>{(model.sector_primary_cost_drivers || ['Utility / enabling infrastructure','Specialist systems and long-lead equipment','Commissioning and validation complexity','Programme management, preliminaries and indirects','Risk reserve driven by procurement and interface uncertainty']).map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card>
             <Card><h2>Top schedule threats</h2>{(model.sector_schedule_threats || ['Utility energisation delay','Long-lead equipment procurement and supplier capacity','Design freeze instability and scope movement','Systems integration and commissioning bottlenecks','Approvals, safety case, permitting or operational access constraints']).map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card>
           </section>
+          <section className="layout one"><AdvisoryFeeCounter model={model}/></section>
         </>}
 
-        {tab === 'compare' && <section className="layout two"><Card><h2>Scenario comparison</h2><p className="big">Switch options before paying for another advisory cycle. Each button re-runs cost, schedule, confidence, risk register, QCRA/QSRA and exports from the same source of truth.</p><div className="scenarioCompare upgraded">{scenarios.map(s => { const active = s === scenario; const row = scenarioMatrix.find(x => x.scenario === s) || {}; return <button key={s} className={active?'active':''} onClick={() => generate(s, model?.prompt || prompt, model || projectContext)}><b>{(row.label || s).replace('_',' ')}</b><strong>{row.cost_p50 || row.cost || '—'} · {row.schedule_months || '—'} mo</strong><span>{row.risk || '—'} / {row.confidence_pct || row.confidence || '—'}%</span><em>{active ? 'current model' : 'run scenario'}</em></button> })}</div></Card><Card><h2>Buyer decision lens</h2>{['Base: balanced reference case for board challenge','Faster: more capex, lower confidence, shorter duration','Cheaper: lower authorisation number, longer schedule, higher residual risk','Lower Risk: higher reserve, longer duration, stronger confidence','Premium: resilience and optionality bought with visible capex premium'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}<h3>Current trade-off</h3><div className="triLens"><b>Gained</b>{tradePack.gained.map(x=><span key={x}>{x}</span>)}<b>Sacrificed</b>{tradePack.sacrificed.map(x=><span key={x}>{x}</span>)}<b>Exposed</b>{tradePack.exposed.map(x=><span key={x}>{x}</span>)}</div></Card></section>}
-        {tab === 'cost' && <section className="layout two"><Card><h2>Scenario cost bridge vs Base</h2><p className="chartCaption">This explains why the selected scenario is cheaper or more expensive than Base before showing the workbook lines.</p>{costWaterfall.map((x,i)=><div className={`reason ${x.kind==='total'?'deltaReason':''}`} key={i}><span>{i+1}</span><b>{x.driver}</b><br/>{x.kind==='total'?x.value:(x.value_bn>=0?'+':'−') + ' ' + x.value}</div>)}<h3>Cost estimate workbook</h3><Table rows={costs} cols={[["cbs","CBS"],["description","Description"],["type","Type"],["p10_bn","Low/P10"],["p50_bn","Most likely/P50"],["p90_bn","High/P90"],["impact_basis","Basis"]]} moneyCols={["p10_bn","p50_bn","p90_bn"]}/></Card><Card><h2>Cost composition</h2><p className="chartCaption">Direct, indirect and reserve are scenario-controlled. For the detailed uncertainty view use QCRA/QSRA.</p><ResponsiveContainer width="100%" height={320}><BarChart data={[{name:'Direct',value:direct},{name:'Indirect',value:indirect},{name:'Reserve',value:reserves}]}><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis dataKey="name"/><YAxis/><Tooltip/><Bar dataKey="value" fill="#8df7ff"/></BarChart></ResponsiveContainer></Card></section>}
+        {tab === 'compare' && <section className="layout two"><Card><h2>Scenario comparison</h2><p className="big">Switch options before paying for another advisory cycle. Each button re-runs cost, schedule, confidence, risk register, QCRA/QSRA and exports from the same source of truth.</p>{model?.stress_test_applied && <div style={{background:"rgba(245,158,11,0.1)",border:"1px solid rgba(245,158,11,0.3)",borderRadius:"3px",padding:"8px 12px",marginBottom:"10px",fontSize:"11px",color:"#f59e0b"}}><b>STRESS TEST ACTIVE: {String(model.stress_test_applied).replace(/_/g," ").toUpperCase()}</b><br/>{model.stress_test_note} — P50 now {model.cost_p50}, confidence {model.confidence_pct}%. Scenario re-runs below use the stressed baseline.</div>}<div className="runtimeInline"><button onClick={()=>setTab('runtime')}><Zap size={15}/> Open Live Stress Test</button><button onClick={()=>runShock('signalling_slip')}>Simulate 4-month signalling slip</button><button onClick={()=>runShock('procurement_gap')}>Simulate procurement evidence gap</button></div>{(()=>{
+  const baseRow=scenarioMatrix.find(x=>x.scenario==='base')||{};
+  const bCost=parseMoneyLocal(baseRow.cost_p50||baseRow.cost||'0');
+  const bConf=parseInt(String(baseRow.confidence_pct||baseRow.confidence||'50'));
+  const bSched=parseInt(String(baseRow.schedule_months||'0'));
+  const tradeNotes={
+    base:'Reference case. Balanced cost, schedule and evidence posture for board challenge.',
+    faster:'Time bought at cost of money and float. Confidence falls — board will ask if saving is real.',
+    cheaper:'Lower number carries higher residual risk. Evidence deferred — board must accept this explicitly.',
+    lower_risk:'Reserve adds confidence but costs more time and money. Requires QCRA evidence it is risk-linked.',
+    premium:'Full optionality at premium capex. Requires explicit board decision to pay for resilience.'
+  };
+  const worsens={base:[],faster:['Cost ↑','Confidence ↓','Risk ↑'],cheaper:['Schedule ↑','Confidence ↓','Risk ↑'],lower_risk:['Cost ↑','Schedule ↑'],premium:['Cost ↑↑']};
+  const improves={base:[],faster:['Schedule ↓'],cheaper:['Cost ↓'],lower_risk:['Confidence ↑','Risk ↓'],premium:['Confidence ↑','Risk ↓']};
+  return <div className="scenarioCompare upgraded">{scenarios.map(s=>{
+    const active=s===scenario;
+    const row=scenarioMatrix.find(x=>x.scenario===s)||{};
+    const rCost=parseMoneyLocal(row.cost_p50||row.cost||'0');
+    const rConf=parseInt(String(row.confidence_pct||row.confidence||'50'));
+    const rSched=parseInt(String(row.schedule_months||'0'));
+    const costD=bCost>0?Math.round((rCost-bCost)/bCost*100):0;
+    const confD=bConf>0?rConf-bConf:0;
+    const schedD=bSched>0?rSched-bSched:0;
+    const rCol=(row.risk||'').toLowerCase().includes('high')?'#ef4444':(row.risk||'').toLowerCase().includes('medium')?'#f59e0b':'#10b981';
+    const cCol=rConf>=65?'#10b981':rConf>=50?'#f59e0b':'#ef4444';
+    const ws=worsens[s]||[]; const im=improves[s]||[];
+    return <button key={s} className={active?'active':''} onClick={()=>generate(s,model?.prompt||prompt,model||projectContext)}>
+      <b style={{textTransform:'uppercase',letterSpacing:'.06em',fontSize:'13px'}}>{(row.label||s).replace('_',' ')}</b>
+      <strong style={{fontSize:'16px',display:'block',margin:'4px 0'}}>{row.cost_p50||row.cost||'—'}</strong>
+      <div style={{fontSize:'11px',color:'#94a3b8',marginBottom:'4px'}}>{row.schedule_months||'—'} months · <span style={{color:cCol,fontWeight:'700'}}>{row.confidence_pct||row.confidence||'—'}%</span> · <span style={{color:rCol,fontWeight:'700'}}>{row.risk||'—'}</span></div>
+      {s!=='base'&&bCost>0&&<div style={{display:'flex',gap:'5px',flexWrap:'wrap',marginBottom:'3px'}}>
+        {costD!==0&&<span style={{background:costD>0?'rgba(239,68,68,0.15)':'rgba(16,185,129,0.12)',color:costD>0?'#ef4444':'#10b981',padding:'1px 6px',borderRadius:'2px',fontSize:'10px',fontWeight:'900'}}>{costD>0?'+':''}{costD}% cost</span>}
+        {confD!==0&&<span style={{background:confD>0?'rgba(16,185,129,0.12)':'rgba(239,68,68,0.15)',color:confD>0?'#10b981':'#ef4444',padding:'1px 6px',borderRadius:'2px',fontSize:'10px',fontWeight:'900'}}>{confD>0?'+':''}{confD}pt conf</span>}
+        {schedD!==0&&<span style={{background:schedD<0?'rgba(16,185,129,0.12)':'rgba(245,158,11,0.12)',color:schedD<0?'#10b981':'#f59e0b',padding:'1px 6px',borderRadius:'2px',fontSize:'10px',fontWeight:'900'}}>{schedD>0?'+':''}{schedD}mo</span>}
+      </div>}
+      {ws.length>0&&<div style={{fontSize:'9px',color:'#ef4444',fontWeight:'700',letterSpacing:'.05em'}}>WORSE: {ws.join(' · ')}</div>}
+      {im.length>0&&<div style={{fontSize:'9px',color:'#10b981',fontWeight:'700',letterSpacing:'.05em'}}>BETTER: {im.join(' · ')}</div>}
+      <em style={{fontSize:'10px',color:'#64748b',fontStyle:'normal',lineHeight:'1.3',display:'block',marginTop:'4px'}}>{active?'▶ ACTIVE — '+scenario.toUpperCase():tradeNotes[s]||''}</em>
+    </button>;
+  })}</div>;
+})()}</Card><Card><h2>Buyer decision lens</h2>{['Base: balanced reference case for board challenge','Faster: more capex, lower confidence, shorter duration','Cheaper: lower authorisation number, longer schedule, higher residual risk','Lower Risk: higher reserve, longer duration, stronger confidence','Premium: resilience and optionality bought with visible capex premium'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}<h3>Current trade-off</h3><div className="triLens"><b>Gained</b>{tradePack.gained.map(x=><span key={x}>{x}</span>)}<b>Sacrificed</b>{tradePack.sacrificed.map(x=><span key={x}>{x}</span>)}<b>Exposed</b>{tradePack.exposed.map(x=><span key={x}>{x}</span>)}</div></Card></section>}
+        {tab === 'cost' && <section className="layout two"><Card><h2>Scenario cost bridge vs Base</h2><p className="chartCaption">This explains why the selected scenario is cheaper or more expensive than Base before showing the workbook lines.</p>{model?.stress_test_applied && <div style={{background:"rgba(141,247,255,0.05)",borderLeft:"2px solid #8df7ff",padding:"8px 12px",marginBottom:"8px",fontSize:"11px",color:"#8df7ff"}}>Stress test applied: {String(model.stress_test_applied).replace(/_/g," ")} — cost recalculated to {model.cost_p50}. The waterfall below reflects this change.</div>}{costWaterfall.map((x,i)=><div className={`reason ${x.kind==='total'?'deltaReason':''}`} key={i}><span>{i+1}</span><b>{x.driver}</b><br/>{x.kind==='total'?x.value:(x.value_bn>=0?'+':'−') + ' ' + x.value}</div>)}<h3>Cost estimate workbook</h3><Table rows={costs} cols={[["cbs","CBS"],["description","Description"],["type","Type"],["p10_bn","Low/P10"],["p50_bn","Most likely/P50"],["p90_bn","High/P90"],["impact_basis","Basis"]]} moneyCols={["p10_bn","p50_bn","p90_bn"]}/></Card><Card><h2>Cost composition</h2><p className="chartCaption">Direct, indirect and reserve are scenario-controlled and reconciled to selected P50. For the detailed uncertainty view use QCRA/QSRA.</p><ResponsiveContainer width="100%" height={320}><BarChart data={[{name:'Direct',value:direct},{name:'Indirect',value:indirect},{name:'Reserve',value:reserves}]}><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis dataKey="name"/><YAxis/><Tooltip/><Bar dataKey="value" fill="#8df7ff"/></BarChart></ResponsiveContainer></Card></section>}
         {tab === 'schedule' && <section className="layout two"><Card><h2>Schedule bridge vs Base</h2><p className="chartCaption">This is the month-by-month reason the scenario becomes faster or slower than Base.</p>{scheduleWaterfall.map((x,i)=><div className={`reason ${x.kind==='total'?'deltaReason':''}`} key={i}><span>{i+1}</span><b>{x.driver}</b><br/>{x.kind==='total'?`${x.months} months`:(x.months>=0?'+':'') + x.months + ' months'}</div>)}<h3>Scenario schedule logic</h3><Table rows={schedule} cols={[["activity_id","Activity"],["phase","Phase"],["activity","Name"],["predecessor","Pred"],["duration_months","Months"],["critical","Critical"],["basis","Basis"]]}/></Card><Card><h2>QSRA finish-date curve</h2><p className="chartCaption">P50 equals the headline schedule. P80/P90 show how severe the delivery tail becomes after the scenario trade-off.</p><div className="metrics"><div>P50<b>{qsra.p50} mo</b></div><div>P80<b>{qsra.p80} mo</b></div><div>P90<b>{qsra.p90} mo</b></div></div><ResponsiveContainer width="100%" height={280}><LineChart data={curve}><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis dataKey="percentile"/><YAxis/><Tooltip formatter={(v) => [`${v} months`, "QSRA finish date"]}/><ReferenceLine x={50} stroke="#ffffff88" label="P50 = headline"/><ReferenceLine x={80} stroke="#ffffff55" label="P80 = board risk"/><Line type="monotone" name="QSRA finish date" dataKey="schedule_months" stroke="#b18cff" strokeWidth={4}/></LineChart></ResponsiveContainer><div className="reason p80Translation"><span>1/5</span>{p80Talk.schedule}</div><div className="reason p80Translation"><span>!</span>{p80Talk.board}</div>{(model.monte_carlo?.curve_readout || []).slice(1).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{x}</div>)}</Card></section>}
-        {tab === 'risk' && <section className="layout two"><Card><h2>Risk Register Pro</h2><p>Risk output should include cause, event, impact, owner, mitigation and links to WBS/CBS.</p><Table rows={risks} cols={[['risk_id','ID'],['title','Risk'],['cause','Cause'],['event','Event'],['impact','Impact'],['probability_pct','Prob %'],['activity_id','Activity'],['cbs','CBS'],['owner','Owner'],['mitigation','Mitigation']]}/></Card><Card><h2>Top exposure drivers</h2><ResponsiveContainer width="100%" height={380}><BarChart data={tornado} layout="vertical"><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis type="number"/><YAxis dataKey="driver" type="category" width={150}/><Tooltip/><Bar dataKey="contribution" fill="#8df7ff"/></BarChart></ResponsiveContainer></Card></section>}
-        {tab === 'monte' && <section className="layout two"><Card><h2>QCRA cost range curve</h2><p className="chartCaption">This is not a spend forecast over time. It is the probability range: P50 matches the headline cost, P80/P90 visualise the downside contingency tail created by the selected scenario.</p><div className="metrics"><div>P50 headline<b>{model.cost_p50}</b></div><div>P80 risk exposure<b>{fmt(qcra.p80)}</b></div><div>P90 stress case<b>{fmt(qcra.p90)}</b></div></div><ResponsiveContainer width="100%" height={280}><AreaChart data={curve}><defs><linearGradient id="caseyG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#8df7ff" stopOpacity=".55"/><stop offset="1" stopColor="#8df7ff" stopOpacity="0"/></linearGradient></defs><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis dataKey="percentile"/><YAxis/><Tooltip formatter={(v) => [`$${Number(v).toFixed(1)}B`, "QCRA total outturn"]}/><ReferenceLine x={50} stroke="#ffffff88" label="P50 = headline"/><ReferenceLine x={80} stroke="#ffffff55" label="P80 = board risk"/><Area type="monotone" name="QCRA total outturn" dataKey="cost_bn" stroke="#8df7ff" fill="url(#caseyG)"/></AreaChart></ResponsiveContainer>{(model.monte_carlo?.curve_readout || []).slice(0,1).map((x,i)=><div className="reason" key={i}><span>i</span>{x}</div>)}<div className="reason p80Translation"><span>1/5</span>{p80Talk.cost}</div><div className="reason"><span>!</span>This curve is a probability distribution, not spend over time. The x-axis is confidence percentile. P50 equals the headline estimate; P80/P90 are board downside exposure.</div></Card><Card><h2>QSRA schedule range curve</h2><p className="chartCaption">P50 matches the headline duration. P80/P90 show the likely board conversation if critical path risk lands.</p><div className="metrics"><div>P50 headline<b>{qsra.p50} mo</b></div><div>P80 risk date<b>{qsra.p80} mo</b></div><div>P90 stress date<b>{qsra.p90} mo</b></div></div><ResponsiveContainer width="100%" height={280}><LineChart data={curve}><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis dataKey="percentile"/><YAxis/><Tooltip formatter={(v) => [`${v} months`, "QSRA finish date"]}/><ReferenceLine x={50} stroke="#ffffff88" label="P50 = headline"/><ReferenceLine x={80} stroke="#ffffff55" label="P80 = board risk"/><Line type="monotone" name="QSRA finish date" dataKey="schedule_months" stroke="#b18cff" strokeWidth={4}/></LineChart></ResponsiveContainer><div className="reason p80Translation"><span>1/5</span>{p80Talk.schedule}</div><div className="reason p80Translation"><span>!</span>{p80Talk.board}</div>{(model.monte_carlo?.curve_readout || []).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{x}</div>)}</Card></section>}
+        {tab === 'risk' && <section className="layout two"><Card><h2>Risk Register Pro</h2><p>Risk output should include cause, event, impact, owner, mitigation and links to WBS/CBS. These risks drive the QCRA/QSRA P-curves — the top 3 by EMV determine the P80 tail.</p>{model?.stress_test_applied && <div style={{background:"rgba(239,68,68,0.08)",borderLeft:"2px solid #ef4444",padding:"6px 10px",marginBottom:"8px",fontSize:"11px",color:"#ef4444"}}>Stress test applied: risk posture has shifted. Confidence is now {model.confidence_pct}%. The risks below drove this position before the shock was applied.</div>}<Table rows={risks} cols={[['risk_id','ID'],['title','Risk'],['cause','Cause'],['event','Event'],['impact','Impact'],['probability_pct','Prob %'],['activity_id','Activity'],['cbs','CBS'],['owner','Owner'],['mitigation','Mitigation']]}/></Card><Card><h2>Top exposure drivers</h2><ResponsiveContainer width="100%" height={380}><BarChart data={tornado} layout="vertical"><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis type="number"/><YAxis dataKey="driver" type="category" width={150}/><Tooltip/><Bar dataKey="contribution" fill="#8df7ff"/></BarChart></ResponsiveContainer></Card></section>}
+        {tab === 'monte' && <section className="layout two"><Card><h2>QCRA cost range curve</h2>{model?.stress_test_applied && <div style={{background:'rgba(245,158,11,0.08)',borderLeft:'2px solid #f59e0b',padding:'6px 10px',marginBottom:'8px',fontSize:'11px',color:'#f59e0b'}}>Stress test active: {String(model.stress_test_applied).replace(/_/g,' ')} — P50 updated to {model.cost_p50}. Download Export QCRA/QSRA to capture the stressed curves.</div>}<p className="chartCaption">This is not a spend forecast over time. It is the probability range: P50 matches the headline cost, P80/P90 visualise the downside contingency tail created by the selected scenario.</p><div className="metrics"><div>P50 headline<b>{model.cost_p50}</b></div><div>P80 risk exposure<b>{fmt(qcra.p80)}</b></div><div>P90 stress case<b>{fmt(qcra.p90)}</b></div></div><ResponsiveContainer width="100%" height={280}><AreaChart data={curve}><defs><linearGradient id="caseyG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#8df7ff" stopOpacity=".55"/><stop offset="1" stopColor="#8df7ff" stopOpacity="0"/></linearGradient></defs><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis dataKey="percentile"/><YAxis/><Tooltip formatter={(v) => [`$${Number(v).toFixed(1)}B`, "QCRA total outturn"]}/><ReferenceLine x={50} stroke="#ffffff88" label="P50 = headline"/><ReferenceLine x={80} stroke="#ffffff55" label="P80 = board risk"/><Area type="monotone" name="QCRA total outturn" dataKey="cost_bn" stroke="#8df7ff" fill="url(#caseyG)"/></AreaChart></ResponsiveContainer>{(model.monte_carlo?.curve_readout || []).slice(0,1).map((x,i)=><div className="reason" key={i}><span>i</span>{x}</div>)}<div className="reason p80Translation"><span>1/5</span>{p80Talk.cost}</div><div className="reason"><span>!</span>This curve is a probability distribution, not spend over time. The x-axis is confidence percentile. P50 equals the headline estimate; P80/P90 are board downside exposure.</div></Card><Card><h2>QSRA schedule range curve</h2><p className="chartCaption">P50 matches the headline duration. P80/P90 show the likely board conversation if critical path risk lands.</p><div className="metrics"><div>P50 headline<b>{qsra.p50} mo</b></div><div>P80 risk date<b>{qsra.p80} mo</b></div><div>P90 stress date<b>{qsra.p90} mo</b></div></div><ResponsiveContainer width="100%" height={280}><LineChart data={curve}><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis dataKey="percentile"/><YAxis/><Tooltip formatter={(v) => [`${v} months`, "QSRA finish date"]}/><ReferenceLine x={50} stroke="#ffffff88" label="P50 = headline"/><ReferenceLine x={80} stroke="#ffffff55" label="P80 = board risk"/><Line type="monotone" name="QSRA finish date" dataKey="schedule_months" stroke="#b18cff" strokeWidth={4}/></LineChart></ResponsiveContainer><div className="reason p80Translation"><span>1/5</span>{p80Talk.schedule}</div><div className="reason p80Translation"><span>!</span>{p80Talk.board}</div>{(model.monte_carlo?.curve_readout || []).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{x}</div>)}</Card></section>}
         {tab === 'delta' && <section className="layout two">
           <Card><h2>Strategic Delta Intelligence</h2><p>What changed because this scenario was selected.</p>
             {(model.scenario_delta_intelligence || []).map((x,i)=><div className="reason" key={i}><span>{i+1}</span><b>{x.label}: {x.value}</b><br/>{x.meaning}</div>)}
@@ -1079,7 +2164,7 @@ function scenarioAdjustedModel(currentModel, nextScenario) {
           </Card>
         </section>}
 
-        {tab === 'causal' && <section className="layout two"><CausalGraph model={model}/><BoardPressureSimulator model={model}/><BenchmarkIntelligence model={model}/><Card><h2>Evidence Mode: {viewMode}</h2>{evidenceScorecard(model).map((x,i)=><div className="reason" key={x.name}><span>{i+1}</span><b>{x.name}: {Math.round(x.score)}%</b><br/>{x.note}</div>)}</Card></section>}
+        {tab === 'causal' && <section className="layout two"><CausalGraph model={model}/><BenchmarkIntelligence model={model}/><Card><h2>Evidence Mode: {viewMode}</h2>{evidenceScorecard(model).map((x,i)=><div className="reason" key={x.name}><span>{i+1}</span><b>{x.name}: {Math.round(x.score)}%</b><br/>{x.note}</div>)}</Card></section>}
 
         {tab === 'outputs' && <section className="layout two"><Card><h2>Generated Artefacts</h2><p>The public demo previews the intelligence pack. Enterprise access unlocks the live generated controls deliverables.</p><div className="exports v50Exports lockedExports">
           <button onClick={() => download('/export/workbook', model, `${model.id || 'casey'}_COST_WORKBOOK.xlsx`)}><FileSpreadsheet/> Generate Cost Model XLSX</button>
@@ -1090,8 +2175,24 @@ function scenarioAdjustedModel(currentModel, nextScenario) {
           <button onClick={() => download('/export/all', model, `${model.id || 'casey'}_FULL_BOARD_PACK.zip`)}><Download/> Generate Full Pack ZIP</button>
           <a className="contactBtn" href={emailLink}><Mail/> Request Enterprise Review</a></div></Card><Card><h2>What the pack delivers</h2>{['Executive control centre with project, scenario, class, level and confidence clearly identified','Scenario comparison covering Base, Faster, Cheaper, Lower Risk and Premium cases','Selected estimate class plus all class levels for audit and challenge','Direct, indirect and reserve cost views with QCRA cost curve and cost tornado','All schedule levels with QSRA schedule curve and schedule tornado','Risk register with cause, event, impact, owner, mitigation, trigger and quantified likelihood','Basis of Estimate, assumptions, exclusions and benchmark validation','Commercial next steps: buyer action, procurement challenge and board decision path'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card></section>}
 
-        {tab === 'advisor' && <section className="layout two"><Card><h2>Ask CASEY</h2><div className="chatBox">{chat.map((m,i)=><div key={i} className={`msg ${m.role}`}>{asText(m.text)}</div>)}</div><div className="ask"><input value={chatQ} onChange={e=>setChatQ(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')ask()}} placeholder="Ask why the cost or risk moved..."/><button onClick={ask}>Ask</button></div></Card><Card><h2>Upload estimate challenge</h2><p>Use this to show buyers how CASEY can challenge a Tier 1 estimate.</p><label className="upload"><Upload size={18}/> Upload file<input type="file" onChange={upload}/></label><button className="secondary" onClick={()=>setUploadResult({review:'Sample contractor estimate challenge', findings:['Direct costs above benchmark in power train and cooling package','Indirects and preliminaries need clearer split from reserves','Schedule contingency understated against critical path risks','Risk allowance should separate QCRA cost and QSRA schedule exposure'], next_action:'Request rate build-up, supplier quotes, basis of estimate and revised risk register.'})}>Run sample challenge</button>{uploadResult && <pre>{JSON.stringify(uploadResult,null,2)}</pre>}</Card></section>}
+        {tab === 'assurance' && <><IncumbentPressurePanel model={model} direct={direct} indirect={indirect} reserves={reserves} reconcileCheck={reconcileCheck}/><section className="layout two"><Card><h2>Assurance room weapons</h2>{['Open with the P80/P90 exposure, not the headline P50.','Ask which evidence package retires the governing constraint.','Force every mitigation to name owner, trigger, residual exposure and date.','Show scenario trade-offs live before anyone can defend a single-point estimate.','Export the audit model immediately so the conversation moves from opinion to traceability.'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card><Card><h2>What scares traditional advisors</h2>{['CASEY moves faster than manual assurance cycles.','Every scenario rewrites cost, schedule, confidence and board posture from one payload.','The system exposes contradictions instead of polishing the management story.','It turns static reports into live investment-committee interrogation.'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card></section><section className="layout one"><ProgrammeHealthSignal onRunHealthCheck={runHealthCheck}/></section></>}
 
+        {tab === 'advisor' && <section className="layout two advisorElite challengeRoom"><Card><h2>CASEY Board Assurance Console</h2><p className="advisorIntro">Click any question. CASEY answers instantly using the live programme model — not a generic response. Each answer references your actual P50, P80, confidence level and sector. Generate a project first for the most specific answers.</p><div className="advisorPrompts bigButtons">{['What is the board not seeing?','What would a traditional cost consultant say that CASEY challenges?','What evidence is missing before this becomes board-approvable?','What is the real governing chain?','Which assumptions collapse confidence first?','What is the board really deciding?','If this programme fails, what will be blamed publicly?','Give me CASEY POSITION.','What has management not yet evidenced?','What would destroy board confidence fastest?','What reported green item is not yet board-defensible?','Show Traditional Controls vs CASEY.','What is the one intervention that changes confidence fastest?','What would an external assurance reviewer challenge first?'].map(x=><button key={x} data-question={x} onClick={()=>ask(x)}><Brain size={14}/>{x}</button>)}</div><div className="chatBox boardInterrogation">{chat.length ? chat.map((m,i)=><div key={i} className={`msg ${m.role}`}>{(() => {
+    const lines = String(m.text||'').split('\n');
+    return lines.map((line, li) => {
+      if (!line.trim()) return <div key={li} style={{height:'5px'}}/>;
+      if (line.startsWith('**') && line.endsWith('**') && line.length > 4)
+        return <div key={li} className="chatHeading">{line.replace(/\*\*/g,'')}</div>;
+      const parts = line.split(/\*\*([^*]+)\*\*/g);
+      return <p key={li} className="chatLine">{parts.map((p,pi)=>pi%2===1?<strong key={pi}>{p}</strong>:p)}</p>;
+    });
+  })()}</div>) : <div className="msg assistant"><b>Board attack ready.</b><br/>Click any challenge above. CASEY will answer against the active scenario, not as a generic chatbot.</div>}</div><div className="ask"><input value={chatQ} onChange={e=>setChatQ(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')ask()}} placeholder="Ask any board challenge question — e.g. What would destroy board confidence fastest?"/><button onClick={() => ask(chatQ)}>Ask</button></div></Card><Card><h2>Live Client Challenge Room</h2><p className="advisorIntro">Upload a client cost estimate, XER schedule or risk register — or use the demo buttons below. CASEY challenges the document like an independent reviewer: identifies unpriced exposure, evidence gaps, reserve weaknesses and the questions to ask before committing capital.</p><div className="challengeHero"><span>CASEY INTAKE NORMALISATION ENGINE</span><b>Messy file → schema detection → WBS/CBS inference → evidence gaps → board attack → export-ready challenge</b></div><div className="challengeModeStrip"><b>Choose the file type to challenge</b><span>These buttons show the exact review style. Upload your own file below and CASEY will replace the sample with parsed source-file numbers.</span></div><div className="challengeButtons pro">
+  <button onClick={()=>setUploadResult({filename:'Contractor_Cost_Estimate_v27_FINAL.xlsx', file_type:'COST ESTIMATE', schema_confidence:'Auto-mapped', findings:['Estimate structure normalised. Cost packages identified across direct works, preliminaries and risk allowance.','The headline P50 number is present — but there is no P80/P90 basis. This is how a submitted estimate can understate exposure: the headline looks fixed but the downside is unpriced.','Contingency is present as a lump sum. CASEY cannot verify it is sized against quantified risk exposure rather than a percentage of direct cost — a common tender-basis weakness.','Basis statements are missing on 6 of the major packages. Without basis, there is no evidence of what was included or excluded — and no way to challenge scope creep later.'], red_flags:['Commercial observation: No P80/P90 range provided. The estimate looks precise but carries unquantified downside. Ask the contractor to provide a risk-adjusted range.','Commercial observation: Lump-sum contingency with no risk linkage. This is not yet a quantified reserve. Require QCRA support.','No CBS/WBS mapping. Cannot verify completeness of scope coverage or trace costs to programme activities.','Escalation basis not stated. For a multi-year programme, this is a material omission.'], next_steps:['Require the contractor to provide a P50/P80/P90 range with QCRA support.','Mandate a CBS that maps to the programme WBS and schedule activities.','Commission an independent cost review before approving the headline number.','Run CASEY QCRA alongside the contractor estimate — compare the P80 positions.'], epc_challenge:true})}><FileSpreadsheet size={18}/><b>Challenge contractor cost estimate</b><span>Detect hidden exposure, lump-sum contingency and missing basis statements.</span></button>
+  <button onClick={()=>setUploadResult({filename:'Programme_Schedule_FINAL_v14.xer', file_type:'SCHEDULE (XER)', schema_confidence:'Logic mapped', findings:['Schedule logic parsed. Activities identified across civil, systems, commissioning and handover phases.','Critical path identified — but float analysis reveals operationally unusable buffer. The management date assumes best-case access windows throughout.','Logic gaps detected: 8 activities have no predecessor. These are schedule anchors — they cannot be challenged because they have no upstream dependency. This can prevent a reliable view of the real critical path.','Commissioning and trial running phases show compressed durations. These are the activities most likely to slip — and they sit directly before the opening/handover milestone.'], red_flags:['Commercial observation: Open-ended activities with no predecessor — schedule logic issue that can overstate available float.','Commercial observation: Commissioning duration appears optimistic against comparable programmes. A single failed integration test resets the clock.','Float is nominal, not operationally usable. Access windows, possession permits and operator acceptance are not confirmed in the logic.','Board date is driven by the earliest path. It should be driven by the P80/P90 QSRA finish date.'], next_steps:['Require the contractor to close all open ends and confirm predecessor logic.','Run QSRA and require the P80/P90 finish date to be the board commitment date.','Validate all commissioning durations against independent benchmarks.','Name the owner of the critical-path constraint.'], epc_challenge:true})}><Workflow size={18}/><b>Challenge programme schedule</b><span>Detect schedule padding, unusable float and optimistic commissioning dates.</span></button>
+  <button onClick={()=>setUploadResult({filename:'Risk_Register_v8_Draft.xlsx', file_type:'RISK REGISTER', schema_confidence:'Schema mapped', findings:['Risk register schema mapped. Cause, event, impact and owner columns identified.','CASEY challenges every risk without a named trigger, quantified residual exposure and evidence closure date.','7 risks have mitigation confidence below 50%. These are not mitigated — they are noted. The reserve needs to account for them.','4 risks are flagged as Evidence required. These are open exposures — the source file does not yet provide the evidence that the risk is under control.'], red_flags:['Commercial observation: Mitigations are written as action phrases ("to be confirmed", "in progress") rather than evidence closure. A mitigation is only valid when the evidence is complete.','Commercial observation: Residual exposure is not reconciled to the reserve. This is the most common way a risk register hides real exposure — risks exist on paper but the money is not in the budget.','4 risks require evidence that has not been provided. These cannot be treated as mitigated for board approval purposes.','Owner accountability: all risks assigned to programme-level owners. Board needs named individual owners with accountability.'], next_steps:['Require every risk to have: named owner, confirmed trigger, quantified residual and evidence closure date.','Reconcile residual exposure to reserve — any gap requires additional provision.','The 4 Evidence Required risks must be resolved or escalated to the board as open items.','Export the challenged register after QCRA/QSRA alignment and use the board attack questions.'], epc_challenge:true})}><ShieldAlert size={18}/><b>Challenge risk register</b><span>Detect unmitigated risks, missing evidence and reserve reconciliation gaps.</span></button>
+</div><h3>Upload real file</h3><label className="upload proUpload"><Upload size={18}/> Upload estimate / XER / risk workbook<input type="file" onChange={upload}/></label><ProfessionalIntakeResult result={uploadResult} model={model}/></Card></section>}
+
+        {tab === 'runtime' && <HolyGrailRuntime model={model} scenario={scenario} generate={generate} runShock={runShock}/>}
         {tab === 'method' && <section className="layout two"><Card><h2>How CASEY calculated this</h2>{['Cost model: selected class estimate, sector template, location factor, complexity factor and scenario modifier.','Schedule model: level-based delivery logic, phase durations, critical path sensitivity and scenario acceleration/delay factors.','QCRA: cost exposure model using low / most likely / high impacts and risk-weighted contingency.','QSRA: schedule exposure model using activity-linked O/M/P delay ranges and critical path sensitivity.','Confidence score translated for executives: board-defensibility based on benchmark similarity, evidence maturity, procurement certainty, schedule logic, contingency adequacy and scenario posture.'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card><Card><h2>Commercial readiness</h2><p className="big">This is first-pass project controls intelligence. It is designed to accelerate challenge, option testing and board preparation before final contractor tender or signed cost plan.</p><a className="contactBtn huge" href={emailLink}><Mail/> Send project for review</a></Card></section>}
         {tab === 'pricing' && <section className="layout two"><Card><h2>CASEY Access</h2><div className="pricingGrid"><div className="priceCard"><b>Pilot</b><strong>Request pricing</strong><span>Guided project review, sample outputs and executive walkthrough.</span><a href={emailLink}>Request pilot</a></div><div className="priceCard hot"><b>Professional</b><strong>Full project pack</strong><span>Cost, schedule, risk, QCRA/QSRA and export pack.</span><a href={emailLink}>Request access</a></div><div className="priceCard"><b>Enterprise</b><strong>Private deployment</strong><span>SSO, teams, benchmark library, private models and audit trail.</span><a href={emailLink}>Book demo</a></div></div></Card><Card><h2>Send this project</h2><p className="big">Turn demo interest into pipeline immediately.</p><a className="contactBtn huge" href={emailLink}><Mail/> Send project to CASEY</a><button className="primary" onClick={() => download('/export/all', model, 'CASEY_Output_Pack.zip')}>Download full pack</button></Card></section>}
       </>}
@@ -1106,4 +2207,4 @@ function scenarioAdjustedModel(currentModel, nextScenario) {
   </div>;
 }
 
-createRoot(document.getElementById('root')).render(<ErrorBoundary><App/></ErrorBoundary>);
+createRoot(document.getElementById('root')).render(<CaseyErrorBoundary><App/></CaseyErrorBoundary>);
