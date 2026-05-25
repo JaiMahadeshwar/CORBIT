@@ -29,38 +29,21 @@ function safeRender(value) {
   if (value === undefined || value === null) return '';
   if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return String(value);
   if (value?.nativeEvent || value?.currentTarget || value?.target) return '';
-  if (typeof Element !== 'undefined' && value instanceof Element) return value.innerText || value.textContent || '';
-  if (Array.isArray(value)) return value.map(safeRender).filter(Boolean).join(' · ');
-  if (typeof value === 'object') {
-    // Render CASEY meaning/explanation objects as professional text, not raw JSON/code.
-    const preferred = [
-      value.plain_english,
-      value.decision_rule,
-      value.primary_constraint,
-      value.summary,
-      value.message,
-      value.label,
-      value.name,
-      value.title,
-      value.description,
-      value.note,
-      value.reason,
-      value.narrative,
-      value.interpretation,
-    ].filter(v => v !== undefined && v !== null && v !== '');
-    if (preferred.length) return preferred.map(safeRender).filter(Boolean).join(' · ');
-
-    try {
-      return Object.entries(value)
-        .filter(([_, v]) => v !== undefined && v !== null && typeof v !== 'function')
-        .map(([k, v]) => `${String(k).replace(/_/g, ' ')}: ${safeRender(v)}`)
-        .filter(Boolean)
-        .join(' · ');
-    } catch (_) {
-      return '';
-    }
-  }
-  return String(value ?? '');
+  if (value instanceof Element) return value.innerText || value.textContent || '';
+  if (Array.isArray(value)) return value.map(safeRender).join('\n');
+  try {
+    const seen = new WeakSet();
+    return JSON.stringify(value, (k, v) => {
+      if (k === '_owner' || k === '__reactFiber$' || k === '__reactProps$') return undefined;
+      if (typeof v === 'function') return undefined;
+      if (v instanceof Element) return v.innerText || v.textContent || '';
+      if (v && typeof v === 'object') {
+        if (seen.has(v)) return '[circular]';
+        seen.add(v);
+      }
+      return v;
+    }, 2);
+  } catch (_) { return String(value || ''); }
 }
 
 function asList(v) {
@@ -1919,7 +1902,7 @@ function parseMoneyLocal(v) {
       const bqs = (model?.board_challenge_questions || []).slice(0,4);
       instant = '**ASSUMPTIONS THAT COLLAPSE CONFIDENCE FIRST**\n\n' + bqs.map(function(q,i){return (i+1)+'. '+q;}).join('\n') + '\n\nClosing evidence on these is the fastest route to board approval.';
     } else if (ql.includes('one intervention') || ql.includes('changes confidence fastest')) {
-      const constraint = safeRender(model?.primary_constraint || 'the governing procurement and evidence constraint');
+      const constraint = model?.primary_constraint || 'the governing procurement and evidence constraint';
       instant = '**THE ONE INTERVENTION THAT CHANGES CONFIDENCE FASTEST**\n\nClose the evidence gap on: ' + constraint + '\n\nThis means: named owner + named trigger + quantified residual + documented closure date. That single action moves from approvable? to what is the decision?';
     } else if (ql.includes('external assurance') || ql.includes('assurance reviewer')) {
       const attacks = model?.board_attack_simulation || [];
@@ -2076,22 +2059,22 @@ function parseMoneyLocal(v) {
             <Card><h2>Board briefing</h2>{(model.board_briefing || model.board_challenge_questions || []).slice(0,5).map((x,i)=><div className="reason" key={String(x)}><span>{i+1}</span>{x}</div>)}<h3>CASEY thinking</h3><p className="caseyThinking">{model.casey_thinking || 'CASEY interprets this as a system-of-systems infrastructure programme requiring cost, schedule, risk and decision intelligence.'}</p></Card>
           </section>
           <section className="layout two eliteLayer">
-            <Card className="confidenceMeaningCard"><h2>What confidence means</h2><h3>{confLens.headline}</h3><p className="big">{confLens.meaning}</p><div className="reason"><span>!</span><b>Decision rule</b><br/>{confLens.decisionRule}</div><div className="reason"><span>→</span><b>Primary constraint</b><br/>{confLens.constraint}</div><div className="reason"><span>%</span><b>Plain English</b><br/>Confidence is not optimism. It is CASEY board-defensibility score based on benchmark fit, evidence maturity, procurement certainty, schedule logic, reserve adequacy and scenario posture.</div></Card>
-            <Card><h2>Likely board questions</h2>{boardQuestions(model).slice(0,6).map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}<h3>CASEY final position</h3><p className="caseyThinking finalPosition">{finalPosition(model)}</p></Card>
+            <Card className="confidenceMeaningCard"><h2>What confidence means</h2><h3>{safeRender(confLens?.headline)}</h3><p className="big">{safeRender(confLens?.meaning)}</p><div className="reason"><span>!</span><b>Decision rule</b><br/>{safeRender(confLens?.decisionRule)}</div><div className="reason"><span>→</span><b>Primary constraint</b><br/>{safeRender(confLens?.constraint)}</div><div className="reason"><span>%</span><b>Plain English</b><br/>Confidence is not optimism. It is CASEY board-defensibility score based on benchmark fit, evidence maturity, procurement certainty, schedule logic, reserve adequacy and scenario posture.</div></Card>
+            <Card><h2>Likely board questions</h2>{boardQuestions(model).slice(0,6).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{safeRender(x)}</div>)}<h3>CASEY final position</h3><p className="caseyThinking finalPosition">{finalPosition(model)}</p></Card>
           </section>
           <IncumbentPressurePanel model={model} direct={direct} indirect={indirect} reserves={reserves} reconcileCheck={reconcileCheck}/>
           <section className="layout two eliteLayer">
             <Card><h2>Evidence threshold map</h2><p className="chartCaption">Shows why the confidence number is where it is, and what must improve before board approval.</p><ResponsiveContainer width="100%" height={260}><BarChart data={evidenceScorecard(model)} layout="vertical"><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis type="number" domain={[0,100]}/><YAxis dataKey="name" type="category" width={145}/><Tooltip formatter={(v) => [`${v}%`, 'board-defensibility score']}/><ReferenceLine x={70} stroke="#ffd96a88" label="board comfort"/><Bar dataKey="score" fill="#8df7ff"/></BarChart></ResponsiveContainer>{evidenceScorecard(model).map((x,i)=><div className="reason compactReason" key={x.name}><span>{i+1}</span><b>{x.name}: {Math.round(x.score)}%</b><br/>{x.note}</div>)}</Card>
-            <Card><h2>Contradiction scan</h2><p className="chartCaption">CASEY does not just make the case look better. It exposes the trade-off that could get challenged.</p>{contradictionScan(model).map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}<h3>Demo close line</h3><p className="caseyThinking finalPosition">Traditional project controls reports show numbers. CASEY shows the board what the numbers are trying to hide.</p></Card>
+            <Card><h2>Contradiction scan</h2><p className="chartCaption">CASEY does not just make the case look better. It exposes the trade-off that could get challenged.</p>{contradictionScan(model).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{safeRender(x)}</div>)}<h3>Demo close line</h3><p className="caseyThinking finalPosition">Traditional project controls reports show numbers. CASEY shows the board what the numbers are trying to hide.</p></Card>
           </section>
           <LiveCalibrationPanel model={model}/>
           {baseVs?.base && <section className="layout two">
-            <Card className="shockCard"><h2>Scenario vs Base</h2><p>{safeRender(baseVs.plain_english)}</p><div className="miniMetrics"><b><span>Base P50</span>{baseVs.base.cost_p50}<small>{baseVs.base.schedule_months} mo · {baseVs.base.confidence_pct}%</small></b><b><span>{baseVs.selected.scenario} P50</span>{baseVs.selected.cost_p50}<small>{baseVs.selected.schedule_months} mo · {baseVs.selected.confidence_pct}%</small></b>{baseVs.delta && <b><span>Delta</span>{baseVs.delta.cost_direction === 'same' ? 'No cost move' : `${baseVs.delta.cost} ${baseVs.delta.cost_direction}`}<small>{baseVs.delta.months} mo · {baseVs.delta.confidence_pts} pts</small></b>}</div></Card>
-            <Card><h2>What changed and why</h2>{(model.scenario_delta_intelligence || []).slice(0,5).map((x,i)=><div className="reason" key={i}><span>{i+1}</span><b>{x.label}: {x.value}</b><br/>{x.meaning}</div>)}</Card>
+            <Card className="shockCard"><h2>Scenario vs Base</h2><p>{safeRender(baseVs.plain_english)}</p><div className="miniMetrics"><b><span>Base P50</span>{safeRender(baseVs.base?.cost_p50)}<small>{safeRender(baseVs.base?.schedule_months)} mo · {safeRender(baseVs.base?.confidence_pct)}%</small></b><b><span>{safeRender(baseVs.selected?.scenario)} P50</span>{safeRender(baseVs.selected?.cost_p50)}<small>{safeRender(baseVs.selected?.schedule_months)} mo · {safeRender(baseVs.selected?.confidence_pct)}%</small></b>{baseVs.delta && <b><span>Delta</span>{safeRender(baseVs.delta.cost_direction) === 'same' ? 'No cost move' : `${safeRender(baseVs.delta.cost)} ${safeRender(baseVs.delta.cost_direction)}`}<small>{safeRender(baseVs.delta.months)} mo · {safeRender(baseVs.delta.confidence_pts)} pts</small></b>}</div></Card>
+            <Card><h2>What changed and why</h2>{(model.scenario_delta_intelligence || []).slice(0,5).map((x,i)=><div className="reason" key={i}><span>{i+1}</span><b>{safeRender(x?.label)}: {safeRender(x?.value)}</b><br/>{safeRender(x?.meaning)}</div>)}</Card>
           </section>}
           <section className="layout two">
-            <Card><h2>Mission control signals</h2><div className="missionCardGrid">{(model.mission_control_cards || []).slice(0,6).map((c,i)=><div className="intelCard" key={i}><b>{c.label}</b><p>{c.signal}</p><span>{c.severity}</span></div>)}</div></Card>
-            <Card><h2>Uncertainty narrative</h2><p>{model.uncertainty_narrative?.estimate_maturity}</p><p>{model.uncertainty_narrative?.schedule_maturity}</p><p>{model.uncertainty_narrative?.interpretation}</p><h3>Benchmark comparison</h3>{(model.benchmark_comparison || []).slice(0,4).map((b,i)=><div className="reason" key={i}><span>{i+1}</span><b>{b.archetype}</b> · {b.anchor_cost} · {b.anchor_duration_months} months</div>)}</Card>
+            <Card><h2>Mission control signals</h2><div className="missionCardGrid">{(model.mission_control_cards || []).slice(0,6).map((c,i)=><div className="intelCard" key={i}><b>{safeRender(c?.label)}</b><p>{safeRender(c?.signal)}</p><span>{safeRender(c?.severity)}</span></div>)}</div></Card>
+            <Card><h2>Uncertainty narrative</h2><p>{safeRender(model.uncertainty_narrative?.estimate_maturity)}</p><p>{safeRender(model.uncertainty_narrative?.schedule_maturity)}</p><p>{safeRender(model.uncertainty_narrative?.interpretation)}</p><h3>Benchmark comparison</h3>{(model.benchmark_comparison || []).slice(0,4).map((b,i)=><div className="reason" key={i}><span>{i+1}</span><b>{safeRender(b?.archetype)}</b> · {safeRender(b?.anchor_cost)} · {safeRender(b?.anchor_duration_months)} months</div>)}</Card>
           </section>
           <section className="layout two"><BenchmarkIntelligence model={model}/><CausalGraph model={model}/></section>
           <section className="layout two">
@@ -2155,10 +2138,10 @@ function parseMoneyLocal(v) {
             {(model.scenario_delta_intelligence || []).map((x,i)=><div className="reason" key={i}><span>{i+1}</span><b>{x.label}: {x.value}</b><br/>{x.meaning}</div>)}
           </Card>
           <Card><h2>Confidence Breakdown</h2><p>CASEY explains why confidence moved.</p>
-            {(model.confidence_breakdown || []).map((x,i)=><div className="reason" key={i}><span>{i+1}</span><b>{x.driver}: {x.effect}</b><br/>{x.note}</div>)}
+            {(model.confidence_breakdown || []).map((x,i)=><div className="reason" key={i}><span>{i+1}</span><b>{safeRender(x?.driver)}: {safeRender(x?.effect)}</b><br/>{safeRender(x?.note)}</div>)}
           </Card>
           <Card><h2>Top Decisions Required</h2>
-            {(model.top_decisions_required || []).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{x}</div>)}
+            {(model.top_decisions_required || []).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{safeRender(x)}</div>)}
           </Card>
           <Card><h2>Board Memo Snapshot</h2>
             {(model.outputs_board_memo || []).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{x}</div>)}
@@ -2166,18 +2149,18 @@ function parseMoneyLocal(v) {
         </section>}
 
         {tab === 'delta' && <section className="layout two">
-          <Card className="shockCard"><h2>Scenario Consequence vs Base</h2><p>{safeRender(model.scenario_trade || 'Scenario trade-off analysis.')}</p>
+          <Card className="shockCard"><h2>Scenario Consequence vs Base</h2><p>{model.scenario_trade || 'Scenario trade-off analysis.'}</p>
             {(model.scenario_delta_intelligence || []).map((x,i)=><div className="reason deltaReason" key={i}><span>{i+1}</span><b>{x.label}: {x.value}</b><br/>{x.meaning}</div>)}
           </Card>
           <Card><h2>Gained / Sacrificed / Exposed</h2>
             <div className="triLens full"><b>Gained</b>{tradePack.gained.map(x=><span key={x}>{x}</span>)}<b>Sacrificed</b>{tradePack.sacrificed.map(x=><span key={x}>{x}</span>)}<b>Exposed</b>{tradePack.exposed.map(x=><span key={x}>{x}</span>)}</div>
-            <div className="reason"><span>!</span><b>Curve meaning</b><br/>{safeRender(model.monte_carlo?.curve_interpretation || 'QCRA/QSRA shape reflects scenario uncertainty.')}</div>
+            <div className="reason"><span>!</span><b>Curve meaning</b><br/>{model.monte_carlo?.curve_interpretation || 'QCRA/QSRA shape reflects scenario uncertainty.'}</div>
           </Card>
           <Card><h2>Confidence Breakdown</h2>
-            {(model.confidence_breakdown || []).map((x,i)=><div className="reason" key={i}><span>{i+1}</span><b>{x.driver}: {x.effect}</b><br/>{x.note}</div>)}
+            {(model.confidence_breakdown || []).map((x,i)=><div className="reason" key={i}><span>{i+1}</span><b>{safeRender(x?.driver)}: {safeRender(x?.effect)}</b><br/>{safeRender(x?.note)}</div>)}
           </Card>
           <Card><h2>Top Decisions Required</h2>
-            {(model.top_decisions_required || []).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{x}</div>)}
+            {(model.top_decisions_required || []).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{safeRender(x)}</div>)}
           </Card>
         </section>}
 
