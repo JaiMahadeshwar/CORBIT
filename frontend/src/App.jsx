@@ -29,21 +29,38 @@ function safeRender(value) {
   if (value === undefined || value === null) return '';
   if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return String(value);
   if (value?.nativeEvent || value?.currentTarget || value?.target) return '';
-  if (value instanceof Element) return value.innerText || value.textContent || '';
-  if (Array.isArray(value)) return value.map(safeRender).join('\n');
-  try {
-    const seen = new WeakSet();
-    return JSON.stringify(value, (k, v) => {
-      if (k === '_owner' || k === '__reactFiber$' || k === '__reactProps$') return undefined;
-      if (typeof v === 'function') return undefined;
-      if (v instanceof Element) return v.innerText || v.textContent || '';
-      if (v && typeof v === 'object') {
-        if (seen.has(v)) return '[circular]';
-        seen.add(v);
-      }
-      return v;
-    }, 2);
-  } catch (_) { return String(value || ''); }
+  if (typeof Element !== 'undefined' && value instanceof Element) return value.innerText || value.textContent || '';
+  if (Array.isArray(value)) return value.map(safeRender).filter(Boolean).join(' · ');
+  if (typeof value === 'object') {
+    // Render CASEY meaning/explanation objects as professional text, not raw JSON/code.
+    const preferred = [
+      value.plain_english,
+      value.decision_rule,
+      value.primary_constraint,
+      value.summary,
+      value.message,
+      value.label,
+      value.name,
+      value.title,
+      value.description,
+      value.note,
+      value.reason,
+      value.narrative,
+      value.interpretation,
+    ].filter(v => v !== undefined && v !== null && v !== '');
+    if (preferred.length) return preferred.map(safeRender).filter(Boolean).join(' · ');
+
+    try {
+      return Object.entries(value)
+        .filter(([_, v]) => v !== undefined && v !== null && typeof v !== 'function')
+        .map(([k, v]) => `${String(k).replace(/_/g, ' ')}: ${safeRender(v)}`)
+        .filter(Boolean)
+        .join(' · ');
+    } catch (_) {
+      return '';
+    }
+  }
+  return String(value ?? '');
 }
 
 function asList(v) {
@@ -1902,7 +1919,7 @@ function parseMoneyLocal(v) {
       const bqs = (model?.board_challenge_questions || []).slice(0,4);
       instant = '**ASSUMPTIONS THAT COLLAPSE CONFIDENCE FIRST**\n\n' + bqs.map(function(q,i){return (i+1)+'. '+q;}).join('\n') + '\n\nClosing evidence on these is the fastest route to board approval.';
     } else if (ql.includes('one intervention') || ql.includes('changes confidence fastest')) {
-      const constraint = model?.primary_constraint || 'the governing procurement and evidence constraint';
+      const constraint = safeRender(model?.primary_constraint || 'the governing procurement and evidence constraint');
       instant = '**THE ONE INTERVENTION THAT CHANGES CONFIDENCE FASTEST**\n\nClose the evidence gap on: ' + constraint + '\n\nThis means: named owner + named trigger + quantified residual + documented closure date. That single action moves from approvable? to what is the decision?';
     } else if (ql.includes('external assurance') || ql.includes('assurance reviewer')) {
       const attacks = model?.board_attack_simulation || [];
@@ -2149,12 +2166,12 @@ function parseMoneyLocal(v) {
         </section>}
 
         {tab === 'delta' && <section className="layout two">
-          <Card className="shockCard"><h2>Scenario Consequence vs Base</h2><p>{model.scenario_trade || 'Scenario trade-off analysis.'}</p>
+          <Card className="shockCard"><h2>Scenario Consequence vs Base</h2><p>{safeRender(model.scenario_trade || 'Scenario trade-off analysis.')}</p>
             {(model.scenario_delta_intelligence || []).map((x,i)=><div className="reason deltaReason" key={i}><span>{i+1}</span><b>{x.label}: {x.value}</b><br/>{x.meaning}</div>)}
           </Card>
           <Card><h2>Gained / Sacrificed / Exposed</h2>
             <div className="triLens full"><b>Gained</b>{tradePack.gained.map(x=><span key={x}>{x}</span>)}<b>Sacrificed</b>{tradePack.sacrificed.map(x=><span key={x}>{x}</span>)}<b>Exposed</b>{tradePack.exposed.map(x=><span key={x}>{x}</span>)}</div>
-            <div className="reason"><span>!</span><b>Curve meaning</b><br/>{model.monte_carlo?.curve_interpretation || 'QCRA/QSRA shape reflects scenario uncertainty.'}</div>
+            <div className="reason"><span>!</span><b>Curve meaning</b><br/>{safeRender(model.monte_carlo?.curve_interpretation || 'QCRA/QSRA shape reflects scenario uncertainty.')}</div>
           </Card>
           <Card><h2>Confidence Breakdown</h2>
             {(model.confidence_breakdown || []).map((x,i)=><div className="reason" key={i}><span>{i+1}</span><b>{x.driver}: {x.effect}</b><br/>{x.note}</div>)}
