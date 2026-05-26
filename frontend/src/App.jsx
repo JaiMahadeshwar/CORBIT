@@ -1805,6 +1805,43 @@ function parseMoneyLocal(v) {
     try { return parseInt(localStorage.getItem('casey_demo_downloads') || '0'); }
     catch(e) { return 0; }
   });
+  const [demoScenarioUsed, setDemoScenarioUsed] = React.useState(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('admin') || params.get('admin_key')) return false;
+      return localStorage.getItem('casey_demo_scenario_used') === '1';
+    } catch(e) { return false; }
+  });
+
+  function lockDemoRun(reason = 'project') {
+    if (isAdminUser) return;
+    try {
+      localStorage.setItem('casey_demo_used', '1');
+      localStorage.setItem('casey_demo_used_reason', reason);
+      localStorage.setItem('casey_demo_used_at', new Date().toISOString());
+    } catch(e) {}
+    setDemoUsed(true);
+  }
+  function lockDemoScenario() {
+    if (isAdminUser) return;
+    try { localStorage.setItem('casey_demo_scenario_used', '1'); } catch(e) {}
+    setDemoScenarioUsed(true);
+  }
+  function showAccessLock(message) {
+    setError(JSON.stringify({
+      message: message || 'Your free CASEY run has been used.',
+      upgrade_cta: 'Request access for unlimited project runs, scenarios, exports and client-file challenge.',
+      email: 'hello@casey.ai'
+    }));
+    setTab('pricing');
+  }
+  function openShowcase() {
+    if (!isAdminUser && demoUsed && !model) {
+      showAccessLock('Your one free project/showcase run has already been used. Request access to run another showcase case.');
+      return;
+    }
+    setModel(null); setShow(false); setShowShowcase(true);
+  }
 
   async function generate(nextScenario = scenario, nextPrompt = prompt, activeContext = model || projectContext, clientOverride = client) {
     setError(''); setShow(false);
@@ -1819,9 +1856,17 @@ function parseMoneyLocal(v) {
     setConfidencePulse(true);
     setTimeout(() => setPropagating(false), 1600);
     setLoading(true); setTab(nextScenario !== 'base' ? 'compare' : 'overview');
-    // Demo gate
-    if (!isAdminUser && demoUsed && !activeContext) {
-      setTab('pricing');
+    // Demo gate: one free project/showcase run, one scenario sensitivity, one export.
+    const isNewPublicRun = !activeContext;
+    const isScenarioSensitivity = !!activeContext && nextScenario !== 'base';
+    if (!isAdminUser && isNewPublicRun && demoUsed) {
+      setLoading(false); setPropagating(false); setSimulationStage(''); setConfidencePulse(false);
+      showAccessLock('Your one free project/showcase run has already been used. Request access to run another CASEY model.');
+      return;
+    }
+    if (!isAdminUser && isScenarioSensitivity && demoScenarioUsed) {
+      setLoading(false); setPropagating(false); setSimulationStage(''); setConfidencePulse(false);
+      showAccessLock('Your one free scenario sensitivity has already been used. Request access for unlimited scenario runs.');
       return;
     }
     try {
@@ -1837,6 +1882,8 @@ function parseMoneyLocal(v) {
       const m = normalizeModelForUI(await post('/generate', payload));
       const nextContext = lockedProjectContext(m, canonicalPrompt);
       setModel(m); setProjectContext(nextContext); setScenario(nextScenario); setPrompt(canonicalPrompt);
+      if (isNewPublicRun) lockDemoRun(nextPrompt === earthPrompt ? 'earth_demo' : nextPrompt === spacePrompt ? 'space_demo' : 'project_or_showcase');
+      if (isScenarioSensitivity) lockDemoScenario();
     } catch (e) {
       let raw = String(e.message || e);
       try {
@@ -1853,7 +1900,10 @@ function parseMoneyLocal(v) {
   }
   function runEarth() { setProjectContext(null); generate('base', earthPrompt, null); }
   function runSpace() { setShowShowcase(false); setProjectContext(null); generate('base', spacePrompt, null); }
-  function runShowcase(project) { setClient(project.client || 'Strategic reference case'); setShow(false); setShowShowcase(false); setProjectContext(null); setScenario('base'); setPrompt(project.prompt); generate('base', project.prompt, null, project.client || 'Strategic reference case'); }
+  function runShowcase(project) {
+    if (!isAdminUser && demoUsed) { showAccessLock('Your one free project/showcase run has already been used. Request access to run another showcase case.'); return; }
+    setClient(project.client || 'Strategic reference case'); setShow(false); setShowShowcase(false); setProjectContext(null); setScenario('base'); setPrompt(project.prompt); generate('base', project.prompt, null, project.client || 'Strategic reference case');
+  }
   function advisorQuestionText(input) {
     if (typeof input === 'string') return input.trim();
     if (input && typeof input === 'object') {
@@ -2025,14 +2075,14 @@ function parseMoneyLocal(v) {
 
   return <div className="app v50EliteApp">
     <Briefing open={briefing} onClose={() => setBriefing(false)} onEarth={runEarth} onSpace={runSpace}/>
-    <OneShotDemo open={trialOpen} onClose={() => setTrialOpen(false)} onComplete={(m) => { const nm = normalizeModelForUI(m); setModel(nm); setProjectContext(lockedProjectContext(nm, nm?.prompt || prompt)); setShow(false); setTrialOpen(false); setTab('overview'); }} />
+    <OneShotDemo open={trialOpen} onClose={() => setTrialOpen(false)} onComplete={(m) => { const nm = normalizeModelForUI(m); setModel(nm); setProjectContext(lockedProjectContext(nm, nm?.prompt || prompt)); lockDemoRun('email_free_run'); setShow(false); setTrialOpen(false); setTab('overview'); }} />
     <AnimatePresence>{loading && <Loading text="Building full CASEY intelligence pack..."/>}</AnimatePresence>
     {show && !model && <Hero onBriefing={() => setBriefing(true)} onEarth={runEarth} onSpace={runSpace} onConsole={() => setShow(false)} onTryDemo={() => setTrialOpen(true)}/>} 
-    <header className="v50ConsoleTop"><Logo/><nav><button onClick={() => { setModel(null); setProjectContext(null); setShowShowcase(false); setShow(true); }}>Home</button><button onClick={() => setBriefing(true)}>Film</button><button onClick={() => setTrialOpen(true)}>Free run</button><button onClick={() => { setModel(null); setShow(false); setShowShowcase(true); }}>Showcase library</button><button onClick={runEarth}>Earth demo</button><button onClick={runSpace}>Space demo</button><a href={emailLink}>Request access</a></nav></header>
+    <header className="v50ConsoleTop"><Logo/><nav><button onClick={() => { setModel(null); setProjectContext(null); setShowShowcase(false); setShow(true); }}>Home</button><button onClick={() => setBriefing(true)}>Film</button><button onClick={() => setTrialOpen(true)}>Free run</button><button onClick={openShowcase}>Showcase library</button><button onClick={runEarth}>Earth demo</button><button onClick={runSpace}>Space demo</button><a href={emailLink}>Request access</a></nav></header>
     <main className={model ? 'v50Console' : 'v50Console emptyConsole'}>
       {error && <GatedMessage raw={error} />}
       {!model && showShowcase && <ShowcaseLibrary onRun={runShowcase} onBack={() => setShowShowcase(false)} />}
-      {!model && !show && !showShowcase && <section className="commandGrid"><Card className="command"><h1>Generate a live project model</h1><label>Project command</label><textarea value={prompt} onChange={e => setPrompt(e.target.value)} /> <div className="chips">{examples.map(x => <button key={x} onClick={() => setPrompt(x)}>{x}</button>)}</div><div className="grid4"><input value={client} onChange={e => setClient(e.target.value)} placeholder="Client / operator"/><select value={classLevel} onChange={e => setClassLevel(e.target.value)}>{[1,2,3,4,5].map(x => <option key={x} value={x}>Class {x}</option>)}</select><select value={scheduleLevel} onChange={e => setScheduleLevel(e.target.value)}>{[1,2,3,4,5].map(x => <option key={x} value={x}>Level {x}</option>)}</select><select value={scenario} onChange={e => setScenario(e.target.value)}>{scenarios.map(x => <option key={x} value={x}>{x}</option>)}</select></div><button className="primary" onClick={() => generate()}><Sparkles/> Generate full intelligence pack</button><button className="secondary" onClick={() => setShowShowcase(true)}><Globe2/> Open global showcase library</button></Card><Card><h2>What CASEY will produce</h2>{['Executive summary and recommendation','Direct / indirect / reserve cost view','Scenario-linked estimate, schedule and confidence','Risk register with cause, event, impact and mitigation','QCRA + QSRA curves and tornado drivers','Pricing and next-step contact actions'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card></section>}
+      {!model && !show && !showShowcase && <section className="commandGrid"><Card className="command"><h1>Generate a live project model</h1><label>Project command</label><textarea value={prompt} onChange={e => setPrompt(e.target.value)} /> <div className="chips">{examples.map(x => <button key={x} onClick={() => setPrompt(x)}>{x}</button>)}</div><div className="grid4"><input value={client} onChange={e => setClient(e.target.value)} placeholder="Client / operator"/><select value={classLevel} onChange={e => setClassLevel(e.target.value)}>{[1,2,3,4,5].map(x => <option key={x} value={x}>Class {x}</option>)}</select><select value={scheduleLevel} onChange={e => setScheduleLevel(e.target.value)}>{[1,2,3,4,5].map(x => <option key={x} value={x}>Level {x}</option>)}</select><select value={scenario} onChange={e => setScenario(e.target.value)}>{scenarios.map(x => <option key={x} value={x}>{x}</option>)}</select></div><button className="primary" onClick={() => generate()}><Sparkles/> Generate full intelligence pack</button><button className="secondary" onClick={openShowcase}><Globe2/> Open global showcase library</button></Card><Card><h2>What CASEY will produce</h2>{['Executive summary and recommendation','Direct / indirect / reserve cost view','Scenario-linked estimate, schedule and confidence','Risk register with cause, event, impact and mitigation','QCRA + QSRA curves and tornado drivers','Pricing and next-step contact actions'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card></section>}
       {model && <>
         <section className="confidenceEngineBadge"><b>{model.confidence_engine_label || 'CASEY Confidence Engine'}</b><span>{safeRender(typeof model.confidence_engine_detail === 'object' ? model.confidence_engine_detail?.plain_english || 'Benchmark + probabilistic + sector-trained reasoning' : model.confidence_engine_detail || 'Benchmark + probabilistic + sector-trained reasoning')}</span></section>
         <TrustRuntimeBar model={model}/>
@@ -2048,8 +2098,8 @@ function parseMoneyLocal(v) {
           onXer={() => download('/export/xer', model, `${model.id || 'casey'}_DEMO_SCHEDULE.xer`)}
           onQcra={() => download('/export/qcra-qsra', model, `${model.id || 'casey'}_DEMO_QCRA_QSRA.xlsx`)}/>
         {demoUsed && !isAdminUser && <div style={{background:'rgba(245,158,11,0.15)',borderBottom:'1px solid rgba(245,158,11,0.3)',padding:'6px 16px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-        <span style={{fontSize:'11px',color:'#f59e0b',fontWeight:'700'}}>DEMO: 1 run used. Results and 1 export available. <a href="/pricing" style={{color:'#fff',textDecoration:'underline'}} onClick={e=>{e.preventDefault();setTab('pricing');}}>Get full access →</a></span>
-        <span style={{fontSize:'10px',color:'#64748b'}}>Reset: clear browser cache or use private window</span>
+        <span style={{fontSize:'11px',color:'#f59e0b',fontWeight:'700'}}>DEMO LOCKED: 1 project/showcase run used. 1 scenario sensitivity and 1 export allowed. <a href="/pricing" style={{color:'#fff',textDecoration:'underline'}} onClick={e=>{e.preventDefault();setTab('pricing');}}>Get full access →</a></span>
+        <span style={{fontSize:'10px',color:'#64748b'}}>Access is locked by browser token; server checks email/IP for free-run form</span>
       </div>}
       <nav className="tabs">{[['overview','Overview'],['compare','Scenarios'],['delta','Scenario Intel'],['causal','Causal OS'],['cost','Cost'],['schedule','Schedule'],['risk','Risk'],['monte','QCRA/QSRA'],['outputs','Outputs'],['assurance','Assurance'],['runtime','Live Stress Test'],['advisor','Advisor'],['method','Methodology'],['pricing','Pricing']].map(x => <button key={x[0]} className={tab===x[0]?'active':''} onClick={() => setTab(x[0])}>{x[1]}</button>)}</nav>
         {tab === 'overview' && <>
