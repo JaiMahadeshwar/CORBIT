@@ -707,12 +707,11 @@ function confidenceLens(model) {
     ? 'CASEY reads this as a resilience-led posture: the board is buying optionality, redundancy and stronger strategic protection.'
     : 'CASEY reads this as the balanced reference case: useful for challenge, but not yet a certified approval basis.';
   return {
-    headline: String(confidenceBand || ''),
-    constraint: String(constraint || ''),
-    posture: String(posture || ''),
-    meaning: String(`${pct}% means CASEY believes the current ${model?.scenario_label || 'scenario'} case is ${confidenceBand.toLowerCase()} because confidence is constrained by ${constraint}.`),
-    decisionRule: String(pct >= 75 ? 'Proceed to board challenge with evidence pack.' : pct >= 58 ? 'Use for option selection, but close evidence gaps before approval.' : 'Do not approve capital without package evidence, owner actions and updated QCRA/QSRA.'),
-    plain_english: String(`Confidence is ${confidenceBand.toLowerCase()}. The governing constraint is ${constraint}.`)
+    headline: confidenceBand,
+    constraint,
+    posture,
+    meaning: `${pct}% means CASEY believes the current ${model?.scenario_label || 'scenario'} case is ${confidenceBand.toLowerCase()} because confidence is constrained by ${constraint}.`,
+    decisionRule: pct >= 75 ? 'Proceed to board challenge with evidence pack.' : pct >= 58 ? 'Use for option selection, but close evidence gaps before approval.' : 'Do not approve capital without package evidence, owner actions and updated QCRA/QSRA.'
   };
 }
 function boardQuestions(model) {
@@ -936,12 +935,12 @@ function IncumbentPressurePanel({ model, direct, indirect, reserves, reconcileCh
       <Card className="threatCard">
         <h2>Incumbent consultant pressure test</h2>
         <p className="big">Designed to make a traditional PMO / cost-consultant deck look slow, static and non-auditable without making unsupported claims about any named firm.</p>
-        {delta.map((x,i)=><div className="versusRow" key={safeRender(x.old)}><span>{i+1}</span><b>{safeRender(x.old)}</b><ArrowRight size={16}/><strong>{safeRender(x.casey)}</strong></div>)}
+        {delta.map((x,i)=><div className="versusRow" key={x.old}><span>{i+1}</span><b>{x.old}</b><ArrowRight size={16}/><strong>{x.casey}</strong></div>)}
       </Card>
       <Card className="threatCard">
         <h2>Board Assurance Questions</h2>
         <p>These are the questions a serious investment committee will ask before the project team can hide behind green dashboards.</p>
-        {attacks.map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{safeRender(x)}</div>)}
+        {attacks.map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{x}</div>)}
         <h3>Audit spine</h3>
         {spine.map((x,i)=><div className={`auditSpine ${x.value==='PASS'?'pass':''}`} key={x.label}><span>{i+1}</span><b>{x.label}: {safeRender(x.value)}</b><em>{safeRender(x.detail)}</em></div>)}
       </Card>
@@ -2035,7 +2034,7 @@ function parseMoneyLocal(v) {
       {!model && showShowcase && <ShowcaseLibrary onRun={runShowcase} onBack={() => setShowShowcase(false)} />}
       {!model && !show && !showShowcase && <section className="commandGrid"><Card className="command"><h1>Generate a live project model</h1><label>Project command</label><textarea value={prompt} onChange={e => setPrompt(e.target.value)} /> <div className="chips">{examples.map(x => <button key={x} onClick={() => setPrompt(x)}>{x}</button>)}</div><div className="grid4"><input value={client} onChange={e => setClient(e.target.value)} placeholder="Client / operator"/><select value={classLevel} onChange={e => setClassLevel(e.target.value)}>{[1,2,3,4,5].map(x => <option key={x} value={x}>Class {x}</option>)}</select><select value={scheduleLevel} onChange={e => setScheduleLevel(e.target.value)}>{[1,2,3,4,5].map(x => <option key={x} value={x}>Level {x}</option>)}</select><select value={scenario} onChange={e => setScenario(e.target.value)}>{scenarios.map(x => <option key={x} value={x}>{x}</option>)}</select></div><button className="primary" onClick={() => generate()}><Sparkles/> Generate full intelligence pack</button><button className="secondary" onClick={() => setShowShowcase(true)}><Globe2/> Open global showcase library</button></Card><Card><h2>What CASEY will produce</h2>{['Executive summary and recommendation','Direct / indirect / reserve cost view','Scenario-linked estimate, schedule and confidence','Risk register with cause, event, impact and mitigation','QCRA + QSRA curves and tornado drivers','Pricing and next-step contact actions'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card></section>}
       {model && <>
-        <section className="confidenceEngineBadge"><b>{model.confidence_engine_label || 'CASEY Confidence Engine'}</b><span>{model.confidence_engine_detail || 'Benchmark + probabilistic + sector-trained reasoning'}</span></section>
+        <section className="confidenceEngineBadge"><b>{model.confidence_engine_label || 'CASEY Confidence Engine'}</b><span>{safeRender(typeof model.confidence_engine_detail === 'object' ? model.confidence_engine_detail?.plain_english || 'Benchmark + probabilistic + sector-trained reasoning' : model.confidence_engine_detail || 'Benchmark + probabilistic + sector-trained reasoning')}</span></section>
         <TrustRuntimeBar model={model}/>
         <LiveCalibrationStrip model={model}/>
         <section className="kpis"><Kpi icon={Globe2} label="Mode / sector" value={safeRender(model.mode)} sub={safeRender(model.subsector)}/><Kpi icon={Activity} label="P50 cost" value={safeRender(model.cost_p50)} sub={safeRender(model.cost_range)}/><Kpi icon={Zap} label="Schedule" value={safeRender(model.schedule)} sub={`QSRA P80 ${model.monte_carlo?.qsra?.p80 || '—'} months`}/><Kpi icon={ShieldAlert} label="Delivery confidence" value={safeRender(confidenceLens(model)?.headline)} sub={`${safeRender(model.risk)} risk · ${safeRender(model.confidence_pct)}% · ${safeRender(model.scenario_label)}`} hot/></section>
@@ -2061,7 +2060,7 @@ function parseMoneyLocal(v) {
           </section>
           <section className="layout two eliteLayer">
             <Card className="confidenceMeaningCard"><h2>What confidence means</h2><h3>{safeRender(confLens?.headline)}</h3><p className="big">{safeRender(confLens?.meaning)}</p><div className="reason"><span>!</span><b>Decision rule</b><br/>{safeRender(confLens?.decisionRule)}</div><div className="reason"><span>→</span><b>Primary constraint</b><br/>{safeRender(confLens?.constraint)}</div><div className="reason"><span>%</span><b>Plain English</b><br/>Confidence is not optimism. It is CASEY board-defensibility score based on benchmark fit, evidence maturity, procurement certainty, schedule logic, reserve adequacy and scenario posture.</div></Card>
-            <Card><h2>Likely board questions</h2>{boardQuestions(model).slice(0,6).map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}<h3>CASEY final position</h3><p className="caseyThinking finalPosition">{safeRender(finalPosition(model))}</p></Card>
+            <Card><h2>Likely board questions</h2>{boardQuestions(model).slice(0,6).map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}<h3>CASEY final position</h3><p className="caseyThinking finalPosition">{finalPosition(model)}</p></Card>
           </section>
           <IncumbentPressurePanel model={model} direct={direct} indirect={indirect} reserves={reserves} reconcileCheck={reconcileCheck}/>
           <section className="layout two eliteLayer">
