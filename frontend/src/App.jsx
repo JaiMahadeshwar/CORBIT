@@ -613,15 +613,13 @@ function OneShotDemo({ open, onClose, onComplete }) {
   }
 
   return <div className="publicDemoOverlay boomDemoOverlay">
-    <div className="publicDemoModal boomDemoModal" style={{maxWidth:'560px',width:'95vw'}}>
+    <div className="publicDemoModal boomDemoModal" style={{maxWidth:'720px',width:'96vw',maxHeight:'92vh',overflowY:'auto'}}>
       <button className="publicDemoClose" onClick={onClose}>×</button>
 
-      <div className="boomHeader">
-        <p className="demoKicker">CASEY Intelligence Run — 1 free programme</p>
-        <h2 style={{fontSize:'clamp(20px,4vw,30px)',marginBottom:'6px'}}>Describe your programme.</h2>
-        <p className="demoSub" style={{fontSize:'12px',lineHeight:'1.5'}}>
-          Type anything. CASEY reads as you go — detecting sector, location, scale and risk. The more you tell it, the sharper the output.
-        </p>
+      <div className="boomHeader" style={{paddingBottom:'8px'}}>
+        <p className="demoKicker" style={{marginBottom:'4px'}}>CASEY Intelligence Run — 1 free programme</p>
+        <h2 style={{fontSize:'clamp(22px,3.5vw,34px)',marginBottom:'4px',lineHeight:'1.1'}}>Describe your programme.</h2>
+        <p className="demoSub" style={{fontSize:'12px',lineHeight:'1.4',marginBottom:'0'}}>Type anything — CASEY reads as you go and guides you to get the sharpest output.</p>
       </div>
 
       {/* Email */}
@@ -631,24 +629,38 @@ function OneShotDemo({ open, onClose, onComplete }) {
 
       {/* Brief */}
       <label style={{display:'block',fontSize:'10px',fontWeight:'800',letterSpacing:'.12em',color:'#8df7ff',margin:'12px 0 4px'}}>PROGRAMME BRIEF
-        <textarea value={form.project_description} onChange={e=>update('project_description',e.target.value)} rows={5} placeholder={"Start typing — any programme, any sector, anywhere.\n\nExamples:\n• Smart meter rollout South Africa, 4M connections, 14 months, $1B\n• AWRE Aldermaston nuclear facility upgrade, classified systems\n• Lunar Base Alpha — life support, nuclear power, autonomous commissioning\n• HS2 tunnelling and signalling, possession windows, 178 months"} style={{display:'block',width:'100%',marginTop:'6px',padding:'10px 12px',background:'rgba(255,255,255,0.03)',border:`1px solid ${briefWords>=8?'rgba(141,247,255,0.2)':'rgba(255,255,255,0.08)'}`,borderRadius:'4px',color:'#e2e8f0',fontSize:'13px',lineHeight:'1.6',resize:'vertical',boxSizing:'border-box',fontFamily:'inherit',outline:'none'}}/>
+        <textarea value={form.project_description} onChange={e=>update('project_description',e.target.value)} rows={7} placeholder={"Start typing — any programme, any sector, anywhere.\n\nExamples:\n• Smart meter rollout South Africa, 4M connections, 14 months, $1B\n• AWRE Aldermaston nuclear facility upgrade, classified systems\n• Lunar Base Alpha — life support, nuclear power, autonomous commissioning\n• HS2 tunnelling and signalling, possession windows, 178 months"} style={{display:'block',width:'100%',marginTop:'6px',padding:'10px 12px',background:'rgba(255,255,255,0.03)',border:`1px solid ${briefWords>=8?'rgba(141,247,255,0.2)':'rgba(255,255,255,0.08)'}`,borderRadius:'4px',color:'#e2e8f0',fontSize:'13px',lineHeight:'1.6',resize:'vertical',boxSizing:'border-box',fontFamily:'inherit',outline:'none'}}/>
       </label>
 
-      {/* Live CASEY reading */}
-      {briefWords >= 3 && !hasNonsense && <div style={{marginTop:'8px',padding:'10px 12px',background:'rgba(141,247,255,0.04)',border:'1px solid rgba(141,247,255,0.12)',borderRadius:'4px',fontSize:'12px',lineHeight:'1.5'}}>
-        {/* Sector detection */}
-        {brief.sector && <div style={{marginBottom:'6px',display:'flex',gap:'8px',alignItems:'flex-start'}}>
-          <span style={{color:'#8df7ff',fontWeight:'800',fontSize:'10px',letterSpacing:'.1em',flexShrink:0,marginTop:'1px'}}>DETECTED</span>
+      {/* Live CASEY reading — progressive coaching */}
+      {briefWords >= 2 && !hasNonsense && <div style={{marginTop:'8px',padding:'10px 14px',background:'rgba(141,247,255,0.04)',border:'1px solid rgba(141,247,255,0.12)',borderRadius:'4px',fontSize:'12px',lineHeight:'1.6'}}>
+
+        {/* Stage 1: no sector yet — nudge toward asset type */}
+        {!brief.sector && briefWords < 6 && <div style={{color:'#64748b'}}>
+          Keep going — name the <b style={{color:'#94a3b8'}}>asset type</b>. Examples: hospital, wind farm, nuclear plant, data centre, satellite, pipeline, stadium, mine, rail line, smart meter rollout…
+        </div>}
+
+        {/* Stage 2: sector detected — give specific guidance */}
+        {brief.sector && <div style={{marginBottom:brief.missing.length>0?'8px':'0'}}>
+          <span style={{color:'#8df7ff',fontWeight:'800',fontSize:'10px',letterSpacing:'.1em',marginRight:'8px'}}>✓ {brief.sector.replace('_',' ').toUpperCase()} DETECTED</span>
           <span style={{color:'#cbd5e1'}}>{brief.sectorHint}</span>
         </div>}
-        {!brief.sector && briefWords >= 4 && <div style={{marginBottom:'6px',color:'#64748b',fontSize:'11px'}}>CASEY is reading… keep going. Name the asset type — data centre, hospital, rail line, nuclear plant, satellite, etc.</div>}
-        {/* What's missing */}
-        {brief.missing.length > 0 && <div style={{display:'flex',gap:'6px',flexWrap:'wrap'}}>
-          <span style={{fontSize:'10px',color:'#64748b',flexShrink:0,paddingTop:'1px'}}>Still need:</span>
-          {brief.missing.map(m=><span key={m} style={{fontSize:'10px',background:'rgba(245,158,11,0.1)',color:'#f59e0b',padding:'2px 7px',borderRadius:'10px',border:'1px solid rgba(245,158,11,0.2)'}}>{m}</span>)}
+
+        {/* Stage 3: what's still missing — shown as sentence not pills */}
+        {brief.missing.length > 0 && briefWords >= 4 && <div style={{marginTop:'4px'}}>
+          {!brief.hasLocation && <div style={{color:'#f59e0b',fontSize:'11px',marginBottom:'2px'}}>📍 <b>Location:</b> Add a city, country or region — e.g. "in South Africa", "across the UK", "Texas".</div>}
+          {!brief.hasCost && !brief.hasScale && briefWords >= 6 && <div style={{color:'#f59e0b',fontSize:'11px',marginBottom:'2px'}}>💰 <b>Scale or cost:</b> Add a number — e.g. "$1B", "500MW", "4 million connections", "200 beds".</div>}
+          {!brief.hasDuration && briefWords >= 8 && <div style={{color:'#f59e0b',fontSize:'11px',marginBottom:'2px'}}>📅 <b>Timeline:</b> Add a duration or target date — e.g. "14 months", "by 2027", "36-month programme".</div>}
+          {!brief.hasChallenge && briefWords >= 12 && <div style={{color:'#f59e0b',fontSize:'11px'}}>⚠ <b>Main challenge:</b> What matters most — cost confidence, schedule risk, procurement, approval or commissioning?</div>}
         </div>}
-        {/* Quality signal */}
-        {briefWords >= 8 && brief.missing.length === 0 && <div style={{fontSize:'11px',color:'#10b981',fontWeight:'700'}}>✓ {qualityLabel} — CASEY has enough to build your intelligence pack.</div>}
+
+        {/* Stage 4: brief is strong — confirm and encourage */}
+        {canRun && quality >= 3 && <div style={{color:'#10b981',fontWeight:'700',fontSize:'12px',marginTop: brief.missing.length>0?'6px':'0'}}>
+          ✓ Strong brief — CASEY will generate sector-calibrated cost, schedule, risk and board intelligence.
+        </div>}
+        {canRun && quality < 3 && <div style={{color:'#94a3b8',fontSize:'11px',marginTop:'4px'}}>
+          Ready to run. Add more detail for sharper results — the more specific the brief, the more CASEY can challenge it.
+        </div>}
       </div>}
 
       {/* Status row */}
