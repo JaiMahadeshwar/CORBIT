@@ -1,4 +1,3 @@
-// CASEY V170 COMPACT LOCKED LINKEDIN - v202605260330
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -14,24 +13,11 @@ import './style.css';
 
 const API_CANDIDATES = [import.meta.env.VITE_API_URL, 'http://127.0.0.1:8000', 'http://localhost:8000', 'http://127.0.0.1:8010', 'http://localhost:8010'].filter(Boolean);
 let API = API_CANDIDATES[0];
-function caseyClientToken() {
-  try {
-    let t = localStorage.getItem('casey_public_demo_token');
-    if (!t) {
-      t = (crypto.randomUUID ? crypto.randomUUID() : (String(Date.now()) + Math.random()));
-      localStorage.setItem('casey_public_demo_token', t);
-    }
-    return t;
-  } catch (_) { return 'browser-token-unavailable'; }
-}
-async function apiFetch(path, options = {}) {
+async function apiFetch(path, options) {
   let lastError;
-  const headers = new Headers(options.headers || {});
-  headers.set('x-casey-client-token', caseyClientToken());
-  const finalOptions = { ...options, headers };
   for (const base of API_CANDIDATES) {
     try {
-      const r = await fetch(base + path, finalOptions);
+      const r = await fetch(base + path, options);
       API = base;
       return r;
     } catch (e) { lastError = e; }
@@ -475,7 +461,7 @@ function Hero({ onBriefing, onEarth, onSpace, onConsole, onTryDemo }) {
   return <section className="v50TakeoverHero">
     <video className="v50HeroVideo" src="https://corbit.b-cdn.net/casey_hero_film.mp4" autoPlay muted loop playsInline preload="auto" crossOrigin="anonymous" />
     <div className="v50HeroShade" />
-    <div className="v50TopBar"><Logo/><div className="v50TopActions"><button onClick={onBriefing}><Play size={15}/> Watch briefing</button><button onClick={onEarth}>Run Earth model</button><button onClick={onSpace}>Run Space model</button><button className="tryTopBtn" onClick={onTryDemo}>Try one free run</button><button onClick={onConsole}>Open console</button><a className="topBuyLink" href="mailto:deepa@caseai.co.uk?subject=CASEY%20Access%20Request">Request access</a></div></div>
+    <div className="v50TopBar"><Logo/><div className="v50TopActions"><button onClick={onBriefing}><Play size={15}/> Watch briefing</button><button onClick={onEarth}>Run Earth model</button><button onClick={onSpace}>Run Space model</button><button className="tryTopBtn" onClick={onTryDemo}>Try one free run</button><button onClick={onConsole}>Open console</button><a className="topBuyLink" href="mailto:hello@casey.ai?subject=CASEY%20Access%20Request">Request access</a></div></div>
     <motion.div className="v50HeroCenter" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .7 }}>
       <Logo large />
       <p className="v50HeroLine">Cost · Schedule · Risk · Delivery</p>
@@ -519,15 +505,7 @@ function Briefing({ open, onClose, onEarth, onSpace }) {
 }
 
 function OneShotDemo({ open, onClose, onComplete }) {
-  const [form, setForm] = useState({
-    email: '',
-    project_type: 'Earth',
-    project_description: '',
-    location: 'Auto-inferred from project brief',
-    size_or_capacity: 'Auto-inferred from project brief',
-    stage: 'Concept / early feasibility',
-    biggest_concern: 'Cost, schedule and risk confidence'
-  });
+  const [form, setForm] = useState({ email: '', project_description: '' });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
@@ -535,133 +513,167 @@ function OneShotDemo({ open, onClose, onComplete }) {
 
   function update(k, v) { setForm(x => ({ ...x, [k]: v })); }
 
+  // ── Live brief intelligence ──────────────────────────────────────────
+  // Reads what the user is typing and returns real-time guidance
+  function readBrief(text) {
+    const t = String(text || '').toLowerCase();
+    const words = t.replace(/\s+/g,' ').trim().split(' ').filter(Boolean);
+    const w = words.length;
+    const sector =
+      /(rail|metro|tram|hs2|crossrail|elizabeth line|overground|signalling|possession|rolling stock|track|light rail|brt|bus rapid|underground|subway|commuter rail|freight rail|level crossing)/.test(t) ? 'rail' :
+      /(nuclear|smr|reactor|gda|hinkley|sizewell|wylfa|bradwell|safety case|radiological|nuclear grade|enrichment|decommission|sellafield|magnox|agr|pressurised water|boiling water|fast reactor|fusion|tokamak)/.test(t) ? 'nuclear' :
+      /(data cent|data center|datacenter|hyperscale|gpu cluster|pue |server hall|ai campus|compute cluster|colocation|colo |cloud campus)/.test(t) ? 'data_centre' :
+      /(submarine|dockyard|naval|aukus|warship|frigate|destroyer|aircraft carrier|awre|aldermaston|burghfield|defence|defense|classified|sovereign supply|mod |ministry of defence|military|barracks|munitions|weapons|ordnance|radar|sonar|nato|gchq|mi5|mi6|prison|custody|detention|police station|court.*build|probation)/.test(t) ? 'defence' :
+      /(pharma|gmp|validation|biologics|sterile|fill.finish|cqv|mhra|fda.*approv|cleanroom.*pharma|drug.*manufactur|api.*manufactur|vaccine|bioreactor|cell.*therapy|gene therapy|clinical.*manufactur|life science)/.test(t) ? 'pharma' :
+      /(semiconductor|wafer|euv|cleanroom.*chip|tsmc|intel fab|yield ramp|lithography|advanced manufactur|microchip|integrated circuit)/.test(t) ? 'semiconductor' :
+      /(gigafactory|giga.*factory|battery.*factory|battery.*manufactur|ev.*manufactur|electric vehicle.*plant|cathode|anode.*manufactur|lithium.*process|battery.*cell|cell.*manufactur)/.test(t) ? 'gigafactory' :
+      /(oil field|gas field|lng|liquefied natural gas|fpso|offshore.*platform|subsea|pipeline.*oil|refinery|petrochemical|cracker|lng.*terminal|gas.*terminal|upstream|downstream|midstream|wellhead|compressor.*station|gas.*processing|carbon capture|ccus|ccs)/.test(t) ? 'oil_gas' :
+      /(mine |mining|quarry|open.*pit|underground.*mine|tailings|ore.*processing|concentrator|smelter|lithium.*mine|copper.*mine|gold.*mine|coal.*mine|potash|mineral.*process|heap.*leach)/.test(t) ? 'mining' :
+      /(airport|terminal.*aviation|baggage.*system|runway|airside|orat.*airport|atc |apron|caa |faa |taxiway|air traffic|heathrow|gatwick|stansted|aviation.*infrastr)/.test(t) ? 'airport' :
+      /(hospital|nhs|clinical.*build|ward|operating theatre|patient.*facility|healthcare campus|mental health.*unit|diagnostic.*centre|mri.*build|radiotherapy|cancer.*centre|hospice|care.*home)/.test(t) ? 'healthcare' :
+      /(wind farm|solar farm|battery storage|grid connection|substation|offshore wind|onshore wind|hydrogen.*plant|electrolyser|tidal.*energy|wave.*energy|pumped hydro|hydro.*power|biomass.*plant|waste.*energy|energy.*storage|power.*station|combined.*cycle|ccgt|peaker.*plant|smart.*grid|grid.*upgrade|transmission.*line|hvdc|national grid|distribution.*network|solar.*park|floating.*solar)/.test(t) ? 'energy' :
+      /(water.*treatment|desalin|wastewater|sewage|sewer|reservoir|smart meter|meter rollout|water.*main|water.*network|flood.*defence|flood.*alleviation|drainage|stormwater|irrigation|water.*supply|utility.*network|clean.*water|drinking water|ofwat|anglian water|thames water|severn trent|yorkshire water|southern water|united utilities)/.test(t) ? 'water' :
+      /(5g|telecoms|telecom|fibre.*rollout|fiber.*optic|broadband.*rollout|mobile.*network|mast.*install|tower.*rollout|subsea.*cable|cable.*landing|openreach|bt.*infrastr|network.*rollout|digital.*infrastr|rural.*connectivity|gigabit)/.test(t) ? 'telecoms' :
+      /(motorway|highway|expressway|bridge.*road|tunnel.*road|road.*widening|junction.*upgrade|bypass|dual.*carriageway|grade.*separation|road.*scheme|trunk road|smart motorway)/.test(t) ? 'roads' :
+      /(moon|lunar|mars|martian|orbit|orbital|leo |geo |meo |lagrange|satellite|launch vehicle|rocket.*develop|spacecraft|astronaut|cosmonaut|isru|cislunar|spaceport|launch.*pad|launch.*complex|space station|space.*habitat|reusable.*launch|small.*sat|cubesat|deep space|interplanetary|asteroid|space.*telescope|earth.*observation|sar.*satellite|gnss|space.*refuel|on.*orbit.*service|debris.*removal)/.test(t) ? 'space' :
+      /(port |harbour|harbor|quay|berth|container.*terminal|cruise.*terminal|ferry.*terminal|marine.*infrastr|breakwater|dry.*dock|ship.*repair|logistics.*hub|distribution.*centre|freight.*terminal|intermodal|inland.*port)/.test(t) ? 'ports' :
+      /(university|school.*build|college.*build|academy.*build|student.*accommodation|campus.*build|library.*build|museum.*build|civic.*centre|town.*hall|government.*build|embassy|fire.*station|community.*centre)/.test(t) ? 'civic' :
+      /(stadium|arena|velodrome|aquatic.*centre|olympic|commonwealth.*games|sports.*facility|convention.*centre|exhibition.*centre|concert.*hall|leisure.*centre)/.test(t) ? 'stadia' :
+      /(mixed.*use|regeneration|masterplan|urban.*development|residential.*large|build.*to.*rent|urban.*realm|enabling.*works|civil.*works)/.test(t) ? 'civil' : '';
+    const hasLocation = /(uk|united kingdom|england|scotland|wales|northern ireland|london|manchester|birmingham|leeds|glasgow|edinburgh|bristol|liverpool|sheffield|cardiff|belfast|usa|united states|america|texas|california|new york|north carolina|arizona|boston|chicago|florida|washington|europe|france|paris|germany|berlin|netherlands|amsterdam|sweden|norway|denmark|finland|spain|madrid|italy|rome|poland|middle east|saudi arabia|riyadh|dubai|uae|abu dhabi|qatar|doha|kuwait|bahrain|oman|jordan|egypt|cairo|africa|south africa|johannesburg|cape town|nigeria|lagos|nairobi|kenya|ghana|accra|ethiopia|morocco|tanzania|asia|india|mumbai|delhi|bangalore|singapore|malaysia|indonesia|jakarta|philippines|thailand|bangkok|vietnam|pakistan|china|beijing|shanghai|shenzhen|hong kong|taiwan|japan|tokyo|south korea|seoul|australia|sydney|melbourne|new zealand|canada|toronto|vancouver|brazil|latin america|mexico|colombia|chile|argentina|gulf|gcc|offshore|national|domestic)/.test(t);
+    const hasCost = /(\$|£|€|¥|\d+[\s]*(billion|million|bn|mn|b\b|m\b|usd|gbp|eur|trillion))/.test(t);
+    const hasScale = /(\d+[\s]*(mw|gw|km|beds|units|meters|metres|satellites|modules|stations|terminals|floors|sqm|ha|acres|connections|homes|masts|turbines|panels|vehicles|trains|aircraft|ships|wells|schools|wards|seats|routes|berths|cells|wafers|doses|tonnes|tpa|bpd))/.test(t);
+    const hasDuration = /(\d+[\s]*(month|year|week|quarter|yr\b|mo\b|phase)|by\s*20\d\d|completion\s*20\d\d|deliver.*20\d\d|open.*20\d\d)/.test(t);
+    const hasChallenge = /(cost|schedule|risk|procurement|approval|commissioning|interface|regulatory|evidence|safety|qualification|consent|finance|funding|delay|overrun|confidence|critical path|planning|permitting|supply chain|workforce|integration|handover|acceptance)/.test(t);
+    const missing = [];
+    if (!hasLocation && w > 4) missing.push('location or country');
+    if (!hasCost && !hasScale && w > 6) missing.push('cost, capacity or scale');
+    if (!hasDuration && w > 10) missing.push('programme duration or target date');
+    if (!hasChallenge && w > 12) missing.push('main challenge');
+    const sectorHints = {
+      rail:         'Rail detected. Add: possession access (confirmed or assumed?), operator acceptance date, signalling integration on critical path?',
+      nuclear:      'Nuclear detected — GDA, safety case and FOAK supply chain applied. Add: site, reactor type, new build or modification, safety case timeline.',
+      data_centre:  'Data centre detected. Add: grid connection contracted or assumed, cooling technology, delivery date contracted or target.',
+      defence:      'Defence programme detected — CASEY applies sovereign supply chain, classified systems, operational acceptance and security accreditation. Add: new build, upgrade or extension, key programme milestone.',
+      pharma:       'Pharma/GMP detected. Add: validation scope, regulatory body (FDA/MHRA), NPV milestone or product launch date driving delivery.',
+      semiconductor:'Fab detected. Add: tool install sequence, UPW and chemical system scope, yield ramp in programme boundary.',
+      gigafactory:  'Gigafactory/battery manufacturing detected. Add: cell chemistry, production capacity (GWh/year), utility complexity.',
+      oil_gas:      'Oil, gas or CCS detected. Add: offshore or onshore, brownfield or greenfield, long-lead items, regulatory consent status.',
+      mining:       'Mining detected. Add: commodity, open-pit or underground, processing plant scope, environmental consent.',
+      airport:      'Airport detected. Add: ORAT in scope, airside access constraints, regulatory body (CAA/FAA/EASA), live operations interface.',
+      healthcare:   'Healthcare detected. Add: clinical commissioning scope, NHS or private pathway, MEP complexity.',
+      energy:       'Energy programme detected. Add: grid connection contracted, DNO/TSO engagement, commissioning sequence, contracted or merchant revenue.',
+      water:        'Water/utilities detected. Add: treatment capacity or connection count, regulatory consent status, comms infrastructure scope.',
+      telecoms:     'Telecoms detected. Add: coverage obligation contracted or voluntary, wayleave and planning complexity, rural or urban rollout.',
+      roads:        'Roads/highways detected. Add: environmental consent status, utilities diversion scope, live-traffic working involved.',
+      space:        'Space programme detected — CASEY applies launch logistics, TRL risk, autonomous commissioning and mission assurance. Add: launch vehicle, current TRL, programme phase, FOAK technology involved.',
+      ports:        'Port/maritime detected. Add: vessel class and berth dimensions, marine consent status, dredging scope, port operational during construction.',
+      civic:        'Civic/education infrastructure detected. Add: funding route (public/private), planning consent status, user brief completeness.',
+      stadia:       'Stadium/events detected. Add: event-day capacity, operational date (event-deadline driven?), broadcast and safety certification.',
+      civil:        'Civil/mixed-use detected. Add: procurement route (EPC/D&B/management contract), enabling works scope, key approval gateway.',
+    };
+    return { sector, w, hasLocation, hasCost, hasScale, hasDuration, hasChallenge, missing, sectorHint: sectorHints[sector] || (w >= 4 ? 'Keep going — name the asset: hospital, wind farm, satellite, pipeline, stadium, mine, fab, school…' : '') };
+  }
+  const brief = readBrief(form.project_description);
+  const briefWords = brief.w;
+  const hasEmail = form.email.includes('@') && form.email.includes('.');
+  const hasNonsense = /(asdf|qwerty|lorem ipsum|ignore previous|jailbreak|write a poem|forget instructions)/.test(String(form.project_description).toLowerCase());
+  const canRun = hasEmail && briefWords >= 8 && !hasNonsense;
+
+  // Quality score 0-4
+  const quality = [brief.hasLocation, brief.hasCost || brief.hasScale, brief.hasDuration, brief.hasChallenge].filter(Boolean).length;
+  const qualityColor = quality >= 3 ? '#10b981' : quality >= 2 ? '#f59e0b' : '#ef4444';
+  const qualityLabel = quality >= 4 ? 'Excellent brief' : quality >= 3 ? 'Good — ready to run' : quality >= 2 ? 'Add more detail' : briefWords >= 4 ? 'Keep going…' : '';
+
   function inferType(text) {
-    const t = String(text || '').toLowerCase();
-    const earthStrong = /(north carolina|carolina|cambridge|boston|arizona|texas|uk|usa|united states|riyadh|dubai|qatar|gmp|aseptic|fill-finish|fill finish|fda|cqv|biologics|therapeutics|pharma|pharmaceutical|cold-chain|clean utilities|semiconductor|data centre|data center|airport|rail|hospital|nuclear|hydrogen|desalination|defence|defense)/.test(t);
-    const spaceStrong = /(moon|lunar|mars|orbit|orbital|leo|cislunar|cis-lunar|spaceport|launch vehicle|launch pad|rocket|satellite constellation|space data|orbital ai|deep space|propellant depot|asteroid)/.test(t);
-    const productLaunchOnly = /(commercial launch demand|product launch|market launch|launch demand)/.test(t) && !/(rocket|spaceport|launch vehicle|launch pad|orbital|leo|lunar|mars)/.test(t);
-    if (productLaunchOnly || (earthStrong && !spaceStrong)) return 'Earth';
-    return spaceStrong ? 'Space' : 'Earth';
-  }
-  function inferLocation(text) {
-    const t = String(text || '').toLowerCase();
-    if (/leo|low earth orbit/.test(t)) return 'LEO';
-    if (/moon|lunar/.test(t)) return 'Lunar surface';
-    if (/mars/.test(t)) return 'Mars';
-    if (/cislunar|cis-lunar/.test(t)) return 'Cislunar space';
-    if (/riyadh|saudi/.test(t)) return 'Riyadh, Saudi Arabia';
-    if (/dubai|uae|abu dhabi/.test(t)) return 'UAE';
-    if (/texas|usa|america|arizona/.test(t)) return 'United States';
-    if (/uk|london|manchester/.test(t)) return 'United Kingdom';
-    return 'Auto-inferred from project brief';
-  }
-  function inferCapacity(text) {
-    const m = String(text || '').match(/(\d+[\s-]?(mw|gw|km|beds|satellites|crew|m2|sqm|terminals|stations|halls|modules))/i);
-    return m ? m[1] : 'Auto-inferred from project brief';
-  }
-  function inferConcern(text) {
-    const t = String(text || '').toLowerCase();
-    if (/thermal|radiation|launch|orbit|servicing|relay|latency/.test(t)) return 'Space logistics / orbital dependency';
-    if (/grid|power|cooling|energy/.test(t)) return 'Power, utilities and commissioning risk';
-    if (/cost|budget|estimate/.test(t)) return 'Cost estimate challenge';
-    if (/schedule|critical path|delay/.test(t)) return 'Schedule risk / critical path';
-    if (/risk|approval|regulatory|consent/.test(t)) return 'Risk register quality';
-    return 'Cost, schedule and risk confidence';
+    return /(moon|lunar|mars|orbit|leo |geo |satellite|launch vehicle|rocket|spacecraft|astronaut|isru|cislunar)/.test(String(text||'').toLowerCase()) ? 'Space' : 'Earth';
   }
   function clientToken() {
     let t = localStorage.getItem('casey_public_demo_token');
-    if (!t) { t = crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random(); localStorage.setItem('casey_public_demo_token', t); }
+    if (!t) { t = crypto.randomUUID ? crypto.randomUUID() : String(Date.now())+Math.random(); localStorage.setItem('casey_public_demo_token',t); }
     return t;
   }
   function fingerprint() {
-    return [navigator.userAgent, navigator.language, Intl.DateTimeFormat().resolvedOptions().timeZone, screen.width + 'x' + screen.height, screen.colorDepth].join('|');
+    return [navigator.userAgent,navigator.language,Intl.DateTimeFormat().resolvedOptions().timeZone,screen.width+'x'+screen.height].join('|');
   }
-
-  function normalisedWords(text) {
-    return String(text || '').replace(/\s+/g, ' ').trim().split(' ').filter(Boolean);
-  }
-  function briefSignals(text) {
-    const t = String(text || '').toLowerCase();
-    const asset = /(data centre|data center|datacenter|airport|rail|metro|hospital|fab|semiconductor|nuclear|smr|hydrogen|grid|desalination|defence|defense|campus|plant|facility|biologics|therapeutics|gmp|aseptic|fill-finish|fda|cqv|pharma|manufacturing|orbital|leo|lunar|moon|mars|spaceport|satellite|propellant|habitat|thermal rejection|relay communications)/.test(t);
-    const place = /(north carolina|carolina|arizona|texas|boston|london|cambridge|manchester|riyadh|dubai|uae|uk|usa|united states|saudi|moon|lunar|mars|leo|orbit|orbital|cislunar|spaceport)/.test(t);
-    const concern = /(cost|schedule|risk|procurement|approval|commissioning|regulatory|interface|utilities|critical path|supply chain|phasing|validation|qualification|resilience|thermal|radiation|servicing|power|grid|fda|cqv|inspection|continuity|launch cadence|long-lead|long lead)/.test(t);
-    const nonsense = /(asdf|qwerty|lorem ipsum|blah blah|hello world|ignore previous|jailbreak|write a poem|recipe|football match|dating)/.test(t);
-    return { asset, place, concern, nonsense };
-  }
-  const briefWords = normalisedWords(form.project_description).length;
-  const hasEmail = form.email.includes('@') && form.email.includes('.');
-  const signals = briefSignals(form.project_description);
-  const hasBrief = briefWords >= 10 && signals.asset && !signals.nonsense;
-  const strongBrief = briefWords >= 18 && signals.asset && (signals.place || signals.concern);
-  const canRun = hasEmail && (hasBrief || strongBrief);
-
   async function submit() {
     setBusy(true); setError(''); setResult(null);
+    if (form.email.includes('@')) {
+      try { localStorage.setItem('casey_user_email', form.email.toLowerCase().trim()); } catch(e) {}
+    }
     try {
-      const brief = form.project_description;
-      const payload = {
-        ...form,
-        project_type: inferType(brief),
-        location: inferLocation(brief),
-        size_or_capacity: inferCapacity(brief),
-        biggest_concern: inferConcern(brief),
-        client_token: clientToken(),
-        fingerprint: fingerprint()
-      };
-      const r = await post('/public-demo/generate', payload);
+      const r = await post('/public-demo/generate', { ...form, project_type: inferType(form.project_description), client_token: clientToken(), fingerprint: fingerprint() });
       setResult(r);
       onComplete?.(r.model);
-    } catch (e) {
-      let msg = String(e.message || e);
-      try {
-        const parsed = JSON.parse(msg);
-        const detail = parsed.detail;
-        msg = typeof detail === 'object' ? (detail.message || (detail.issues ? detail.issues.join(' ') : JSON.stringify(detail))) : (detail || msg);
-      } catch {}
+    } catch(e) {
+      let msg = String(e.message||e);
+      try { const p=JSON.parse(msg); msg=typeof p.detail==='object'?(p.detail.message||JSON.stringify(p.detail)):(p.detail||msg); } catch {}
       setError(msg);
     } finally { setBusy(false); }
   }
 
-  const example = `Describe the programme.
-
-Examples:
-• 500MW hyperscale AI data centre campus in Texas with grid constraints, liquid cooling and accelerated delivery.
-• Orbital AI data centre in LEO with modular compute clusters, thermal rejection systems, autonomous servicing and relay communications.
-• Lunar logistics hub supporting autonomous cargo operations, landing pads, power storage and surface mobility.
-• Semiconductor fab in Arizona with cleanroom, UPW systems, process tools and utility complexity.`;
-
   return <div className="publicDemoOverlay boomDemoOverlay">
-    <div className="publicDemoModal boomDemoModal">
+    <div className="publicDemoModal boomDemoModal" style={{maxWidth:'560px',width:'95vw'}}>
       <button className="publicDemoClose" onClick={onClose}>×</button>
+
       <div className="boomHeader">
-        <p className="demoKicker">CASEY Intelligence Run</p>
-        <h2>Describe one programme.</h2>
-        <p className="demoSub">Type the project. CASEY infers the sector, location, scale, schedule logic and risk profile.</p>
+        <p className="demoKicker">CASEY Intelligence Run — 1 free programme</p>
+        <h2 style={{fontSize:'clamp(20px,4vw,30px)',marginBottom:'6px'}}>Describe your programme.</h2>
+        <p className="demoSub" style={{fontSize:'12px',lineHeight:'1.5'}}>
+          Type anything. CASEY reads as you go — detecting sector, location, scale and risk. The more you tell it, the sharper the output.
+        </p>
       </div>
-      <label className="boomEmail">Work email
-        <input value={form.email} onChange={e=>update('email', e.target.value)} placeholder="you@company.com" />
+
+      {/* Email */}
+      <label style={{display:'block',fontSize:'10px',fontWeight:'800',letterSpacing:'.12em',color:'#8df7ff',marginBottom:'4px',marginTop:'4px'}}>WORK EMAIL
+        <input value={form.email} onChange={e=>update('email',e.target.value)} placeholder="you@company.com" style={{display:'block',width:'100%',marginTop:'4px',padding:'9px 12px',background:'rgba(255,255,255,0.04)',border:`1px solid ${hasEmail?'rgba(141,247,255,0.3)':'rgba(255,255,255,0.1)'}`,borderRadius:'4px',color:'#e2e8f0',fontSize:'14px',boxSizing:'border-box',outline:'none'}}/>
       </label>
-      <label className="projectBriefLabel boomBrief">Programme brief
-        <textarea value={form.project_description} onChange={e=>update('project_description', e.target.value)} placeholder={example} autoFocus />
+
+      {/* Brief */}
+      <label style={{display:'block',fontSize:'10px',fontWeight:'800',letterSpacing:'.12em',color:'#8df7ff',margin:'12px 0 4px'}}>PROGRAMME BRIEF
+        <textarea value={form.project_description} onChange={e=>update('project_description',e.target.value)} rows={5} placeholder={"Start typing — any programme, any sector, anywhere.\n\nExamples:\n• Smart meter rollout South Africa, 4M connections, 14 months, $1B\n• AWRE Aldermaston nuclear facility upgrade, classified systems\n• Lunar Base Alpha — life support, nuclear power, autonomous commissioning\n• HS2 tunnelling and signalling, possession windows, 178 months"} style={{display:'block',width:'100%',marginTop:'6px',padding:'10px 12px',background:'rgba(255,255,255,0.03)',border:`1px solid ${briefWords>=8?'rgba(141,247,255,0.2)':'rgba(255,255,255,0.08)'}`,borderRadius:'4px',color:'#e2e8f0',fontSize:'13px',lineHeight:'1.6',resize:'vertical',boxSizing:'border-box',fontFamily:'inherit',outline:'none'}}/>
       </label>
-      <div className="boomQuality">
-        <span className={hasBrief || strongBrief ? 'ok' : ''}>{briefWords} words</span>
-        <span className={hasEmail ? 'ok' : ''}>Email</span>
-        <span>Earth/Space auto-inferred</span>
-        <span>Demo launch mode</span>
+
+      {/* Live CASEY reading */}
+      {briefWords >= 3 && !hasNonsense && <div style={{marginTop:'8px',padding:'10px 12px',background:'rgba(141,247,255,0.04)',border:'1px solid rgba(141,247,255,0.12)',borderRadius:'4px',fontSize:'12px',lineHeight:'1.5'}}>
+        {/* Sector detection */}
+        {brief.sector && <div style={{marginBottom:'6px',display:'flex',gap:'8px',alignItems:'flex-start'}}>
+          <span style={{color:'#8df7ff',fontWeight:'800',fontSize:'10px',letterSpacing:'.1em',flexShrink:0,marginTop:'1px'}}>DETECTED</span>
+          <span style={{color:'#cbd5e1'}}>{brief.sectorHint}</span>
+        </div>}
+        {!brief.sector && briefWords >= 4 && <div style={{marginBottom:'6px',color:'#64748b',fontSize:'11px'}}>CASEY is reading… keep going. Name the asset type — data centre, hospital, rail line, nuclear plant, satellite, etc.</div>}
+        {/* What's missing */}
+        {brief.missing.length > 0 && <div style={{display:'flex',gap:'6px',flexWrap:'wrap'}}>
+          <span style={{fontSize:'10px',color:'#64748b',flexShrink:0,paddingTop:'1px'}}>Still need:</span>
+          {brief.missing.map(m=><span key={m} style={{fontSize:'10px',background:'rgba(245,158,11,0.1)',color:'#f59e0b',padding:'2px 7px',borderRadius:'10px',border:'1px solid rgba(245,158,11,0.2)'}}>{m}</span>)}
+        </div>}
+        {/* Quality signal */}
+        {briefWords >= 8 && brief.missing.length === 0 && <div style={{fontSize:'11px',color:'#10b981',fontWeight:'700'}}>✓ {qualityLabel} — CASEY has enough to build your intelligence pack.</div>}
+      </div>}
+
+      {/* Status row */}
+      <div style={{display:'flex',gap:'10px',margin:'8px 0',alignItems:'center',flexWrap:'wrap'}}>
+        <span style={{fontSize:'11px',color:briefWords>=8?'#10b981':'#64748b',fontWeight:'700'}}>{briefWords} words {briefWords>=8?'✓':briefWords>0?'(need 8+)':''}</span>
+        {hasEmail && <span style={{fontSize:'11px',color:'#10b981',fontWeight:'700'}}>Email ✓</span>}
+        {brief.sector && <span style={{fontSize:'11px',color:'#8df7ff',fontWeight:'700',background:'rgba(141,247,255,0.08)',padding:'2px 8px',borderRadius:'10px'}}>{brief.sector.replace('_',' ').toUpperCase()}</span>}
+        {briefWords>=8 && quality>=2 && <span style={{fontSize:'11px',color:qualityColor,fontWeight:'700',marginLeft:'auto'}}>{qualityLabel}</span>}
       </div>
-      {!canRun && !error && form.project_description && <div className="publicDemoHint">Add a real asset, location/environment and main concern. CASEY can infer the rest.</div>}
-      {error && <div className="publicDemoError">{error}</div>}
-      {busy && <div className="missionProcessing"><Rocket size={22}/><div><b>CASEY is thinking</b><span>Parsing infrastructure archetype · Building benchmark memory · Running schedule intelligence · Mapping risk exposure</span></div></div>}
-      {result && <div className="publicDemoSuccess"><b>{result.run_id}</b><span>Intelligence pack generated. The full console is now open behind this window.</span></div>}
-      <div className="publicDemoActions boomActions">
-        <button className="heroBtn" disabled={!canRun || busy} onClick={submit}>{busy ? 'CASEY is building the pack...' : 'Run CASEY'}</button>
-        <button className="ghostBtn" onClick={onClose}>Close</button>
+
+      {error && <div style={{fontSize:'12px',color:'#ef4444',padding:'8px 10px',background:'rgba(239,68,68,0.08)',borderRadius:'4px',marginBottom:'8px'}}>{error}</div>}
+      {busy && <div className="missionProcessing"><Rocket size={18}/><div><b>CASEY is building your intelligence pack</b><span>Parsing brief, applying {brief.sector||'infrastructure'} benchmarks…</span></div></div>}
+      {result && <div className="publicDemoSuccess"><b>Intelligence pack ready.</b><span>Close this and explore your model.</span></div>}
+
+      <div style={{display:'flex',gap:'8px',marginTop:'4px'}}>
+        <button className="heroBtn" disabled={!canRun||busy} onClick={submit} style={{flex:1,opacity:canRun&&!busy?1:0.5}}>
+          {busy?'Building…':canRun?'⚡ RUN CASEY':'Complete the brief above'}
+        </button>
+        <button className="ghostBtn" onClick={onClose} style={{flex:0,padding:'0 16px'}}>Close</button>
       </div>
-      <p className="demoFinePrint">CASEY only runs on credible infrastructure briefs. Outputs are first-pass strategic intelligence, not certified estimates.</p>
+      <p style={{fontSize:'10px',color:'#334155',marginTop:'8px',textAlign:'center'}}>One free intelligence run per visitor. First-pass strategic output — not a certified estimate.</p>
     </div>
   </div>;
 }
+
 
 function Loading({ text }) {
   const stages = ['CASEY recalibrating confidence curves...', 'Applying live sector calibration signals...', 'Running procurement and delivery-tail model...', 'Comparing against benchmark archetypes...', 'Stamping scenario/base deltas into exports...'];
@@ -1498,7 +1510,7 @@ function GatedMessage({ raw }) {
   let msg = "You've used your one free CASEY intelligence run.";
   let sub = "To run more projects, compare scenarios or download the full output pack, get in touch.";
   let email = "deepa@caseai.co.uk";
-  let linkedin = "https://www.linkedin.com/in/deepa-mahadeshwar-727200409/";
+  let linkedin = "https://www.linkedin.com/company/caseai";
   try {
     const p = JSON.parse(raw);
     if (p.message) msg = p.message;
@@ -1818,44 +1830,6 @@ function parseMoneyLocal(v) {
     try { return parseInt(localStorage.getItem('casey_demo_downloads') || '0'); }
     catch(e) { return 0; }
   });
-  const [demoScenarioUsed, setDemoScenarioUsed] = React.useState(() => {
-    try {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('admin') || params.get('admin_key')) return false;
-      return localStorage.getItem('casey_demo_scenario_used') === '1';
-    } catch(e) { return false; }
-  });
-
-  function lockDemoRun(reason = 'project') {
-    if (isAdminUser) return;
-    try {
-      localStorage.setItem('casey_demo_used', '1');
-      localStorage.setItem('casey_demo_used_reason', reason);
-      localStorage.setItem('casey_demo_used_at', new Date().toISOString());
-    } catch(e) {}
-    setDemoUsed(true);
-  }
-  function lockDemoScenario() {
-    if (isAdminUser) return;
-    try { localStorage.setItem('casey_demo_scenario_used', '1'); } catch(e) {}
-    setDemoScenarioUsed(true);
-  }
-  function showAccessLock(message) {
-    setError(JSON.stringify({
-      message: message || 'Your free CASEY run has been used.',
-      upgrade_cta: 'Request access for unlimited project runs, scenarios, exports and client-file challenge.',
-      email: 'deepa@caseai.co.uk',
-      linkedin: 'https://www.linkedin.com/in/deepa-mahadeshwar-727200409/'
-    }));
-    setTab('pricing');
-  }
-  function openShowcase() {
-    if (!isAdminUser && demoUsed) {
-      showAccessLock('Your one free project/showcase run has already been used. Request access to run another showcase case.');
-      return;
-    }
-    setModel(null); setShow(false); setShowShowcase(true);
-  }
 
   async function generate(nextScenario = scenario, nextPrompt = prompt, activeContext = model || projectContext, clientOverride = client) {
     setError(''); setShow(false);
@@ -1870,17 +1844,9 @@ function parseMoneyLocal(v) {
     setConfidencePulse(true);
     setTimeout(() => setPropagating(false), 1600);
     setLoading(true); setTab(nextScenario !== 'base' ? 'compare' : 'overview');
-    // Demo gate: one free project/showcase run, one scenario sensitivity, one export.
-    const isNewPublicRun = !activeContext;
-    const isScenarioSensitivity = !!activeContext && nextScenario !== 'base';
-    if (!isAdminUser && isNewPublicRun && demoUsed) {
-      setLoading(false); setPropagating(false); setSimulationStage(''); setConfidencePulse(false);
-      showAccessLock('Your one free project/showcase run has already been used. Request access to run another CASEY model.');
-      return;
-    }
-    if (!isAdminUser && isScenarioSensitivity && demoScenarioUsed) {
-      setLoading(false); setPropagating(false); setSimulationStage(''); setConfidencePulse(false);
-      showAccessLock('Your one free scenario sensitivity has already been used. Request access for unlimited scenario runs.');
+    // Demo gate
+    if (!isAdminUser && demoUsed && !activeContext) {
+      setTab('pricing');
       return;
     }
     try {
@@ -1896,8 +1862,6 @@ function parseMoneyLocal(v) {
       const m = normalizeModelForUI(await post('/generate', payload));
       const nextContext = lockedProjectContext(m, canonicalPrompt);
       setModel(m); setProjectContext(nextContext); setScenario(nextScenario); setPrompt(canonicalPrompt);
-      if (isNewPublicRun) lockDemoRun(nextPrompt === earthPrompt ? 'earth_demo' : nextPrompt === spacePrompt ? 'space_demo' : 'project_or_showcase');
-      if (isScenarioSensitivity) lockDemoScenario();
     } catch (e) {
       let raw = String(e.message || e);
       try {
@@ -1914,10 +1878,7 @@ function parseMoneyLocal(v) {
   }
   function runEarth() { setProjectContext(null); generate('base', earthPrompt, null); }
   function runSpace() { setShowShowcase(false); setProjectContext(null); generate('base', spacePrompt, null); }
-  function runShowcase(project) {
-    if (!isAdminUser && demoUsed) { showAccessLock('Your one free project/showcase run has already been used. Request access to run another showcase case.'); return; }
-    setClient(project.client || 'Strategic reference case'); setShow(false); setShowShowcase(false); setProjectContext(null); setScenario('base'); setPrompt(project.prompt); generate('base', project.prompt, null, project.client || 'Strategic reference case');
-  }
+  function runShowcase(project) { setClient(project.client || 'Strategic reference case'); setShow(false); setShowShowcase(false); setProjectContext(null); setScenario('base'); setPrompt(project.prompt); generate('base', project.prompt, null, project.client || 'Strategic reference case'); }
   function advisorQuestionText(input) {
     if (typeof input === 'string') return input.trim();
     if (input && typeof input === 'object') {
@@ -2082,21 +2043,21 @@ function parseMoneyLocal(v) {
     `P50 Cost: ${safeRender(model.cost_p50)}`, `Cost Range: ${safeRender(model.cost_range)}`, `Schedule: ${safeRender(model.schedule)}`,
     `Risk / Confidence: ${model.risk} / ${model.confidence_pct}%`
   ].join('\n') : 'Please send me CASEY access.';
-  const emailLink = `mailto:deepa@caseai.co.uk?subject=${encodeURIComponent('CASEY project review')}&body=${encodeURIComponent(emailBody)}`;
+  const emailLink = `mailto:hello@casey.ai?subject=${encodeURIComponent('CASEY project review')}&body=${encodeURIComponent(emailBody)}`;
   const confLens = model ? confidenceLens(model) : null;
   const p80Talk = model ? p80PlainEnglish(model) : null;
   const tradePack = model ? gainedSacrificedExposed(model) : null;
 
   return <div className="app v50EliteApp">
     <Briefing open={briefing} onClose={() => setBriefing(false)} onEarth={runEarth} onSpace={runSpace}/>
-    <OneShotDemo open={trialOpen} onClose={() => setTrialOpen(false)} onComplete={(m) => { const nm = normalizeModelForUI(m); setModel(nm); setProjectContext(lockedProjectContext(nm, nm?.prompt || prompt)); lockDemoRun('email_free_run'); setShow(false); setTrialOpen(false); setTab('overview'); }} />
+    <OneShotDemo open={trialOpen} onClose={() => setTrialOpen(false)} onComplete={(m) => { const nm = normalizeModelForUI(m); setModel(nm); setProjectContext(lockedProjectContext(nm, nm?.prompt || prompt)); setShow(false); setTrialOpen(false); setTab('overview'); }} />
     <AnimatePresence>{loading && <Loading text="Building full CASEY intelligence pack..."/>}</AnimatePresence>
     {show && !model && <Hero onBriefing={() => setBriefing(true)} onEarth={runEarth} onSpace={runSpace} onConsole={() => setShow(false)} onTryDemo={() => setTrialOpen(true)}/>} 
-    <header className="v50ConsoleTop"><Logo/><nav><button onClick={() => { setModel(null); setProjectContext(null); setShowShowcase(false); setShow(true); }}>Home</button><button onClick={() => setBriefing(true)}>Film</button><button onClick={() => setTrialOpen(true)}>Free run</button><button onClick={openShowcase}>Showcase library</button><button onClick={runEarth}>Earth demo</button><button onClick={runSpace}>Space demo</button><a href={emailLink}>Request access</a></nav></header>
+    <header className="v50ConsoleTop"><Logo/><nav><button onClick={() => { setModel(null); setProjectContext(null); setShowShowcase(false); setShow(true); }}>Home</button><button onClick={() => setBriefing(true)}>Film</button><button onClick={() => setTrialOpen(true)}>Free run</button><button onClick={() => { setModel(null); setShow(false); setShowShowcase(true); }}>Showcase library</button><button onClick={runEarth}>Earth demo</button><button onClick={runSpace}>Space demo</button><a href={emailLink}>Request access</a></nav></header>
     <main className={model ? 'v50Console' : 'v50Console emptyConsole'}>
       {error && <GatedMessage raw={error} />}
       {!model && showShowcase && <ShowcaseLibrary onRun={runShowcase} onBack={() => setShowShowcase(false)} />}
-      {!model && !show && !showShowcase && <section className="commandGrid"><Card className="command"><h1>Generate a live project model</h1><label>Project command</label><textarea value={prompt} onChange={e => setPrompt(e.target.value)} /> <div className="chips">{examples.map(x => <button key={x} onClick={() => setPrompt(x)}>{x}</button>)}</div><div className="grid4"><input value={client} onChange={e => setClient(e.target.value)} placeholder="Client / operator"/><select value={classLevel} onChange={e => setClassLevel(e.target.value)}>{[1,2,3,4,5].map(x => <option key={x} value={x}>Class {x}</option>)}</select><select value={scheduleLevel} onChange={e => setScheduleLevel(e.target.value)}>{[1,2,3,4,5].map(x => <option key={x} value={x}>Level {x}</option>)}</select><select value={scenario} onChange={e => setScenario(e.target.value)}>{scenarios.map(x => <option key={x} value={x}>{x}</option>)}</select></div><button className="primary" onClick={() => generate()}><Sparkles/> Generate full intelligence pack</button><button className="secondary" onClick={openShowcase}><Globe2/> Open global showcase library</button></Card><Card><h2>What CASEY will produce</h2>{['Executive summary and recommendation','Direct / indirect / reserve cost view','Scenario-linked estimate, schedule and confidence','Risk register with cause, event, impact and mitigation','QCRA + QSRA curves and tornado drivers','Pricing and next-step contact actions'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card></section>}
+      {!model && !show && !showShowcase && <section className="commandGrid"><Card className="command"><h1>Generate a live project model</h1><label>Project command</label><textarea value={prompt} onChange={e => setPrompt(e.target.value)} /> <div className="chips">{examples.map(x => <button key={x} onClick={() => setPrompt(x)}>{x}</button>)}</div><div className="grid4"><input value={client} onChange={e => setClient(e.target.value)} placeholder="Client / operator"/><select value={classLevel} onChange={e => setClassLevel(e.target.value)}>{[1,2,3,4,5].map(x => <option key={x} value={x}>Class {x}</option>)}</select><select value={scheduleLevel} onChange={e => setScheduleLevel(e.target.value)}>{[1,2,3,4,5].map(x => <option key={x} value={x}>Level {x}</option>)}</select><select value={scenario} onChange={e => setScenario(e.target.value)}>{scenarios.map(x => <option key={x} value={x}>{x}</option>)}</select></div><button className="primary" onClick={() => generate()}><Sparkles/> Generate full intelligence pack</button><button className="secondary" onClick={() => setShowShowcase(true)}><Globe2/> Open global showcase library</button></Card><Card><h2>What CASEY will produce</h2>{['Executive summary and recommendation','Direct / indirect / reserve cost view','Scenario-linked estimate, schedule and confidence','Risk register with cause, event, impact and mitigation','QCRA + QSRA curves and tornado drivers','Pricing and next-step contact actions'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card></section>}
       {model && <>
         <section className="confidenceEngineBadge"><b>{model.confidence_engine_label || 'CASEY Confidence Engine'}</b><span>{safeRender(typeof model.confidence_engine_detail === 'object' ? model.confidence_engine_detail?.plain_english || 'Benchmark + probabilistic + sector-trained reasoning' : model.confidence_engine_detail || 'Benchmark + probabilistic + sector-trained reasoning')}</span></section>
         <TrustRuntimeBar model={model}/>
@@ -2112,15 +2073,15 @@ function parseMoneyLocal(v) {
           onXer={() => download('/export/xer', model, `${model.id || 'casey'}_DEMO_SCHEDULE.xer`)}
           onQcra={() => download('/export/qcra-qsra', model, `${model.id || 'casey'}_DEMO_QCRA_QSRA.xlsx`)}/>
         {demoUsed && !isAdminUser && <div style={{background:'rgba(245,158,11,0.15)',borderBottom:'1px solid rgba(245,158,11,0.3)',padding:'6px 16px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-        <span style={{fontSize:'11px',color:'#f59e0b',fontWeight:'700'}}>DEMO LOCKED: 1 project/showcase run used. 1 scenario sensitivity and 1 export allowed. <a href="/pricing" style={{color:'#fff',textDecoration:'underline'}} onClick={e=>{e.preventDefault();setTab('pricing');}}>Get full access →</a></span>
-        <span style={{fontSize:'10px',color:'#64748b'}}>Access is locked by browser token; server checks email/IP for free-run form</span>
+        <span style={{fontSize:'11px',color:'#f59e0b',fontWeight:'700'}}>DEMO: 1 run used. Results and 1 export available. <a href="/pricing" style={{color:'#fff',textDecoration:'underline'}} onClick={e=>{e.preventDefault();setTab('pricing');}}>Get full access →</a></span>
+        <span style={{fontSize:'10px',color:'#64748b'}}>Reset: clear browser cache or use private window</span>
       </div>}
       <nav className="tabs">{[['overview','Overview'],['compare','Scenarios'],['delta','Scenario Intel'],['causal','Causal OS'],['cost','Cost'],['schedule','Schedule'],['risk','Risk'],['monte','QCRA/QSRA'],['outputs','Outputs'],['assurance','Assurance'],['runtime','Live Stress Test'],['advisor','Advisor'],['method','Methodology'],['pricing','Pricing']].map(x => <button key={x[0]} className={tab===x[0]?'active':''} onClick={() => setTab(x[0])}>{x[1]}</button>)}</nav>
         {tab === 'overview' && <>
           {model.executive_shock_insight && <section className="layout one"><Card className="shockCard"><h2>⚡ Live model update</h2><p>{model.executive_shock_insight}</p></Card></section>}
           <section className="layout two">
             <Card><h2>Executive intelligence summary</h2><p className="big">{model.executive_summary || `${model.title} has been classified as ${safeRender(model.subsector)}. CASEY generated a first-pass cost, schedule, risk and confidence model for the selected scenario.`}</p><div className="miniMetrics"><b><span>Direct cost</span>{fmt(direct)}</b><b><span>Indirect cost</span>{fmt(indirect)}</b><b><span>Risk / reserve</span>{fmt(reserves)}</b></div><h3>Recommendation</h3>{(model.next_best_actions || []).slice(0,5).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{safeRender(x)}</div>)}</Card>
-            <Card><h2>Board briefing</h2>{(model.board_briefing || model.board_challenge_questions || []).slice(0,5).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{safeRender(x)}</div>)}<h3>CASEY thinking</h3><p className="caseyThinking">{safeRender(model.casey_thinking || 'CASEY interprets this as a system-of-systems infrastructure programme requiring cost, schedule, risk and decision intelligence.')}</p></Card>
+            <Card><h2>Board briefing</h2>{(model.board_briefing || model.board_challenge_questions || []).slice(0,5).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{safeRender(x)}</div>)}<h3>CASEY thinking</h3><p className="caseyThinking">{model.casey_thinking || 'CASEY interprets this as a system-of-systems infrastructure programme requiring cost, schedule, risk and decision intelligence.'}</p></Card>
           </section>
           <section className="layout two eliteLayer">
             <Card className="confidenceMeaningCard"><h2>What confidence means</h2><h3>{safeRender(confLens?.headline)}</h3><p className="big">{safeRender(confLens?.meaning)}</p><div className="reason"><span>!</span><b>Decision rule</b><br/>{safeRender(confLens?.decisionRule)}</div><div className="reason"><span>→</span><b>Primary constraint</b><br/>{safeRender(confLens?.constraint)}</div><div className="reason"><span>%</span><b>Plain English</b><br/>Confidence is not optimism. It is CASEY board-defensibility score based on benchmark fit, evidence maturity, procurement certainty, schedule logic, reserve adequacy and scenario posture.</div></Card>
