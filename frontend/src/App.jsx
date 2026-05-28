@@ -2044,53 +2044,65 @@ function parseMoneyLocal(v) {
     } catch(e) {}
   }
 
+  // Demo configs — prompts used to generate reference case models via /generate
+  const DEMO_CONFIGS = {
+    'earth': { prompt: 'HS2 Phase 2b tunnelling stations signalling systems integration possessions operator acceptance UK rail', client: 'Reference case', demo_type: 'earth', demo_label: 'Reference case — HS2 Phase 2b Rail Mega Programme', demo_headline: 'Full programme intelligence pack — cost, schedule, risk, benchmarks, board attack and exports.' },
+    'space': { prompt: 'Lunar Base Alpha life support nuclear surface power autonomous commissioning resupply logistics 1000 crew', client: 'Reference case', demo_type: 'space', demo_label: 'Reference case — Lunar Base Alpha Deep Space Programme', demo_headline: 'Space programme intelligence — TRL risk, launch logistics, life support, autonomous commissioning.' },
+    'awre': { prompt: 'AWRE Aldermaston nuclear warhead facility upgrade classified defence sovereign supply chain security accreditation UK MOD', client: 'Reference case', demo_type: 'defence', demo_label: 'Reference case — AWRE Aldermaston Nuclear Infrastructure', demo_headline: 'Classified programme intelligence — security accreditation, sovereign supply chain, operational acceptance.' },
+    'gigafactory': { prompt: 'Battery gigafactory West Midlands UK 50GWh EV manufacturing cell production utility grid connection', client: 'Reference case', demo_type: 'gigafactory', demo_label: 'Reference case — Gigafactory UK Battery Manufacturing', demo_headline: 'EV battery manufacturing intelligence — grid connection, cell chemistry, yield ramp, utility complexity.' },
+  };
+
   async function loadInstantDemo(type) {
+    const cfg = DEMO_CONFIGS[type] || DEMO_CONFIGS['earth'];
     setLoading(true); setError(''); setModel(null); setTab('overview');
     setShow(false); setShowShowcase(false);
-    setSimulationStage('Loading reference case…');
+    setSimulationStage('Building reference case…');
     try {
-      // First wake the backend (fast endpoint, confirms it's alive)
-      let wakeOk = false;
-      try {
-        const wakeRes = await apiFetch('/demo/wake');
-        wakeOk = wakeRes.ok;
-      } catch {}
-      
-      if (!wakeOk) {
-        // Backend cold — show wake message and wait
-        setSimulationStage('Waking up the backend… (first load can take 20–30 seconds)');
-        await new Promise(r => setTimeout(r, 8000));
-      }
-
-      setSimulationStage('Building reference case intelligence…');
-      const res = await apiFetch(`/demo/${type}`);
-      
+      // Use /generate — the same endpoint showcase and free run use (always works)
+      const payload = {
+        prompt: cfg.prompt,
+        client: cfg.client,
+        class_level: 3,
+        schedule_level: 4,
+        scenario: 'base',
+        demo: true,
+        active_model: null
+      };
+      const res = await apiFetch('/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
       if (!res.ok) {
         const txt = await res.text().catch(() => '');
         let detail = `Status ${res.status}`;
         try { detail = JSON.parse(txt)?.detail || txt || detail; } catch {}
         throw new Error(detail);
       }
-      
       const m = await res.json();
+      // Mark as demo client-side so DemoBanner renders correctly
+      m.demo_mode = true;
+      m.demo_type = cfg.demo_type;
+      m.demo_label = cfg.demo_label;
+      m.demo_headline = cfg.demo_headline;
       const nm = normalizeModelForUI(m);
       setError('');
       setModel(nm);
-      setPrompt(nm.prompt || '');
-      setScenario(nm.scenario || 'base');
-      setClient('Reference case');
+      setPrompt(cfg.prompt);
+      setScenario('base');
+      setClient(cfg.client);
       setTab('overview');
     } catch(e) {
       const msg = String(e.message || e);
       setError(JSON.stringify({
-        message: 'Demo unavailable — backend may still be starting up.',
-        sub: `${msg}. Wait 20 seconds and click the demo button again.`,
+        message: 'Reference case unavailable — backend may be starting up.',
+        sub: msg + ' Try again in 20 seconds, or browse the Showcase Library.',
         email: 'deepa@caseai.co.uk',
         linkedin: 'https://www.linkedin.com/company/caseai'
       }));
       setShow(false);
-    } finally { 
-      setLoading(false); 
+    } finally {
+      setLoading(false);
       setSimulationStage('');
     }
   }
