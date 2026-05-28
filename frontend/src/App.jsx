@@ -2044,22 +2044,34 @@ function parseMoneyLocal(v) {
     } catch(e) {}
   }
 
-  async function loadInstantDemo(type, attempt = 1) {
+  async function loadInstantDemo(type) {
     setLoading(true); setError(''); setModel(null); setTab('overview');
     setShow(false); setShowShowcase(false);
-    const maxAttempts = 3;
+    setSimulationStage('Loading reference case…');
     try {
+      // First wake the backend (fast endpoint, confirms it's alive)
+      let wakeOk = false;
+      try {
+        const wakeRes = await apiFetch('/demo/wake');
+        wakeOk = wakeRes.ok;
+      } catch {}
+      
+      if (!wakeOk) {
+        // Backend cold — show wake message and wait
+        setSimulationStage('Waking up the backend… (first load can take 20–30 seconds)');
+        await new Promise(r => setTimeout(r, 8000));
+      }
+
+      setSimulationStage('Building reference case intelligence…');
       const res = await apiFetch(`/demo/${type}`);
+      
       if (!res.ok) {
         const txt = await res.text().catch(() => '');
-        if (res.status >= 500 && attempt < maxAttempts) {
-          // Backend cold-starting — wait and retry
-          setError(`Waking up CASEY backend… retry ${attempt}/${maxAttempts}`);
-          await new Promise(r => setTimeout(r, 8000));
-          return loadInstantDemo(type, attempt + 1);
-        }
-        throw new Error(`Demo unavailable (${res.status}). ${txt || 'Backend may be starting up — try again in 30 seconds.'}`);
+        let detail = `Status ${res.status}`;
+        try { detail = JSON.parse(txt)?.detail || txt || detail; } catch {}
+        throw new Error(detail);
       }
+      
       const m = await res.json();
       const nm = normalizeModelForUI(m);
       setError('');
@@ -2070,15 +2082,17 @@ function parseMoneyLocal(v) {
       setTab('overview');
     } catch(e) {
       const msg = String(e.message || e);
-      // Don't show the gate — show a friendly retry message
       setError(JSON.stringify({
-        message: 'Demo loading failed — backend may be waking up.',
-        sub: `${msg} Click "Run Earth Demo" or "Run Space Demo" again in 30 seconds.`,
+        message: 'Demo unavailable — backend may still be starting up.',
+        sub: `${msg}. Wait 20 seconds and click the demo button again.`,
         email: 'deepa@caseai.co.uk',
         linkedin: 'https://www.linkedin.com/company/caseai'
       }));
       setShow(false);
-    } finally { setLoading(false); }
+    } finally { 
+      setLoading(false); 
+      setSimulationStage('');
+    }
   }
 
   async function generate(nextScenario = scenario, nextPrompt = prompt, activeContext = model || projectContext, clientOverride = client, opts = {}) {
