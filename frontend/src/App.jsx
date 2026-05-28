@@ -1897,7 +1897,7 @@ function parseMoneyLocal(v) {
     } finally { setLoading(false); }
   }
 
-  async function generate(nextScenario = scenario, nextPrompt = prompt, activeContext = model || projectContext, clientOverride = client) {
+  async function generate(nextScenario = scenario, nextPrompt = prompt, activeContext = model || projectContext, clientOverride = client, opts = {}) {
     setError(''); setShow(false);
 
     // Canonical state lock: every scenario re-run must preserve the active project universe
@@ -1910,8 +1910,10 @@ function parseMoneyLocal(v) {
     setConfidencePulse(true);
     setTimeout(() => setPropagating(false), 1600);
     setLoading(true); setTab(nextScenario !== 'base' ? 'compare' : 'overview');
-    // Demo gate — fires only for real generate() calls, never for instant demos
-    if (!isAdminUser && demoUsed && !activeContext) {
+    // Demo gate — fires only for brand-new project runs from the main console
+    // NEVER fires for: showcase library, earth/space demo, scenario switching on existing model
+    const isGated = !isAdminUser && demoUsed && !activeContext && !opts.isShowcase && !opts.isDemo;
+    if (isGated) {
       setLoading(false); setPropagating(false);
       setError('Your free CASEY intelligence run has been used. Explore the Earth or Space demos, browse the Showcase Library, or contact us for full access.');
       setTab('pricing');
@@ -1930,8 +1932,8 @@ function parseMoneyLocal(v) {
       const m = normalizeModelForUI(await post('/generate', payload));
       const nextContext = lockedProjectContext(m, canonicalPrompt);
       setModel(m); setProjectContext(nextContext); setScenario(nextScenario); setPrompt(canonicalPrompt);
-      // Mark free run as used (only for real generate calls, not instant demos)
-      if (!isAdminUser && !activeContext) { markDemoUsed(); }
+      // Mark free run as used (only for real generate calls, not instant demos or showcase)
+      if (!isAdminUser && !activeContext && !opts.isShowcase && !opts.isDemo) { markDemoUsed(); }
     } catch (e) {
       let raw = String(e.message || e);
       try {
@@ -1948,7 +1950,7 @@ function parseMoneyLocal(v) {
   }
   function runEarth() { setProjectContext(null); loadInstantDemo('earth'); }
   function runSpace() { setShowShowcase(false); setProjectContext(null); loadInstantDemo('space'); }
-  function runShowcase(project) { setClient(project.client || 'Strategic reference case'); setShow(false); setShowShowcase(false); setProjectContext(null); setScenario('base'); setPrompt(project.prompt); generate('base', project.prompt, null, project.client || 'Strategic reference case'); }
+  function runShowcase(project) { setClient(project.client || 'Strategic reference case'); setShow(false); setShowShowcase(false); setProjectContext(null); setScenario('base'); setPrompt(project.prompt); generate('base', project.prompt, null, project.client || 'Strategic reference case', { isShowcase: true }); }
   function advisorQuestionText(input) {
     if (typeof input === 'string') return input.trim();
     if (input && typeof input === 'object') {
