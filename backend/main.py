@@ -3443,52 +3443,7 @@ def revenue_machine():
 # Pre-built showcase models for the platform demo
 # ═══════════════════════════════════════════════════════════════════
 
-# ── DEMO CACHE — models pre-built at first request, served instantly thereafter ──
-_DEMO_CACHE: dict = {}
-
-def _get_demo(key: str, prompt: str, demo_type: str, demo_label: str, demo_headline: str):
-    """Build demo model on first call, serve from cache on subsequent calls."""
-    if key not in _DEMO_CACHE:
-        try:
-            m = build_model(prompt, "ControlOrbit Demo", 3, 4, "base")
-            m["demo_mode"] = True
-            m["demo_type"] = demo_type
-            m["demo_label"] = demo_label
-            m["demo_headline"] = demo_headline
-            _DEMO_CACHE[key] = m
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
-    return _DEMO_CACHE[key]
-
-@app.get("/demo/earth")
-def demo_earth():
-    """HS2 Phase 2b — Earth infrastructure reference case."""
-    return _get_demo(
-        "earth",
-        "HS2 Phase 2b tunnelling stations signalling systems integration possessions operator acceptance UK rail",
-        "earth", "HS2 Phase 2b — Rail Mega Programme",
-        "Full programme intelligence pack — cost, schedule, risk, benchmarks, board attack and exports. Generated in 4 seconds."
-    )
-
-@app.get("/demo/space")
-def demo_space():
-    """Lunar Base Alpha — Space infrastructure reference case."""
-    return _get_demo(
-        "space",
-        "Lunar Base Alpha life support nuclear surface power autonomous commissioning resupply logistics 1000 crew",
-        "space", "Lunar Base Alpha — Deep Space Mega Programme",
-        "First-of-kind space programme intelligence. TRL risk, launch logistics, autonomous commissioning."
-    )
-
-@app.get("/demo/awre")
-def demo_awre():
-    """AWRE Aldermaston — Defence reference case."""
-    return _get_demo(
-        "awre",
-        "AWRE Aldermaston nuclear warhead facility upgrade classified defence sovereign supply chain security accreditation UK MOD",
-        "defence", "AWRE Aldermaston — Defence Nuclear Infrastructure",
-        "Classified programme intelligence. Security accreditation, sovereign supply chain, operational acceptance."
-    )
+# Demo routes moved to end of file — see _CASEY_DEMO_ROUTES section
 
 @app.get("/demo/gigafactory")
 def demo_gigafactory():
@@ -9300,3 +9255,76 @@ def build_model(prompt:str, client:str='', class_level:int=3, schedule_level:int
 APP_VERSION='CASEY V134.1 Full Sector Render Hardened'
 print('CASEY V134.1 numeric-safe hardening installed')
 # ================= END CASEY V134.1 NUMERIC SAFE HOTFIX =================
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CASEY DEMO ROUTES — defined at end of file so they use the final build_model
+# ═══════════════════════════════════════════════════════════════════════════════
+
+_DEMO_CACHE: dict = {}
+
+def _get_demo(key: str, prompt: str, demo_type: str, demo_label: str, demo_headline: str):
+    """Build demo model on first call, serve from cache on all subsequent calls."""
+    if key not in _DEMO_CACHE:
+        try:
+            m = build_model(prompt, "Reference case", 3, 4, "base")
+            m["demo_mode"] = True
+            m["demo_type"] = demo_type
+            m["demo_label"] = demo_label
+            m["demo_headline"] = demo_headline
+            m["prompt"] = prompt
+            _DEMO_CACHE[key] = m
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Demo build failed: {str(e)}")
+    return _DEMO_CACHE[key]
+
+@app.get("/demo/wake")
+def demo_wake():
+    """Wake endpoint — confirms backend is alive. Frontend polls this before loading demos."""
+    return {"status": "ok", "version": APP_VERSION, "demo_routes": ["/demo/earth", "/demo/space", "/demo/awre"]}
+
+@app.get("/demo/earth")
+def demo_earth_v2():
+    """HS2 Phase 2b — Earth infrastructure reference case."""
+    return _get_demo(
+        "earth",
+        "HS2 Phase 2b tunnelling stations signalling systems integration possessions operator acceptance UK rail",
+        "earth",
+        "Reference case — HS2 Phase 2b Rail Mega Programme",
+        "Full programme intelligence pack — cost, schedule, risk, benchmarks, board attack and exports."
+    )
+
+@app.get("/demo/space")
+def demo_space_v2():
+    """Lunar Base Alpha — Space infrastructure reference case."""
+    return _get_demo(
+        "space",
+        "Lunar Base Alpha life support nuclear surface power autonomous commissioning resupply logistics 1000 crew",
+        "space",
+        "Reference case — Lunar Base Alpha Deep Space Programme",
+        "Space programme intelligence — TRL risk, launch logistics, life support, autonomous commissioning."
+    )
+
+@app.get("/demo/awre")
+def demo_awre_v2():
+    """AWRE Aldermaston — Defence reference case."""
+    return _get_demo(
+        "awre",
+        "AWRE Aldermaston nuclear warhead facility upgrade classified defence sovereign supply chain security accreditation UK MOD",
+        "defence",
+        "Reference case — AWRE Aldermaston Nuclear Infrastructure",
+        "Classified programme intelligence — security accreditation, sovereign supply chain, operational acceptance."
+    )
+
+@app.get("/demo/gigafactory")
+def demo_gigafactory_v2():
+    """Gigafactory UK — battery manufacturing reference case."""
+    return _get_demo(
+        "gigafactory",
+        "Battery gigafactory West Midlands UK 50GWh EV manufacturing cell production utility grid connection",
+        "gigafactory",
+        "Reference case — Gigafactory UK Battery Manufacturing",
+        "EV battery manufacturing intelligence — grid connection, cell chemistry, yield ramp, utility complexity."
+    )
+
+print("CASEY demo routes installed at end of file — using final build_model")
