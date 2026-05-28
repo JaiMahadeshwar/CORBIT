@@ -457,6 +457,114 @@ function Kpi({ icon: Icon, label, value, sub, hot }) {
 function Table({ rows = [], cols = [], moneyCols = [] }) {
   return <div className="tableWrap"><table><thead><tr>{cols.map(c => <th key={c[0]}>{c[1]}</th>)}</tr></thead><tbody>{rows.map((r, i) => <tr key={i}>{cols.map(c => <td key={c[0]}>{moneyCols.includes(c[0]) ? fmt(r[c[0]]) : String(r[c[0]] ?? '')}</td>)}</tr>)}</tbody></table></div>;
 }
+// ── SAVED PROJECTS PANEL ────────────────────────────────────────────────────
+function SavedProjectsPanel({ projects, onLoad, onDelete, onClose }) {
+  if (!projects.length) return <section className="savedPanel">
+    <div className="savedHeader"><h2>Saved Projects</h2><button onClick={onClose}>✕ Close</button></div>
+    <div style={{padding:'40px',textAlign:'center',color:'#475569'}}>
+      <p style={{fontSize:'14px'}}>No saved projects yet.</p>
+      <p style={{fontSize:'12px',marginTop:'6px'}}>After running a project, click "Save Project" to store it here.</p>
+    </div>
+  </section>;
+  return <section className="savedPanel">
+    <div className="savedHeader"><h2>Saved Projects <span style={{color:'#8df7ff',fontWeight:'800'}}>{projects.length}</span></h2><button onClick={onClose}>✕ Close</button></div>
+    <div className="savedGrid">
+      {projects.map(p => <div className="savedCard" key={p.id}>
+        <div className="savedMeta"><span>{p.subsector || 'Capital Programme'}</span><em>{p.saved_at ? new Date(p.saved_at).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : ''}</em></div>
+        <h3>{p.title}</h3>
+        <div className="savedStats">
+          <div><span>P50</span><b>{p.cost_p50 || '—'}</b></div>
+          <div><span>Duration</span><b>{p.schedule || '—'}</b></div>
+          <div><span>Confidence</span><b>{p.confidence_pct ? p.confidence_pct + '%' : '—'}</b></div>
+          <div><span>Risk</span><b>{p.risk || '—'}</b></div>
+        </div>
+        <div className="savedActions">
+          <button className="savedLoad" onClick={() => onLoad(p)}>Load project →</button>
+          <button className="savedDelete" onClick={() => onDelete(p.id)}>Delete</button>
+        </div>
+      </div>)}
+    </div>
+  </section>;
+}
+
+// ── INVESTOR / PITCH MODE PANEL ──────────────────────────────────────────────
+function InvestorPanel({ onClose }) {
+  const metrics = [
+    { label: 'Global infrastructure spend', value: '$4.5T/year', note: 'Annual capex across all sectors CASEY covers' },
+    { label: 'T&T project controls revenue', value: '~£2.4B', note: 'Turner & Townsend 2023 revenue — primary displacement target' },
+    { label: 'Advisory fee per project', value: '£50K–£5M', note: 'What clients pay T&T/Arup/Faithful+Gould per engagement' },
+    { label: 'CASEY generation time', value: '4 seconds', note: 'vs 6–12 weeks for a traditional cost consultant pack' },
+    { label: 'Sectors covered', value: '15+ sectors', note: 'Rail, nuclear, defence, space, pharma, data centres, ports, airports, energy, mining, water, gigafactory, semiconductors, ports, ISRU' },
+    { label: 'Countries / jurisdictions', value: '70+', note: 'Full location intelligence: currency, framework, approval body, OBA, financing' },
+    { label: 'Named global benchmarks', value: '63 programmes', note: 'Real cost growth %, schedule slip months, failure mode, lesson — per sector' },
+    { label: 'Fields per project output', value: '106 fields', note: 'vs a 40-page static Word document from a traditional advisor' },
+  ];
+  const moats = [
+    { title: 'Reference class data moat', body: 'CASEY embeds 63 named global programmes with real cost growth, schedule slip, and failure modes. Replicating this requires years of manual curation — it cannot be scraped.' },
+    { title: 'Sector ontology lock', body: 'Every project routes through a sector-specific causal chain (rail → possessions → signalling → systems integration). Generic LLMs cannot do this without the ontology.' },
+    { title: 'OBA engine', body: 'Optimism bias quantified per location using Flyvbjerg 2003/2022 and HM Treasury Green Book. No competitor has location-aware OBA in the output.' },
+    { title: 'Board attack simulation', body: 'The tool generates the 5 questions a real investment committee will ask — sector-specific, project-specific, with real P50/P80 numbers. This is impossible to replicate from a static template.' },
+    { title: 'Speed × breadth', body: 'T&T charges £200K and takes 8 weeks. CASEY delivers 4 seconds. An investor who sees both outputs in the same room immediately understands the displacement.' },
+  ];
+  const revenue = [
+    { tier: 'SaaS — Project packs', model: 'Per run or monthly seat', price: '$500–$2,000/run or $5K–$25K/month', tam: 'Programme directors, investment committees, project sponsors' },
+    { tier: 'Enterprise licence', model: 'Annual contract + private models', price: '$150K–$1M/year', tam: 'Tier 1 contractors, development banks, sovereign wealth funds' },
+    { tier: 'Consulting displacement', model: 'White-label + outcome share', price: '$5M+ deals', tam: 'Replacing T&T, Faithful+Gould, AECOM PM, Currie+Brown engagements' },
+    { tier: 'MDB / IFI deployment', model: 'World Bank / ADB platform licence', price: '$10M+ multi-year', tam: 'World Bank IDA/IBRD mandates reference class forecasting' },
+  ];
+  return <section className="investorPanel">
+    <div className="investorHeader">
+      <div><span style={{fontSize:'10px',fontWeight:'800',letterSpacing:'.15em',color:'#8df7ff'}}>CASEY INVESTOR BRIEF</span><h2>The intelligence stack T&T cannot build</h2><p>CASEY is a capital programme intelligence platform that displaces traditional cost consulting. Here is the investment case.</p></div>
+      <button onClick={onClose}>✕ Close</button>
+    </div>
+    <div className="investorGrid">
+      <div className="investorBlock"><h3>Market metrics</h3>
+        {metrics.map(m => <div className="investorMetric" key={m.label}>
+          <div className="investorMetricVal">{m.value}</div>
+          <div className="investorMetricLabel">{m.label}</div>
+          <div className="investorMetricNote">{m.note}</div>
+        </div>)}
+      </div>
+      <div className="investorBlock"><h3>Defensible moats</h3>
+        {moats.map(m => <div className="investorMoat" key={m.title}>
+          <b>{m.title}</b><p>{m.body}</p>
+        </div>)}
+      </div>
+      <div className="investorBlock wide"><h3>Revenue model</h3>
+        <div className="investorRevTable">
+          <div className="investorRevHeader"><span>Tier</span><span>Model</span><span>Price</span><span>Who buys</span></div>
+          {revenue.map(r => <div className="investorRevRow" key={r.tier}>
+            <span>{r.tier}</span><span>{r.model}</span><span style={{color:'#8df7ff',fontWeight:'700'}}>{r.price}</span><span>{r.tam}</span>
+          </div>)}
+        </div>
+        <div style={{marginTop:'16px',padding:'12px',background:'rgba(141,247,255,0.05)',borderRadius:'4px',border:'1px solid rgba(141,247,255,0.12)'}}>
+          <p style={{fontSize:'11px',color:'#94a3b8',lineHeight:'1.6',margin:0}}><b style={{color:'#8df7ff'}}>The displacement thesis:</b> Turner & Townsend 2023 revenue was ~£2.4B. Every £1M of CASEY ARR replaces £4M+ of incumbent advisory spend — because a single CASEY licence replaces a team of 6–10 consultants. This is a category-defining displacement, not an incremental software play.</p>
+        </div>
+      </div>
+    </div>
+    <div style={{padding:'16px 24px',borderTop:'1px solid rgba(255,255,255,0.06)',display:'flex',gap:'12px',flexWrap:'wrap'}}>
+      <a className="contactBtn" href="mailto:hello@casey.ai?subject=CASEY+Investment+Enquiry&body=I+am+interested+in+discussing+the+CASEY+investment+opportunity."><Mail size={15}/> Investor enquiry</a>
+      <a className="contactBtn" href="mailto:hello@casey.ai?subject=CASEY+Enterprise+Demo"><Mail size={15}/> Book enterprise demo</a>
+    </div>
+  </section>;
+}
+
+// ── DEMO BANNER (shows what demo is running) ─────────────────────────────────
+function DemoBanner({ model }) {
+  if (!model?.demo_mode) return null;
+  const labels = {
+    earth: { icon: '🚄', label: 'Earth Demo — HS2 Phase 2b Rail Mega Programme', color: 'rgba(16,185,129,0.15)', border: 'rgba(16,185,129,0.3)', text: '#10b981' },
+    space: { icon: '🌕', label: 'Space Demo — Lunar Base Alpha Deep Space Infrastructure', color: 'rgba(141,247,255,0.08)', border: 'rgba(141,247,255,0.25)', text: '#8df7ff' },
+    defence: { icon: '🛡️', label: 'Defence Demo — AWRE Aldermaston Nuclear Infrastructure', color: 'rgba(245,158,11,0.1)', border: 'rgba(245,158,11,0.3)', text: '#f59e0b' },
+    gigafactory: { icon: '⚡', label: 'Gigafactory Demo — Battery Manufacturing UK', color: 'rgba(177,140,255,0.1)', border: 'rgba(177,140,255,0.3)', text: '#b18cff' },
+  };
+  const d = labels[model.demo_type] || { icon: '◆', label: model.demo_label || 'CASEY Demo', color: 'rgba(141,247,255,0.06)', border: 'rgba(141,247,255,0.2)', text: '#8df7ff' };
+  return <div style={{background:d.color,border:`1px solid ${d.border}`,borderRadius:'4px',padding:'7px 14px',marginBottom:'8px',display:'flex',alignItems:'center',gap:'10px',fontSize:'11px'}}>
+    <span style={{fontSize:'18px'}}>{d.icon}</span>
+    <div><span style={{fontWeight:'800',color:d.text,letterSpacing:'.08em'}}>{d.label}</span><span style={{color:'#64748b',marginLeft:'10px'}}>{model.demo_headline || 'Pre-built reference case — run your own project from the console.'}</span></div>
+  </div>;
+}
+
 function Hero({ onBriefing, onEarth, onSpace, onConsole, onTryDemo }) {
   return <section className="v50TakeoverHero">
     <video className="v50HeroVideo" src="https://corbit.b-cdn.net/casey_hero_film.mp4" autoPlay muted loop playsInline preload="auto" crossOrigin="anonymous" />
@@ -1520,9 +1628,9 @@ function ShowcaseLibrary({ onRun, onBack }) {
   </section>;
 }
 
-function GatedMessage({ raw }) {
+function GatedMessage({ raw, onDismiss, onShowcase, onEarth, onSpace }) {
   let msg = "You've used your one free CASEY intelligence run.";
-  let sub = "To run more projects, compare scenarios or download the full output pack, get in touch.";
+  let sub = "Browse 40 free reference cases in the Showcase Library, run the Earth or Space demos, or contact us for full access.";
   let email = "deepa@caseai.co.uk";
   let linkedin = "https://www.linkedin.com/company/caseai";
   try {
@@ -1534,17 +1642,21 @@ function GatedMessage({ raw }) {
   } catch {}
   return (
     <div className="caseyGate">
-      <div className="caseyGateInner">
+      <div className="caseyGateInner" style={{position:'relative'}}>
+        {onDismiss && <button onClick={onDismiss} style={{position:'absolute',top:'12px',right:'14px',background:'none',border:'none',color:'#475569',cursor:'pointer',fontSize:'18px',lineHeight:1}}>✕</button>}
         <span className="caseyGateIcon">✦</span>
         <h3>{msg}</h3>
         <p>{sub}</p>
-        <div className="caseyGateCtas">
-          <a href={"mailto:" + email} className="caseyGateBtn primary">
-            ✉ {email}
-          </a>
-          <a href={linkedin} target="_blank" rel="noopener noreferrer" className="caseyGateBtn secondary">
-            in  Connect on LinkedIn
-          </a>
+        <div className="caseyGateCtas" style={{flexDirection:'column',gap:'8px'}}>
+          <div style={{display:'flex',gap:'8px',flexWrap:'wrap',justifyContent:'center'}}>
+            {onShowcase && <button onClick={onShowcase} className="caseyGateBtn" style={{background:'rgba(141,247,255,0.1)',border:'1px solid rgba(141,247,255,0.3)',color:'#8df7ff',cursor:'pointer',padding:'10px 18px',borderRadius:'4px',fontSize:'13px',fontWeight:'700'}}>Browse Showcase Library →</button>}
+            {onEarth && <button onClick={onEarth} className="caseyGateBtn" style={{background:'rgba(16,185,129,0.08)',border:'1px solid rgba(16,185,129,0.25)',color:'#10b981',cursor:'pointer',padding:'10px 18px',borderRadius:'4px',fontSize:'13px',fontWeight:'700'}}>🚄 Run Earth Demo</button>}
+            {onSpace && <button onClick={onSpace} className="caseyGateBtn" style={{background:'rgba(141,247,255,0.05)',border:'1px solid rgba(141,247,255,0.2)',color:'#8df7ff',cursor:'pointer',padding:'10px 18px',borderRadius:'4px',fontSize:'13px',fontWeight:'700'}}>🌕 Run Space Demo</button>}
+          </div>
+          <div style={{display:'flex',gap:'8px',flexWrap:'wrap',justifyContent:'center'}}>
+            <a href={"mailto:" + email} className="caseyGateBtn primary">✉ {email}</a>
+            <a href={linkedin} target="_blank" rel="noopener noreferrer" className="caseyGateBtn secondary">in Connect on LinkedIn</a>
+          </div>
         </div>
       </div>
     </div>
@@ -1873,6 +1985,49 @@ function parseMoneyLocal(v) {
     catch(e) { return 0; }
   });
 
+  // ── SAVED PROJECTS ────────────────────────────────────────────────────────
+  const [savedProjects, setSavedProjects] = React.useState(() => {
+    try { return JSON.parse(localStorage.getItem('casey_saved_projects') || '[]'); }
+    catch(e) { return []; }
+  });
+  const [showSaved, setShowSaved] = React.useState(false);
+  const [showInvestor, setShowInvestor] = React.useState(false);
+
+  function saveCurrentProject() {
+    if (!model) return;
+    const entry = {
+      id: Date.now(),
+      saved_at: new Date().toISOString(),
+      title: model.title || model.prompt || 'Unnamed project',
+      subsector: model.subsector || '',
+      cost_p50: model.cost_p50 || '',
+      schedule: model.schedule || '',
+      confidence_pct: model.confidence_pct || '',
+      risk: model.risk || '',
+      prompt: model.prompt || prompt,
+      model_snapshot: model,
+    };
+    const updated = [entry, ...savedProjects].slice(0, 20);
+    setSavedProjects(updated);
+    try { localStorage.setItem('casey_saved_projects', JSON.stringify(updated)); } catch(e) {}
+  }
+
+  function deleteSaved(id) {
+    const updated = savedProjects.filter(p => p.id !== id);
+    setSavedProjects(updated);
+    try { localStorage.setItem('casey_saved_projects', JSON.stringify(updated)); } catch(e) {}
+  }
+
+  function loadSaved(entry) {
+    const m = normalizeModelForUI(entry.model_snapshot);
+    setModel(m);
+    setPrompt(entry.prompt || '');
+    setProjectContext(lockedProjectContext(m, entry.prompt || ''));
+    setShowSaved(false);
+    setShow(false);
+    setTab('overview');
+  }
+
   // Mark the free run as used — only called after a real generate(), never after instant demos
   function markDemoUsed() {
     try {
@@ -1915,7 +2070,12 @@ function parseMoneyLocal(v) {
     const isGated = !isAdminUser && demoUsed && !activeContext && !opts.isShowcase && !opts.isDemo;
     if (isGated) {
       setLoading(false); setPropagating(false);
-      setError('Your free CASEY intelligence run has been used. Explore the Earth or Space demos, browse the Showcase Library, or contact us for full access.');
+      setError(JSON.stringify({
+        message: "You've used your one free CASEY intelligence run.",
+        sub: "Browse the Showcase Library (40 free reference cases), run the Earth or Space demos, or get in touch for full access.",
+        email: "deepa@caseai.co.uk",
+        linkedin: "https://www.linkedin.com/company/caseai"
+      }));
       setTab('pricing');
       return;
     }
@@ -1948,9 +2108,9 @@ function parseMoneyLocal(v) {
     }
     finally { setLoading(false); setSimulationStage(''); setConfidencePulse(false); }
   }
-  function runEarth() { setProjectContext(null); loadInstantDemo('earth'); }
-  function runSpace() { setShowShowcase(false); setProjectContext(null); loadInstantDemo('space'); }
-  function runShowcase(project) { setClient(project.client || 'Strategic reference case'); setShow(false); setShowShowcase(false); setProjectContext(null); setScenario('base'); setPrompt(project.prompt); generate('base', project.prompt, null, project.client || 'Strategic reference case', { isShowcase: true }); }
+  function runEarth() { setProjectContext(null); setError(''); loadInstantDemo('earth'); }
+  function runSpace() { setShowShowcase(false); setProjectContext(null); setError(''); loadInstantDemo('space'); }
+  function runShowcase(project) { setError(''); setClient(project.client || 'Strategic reference case'); setShow(false); setShowShowcase(false); setProjectContext(null); setScenario('base'); setPrompt(project.prompt); generate('base', project.prompt, null, project.client || 'Strategic reference case', { isShowcase: true }); }
   function advisorQuestionText(input) {
     if (typeof input === 'string') return input.trim();
     if (input && typeof input === 'object') {
@@ -2125,12 +2285,26 @@ function parseMoneyLocal(v) {
     <OneShotDemo open={trialOpen} onClose={() => setTrialOpen(false)} onComplete={(m) => { const nm = normalizeModelForUI(m); setModel(nm); setProjectContext(lockedProjectContext(nm, nm?.prompt || prompt)); setShow(false); setTrialOpen(false); setTab('overview'); }} />
     <AnimatePresence>{loading && <Loading text="Building full CASEY intelligence pack..."/>}</AnimatePresence>
     {show && !model && <Hero onBriefing={() => setBriefing(true)} onEarth={runEarth} onSpace={runSpace} onConsole={() => setShow(false)} onTryDemo={() => setTrialOpen(true)}/>} 
-    <header className="v50ConsoleTop"><Logo/><nav><button onClick={() => { setModel(null); setProjectContext(null); setShowShowcase(false); setShow(true); }}>Home</button><button onClick={() => setBriefing(true)}>Film</button><button onClick={() => setTrialOpen(true)}>Free run</button><button onClick={() => { setModel(null); setShow(false); setShowShowcase(true); }}>Showcase library</button><button onClick={runEarth}>Earth demo</button><button onClick={runSpace}>Space demo</button><a href={emailLink}>Request access</a></nav></header>
+    <header className="v50ConsoleTop"><Logo/><nav>
+      <button onClick={() => { setModel(null); setProjectContext(null); setShowShowcase(false); setShow(true); setError(''); }}>Home</button>
+      <button onClick={() => setBriefing(true)}>Film</button>
+      <button onClick={() => setTrialOpen(true)}>Free run</button>
+      <button onClick={() => { setModel(null); setShow(false); setShowShowcase(true); setError(''); }}>Showcase library</button>
+      {savedProjects.length > 0 && <button onClick={() => setShowSaved(s => !s)} style={{position:'relative'}}>Saved <span style={{background:'#8df7ff',color:'#0a1628',borderRadius:'10px',padding:'1px 6px',fontSize:'10px',fontWeight:'900',marginLeft:'4px'}}>{savedProjects.length}</span></button>}
+      {model && <button onClick={saveCurrentProject} style={{color:'#8df7ff',fontWeight:'700'}}>↓ Save project</button>}
+      <button onClick={runEarth}>Earth demo</button>
+      <button onClick={runSpace}>Space demo</button>
+      <button onClick={() => setShowInvestor(s => !s)} style={{color:'#b18cff',fontWeight:'700'}}>Investor brief</button>
+      <a href={emailLink}>Request access</a>
+    </nav></header>
+    {showSaved && <SavedProjectsPanel projects={savedProjects} onLoad={loadSaved} onDelete={deleteSaved} onClose={() => setShowSaved(false)}/>}
+    {showInvestor && <InvestorPanel onClose={() => setShowInvestor(false)}/>}
     <main className={model ? 'v50Console' : 'v50Console emptyConsole'}>
-      {error && <GatedMessage raw={error} />}
+      {error && !showShowcase && !show && <GatedMessage raw={error} onDismiss={() => setError('')} onShowcase={() => { setError(''); setShowShowcase(true); }} onEarth={() => { setError(''); runEarth(); }} onSpace={() => { setError(''); runSpace(); }}/>}
       {!model && showShowcase && <ShowcaseLibrary onRun={runShowcase} onBack={() => setShowShowcase(false)} />}
-      {!model && !show && !showShowcase && <section className="commandGrid"><Card className="command"><h1>Generate a live project model</h1><label>Project command</label><textarea value={prompt} onChange={e => setPrompt(e.target.value)} /> <div className="chips">{examples.map(x => <button key={x} onClick={() => setPrompt(x)}>{x}</button>)}</div><div className="grid4"><input value={client} onChange={e => setClient(e.target.value)} placeholder="Client / operator"/><select value={classLevel} onChange={e => setClassLevel(e.target.value)}>{[1,2,3,4,5].map(x => <option key={x} value={x}>Class {x}</option>)}</select><select value={scheduleLevel} onChange={e => setScheduleLevel(e.target.value)}>{[1,2,3,4,5].map(x => <option key={x} value={x}>Level {x}</option>)}</select><select value={scenario} onChange={e => setScenario(e.target.value)}>{scenarios.map(x => <option key={x} value={x}>{x}</option>)}</select></div><button className="primary" onClick={() => generate()}><Sparkles/> Generate full intelligence pack</button><button className="secondary" onClick={() => setShowShowcase(true)}><Globe2/> Open global showcase library</button></Card><Card><h2>What CASEY will produce</h2>{['Executive summary and recommendation','Direct / indirect / reserve cost view','Scenario-linked estimate, schedule and confidence','Risk register with cause, event, impact and mitigation','QCRA + QSRA curves and tornado drivers','Pricing and next-step contact actions'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card></section>}
+      {!model && !show && !showShowcase && <section className="commandGrid"><Card className="command"><h1>Generate a live project model</h1><label>Project command</label><textarea value={prompt} onChange={e => setPrompt(e.target.value)} /> <div className="chips">{examples.map(x => <button key={x} onClick={() => setPrompt(x)}>{x}</button>)}</div><div className="grid4"><input value={client} onChange={e => setClient(e.target.value)} placeholder="Client / operator"/><select value={classLevel} onChange={e => setClassLevel(e.target.value)}>{[1,2,3,4,5].map(x => <option key={x} value={x}>Class {x}</option>)}</select><select value={scheduleLevel} onChange={e => setScheduleLevel(e.target.value)}>{[1,2,3,4,5].map(x => <option key={x} value={x}>Level {x}</option>)}</select><select value={scenario} onChange={e => setScenario(e.target.value)}>{scenarios.map(x => <option key={x} value={x}>{x}</option>)}</select></div><button className="primary" onClick={() => generate()}><Sparkles/> Generate full intelligence pack</button><button className="secondary" onClick={() => { setShowShowcase(true); setError(''); }}><Globe2/> Open global showcase library</button></Card><Card><h2>What CASEY will produce</h2>{['Executive summary and recommendation','Direct / indirect / reserve cost view','Scenario-linked estimate, schedule and confidence','Risk register with cause, event, impact and mitigation','QCRA + QSRA curves and tornado drivers','Pricing and next-step contact actions'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card></section>}
       {model && <>
+        <DemoBanner model={model}/>
         <section className="confidenceEngineBadge"><b>{model.confidence_engine_label || 'CASEY Confidence Engine'}</b><span>{safeRender(typeof model.confidence_engine_detail === 'object' ? model.confidence_engine_detail?.plain_english || 'Benchmark + probabilistic + sector-trained reasoning' : model.confidence_engine_detail || 'Benchmark + probabilistic + sector-trained reasoning')}</span></section>
         <TrustRuntimeBar model={model}/>
         <LiveCalibrationStrip model={model}/>
@@ -2149,7 +2323,7 @@ function parseMoneyLocal(v) {
           <span style={{fontSize:'11px',color:'#94a3b8'}}>Exports available below. Earth Demo, Space Demo and Showcase Library always free.</span>
           <a href="mailto:hello@controlorbit.com?subject=CASEY Full Access" style={{marginLeft:'auto',fontSize:'11px',color:'#8df7ff',fontWeight:'700',textDecoration:'none',background:'rgba(141,247,255,0.1)',padding:'4px 12px',borderRadius:'3px',border:'1px solid rgba(141,247,255,0.3)'}}>Request full access →</a>
         </div>}
-      <nav className="tabs">{[['overview','Overview'],['compare','Scenarios'],['delta','Scenario Intel'],['causal','Causal OS'],['cost','Cost'],['schedule','Schedule'],['risk','Risk'],['monte','QCRA/QSRA'],['outputs','Outputs'],['assurance','Assurance'],['runtime','Live Stress Test'],['advisor','Advisor'],['method','Methodology'],['pricing','Pricing']].map(x => <button key={x[0]} className={tab===x[0]?'active':''} onClick={() => setTab(x[0])}>{x[1]}</button>)}</nav>
+      <nav className="tabs">{[['overview','Overview'],['compare','Scenarios'],['delta','Scenario Intel'],['causal','Causal OS'],['cost','Cost'],['schedule','Schedule'],['risk','Risk'],['monte','QCRA/QSRA'],['outputs','Outputs'],['assurance','Assurance'],['runtime','Live Stress Test'],['advisor','Advisor'],['method','Methodology'],['benchmark','Benchmarks'],['pricing','Pricing']].map(x => <button key={x[0]} className={tab===x[0]?'active':''} onClick={() => setTab(x[0])}>{x[1]}</button>)}</nav>
         {tab === 'overview' && <>
           {model.executive_shock_insight && <section className="layout one"><Card className="shockCard"><h2>⚡ Live model update</h2><p>{model.executive_shock_insight}</p></Card></section>}
           <section className="layout two">
@@ -2417,7 +2591,60 @@ function parseMoneyLocal(v) {
 
         {tab === 'runtime' && <HolyGrailRuntime model={model} scenario={scenario} generate={generate} runShock={runShock}/>}
         {tab === 'method' && <section className="layout two"><Card><h2>How CASEY calculated this</h2>{['Cost model: selected class estimate, sector template, location factor, complexity factor and scenario modifier.','Schedule model: level-based delivery logic, phase durations, critical path sensitivity and scenario acceleration/delay factors.','QCRA: cost exposure model using low / most likely / high impacts and risk-weighted contingency.','QSRA: schedule exposure model using activity-linked O/M/P delay ranges and critical path sensitivity.','Confidence score translated for executives: board-defensibility based on benchmark similarity, evidence maturity, procurement certainty, schedule logic, contingency adequacy and scenario posture.'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card><Card><h2>Commercial readiness</h2><p className="big">This is first-pass project controls intelligence. It is designed to accelerate challenge, option testing and board preparation before final contractor tender or signed cost plan.</p><a className="contactBtn huge" href={emailLink}><Mail/> Send project for review</a></Card></section>}
-        {tab === 'pricing' && <section className="layout two"><Card><h2>CASEY Access</h2><div className="pricingGrid"><div className="priceCard"><b>Pilot</b><strong>Request pricing</strong><span>Guided project review, sample outputs and executive walkthrough.</span><a href={emailLink}>Request pilot</a></div><div className="priceCard hot"><b>Professional</b><strong>Full project pack</strong><span>Cost, schedule, risk, QCRA/QSRA and export pack.</span><a href={emailLink}>Request access</a></div><div className="priceCard"><b>Enterprise</b><strong>Private deployment</strong><span>SSO, teams, benchmark library, private models and audit trail.</span><a href={emailLink}>Book demo</a></div></div></Card><Card><h2>Send this project</h2><p className="big">Turn demo interest into pipeline immediately.</p><a className="contactBtn huge" href={emailLink}><Mail/> Send project to CASEY</a><button className="primary" onClick={() => download('/export/all', model, 'CASEY_Output_Pack.zip')}>Download full pack</button></Card></section>}
+        {tab === 'benchmark' && <section className="layout two">
+          <Card><h2>Named global benchmarks — what CASEY used</h2>
+            <p className="chartCaption">These are the real-world programmes that calibrated the model. Cost growth %, schedule slip and failure mode are from public record.</p>
+            <div style={{overflowX:'auto'}}>
+              <table style={{width:'100%',borderCollapse:'collapse',fontSize:'11px'}}>
+                <thead><tr style={{borderBottom:'1px solid rgba(255,255,255,0.1)'}}>
+                  {['Programme','Sector','P50 Anchor','Duration','Cost Growth','Slip (mo)','Primary Failure Mode'].map(h=><th key={h} style={{padding:'6px 8px',textAlign:'left',color:'#64748b',fontWeight:'800',letterSpacing:'.08em'}}>{h}</th>)}
+                </tr></thead>
+                <tbody>{(model?.benchmark_comparison||[]).map((b,i)=><tr key={i} style={{borderBottom:'1px solid rgba(255,255,255,0.04)',background:i%2===0?'rgba(255,255,255,0.01)':'transparent'}}>
+                  <td style={{padding:'7px 8px',color:'#e2e8f0',fontWeight:'700'}}>{b.name||b.archetype}</td>
+                  <td style={{padding:'7px 8px',color:'#8df7ff',fontSize:'10px'}}>{b.sector}</td>
+                  <td style={{padding:'7px 8px',color:'#94a3b8'}}>{b.anchor_cost||b.value}</td>
+                  <td style={{padding:'7px 8px',color:'#94a3b8'}}>{b.anchor_duration_months ? b.anchor_duration_months + ' mo' : '—'}</td>
+                  <td style={{padding:'7px 8px',color:b.cost_growth_pct>50?'#ef4444':b.cost_growth_pct>20?'#f59e0b':'#10b981',fontWeight:'700'}}>{b.cost_growth_pct ? '+'+b.cost_growth_pct+'%' : '—'}</td>
+                  <td style={{padding:'7px 8px',color:b.schedule_slip_months>24?'#ef4444':b.schedule_slip_months>12?'#f59e0b':'#94a3b8',fontWeight:'700'}}>{b.schedule_slip_months ? '+'+b.schedule_slip_months : '—'}</td>
+                  <td style={{padding:'7px 8px',color:'#64748b',maxWidth:'220px',lineHeight:'1.4'}}>{b.failure_mode||'—'}</td>
+                </tr>)}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+          <Card><h2>What benchmarks mean for your programme</h2>
+            <p className="chartCaption">CASEY routes every project through the closest real-world comparables. The benchmark similarity score, cost growth history and failure mode are applied to P80/P90 exposure and OBA adjustment.</p>
+            {(model?.benchmark_comparison||[]).map((b,i)=><div key={i} className="reason" style={{borderLeft:`2px solid ${b.cost_growth_pct>80?'rgba(239,68,68,0.5)':b.cost_growth_pct>30?'rgba(245,158,11,0.5)':'rgba(141,247,255,0.3)'}`,paddingLeft:'10px',marginBottom:'8px'}}>
+              <b style={{color:'#e2e8f0'}}>{b.name||b.archetype}</b>
+              {b.cost_growth_pct > 0 && <span style={{background:'rgba(239,68,68,0.1)',color:'#fca5a5',borderRadius:'3px',padding:'1px 6px',fontSize:'10px',fontWeight:'800',marginLeft:'8px'}}>+{b.cost_growth_pct}% cost</span>}
+              {b.schedule_slip_months > 0 && <span style={{background:'rgba(245,158,11,0.1)',color:'#fde68a',borderRadius:'3px',padding:'1px 6px',fontSize:'10px',fontWeight:'800',marginLeft:'4px'}}>+{b.schedule_slip_months}mo</span>}
+              <p style={{fontSize:'11px',color:'#64748b',marginTop:'4px',lineHeight:'1.5'}}>{b.lesson||b.failure_mode||b.why}</p>
+            </div>)}
+          </Card>
+        </section>}
+
+        {tab === 'pricing' && <section className="layout two">
+          <Card><h2>CASEY Access</h2>
+            <p style={{fontSize:'12px',color:'#64748b',marginBottom:'16px'}}>Every tier replaces £50K–£5M of incumbent advisory spend. One CASEY licence does the work of a team of 8–12 consultants — in 4 seconds.</p>
+            <div className="pricingGrid">
+              <div className="priceCard"><b>Pilot</b><strong style={{color:'#10b981'}}>From £5,000</strong><span>1 live project review, full output pack, board pack walkthrough. Replaces a £50K T&T preliminary advisory note.</span><a href={emailLink}>Start pilot</a></div>
+              <div className="priceCard hot"><b>Professional</b><strong style={{color:'#8df7ff'}}>From £30,000/year</strong><span>Unlimited project packs, all sectors, all scenarios, full export suite. Replaces 1–3 advisory engagements per year.</span><a href={emailLink}>Request access</a></div>
+              <div className="priceCard"><b>Enterprise</b><strong style={{color:'#b18cff'}}>From £150,000/year</strong><span>Private deployment, SSO, team seats, custom benchmark library, white-label. Replaces a full cost consultancy retainer.</span><a href={emailLink}>Book demo</a></div>
+            </div>
+            <div style={{marginTop:'16px',padding:'10px 14px',background:'rgba(141,247,255,0.04)',borderRadius:'4px',border:'1px solid rgba(141,247,255,0.1)'}}>
+              <p style={{fontSize:'11px',color:'#64748b',lineHeight:'1.6',margin:0}}><b style={{color:'#8df7ff'}}>The displacement calculation:</b> Turner & Townsend charge £200K for a global benchmark study. £75K for a location risk note. £150K for a financing advisory. CASEY generates all three simultaneously in 4 seconds. Enterprise at £150K replaces 3–5 advisory engagements at £50K–£200K each.</p>
+            </div>
+          </Card>
+          <Card><h2>Send this project now</h2>
+            <p className="big">Turn demo interest into pipeline immediately. Forward this output to your investment committee, board pack, or programme sponsor.</p>
+            <a className="contactBtn huge" href={emailLink}><Mail size={16}/> Send project for review</a>
+            {model && <button className="primary" style={{marginTop:'12px',width:'100%'}} onClick={() => download('/export/all', model, 'CASEY_Output_Pack.zip')}><Download size={15}/> Download full intelligence pack</button>}
+            <div style={{marginTop:'16px',borderTop:'1px solid rgba(255,255,255,0.06)',paddingTop:'14px'}}>
+              <p style={{fontSize:'11px',color:'#475569',marginBottom:'10px',fontWeight:'700',letterSpacing:'.08em'}}>WHAT'S IN THE PACK</p>
+              {['Cost model XLSX — P10/P50/P90 by CBS line, direct/indirect/reserve split','Risk register XLSX — cause, event, impact, owner, trigger, mitigation, residual','QCRA/QSRA Excel — cost and schedule probability curves and tornado chart','PRA schedule XER — Primavera-compatible with logic, phases and critical path','Audit model JSON — full traceability, benchmark provenance, evidence gaps','Board pack narrative — executive summary, board attack simulation, OBA assessment'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span><span style={{fontSize:'11px'}}>{x}</span></div>)}
+            </div>
+          </Card>
+        </section>}
       </>}
     </main>
   {(loading || exportingLabel) && <div className="simOverlay">
@@ -2428,6 +2655,56 @@ function parseMoneyLocal(v) {
       </div>
     </div>}
   </div>;
+}
+
+// ── SAVED PROJECTS + INVESTOR CSS ────────────────────────────────────────────
+const savedInvestorCSS = `
+.savedPanel,.investorPanel{position:fixed;top:0;right:0;width:min(640px,100vw);height:100vh;background:#0c1a2e;border-left:1px solid rgba(141,247,255,0.15);z-index:900;overflow-y:auto;display:flex;flex-direction:column;}
+.savedHeader,.investorHeader{padding:18px 20px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;justify-content:space-between;align-items:flex-start;flex-shrink:0;background:#0a1628;}
+.savedHeader h2,.investorHeader h2{color:#e2e8f0;font-size:16px;font-weight:800;margin:0;}
+.savedHeader button,.investorHeader button{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#94a3b8;padding:5px 12px;border-radius:3px;cursor:pointer;font-size:12px;flex-shrink:0;}
+.savedGrid{padding:16px;display:flex;flex-direction:column;gap:10px;}
+.savedCard{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:5px;padding:14px 16px;}
+.savedCard:hover{border-color:rgba(141,247,255,0.2);}
+.savedCard h3{color:#e2e8f0;font-size:13px;font-weight:700;margin:4px 0 10px;}
+.savedMeta{display:flex;justify-content:space-between;font-size:10px;font-weight:800;letter-spacing:.1em;color:#8df7ff;margin-bottom:4px;}
+.savedMeta em{color:#475569;font-style:normal;}
+.savedStats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px;}
+.savedStats>div{background:rgba(255,255,255,0.03);border-radius:3px;padding:6px;text-align:center;}
+.savedStats span{display:block;font-size:9px;color:#475569;font-weight:800;letter-spacing:.08em;margin-bottom:2px;}
+.savedStats b{display:block;font-size:12px;color:#8df7ff;font-weight:700;}
+.savedActions{display:flex;gap:8px;}
+.savedLoad{background:rgba(141,247,255,0.08);border:1px solid rgba(141,247,255,0.2);color:#8df7ff;padding:5px 14px;border-radius:3px;cursor:pointer;font-size:11px;font-weight:700;}
+.savedLoad:hover{background:rgba(141,247,255,0.15);}
+.savedDelete{background:transparent;border:1px solid rgba(239,68,68,0.2);color:#475569;padding:5px 12px;border-radius:3px;cursor:pointer;font-size:11px;}
+.savedDelete:hover{border-color:rgba(239,68,68,0.4);color:#fca5a5;}
+.investorPanel{width:min(900px,100vw);}
+.investorHeader{flex-direction:row;gap:16px;align-items:flex-start;}
+.investorHeader h2{font-size:20px;color:#e2e8f0;margin:4px 0 6px;}
+.investorHeader p{color:#64748b;font-size:12px;margin:0;}
+.investorGrid{padding:20px;display:flex;flex-direction:column;gap:16px;}
+.investorBlock{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:5px;padding:16px 18px;}
+.investorBlock h3{font-size:11px;font-weight:800;letter-spacing:.12em;color:#8df7ff;margin:0 0 12px;text-transform:uppercase;}
+.investorBlock.wide{width:100%;}
+.investorMetric{display:inline-block;margin:0 16px 12px 0;vertical-align:top;width:calc(50% - 20px);}
+.investorMetricVal{font-size:22px;font-weight:900;color:#e2e8f0;line-height:1;}
+.investorMetricLabel{font-size:11px;color:#94a3b8;font-weight:600;margin:3px 0 1px;}
+.investorMetricNote{font-size:10px;color:#475569;line-height:1.4;}
+.investorMoat{margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,0.05);}
+.investorMoat:last-child{border-bottom:none;margin-bottom:0;}
+.investorMoat b{color:#e2e8f0;font-size:12px;display:block;margin-bottom:3px;}
+.investorMoat p{color:#64748b;font-size:11px;line-height:1.6;margin:0;}
+.investorRevTable{display:flex;flex-direction:column;gap:0;}
+.investorRevHeader,.investorRevRow{display:grid;grid-template-columns:1.8fr 1.8fr 1.6fr 2fr;gap:8px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:11px;}
+.investorRevHeader{color:#64748b;font-weight:800;letter-spacing:.08em;font-size:9px;text-transform:uppercase;}
+.investorRevRow{color:#94a3b8;}
+.investorRevRow:last-child{border-bottom:none;}
+`;
+if (!document.querySelector('#casey-saved-investor-css')) {
+  const s = document.createElement('style');
+  s.id = 'casey-saved-investor-css';
+  s.textContent = savedInvestorCSS;
+  document.head.appendChild(s);
 }
 
 createRoot(document.getElementById('root')).render(<CaseyErrorBoundary><App/></CaseyErrorBoundary>);
