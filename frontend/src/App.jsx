@@ -605,6 +605,8 @@ function OneShotDemo({ open, onClose, onComplete }) {
       const r = await post('/public-demo/generate', { ...form, project_type: inferType(form.project_description), client_token: clientToken(), fingerprint: fingerprint() });
       setResult(r);
       onComplete?.(r.model);
+      // Mark free run as used after successful OneShotDemo run
+      try { if (!['jaimahadeshwar@yahoo.com','test@yahoo.com','deepa@caseai.co.uk','admin@controlorbit.com','demo@controlorbit.com','jai@controlorbit.com'].includes((form.email||'').toLowerCase().trim())) { localStorage.setItem('casey_demo_used','1'); } } catch(e) {}
     } catch(e) {
       let msg = String(e.message||e);
       try { const p=JSON.parse(msg); msg=typeof p.detail==='object'?(p.detail.message||JSON.stringify(p.detail)):(p.detail||msg); } catch {}
@@ -1823,25 +1825,61 @@ function parseMoneyLocal(v) {
   }
 
 
-  // ── Demo gate (1 run per visitor, admin bypass via ?admin=KEY) ───────
+  // ── Demo gate ────────────────────────────────────────────────────────
+  // NEVER locked: Earth Demo, Space Demo, Showcase, Pricing, Film, Request Access
+  // 1 free run: generate() via OneShotDemo modal
+  // ADMIN (unlimited): localhost, admin emails, ?admin=casey2024
+
+  const CASEY_ADMIN_EMAILS = [
+    'deepa@caseai.co.uk','admin@controlorbit.com','demo@controlorbit.com',
+    'jaimahadeshwar@yahoo.com','jai@controlorbit.com','test@yahoo.com',
+    'jai@caseai.co.uk','deepa@controlorbit.com'
+  ];
+  const CASEY_ADMIN_URL_KEYS = ['casey2024','casey','corbit2024','admin2024'];
+
   const isAdminUser = React.useMemo(() => {
     try {
+      // 1. Localhost / local dev — always admin
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname === '0.0.0.0') return true;
+      // 2. URL key bypass — ?admin=casey2024 or ?admin=casey
       const params = new URLSearchParams(window.location.search);
-      const k = params.get('admin') || params.get('admin_key') || '';
-      return k.length > 4;
+      const k = (params.get('admin') || params.get('admin_key') || '').toLowerCase().trim();
+      if (CASEY_ADMIN_URL_KEYS.includes(k)) return true;
+      // 3. Admin email stored from previous modal run
+      const storedEmail = (localStorage.getItem('casey_user_email') || '').toLowerCase().trim();
+      if (storedEmail && CASEY_ADMIN_EMAILS.includes(storedEmail)) return true;
+      return false;
     } catch(e) { return false; }
   }, []);
+
   const [demoUsed, setDemoUsed] = React.useState(() => {
     try {
+      // Never locked on localhost
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') return false;
+      // URL key always bypasses
       const params = new URLSearchParams(window.location.search);
-      if (params.get('admin') || params.get('admin_key')) return false;
+      const k = (params.get('admin') || params.get('admin_key') || '').toLowerCase().trim();
+      if (CASEY_ADMIN_URL_KEYS.includes(k)) return false;
+      // Admin email bypasses
+      const storedEmail = (localStorage.getItem('casey_user_email') || '').toLowerCase().trim();
+      if (storedEmail && CASEY_ADMIN_EMAILS.includes(storedEmail)) return false;
+      // Check if free run has been used
       return localStorage.getItem('casey_demo_used') === '1';
     } catch(e) { return false; }
   });
+
   const [demoDownloads, setDemoDownloads] = React.useState(() => {
     try { return parseInt(localStorage.getItem('casey_demo_downloads') || '0'); }
     catch(e) { return 0; }
   });
+
+  // Mark the free run as used — only called after a real generate(), never after instant demos
+  function markDemoUsed() {
+    try {
+      localStorage.setItem('casey_demo_used', '1');
+      setDemoUsed(true);
+    } catch(e) {}
+  }
 
   async function loadInstantDemo(type) {
     setLoading(true); setError(''); setModel(null); setTab('overview');
@@ -1872,8 +1910,10 @@ function parseMoneyLocal(v) {
     setConfidencePulse(true);
     setTimeout(() => setPropagating(false), 1600);
     setLoading(true); setTab(nextScenario !== 'base' ? 'compare' : 'overview');
-    // Demo gate
+    // Demo gate — fires only for real generate() calls, never for instant demos
     if (!isAdminUser && demoUsed && !activeContext) {
+      setLoading(false); setPropagating(false);
+      setError('Your free CASEY intelligence run has been used. Explore the Earth or Space demos, browse the Showcase Library, or contact us for full access.');
       setTab('pricing');
       return;
     }
@@ -1890,6 +1930,8 @@ function parseMoneyLocal(v) {
       const m = normalizeModelForUI(await post('/generate', payload));
       const nextContext = lockedProjectContext(m, canonicalPrompt);
       setModel(m); setProjectContext(nextContext); setScenario(nextScenario); setPrompt(canonicalPrompt);
+      // Mark free run as used (only for real generate calls, not instant demos)
+      if (!isAdminUser && !activeContext) { markDemoUsed(); }
     } catch (e) {
       let raw = String(e.message || e);
       try {
@@ -2100,10 +2142,11 @@ function parseMoneyLocal(v) {
           onRisk={() => download('/export/risk-register', model, `${model.id || 'casey'}_DEMO_RISK_REGISTER.xlsx`)}
           onXer={() => download('/export/xer', model, `${model.id || 'casey'}_DEMO_SCHEDULE.xer`)}
           onQcra={() => download('/export/qcra-qsra', model, `${model.id || 'casey'}_DEMO_QCRA_QSRA.xlsx`)}/>
-        {demoUsed && !isAdminUser && <div style={{background:'rgba(245,158,11,0.15)',borderBottom:'1px solid rgba(245,158,11,0.3)',padding:'6px 16px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-        <span style={{fontSize:'11px',color:'#f59e0b',fontWeight:'700'}}>DEMO: 1 run used. Results and 1 export available. <a href="/pricing" style={{color:'#fff',textDecoration:'underline'}} onClick={e=>{e.preventDefault();setTab('pricing');}}>Get full access →</a></span>
-        <span style={{fontSize:'10px',color:'#64748b'}}>Reset: clear browser cache or use private window</span>
-      </div>}
+        {demoUsed && !isAdminUser && model && <div style={{background:'rgba(245,158,11,0.1)',borderBottom:'1px solid rgba(245,158,11,0.25)',padding:'8px 20px',display:'flex',gap:'16px',alignItems:'center',flexWrap:'wrap'}}>
+          <span style={{fontSize:'11px',color:'#f59e0b',fontWeight:'800'}}>✓ FREE RUN COMPLETE</span>
+          <span style={{fontSize:'11px',color:'#94a3b8'}}>Exports available below. Earth Demo, Space Demo and Showcase Library always free.</span>
+          <a href="mailto:hello@controlorbit.com?subject=CASEY Full Access" style={{marginLeft:'auto',fontSize:'11px',color:'#8df7ff',fontWeight:'700',textDecoration:'none',background:'rgba(141,247,255,0.1)',padding:'4px 12px',borderRadius:'3px',border:'1px solid rgba(141,247,255,0.3)'}}>Request full access →</a>
+        </div>}
       <nav className="tabs">{[['overview','Overview'],['compare','Scenarios'],['delta','Scenario Intel'],['causal','Causal OS'],['cost','Cost'],['schedule','Schedule'],['risk','Risk'],['monte','QCRA/QSRA'],['outputs','Outputs'],['assurance','Assurance'],['runtime','Live Stress Test'],['advisor','Advisor'],['method','Methodology'],['pricing','Pricing']].map(x => <button key={x[0]} className={tab===x[0]?'active':''} onClick={() => setTab(x[0])}>{x[1]}</button>)}</nav>
         {tab === 'overview' && <>
           {model.executive_shock_insight && <section className="layout one"><Card className="shockCard"><h2>⚡ Live model update</h2><p>{model.executive_shock_insight}</p></Card></section>}
@@ -2230,7 +2273,131 @@ function parseMoneyLocal(v) {
 
         {tab === 'assurance' && <><IncumbentPressurePanel model={model} direct={direct} indirect={indirect} reserves={reserves} reconcileCheck={reconcileCheck}/><section className="layout two"><Card><h2>Assurance room weapons</h2>{['Open with the P80/P90 exposure, not the headline P50.','Ask which evidence package retires the governing constraint.','Force every mitigation to name owner, trigger, residual exposure and date.','Show scenario trade-offs live before anyone can defend a single-point estimate.','Export the audit model immediately so the conversation moves from opinion to traceability.'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card><Card><h2>What scares traditional advisors</h2>{['CASEY moves faster than manual assurance cycles.','Every scenario rewrites cost, schedule, confidence and board posture from one payload.','The system exposes contradictions instead of polishing the management story.','It turns static reports into live investment-committee interrogation.'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card></section><section className="layout one"><ProgrammeHealthSignal onRunHealthCheck={runHealthCheck}/></section></>}
 
-        {tab === 'advisor' && <section className="layout two advisorElite challengeRoom"><Card><h2>CASEY Board Assurance Console</h2><p className="advisorIntro">Click any question. CASEY answers instantly using the live programme model — not a generic response. Each answer references your actual P50, P80, confidence level and sector. Generate a project first for the most specific answers.</p><div className="advisorPrompts bigButtons">{['What is the board not seeing?','What would a traditional cost consultant say that CASEY challenges?','What evidence is missing before this becomes board-approvable?','What is the real governing chain?','Which assumptions collapse confidence first?','What is the board really deciding?','If this programme fails, what will be blamed publicly?','Give me CASEY POSITION.','What has management not yet evidenced?','What would destroy board confidence fastest?','What reported green item is not yet board-defensible?','Show Traditional Controls vs CASEY.','What is the one intervention that changes confidence fastest?','What would an external assurance reviewer challenge first?'].map(x=><button key={x} data-question={x} onClick={()=>ask(x)}><Brain size={14}/>{x}</button>)}</div><div className="chatBox boardInterrogation">{chat.length ? chat.map((m,i)=><div key={i} className={`msg ${m.role}`}>{(() => {
+        {tab === 'advisor' && <>
+          {/* INSTITUTIONAL AUTHORITY LINE — the one sentence */}
+          {model?.institutional_authority_line && <section className="layout one"><div style={{background:'linear-gradient(135deg,rgba(141,247,255,0.06),rgba(177,140,255,0.06))',border:'1px solid rgba(141,247,255,0.2)',borderRadius:'6px',padding:'14px 20px',display:'flex',gap:'12px',alignItems:'flex-start'}}>
+            <span style={{color:'#8df7ff',fontWeight:'900',fontSize:'10px',letterSpacing:'.15em',flexShrink:0,paddingTop:'2px'}}>AUTHORITY LINE</span>
+            <p style={{color:'#e2e8f0',fontSize:'13px',lineHeight:'1.6',margin:0,fontStyle:'italic'}}>{safeRender(model.institutional_authority_line)}</p>
+          </div></section>}
+
+          {/* PROGRAMME MORTALITY + CONFIDENCE TRAJECTORY */}
+          {model?.programme_mortality_risk && <section className="layout two">
+            <Card><h2>Programme mortality risk</h2>
+              <div style={{display:'flex',alignItems:'baseline',gap:'8px',marginBottom:'8px'}}>
+                <span style={{fontSize:'48px',fontWeight:'900',color:model.programme_mortality_risk.pct>60?'#ef4444':model.programme_mortality_risk.pct>35?'#f59e0b':'#10b981'}}>{model.programme_mortality_risk.pct}%</span>
+                <span style={{fontSize:'12px',fontWeight:'800',color:model.programme_mortality_risk.pct>60?'#ef4444':model.programme_mortality_risk.pct>35?'#f59e0b':'#10b981'}}>{model.programme_mortality_risk.label}</span>
+              </div>
+              <p style={{fontSize:'12px',color:'#94a3b8',lineHeight:'1.5'}}>{safeRender(model.programme_mortality_risk.narrative)}</p>
+              {model.programme_mortality_risk.comparable && <p style={{fontSize:'11px',color:'#64748b',marginTop:'8px',fontStyle:'italic'}}>{safeRender(model.programme_mortality_risk.comparable)}</p>}
+            </Card>
+            <Card><h2>Confidence trajectory</h2>
+              {model?.confidence_trajectory && <>
+                <div style={{display:'flex',alignItems:'center',gap:'10px',marginBottom:'8px'}}>
+                  <span style={{fontSize:'18px',fontWeight:'900',color:model.confidence_trajectory.direction==='DECLINING'?'#ef4444':model.confidence_trajectory.direction==='IMPROVING'?'#10b981':'#f59e0b'}}>{model.confidence_trajectory.direction}</span>
+                </div>
+                <p style={{fontSize:'12px',color:'#94a3b8',lineHeight:'1.5'}}>{safeRender(model.confidence_trajectory.narrative)}</p>
+                <p style={{fontSize:'11px',color:'#64748b',marginTop:'8px',borderTop:'1px solid rgba(255,255,255,0.06)',paddingTop:'8px'}}>{safeRender(model.confidence_trajectory.next_gate)}</p>
+              </>}
+            </Card>
+          </section>}
+
+          {/* BEHAVIOURAL FORECAST + INTERVENTION INTELLIGENCE */}
+          {model?.behavioural_forecast && <section className="layout two">
+            <Card><h2>Behavioural forecast</h2>
+              <p style={{color:'#8df7ff',fontStyle:'italic',lineHeight:'1.6',fontSize:'13px'}}>{safeRender(model.behavioural_forecast)}</p>
+              <p style={{fontSize:'11px',color:'#475569',marginTop:'8px'}}>Based on comparable {safeRender(model.subsector)} programmes — what CASEY expects to happen next if the governing constraint is not evidenced before approval.</p>
+            </Card>
+            <Card><h2>Intervention intelligence</h2>
+              {(model?.intervention_intelligence||model?.governance_challenges||[]).map((x,i)=><div className="reason" key={i} style={{borderLeft:'2px solid rgba(141,247,255,0.3)',paddingLeft:'10px',marginBottom:'6px'}}><span style={{color:'#8df7ff',fontWeight:'800',marginRight:'6px'}}>{i+1}.</span>{safeRender(x)}</div>)}
+            </Card>
+          </section>}
+
+          {/* TRADITIONAL vs CASEY */}
+          {model?.traditional_vs_casey?.casey && <section className="layout two">
+            <Card style={{borderLeft:'2px solid rgba(239,68,68,0.4)'}}><h2 style={{color:'#ff6b7d'}}>What the T&T deck says</h2>
+              <p style={{color:'#94a3b8',fontStyle:'italic',lineHeight:'1.6'}}>{safeRender(model.traditional_vs_casey.traditional)}</p>
+              <p style={{fontSize:'11px',color:'#475569',marginTop:'8px',borderTop:'1px solid rgba(255,255,255,0.06)',paddingTop:'8px'}}>{safeRender(model.traditional_vs_casey.incumbent_line)}</p>
+            </Card>
+            <Card style={{borderLeft:'2px solid rgba(141,247,255,0.4)'}}><h2 style={{color:'#8df7ff'}}>What CASEY reads underneath</h2>
+              <p style={{color:'#e2e8f0',lineHeight:'1.6'}}>{safeRender(model.traditional_vs_casey.casey)}</p>
+              <p style={{fontSize:'11px',color:'#64748b',marginTop:'8px',borderTop:'1px solid rgba(255,255,255,0.06)',paddingTop:'8px'}}>{safeRender(model.traditional_vs_casey.gap)}</p>
+            </Card>
+          </section>}
+
+          {/* BOARD ATTACK SIMULATION */}
+          {(model?.board_attack_simulation||[]).length > 0 && <section className="layout one"><Card><h2>Board attack simulation — the 5 questions this board will ask</h2>
+            <p style={{fontSize:'11px',color:'#64748b',marginBottom:'12px'}}>These are sector-specific, programme-specific challenges that a serious investment committee will table. CASEY generates them from live model data — not a generic template. T&T cannot answer these in the room without CASEY.</p>
+            {(model.board_attack_simulation||[]).map((q,i)=><div key={i} style={{display:'flex',gap:'10px',padding:'10px 0',borderBottom:'1px solid rgba(255,255,255,0.05)'}}>
+              <span style={{color:'#f59e0b',fontWeight:'900',flexShrink:0,fontSize:'11px',paddingTop:'1px'}}>{i+1}.</span>
+              <span style={{color:'#e2e8f0',lineHeight:'1.5',fontSize:'13px'}}>{safeRender(q)}</span>
+            </div>)}
+          </Card></section>}
+
+          {/* LOCATION + FINANCING CONTEXT */}
+          {model?.location_context?.framework && <section className="layout two">
+            <Card><h2>📍 Location intelligence</h2>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px',marginBottom:'10px'}}>
+                <div><div style={{fontSize:'9px',color:'#64748b',fontWeight:'800',letterSpacing:'.1em',marginBottom:'3px'}}>LOCATION</div><div style={{fontSize:'14px',color:'#e2e8f0',fontWeight:'700'}}>{safeRender(model.location||'Global')}</div></div>
+                <div><div style={{fontSize:'9px',color:'#64748b',fontWeight:'800',letterSpacing:'.1em',marginBottom:'3px'}}>CURRENCY</div><div style={{fontSize:'14px',color:'#8df7ff',fontWeight:'700'}}>{safeRender(model.location_context.currency)}</div></div>
+              </div>
+              <div style={{marginBottom:'8px'}}><div style={{fontSize:'9px',color:'#64748b',fontWeight:'800',letterSpacing:'.1em',marginBottom:'3px'}}>REGULATORY FRAMEWORK</div><div style={{fontSize:'12px',color:'#cbd5e1',lineHeight:'1.5'}}>{safeRender(model.location_context.framework)}</div></div>
+              <div style={{marginBottom:'8px'}}><div style={{fontSize:'9px',color:'#64748b',fontWeight:'800',letterSpacing:'.1em',marginBottom:'3px'}}>APPROVAL BODY</div><div style={{fontSize:'12px',color:'#cbd5e1'}}>{safeRender(model.location_context.approval_body)}</div></div>
+              <div style={{padding:'8px',background:'rgba(245,158,11,0.06)',borderRadius:'3px',border:'1px solid rgba(245,158,11,0.15)'}}><div style={{fontSize:'9px',color:'#f59e0b',fontWeight:'800',letterSpacing:'.1em',marginBottom:'3px'}}>OBA NOTE FOR THIS LOCATION</div><div style={{fontSize:'11px',color:'#94a3b8',lineHeight:'1.5'}}>{safeRender(model.location_context.optimism_bias_note)}</div></div>
+            </Card>
+            {model?.financing_context && <Card><h2>💰 Financing context</h2>
+              <div style={{marginBottom:'8px'}}><div style={{fontSize:'9px',color:'#64748b',fontWeight:'800',letterSpacing:'.1em',marginBottom:'3px'}}>PRIMARY SOURCE</div><div style={{fontSize:'13px',color:'#8df7ff',fontWeight:'700'}}>{safeRender(model.financing_context.primary_source)}</div></div>
+              <div style={{marginBottom:'8px'}}><div style={{fontSize:'9px',color:'#64748b',fontWeight:'800',letterSpacing:'.1em',marginBottom:'3px'}}>SECONDARY SOURCE</div><div style={{fontSize:'12px',color:'#cbd5e1'}}>{safeRender(model.financing_context.secondary_source)}</div></div>
+              <div style={{marginBottom:'8px'}}><div style={{fontSize:'9px',color:'#64748b',fontWeight:'800',letterSpacing:'.1em',marginBottom:'3px'}}>STRUCTURE</div><div style={{fontSize:'12px',color:'#cbd5e1'}}>{safeRender(model.financing_context.structure)}</div></div>
+              <div style={{marginBottom:'8px',padding:'6px 8px',background:'rgba(239,68,68,0.06)',borderRadius:'3px',border:'1px solid rgba(239,68,68,0.12)'}}><div style={{fontSize:'9px',color:'#ef4444',fontWeight:'800',letterSpacing:'.1em',marginBottom:'3px'}}>CURRENCY RISK</div><div style={{fontSize:'11px',color:'#fca5a5'}}>{safeRender(model.financing_context.currency_risk)}</div></div>
+              <div style={{marginBottom:'8px'}}><div style={{fontSize:'9px',color:'#64748b',fontWeight:'800',letterSpacing:'.1em',marginBottom:'3px'}}>PROCUREMENT RULES</div><div style={{fontSize:'11px',color:'#64748b'}}>{safeRender(model.financing_context.procurement_rules)}</div></div>
+              <div style={{padding:'6px 8px',background:'rgba(141,247,255,0.04)',borderRadius:'3px',border:'1px solid rgba(141,247,255,0.1)'}}><div style={{fontSize:'11px',color:'#94a3b8',lineHeight:'1.5',fontStyle:'italic'}}>{safeRender(model.financing_context.sector_note)}</div></div>
+              <div style={{marginTop:'8px',padding:'6px 8px',background:'rgba(245,158,11,0.06)',borderRadius:'3px'}}><div style={{fontSize:'9px',color:'#f59e0b',fontWeight:'800',letterSpacing:'.1em',marginBottom:'3px'}}>BANKABILITY</div><div style={{fontSize:'12px',color:'#fcd34d',fontWeight:'700'}}>{safeRender(model.financing_context.bankability_verdict)}</div></div>
+            </Card>}
+          </section>}
+
+          {/* GATE REVIEW READINESS */}
+          {model?.gate_review_readiness && <section className="layout two">
+            <Card><h2>Gate review readiness</h2>
+              <div style={{display:'flex',gap:'12px',alignItems:'center',marginBottom:'10px'}}>
+                <span style={{fontSize:'24px',fontWeight:'900',color:model.gate_review_readiness.overall_verdict==='READY'?'#10b981':model.gate_review_readiness.overall_verdict==='CONDITIONAL'?'#f59e0b':'#ef4444'}}>{model.gate_review_readiness.overall_verdict}</span>
+                <span style={{fontSize:'13px',color:'#94a3b8'}}>at {safeRender(model.gate_review_readiness.current_gate_readiness)}</span>
+              </div>
+              <p style={{fontSize:'12px',color:'#64748b',marginBottom:'10px',lineHeight:'1.5'}}>{safeRender(model.gate_review_readiness.ipa_alignment)}</p>
+              <p style={{fontSize:'11px',color:'#f59e0b',fontStyle:'italic'}}>{safeRender(model.gate_review_readiness.critical_gate_risk)}</p>
+              <div style={{marginTop:'10px'}}>
+                <div style={{fontSize:'10px',color:'#475569',fontWeight:'800',letterSpacing:'.1em',marginBottom:'6px'}}>NEXT GATE — EVIDENCE REQUIRED</div>
+                {(model.gate_review_readiness.next_gate_actions||[]).map((a,i)=><div key={i} style={{fontSize:'11px',color:'#cbd5e1',padding:'3px 0',borderBottom:'1px solid rgba(255,255,255,0.04)',display:'flex',gap:'6px'}}><span style={{color:'#8df7ff',flexShrink:0}}>→</span>{safeRender(a)}</div>)}
+              </div>
+            </Card>
+            <Card><h2>Optimism bias assessment</h2>
+              {model?.optimism_bias_assessment && <>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px',marginBottom:'10px'}}>
+                  <div style={{background:'rgba(239,68,68,0.08)',padding:'8px',borderRadius:'4px',border:'1px solid rgba(239,68,68,0.2)'}}>
+                    <div style={{fontSize:'9px',color:'#ef4444',fontWeight:'900',letterSpacing:'.1em'}}>STATED P50</div>
+                    <div style={{fontSize:'18px',fontWeight:'900',color:'#fca5a5'}}>{safeRender(model.cost_p50)}</div>
+                    <div style={{fontSize:'9px',color:'#64748b'}}>{safeRender(model.schedule)}</div>
+                  </div>
+                  <div style={{background:'rgba(245,158,11,0.08)',padding:'8px',borderRadius:'4px',border:'1px solid rgba(245,158,11,0.2)'}}>
+                    <div style={{fontSize:'9px',color:'#f59e0b',fontWeight:'900',letterSpacing:'.1em'}}>OBA ADJUSTED</div>
+                    <div style={{fontSize:'18px',fontWeight:'900',color:'#fcd34d'}}>{safeRender(model.optimism_bias_assessment.oba_adjusted_p50)}</div>
+                    <div style={{fontSize:'9px',color:'#64748b'}}>{safeRender(model.optimism_bias_assessment.oba_adjusted_schedule)}</div>
+                  </div>
+                </div>
+                <p style={{fontSize:'11px',color:'#94a3b8',lineHeight:'1.5',marginBottom:'6px'}}>{safeRender(model.optimism_bias_assessment.verdict)}</p>
+                <p style={{fontSize:'10px',color:'#475569',fontStyle:'italic'}}>{safeRender(model.optimism_bias_assessment.oba_source)}</p>
+                <p style={{fontSize:'11px',color:'#f59e0b',marginTop:'8px',padding:'6px 8px',background:'rgba(245,158,11,0.06)',borderRadius:'3px',lineHeight:'1.5'}}>{safeRender(model.optimism_bias_assessment.board_challenge)}</p>
+              </>}
+            </Card>
+          </section>}
+
+          {/* SECOND ORDER CONTRADICTIONS */}
+          {(model?.second_order_contradictions||[]).length > 0 && <section className="layout one"><Card><h2>Second-order contradictions</h2>
+            <p style={{fontSize:'11px',color:'#64748b',marginBottom:'10px'}}>What the optimistic case creates downstream — risks that appear only when the preferred scenario is examined under pressure.</p>
+            {(model.second_order_contradictions||[]).map((x,i)=><div key={i} className="reason" style={{borderLeft:'2px solid rgba(245,158,11,0.4)',paddingLeft:'10px',marginBottom:'6px'}}><span style={{color:'#f59e0b',fontWeight:'800',marginRight:'6px'}}>{i+1}.</span>{safeRender(x)}</div>)}
+          </Card></section>}
+
+          {/* ORIGINAL ADVISOR PANEL */}
+          <section className="layout two advisorElite challengeRoom"><Card><h2>CASEY Board Assurance Console</h2><p className="advisorIntro">Click any question. CASEY answers instantly using the live programme model — not a generic response. Each answer references your actual P50, P80, confidence level and sector. Generate a project first for the most specific answers.</p><div className="advisorPrompts bigButtons">{['What is the board not seeing?','What would a traditional cost consultant say that CASEY challenges?','What evidence is missing before this becomes board-approvable?','What is the real governing chain?','Which assumptions collapse confidence first?','What is the board really deciding?','If this programme fails, what will be blamed publicly?','Give me CASEY POSITION.','What has management not yet evidenced?','What would destroy board confidence fastest?','What reported green item is not yet board-defensible?','Show Traditional Controls vs CASEY.','What is the one intervention that changes confidence fastest?','What would an external assurance reviewer challenge first?'].map(x=><button key={x} data-question={x} onClick={()=>ask(x)}><Brain size={14}/>{x}</button>)}</div><div className="chatBox boardInterrogation">{chat.length ? chat.map((m,i)=><div key={i} className={`msg ${m.role}`}>{(() => {
     const lines = String(m.text||'').split('\n');
     return lines.map((line, li) => {
       if (!line.trim()) return <div key={li} style={{height:'5px'}}/>;
@@ -2243,7 +2410,8 @@ function parseMoneyLocal(v) {
   <button onClick={()=>setUploadResult({filename:'Contractor_Cost_Estimate_v27_FINAL.xlsx', file_type:'COST ESTIMATE', schema_confidence:'Auto-mapped', findings:['Estimate structure normalised. Cost packages identified across direct works, preliminaries and risk allowance.','The headline P50 number is present — but there is no P80/P90 basis. This is how a submitted estimate can understate exposure: the headline looks fixed but the downside is unpriced.','Contingency is present as a lump sum. CASEY cannot verify it is sized against quantified risk exposure rather than a percentage of direct cost — a common tender-basis weakness.','Basis statements are missing on 6 of the major packages. Without basis, there is no evidence of what was included or excluded — and no way to challenge scope creep later.'], red_flags:['Commercial observation: No P80/P90 range provided. The estimate looks precise but carries unquantified downside. Ask the contractor to provide a risk-adjusted range.','Commercial observation: Lump-sum contingency with no risk linkage. This is not yet a quantified reserve. Require QCRA support.','No CBS/WBS mapping. Cannot verify completeness of scope coverage or trace costs to programme activities.','Escalation basis not stated. For a multi-year programme, this is a material omission.'], next_steps:['Require the contractor to provide a P50/P80/P90 range with QCRA support.','Mandate a CBS that maps to the programme WBS and schedule activities.','Commission an independent cost review before approving the headline number.','Run CASEY QCRA alongside the contractor estimate — compare the P80 positions.'], epc_challenge:true})}><FileSpreadsheet size={18}/><b>Challenge contractor cost estimate</b><span>Detect hidden exposure, lump-sum contingency and missing basis statements.</span></button>
   <button onClick={()=>setUploadResult({filename:'Programme_Schedule_FINAL_v14.xer', file_type:'SCHEDULE (XER)', schema_confidence:'Logic mapped', findings:['Schedule logic parsed. Activities identified across civil, systems, commissioning and handover phases.','Critical path identified — but float analysis reveals operationally unusable buffer. The management date assumes best-case access windows throughout.','Logic gaps detected: 8 activities have no predecessor. These are schedule anchors — they cannot be challenged because they have no upstream dependency. This can prevent a reliable view of the real critical path.','Commissioning and trial running phases show compressed durations. These are the activities most likely to slip — and they sit directly before the opening/handover milestone.'], red_flags:['Commercial observation: Open-ended activities with no predecessor — schedule logic issue that can overstate available float.','Commercial observation: Commissioning duration appears optimistic against comparable programmes. A single failed integration test resets the clock.','Float is nominal, not operationally usable. Access windows, possession permits and operator acceptance are not confirmed in the logic.','Board date is driven by the earliest path. It should be driven by the P80/P90 QSRA finish date.'], next_steps:['Require the contractor to close all open ends and confirm predecessor logic.','Run QSRA and require the P80/P90 finish date to be the board commitment date.','Validate all commissioning durations against independent benchmarks.','Name the owner of the critical-path constraint.'], epc_challenge:true})}><Workflow size={18}/><b>Challenge programme schedule</b><span>Detect schedule padding, unusable float and optimistic commissioning dates.</span></button>
   <button onClick={()=>setUploadResult({filename:'Risk_Register_v8_Draft.xlsx', file_type:'RISK REGISTER', schema_confidence:'Schema mapped', findings:['Risk register schema mapped. Cause, event, impact and owner columns identified.','CASEY challenges every risk without a named trigger, quantified residual exposure and evidence closure date.','7 risks have mitigation confidence below 50%. These are not mitigated — they are noted. The reserve needs to account for them.','4 risks are flagged as Evidence required. These are open exposures — the source file does not yet provide the evidence that the risk is under control.'], red_flags:['Commercial observation: Mitigations are written as action phrases ("to be confirmed", "in progress") rather than evidence closure. A mitigation is only valid when the evidence is complete.','Commercial observation: Residual exposure is not reconciled to the reserve. This is the most common way a risk register hides real exposure — risks exist on paper but the money is not in the budget.','4 risks require evidence that has not been provided. These cannot be treated as mitigated for board approval purposes.','Owner accountability: all risks assigned to programme-level owners. Board needs named individual owners with accountability.'], next_steps:['Require every risk to have: named owner, confirmed trigger, quantified residual and evidence closure date.','Reconcile residual exposure to reserve — any gap requires additional provision.','The 4 Evidence Required risks must be resolved or escalated to the board as open items.','Export the challenged register after QCRA/QSRA alignment and use the board attack questions.'], epc_challenge:true})}><ShieldAlert size={18}/><b>Challenge risk register</b><span>Detect unmitigated risks, missing evidence and reserve reconciliation gaps.</span></button>
-</div><h3>Upload real file</h3><label className="upload proUpload"><Upload size={18}/> Upload estimate / XER / risk workbook<input type="file" onChange={upload}/></label><ProfessionalIntakeResult result={uploadResult} model={model}/></Card></section>}
+</div><h3>Upload real file</h3><label className="upload proUpload"><Upload size={18}/> Upload estimate / XER / risk workbook<input type="file" onChange={upload}/></label><ProfessionalIntakeResult result={uploadResult} model={model}/></Card></section></>
+}
 
         {tab === 'runtime' && <HolyGrailRuntime model={model} scenario={scenario} generate={generate} runShock={runShock}/>}
         {tab === 'method' && <section className="layout two"><Card><h2>How CASEY calculated this</h2>{['Cost model: selected class estimate, sector template, location factor, complexity factor and scenario modifier.','Schedule model: level-based delivery logic, phase durations, critical path sensitivity and scenario acceleration/delay factors.','QCRA: cost exposure model using low / most likely / high impacts and risk-weighted contingency.','QSRA: schedule exposure model using activity-linked O/M/P delay ranges and critical path sensitivity.','Confidence score translated for executives: board-defensibility based on benchmark similarity, evidence maturity, procurement certainty, schedule logic, contingency adequacy and scenario posture.'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card><Card><h2>Commercial readiness</h2><p className="big">This is first-pass project controls intelligence. It is designed to accelerate challenge, option testing and board preparation before final contractor tender or signed cost plan.</p><a className="contactBtn huge" href={emailLink}><Mail/> Send project for review</a></Card></section>}
