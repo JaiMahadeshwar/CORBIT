@@ -2038,17 +2038,24 @@ function parseMoneyLocal(v) {
 
   async function loadInstantDemo(type) {
     setLoading(true); setError(''); setModel(null); setTab('overview');
+    setShow(false); setShowShowcase(false);
     try {
-      const BACKEND = import.meta.env.VITE_BACKEND_URL || 'https://corbit-1.onrender.com';
-      const res = await fetch(`${BACKEND}/demo/${type}`);
-      if (!res.ok) throw new Error('Demo unavailable — backend may be waking up, try again in 30 seconds.');
+      const res = await apiFetch(`/demo/${type}`);
+      if (!res.ok) {
+        // Backend may be cold-starting on Render — give a useful message
+        const txt = await res.text().catch(() => '');
+        throw new Error(`Demo unavailable (${res.status}). Backend may be waking up — wait 30 seconds and try again. ${txt}`.trim());
+      }
       const m = await res.json();
-      setModel(m);
-      setPrompt(m.prompt || '');
-      setScenario(m.scenario || 'base');
+      const nm = normalizeModelForUI(m);
+      setModel(nm);
+      setPrompt(nm.prompt || '');
+      setScenario(nm.scenario || 'base');
       setClient('ControlOrbit Demo');
+      setTab('overview');
     } catch(e) {
       setError(String(e.message || e));
+      setShow(false); // stay on console even if demo fails
     } finally { setLoading(false); }
   }
 
@@ -2108,7 +2115,7 @@ function parseMoneyLocal(v) {
     }
     finally { setLoading(false); setSimulationStage(''); setConfidencePulse(false); }
   }
-  function runEarth() { setProjectContext(null); setError(''); loadInstantDemo('earth'); }
+  function runEarth() { setProjectContext(null); setError(''); setShow(false); setShowShowcase(false); loadInstantDemo('earth'); }
   function runSpace() { setShowShowcase(false); setProjectContext(null); setError(''); loadInstantDemo('space'); }
   function runShowcase(project) { setError(''); setClient(project.client || 'Strategic reference case'); setShow(false); setShowShowcase(false); setProjectContext(null); setScenario('base'); setPrompt(project.prompt); generate('base', project.prompt, null, project.client || 'Strategic reference case', { isShowcase: true }); }
   function advisorQuestionText(input) {
@@ -2571,6 +2578,85 @@ function parseMoneyLocal(v) {
             <p style={{fontSize:'11px',color:'#64748b',marginBottom:'10px'}}>What the optimistic case creates downstream — risks that appear only when the preferred scenario is examined under pressure.</p>
             {(model.second_order_contradictions||[]).map((x,i)=><div key={i} className="reason" style={{borderLeft:'2px solid rgba(245,158,11,0.4)',paddingLeft:'10px',marginBottom:'6px'}}><span style={{color:'#f59e0b',fontWeight:'800',marginRight:'6px'}}>{i+1}.</span>{safeRender(x)}</div>)}
           </Card></section>}
+
+          {/* PROCUREMENT HEATMAP — T&T charges £75K for this */}
+          {(model?.procurement_heatmap||[]).length > 0 && <section className="layout one"><Card><h2>📦 Procurement intelligence — packages, lead times, single-source flags</h2>
+            <p style={{fontSize:'11px',color:'#64748b',marginBottom:'12px'}}>Every package that T&T would take 6 weeks to map. CASEY generates it in 4 seconds from sector ontology and location context. Single-source flags are the primary commercial risk in each sector.</p>
+            <div style={{overflowX:'auto'}}>
+              <table style={{width:'100%',borderCollapse:'collapse',fontSize:'11px'}}>
+                <thead><tr style={{borderBottom:'1px solid rgba(255,255,255,0.1)'}}>
+                  {['Package','Status','Value est.','Lead time','Single source','Risk','Owner'].map(h=><th key={h} style={{padding:'6px 8px',textAlign:'left',color:'#64748b',fontWeight:'800',letterSpacing:'.08em',fontSize:'10px'}}>{h}</th>)}
+                </tr></thead>
+                <tbody>{(model.procurement_heatmap||[]).map((p,i)=><tr key={i} style={{borderBottom:'1px solid rgba(255,255,255,0.04)',background:i%2===0?'rgba(255,255,255,0.01)':'transparent'}}>
+                  <td style={{padding:'7px 8px',color:'#e2e8f0',fontWeight:'700',maxWidth:'160px'}}>{p.package}</td>
+                  <td style={{padding:'7px 8px'}}><span style={{background:p.status==='Active'?'rgba(239,68,68,0.12)':'rgba(245,158,11,0.1)',color:p.status==='Active'?'#fca5a5':'#fde68a',borderRadius:'3px',padding:'2px 7px',fontSize:'10px',fontWeight:'800'}}>{p.status}</span></td>
+                  <td style={{padding:'7px 8px',color:'#8df7ff',fontSize:'11px',fontWeight:'600'}}>{p.value_est||'—'}</td>
+                  <td style={{padding:'7px 8px',color:'#94a3b8'}}>{p.lead_time||'—'}</td>
+                  <td style={{padding:'7px 8px',textAlign:'center'}}>{p.single_source_risk ? <span style={{color:'#ef4444',fontWeight:'900',fontSize:'14px'}}>⚠</span> : <span style={{color:'#10b981'}}>✓</span>}</td>
+                  <td style={{padding:'7px 8px',color:'#64748b',maxWidth:'200px',lineHeight:'1.4',fontSize:'10px'}}>{p.risk}</td>
+                  <td style={{padding:'7px 8px',color:'#475569',fontSize:'10px'}}>{p.owner}</td>
+                </tr>)}
+                </tbody>
+              </table>
+            </div>
+          </Card></section>}
+
+          {/* HISTORICAL FAILURE PATTERN — the sentence that makes T&T go quiet */}
+          {model?.if_this_fails && <section className="layout one"><Card style={{borderLeft:'3px solid rgba(239,68,68,0.5)',background:'rgba(239,68,68,0.03)'}}><h2 style={{color:'#ff6b7d'}}>⚠ If this programme fails — the named historical pattern</h2>
+            <p style={{fontSize:'11px',color:'#64748b',marginBottom:'10px'}}>This is what CASEY says in the room when T&T is presenting green dashboards. Named programmes, named failure modes, named costs. This is what makes a cost consultant go quiet.</p>
+            <p style={{color:'#e2e8f0',lineHeight:'1.7',fontSize:'13px'}}>{safeRender(model.if_this_fails)}</p>
+          </Card></section>}
+
+          {/* CRITICAL PATH + NEAR-CRITICAL NARRATIVE */}
+          {(model?.critical_path_narrative||[]).length > 0 && <section className="layout two">
+            <Card><h2>🔴 Critical path — what must be evidenced before approval</h2>
+              <p style={{fontSize:'11px',color:'#64748b',marginBottom:'10px'}}>These are the activities CASEY identifies as near-critical in the sector causal graph. Each one needs a named owner and evidence closure date before board approval.</p>
+              {(model.critical_path_narrative||[]).map((x,i)=><div key={i} className="reason" style={{borderLeft:'2px solid rgba(239,68,68,0.4)',paddingLeft:'10px',marginBottom:'6px'}}>
+                <span style={{color:'#ef4444',fontWeight:'900',marginRight:'6px'}}>{i+1}.</span>
+                <span style={{color:'#e2e8f0',lineHeight:'1.5',fontSize:'12px'}}>{safeRender(x)}</span>
+              </div>)}
+            </Card>
+            <Card><h2>Near-critical density interpretation</h2>
+              <p style={{color:'#94a3b8',lineHeight:'1.6',fontSize:'13px',marginBottom:'12px'}}>{safeRender(model.near_critical_narrative)}</p>
+              {model?.sector_constraints && <div style={{padding:'10px 14px',background:'rgba(141,247,255,0.05)',borderRadius:'4px',border:'1px solid rgba(141,247,255,0.12)'}}>
+                <div style={{fontSize:'9px',color:'#8df7ff',fontWeight:'800',letterSpacing:'.12em',marginBottom:'6px'}}>GOVERNING SECTOR CONSTRAINTS</div>
+                <p style={{color:'#cbd5e1',fontSize:'12px',lineHeight:'1.6',margin:0}}>{safeRender(model.sector_constraints)}</p>
+              </div>}
+            </Card>
+          </section>}
+
+          {/* GATE REVIEW READINESS — this is what T&T's IPA review costs £200K */}
+          {model?.gate_review_readiness && <section className="layout two">
+            <Card><h2>🚦 Gate review readiness — G0 to G5</h2>
+              <div style={{display:'flex',alignItems:'center',gap:'16px',marginBottom:'12px'}}>
+                <span style={{fontSize:'32px',fontWeight:'900',color:model.gate_review_readiness.overall_verdict==='READY'?'#10b981':model.gate_review_readiness.overall_verdict==='CONDITIONAL'?'#f59e0b':'#ef4444'}}>{model.gate_review_readiness.overall_verdict}</span>
+                <span style={{fontSize:'13px',color:'#94a3b8'}}>{safeRender(model.gate_review_readiness.current_gate_readiness)}</span>
+              </div>
+              <p style={{fontSize:'12px',color:'#64748b',marginBottom:'10px',lineHeight:'1.5'}}>{safeRender(model.gate_review_readiness.ipa_alignment)}</p>
+              <p style={{fontSize:'11px',color:'#f59e0b',fontStyle:'italic',marginBottom:'10px'}}>{safeRender(model.gate_review_readiness.critical_gate_risk)}</p>
+              <div style={{borderTop:'1px solid rgba(255,255,255,0.06)',paddingTop:'10px'}}>
+                <div style={{fontSize:'10px',color:'#64748b',fontWeight:'800',letterSpacing:'.1em',marginBottom:'6px'}}>NEXT GATE ACTIONS</div>
+                {(model.gate_review_readiness.next_gate_actions||[]).map((a,i)=><div key={i} style={{fontSize:'11px',color:'#cbd5e1',padding:'3px 0',borderBottom:'1px solid rgba(255,255,255,0.04)',display:'flex',gap:'6px'}}><span style={{color:'#8df7ff',flexShrink:0}}>→</span>{safeRender(a)}</div>)}
+              </div>
+            </Card>
+            {model?.optimism_bias_assessment && <Card><h2>📊 Optimism bias — OBA-adjusted outturn</h2>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px',marginBottom:'12px'}}>
+                <div style={{background:'rgba(245,158,11,0.08)',borderRadius:'4px',padding:'10px',border:'1px solid rgba(245,158,11,0.2)'}}>
+                  <div style={{fontSize:'9px',color:'#f59e0b',fontWeight:'800',letterSpacing:'.1em',marginBottom:'4px'}}>OBA-ADJUSTED P50</div>
+                  <div style={{fontSize:'18px',fontWeight:'900',color:'#fcd34d'}}>{safeRender(model.optimism_bias_assessment.oba_adjusted_p50)}</div>
+                  <div style={{fontSize:'9px',color:'#64748b'}}>{safeRender(model.optimism_bias_assessment.oba_adjusted_schedule)}</div>
+                </div>
+                <div style={{background:'rgba(141,247,255,0.05)',borderRadius:'4px',padding:'10px',border:'1px solid rgba(141,247,255,0.1)'}}>
+                  <div style={{fontSize:'9px',color:'#8df7ff',fontWeight:'800',letterSpacing:'.1em',marginBottom:'4px'}}>HEADLINE P50</div>
+                  <div style={{fontSize:'18px',fontWeight:'900',color:'#e2e8f0'}}>{safeRender(model.cost_p50)}</div>
+                  <div style={{fontSize:'9px',color:'#64748b'}}>{safeRender(model.schedule)}</div>
+                </div>
+              </div>
+              <p style={{fontSize:'11px',color:'#94a3b8',lineHeight:'1.5',marginBottom:'6px'}}>{safeRender(model.optimism_bias_assessment.verdict)}</p>
+              <p style={{fontSize:'10px',color:'#475569',fontStyle:'italic',marginBottom:'8px'}}>{safeRender(model.optimism_bias_assessment.oba_source)}</p>
+              <p style={{fontSize:'11px',color:'#f59e0b',padding:'8px 10px',background:'rgba(245,158,11,0.06)',borderRadius:'3px',lineHeight:'1.5',margin:0}}>{safeRender(model.optimism_bias_assessment.board_challenge)}</p>
+            </Card>}
+          </section>}
 
           {/* ORIGINAL ADVISOR PANEL */}
           <section className="layout two advisorElite challengeRoom"><Card><h2>CASEY Board Assurance Console</h2><p className="advisorIntro">Click any question. CASEY answers instantly using the live programme model — not a generic response. Each answer references your actual P50, P80, confidence level and sector. Generate a project first for the most specific answers.</p><div className="advisorPrompts bigButtons">{['What is the board not seeing?','What would a traditional cost consultant say that CASEY challenges?','What evidence is missing before this becomes board-approvable?','What is the real governing chain?','Which assumptions collapse confidence first?','What is the board really deciding?','If this programme fails, what will be blamed publicly?','Give me CASEY POSITION.','What has management not yet evidenced?','What would destroy board confidence fastest?','What reported green item is not yet board-defensible?','Show Traditional Controls vs CASEY.','What is the one intervention that changes confidence fastest?','What would an external assurance reviewer challenge first?'].map(x=><button key={x} data-question={x} onClick={()=>ask(x)}><Brain size={14}/>{x}</button>)}</div><div className="chatBox boardInterrogation">{chat.length ? chat.map((m,i)=><div key={i} className={`msg ${m.role}`}>{(() => {
