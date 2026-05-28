@@ -13,11 +13,24 @@ import './style.css';
 
 const API_CANDIDATES = [import.meta.env.VITE_API_URL, 'http://127.0.0.1:8000', 'http://localhost:8000', 'http://127.0.0.1:8010', 'http://localhost:8010'].filter(Boolean);
 let API = API_CANDIDATES[0];
-async function apiFetch(path, options) {
+function caseyClientToken() {
+  try {
+    let t = localStorage.getItem('casey_public_demo_token');
+    if (!t) {
+      t = (crypto.randomUUID ? crypto.randomUUID() : (String(Date.now()) + Math.random()));
+      localStorage.setItem('casey_public_demo_token', t);
+    }
+    return t;
+  } catch (_) { return 'browser-token-unavailable'; }
+}
+async function apiFetch(path, options = {}) {
   let lastError;
+  const headers = new Headers(options.headers || {});
+  headers.set('x-casey-client-token', caseyClientToken());
+  const finalOptions = { ...options, headers };
   for (const base of API_CANDIDATES) {
     try {
-      const r = await fetch(base + path, options);
+      const r = await fetch(base + path, finalOptions);
       API = base;
       return r;
     } catch (e) { lastError = e; }
@@ -269,7 +282,7 @@ function Hero({ onBriefing, onEarth, onSpace, onConsole, onTryDemo }) {
   return <section className="v50TakeoverHero">
     <video className="v50HeroVideo" src="https://corbit.b-cdn.net/casey_hero_film.mp4" autoPlay muted loop playsInline preload="auto" crossOrigin="anonymous" />
     <div className="v50HeroShade" />
-    <div className="v50TopBar"><Logo/><div className="v50TopActions"><button onClick={onBriefing}><Play size={15}/> Watch briefing</button><button onClick={onEarth}>Run Earth model</button><button onClick={onSpace}>Run Space model</button><button className="tryTopBtn" onClick={onTryDemo}>Try one free run</button><button onClick={onConsole}>Open console</button><a className="topBuyLink" href="mailto:hello@casey.ai?subject=CASEY%20Access%20Request">Request access</a></div></div>
+    <div className="v50TopBar"><Logo/><div className="v50TopActions"><button onClick={onBriefing}><Play size={15}/> Watch briefing</button><button onClick={onEarth}>Run Earth model</button><button onClick={onSpace}>Run Space model</button><button className="tryTopBtn" onClick={onTryDemo}>Try one free run</button><button onClick={onConsole}>Open console</button><a className="topBuyLink" href="mailto:deepa@caseai.co.uk?subject=CASEY%20Access%20Request">Request access</a></div></div>
     <motion.div className="v50HeroCenter" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .7 }}>
       <Logo large />
       <p className="v50HeroLine">Cost · Schedule · Risk · Delivery</p>
@@ -740,7 +753,7 @@ function IncumbentPressurePanel({ model, direct, indirect, reserves, reconcileCh
         {delta.map((x,i)=><div className="versusRow" key={x.old}><span>{i+1}</span><b>{x.old}</b><ArrowRight size={16}/><strong>{x.casey}</strong></div>)}
       </Card>
       <Card className="threatCard">
-        <h2>Board attack kill-chain</h2>
+        <h2>Board assurance questions</h2>
         <p>These are the questions a serious investment committee will ask before the project team can hide behind green dashboards.</p>
         {attacks.map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{x}</div>)}
         <h3>Audit spine</h3>
@@ -1290,7 +1303,7 @@ function GatedMessage({ raw }) {
   let msg = "You've used your one free CASEY intelligence run.";
   let sub = "To run more projects, compare scenarios or download the full output pack, get in touch.";
   let email = "deepa@caseai.co.uk";
-  let linkedin = "https://www.linkedin.com/company/caseai";
+  let linkedin = "https://www.linkedin.com/in/deepa-mahadeshwar-727200409/";
   try {
     const p = JSON.parse(raw);
     if (p.message) msg = p.message;
@@ -1666,7 +1679,7 @@ function parseMoneyLocal(v) {
       }
     } else if (ql.includes('board attack') || ql.includes('likely board') || ql.includes('board is really deciding')) {
       if (attacks.length >= 3) {
-        instant = ['**BOARD ATTACK KILL-CHAIN**',attacks.length + ' questions this programme must answer before capital approval:','', ...attacks.map((a,i)=>`${i+1}. ${a}`),'','These are what a serious investment committee asks before the project team can hide behind dashboards.'].join('\n');
+        instant = ['**BOARD ASSURANCE QUESTIONS**',attacks.length + ' questions this programme must answer before capital approval:','', ...attacks.map((a,i)=>`${i+1}. ${a}`),'','These are what a serious investment committee asks before the project team can hide behind dashboards.'].join('\n');
       }
     } else if (ql.includes('board not seeing') || (ql.includes('hidden') && ql.includes('issue'))) {
       const shock = model?.executive_shock_insight;
@@ -1763,7 +1776,7 @@ function parseMoneyLocal(v) {
     `P50 Cost: ${model.cost_p50}`, `Cost Range: ${model.cost_range}`, `Schedule: ${model.schedule}`,
     `Risk / Confidence: ${model.risk} / ${model.confidence_pct}%`
   ].join('\n') : 'Please send me CASEY access.';
-  const emailLink = `mailto:hello@casey.ai?subject=${encodeURIComponent('CASEY project review')}&body=${encodeURIComponent(emailBody)}`;
+  const emailLink = `mailto:deepa@caseai.co.uk?subject=${encodeURIComponent('CASEY project review')}&body=${encodeURIComponent(emailBody)}`;
   const confLens = model ? confidenceLens(model) : null;
   const p80Talk = model ? p80PlainEnglish(model) : null;
   const tradePack = model ? gainedSacrificedExposed(model) : null;
@@ -1797,7 +1810,7 @@ function parseMoneyLocal(v) {
           {model.executive_shock_insight && <section className="layout one"><Card className="shockCard"><h2>Executive shock insight</h2><p>{model.executive_shock_insight}</p></Card></section>}
           <section className="layout two">
             <Card><h2>Executive intelligence summary</h2><p className="big">{model.executive_summary || `${model.title} has been classified as ${model.subsector}. CASEY generated a first-pass cost, schedule, risk and confidence model for the selected scenario.`}</p><div className="miniMetrics"><b><span>Direct cost</span>{fmt(direct)}</b><b><span>Indirect cost</span>{fmt(indirect)}</b><b><span>Risk / reserve</span>{fmt(reserves)}</b></div><h3>Recommendation</h3>{(model.next_best_actions || []).slice(0,5).map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card>
-            <Card><h2>Board briefing</h2>{(model.board_briefing || model.board_challenge_questions || []).slice(0,5).map((x,i)=><div className="reason" key={String(x)}><span>{i+1}</span>{x}</div>)}<h3>CASEY thinking</h3><p className="caseyThinking">{model.casey_thinking || 'CASEY interprets this as a system-of-systems infrastructure programme requiring cost, schedule, risk and decision intelligence.'}</p></Card>
+            <Card><h2>Board briefing</h2>{(model.board_briefing || model.board_challenge_questions || []).slice(0,5).map((x,i)=><div className="reason" key={String(x)}><span>{i+1}</span>{x}</div>)}<h3>CASEY thinking</h3><p className="caseyThinking">{safeRender(model.casey_thinking || 'CASEY interprets this as a system-of-systems infrastructure programme requiring cost, schedule, risk and decision intelligence.')}</p></Card>
           </section>
           <section className="layout two eliteLayer">
             <Card className="confidenceMeaningCard"><h2>What confidence means</h2><h3>{confLens.headline}</h3><p className="big">{confLens.meaning}</p><div className="reason"><span>!</span><b>Decision rule</b><br/>{confLens.decisionRule}</div><div className="reason"><span>→</span><b>Primary constraint</b><br/>{confLens.constraint}</div><div className="reason"><span>%</span><b>Plain English</b><br/>Confidence is not optimism. It is CASEY's board-defensibility score based on benchmark fit, evidence maturity, procurement certainty, schedule logic, reserve adequacy and scenario posture.</div></Card>

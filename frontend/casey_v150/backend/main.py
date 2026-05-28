@@ -2386,12 +2386,13 @@ def demo_script():
 
 # ------------------------- routes -------------------------
 @app.get("/health")
-def health(): return {"status":"ok","service":APP_VERSION,"demo_limit_per_ip":"disabled_for_demo_launch"}
+def health(): return {"status":"ok","service":APP_VERSION,"demo_limit_per_ip":DEMO_LIMIT_PER_IP}
 
 @app.get("/demo/status")
 def demo_status(request: Request):
-    # Demo launch mode: never block local/browser/email/IP repeat runs.
-    return {"allowed": True, "used": 0, "limit": 999999, "remaining": 999999, "demo_launch_mode": True}
+    ip = client_ip(request)
+    status = check_demo_allowance(ip)
+    return {"allowed": status["allowed"], "used": status["used"], "limit": status["limit"], "remaining": max(0, status["limit"] - status["used"]), "demo_launch_mode": False}
 
 
 @app.post("/public-demo/generate")
@@ -2400,10 +2401,15 @@ def public_demo_generate(req: PublicDemoRequest, request: Request):
     if issues:
         raise HTTPException(status_code=422, detail={"message": "CASEY needs one real infrastructure or space programme brief before using your free run.", "issues": issues})
     identity = _public_demo_identity(request, req)
-    # DEMO-LAUNCH MODE: do not hard-block repeat local/browser demo runs.
-    # We still record the lead/run for admin visibility, but the live demo must never fail
-    # with a stale browser/email/IP fingerprint during a client presentation.
-    previous = None
+    previous = _public_demo_used(identity)
+    if previous:
+        raise HTTPException(status_code=403, detail={
+            "message": "Your one free CASEY project/showcase run has already been used.",
+            "sub": "Request access for unlimited project runs, scenario sensitivity, exports and client-file challenge.",
+            "email": "deepa@caseai.co.uk",
+            "linkedin": "https://www.linkedin.com/in/deepa-mahadeshwar-727200409/",
+            "previous_run": previous
+        })
     prompt = _premium_public_prompt(req)
     input_quality = _public_demo_brief_quality_score(req)
     model = build_model(prompt, _normalise_email(req.email), 3, 4, "base")
@@ -2773,7 +2779,7 @@ def generate(req: GenerateRequest, request: Request):
                     "message": "You\'ve used your one free CASEY intelligence run.",
                     "sub": "To run more projects, compare scenarios or download the full output pack, get in touch.",
                     "email": "deepa@caseai.co.uk",
-                    "linkedin": "https://www.linkedin.com/company/caseai",
+                    "linkedin": "https://www.linkedin.com/in/deepa-mahadeshwar-727200409/",
                     "upgrade_cta": "Contact us"
                 })
             record_demo_use(ip)
