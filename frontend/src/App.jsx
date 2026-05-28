@@ -383,6 +383,73 @@ const showcaseProjects = [
   { sector:'Space / Orbital Infrastructure', region:'Lunar surface', client:'Lunar resources reference case', title:'Lunar Resource Extraction', icon:'Space', confidence:'ISRU maturity', prompt:'Lunar resource extraction programme with autonomous mining, regolith processing, in situ resource utilisation, surface power, habitat logistics, thermal survivability and launch logistics' },
 ];
 
+const REAL_BENCHMARKS = [
+  { name:'Crossrail / Elizabeth Line', sector:'Rail / Transit', mode:'Earth', cost_bn:22.7, cost_growth_pct:88, schedule_slip_months:84, failure_mode:'Deferred systems integration — 900 open IEMs at planned opening', lesson:'Possessions and signalling must be on the critical path from day one, not treated as commissioning a', prompt:'Crossrail / Elizabeth Line real programme Rail / Transit actual outturn $22.7B +88% cost growth +84 months slip failure mode: Deferred systems integration — 900 open IEMs at planned opening' },
+  { name:'HS2 Phase 1', sector:'Rail / Transit', mode:'Earth', cost_bn:44.6, cost_growth_pct:140, schedule_slip_months:36, failure_mode:'Scope growth, ground conditions, open corridor risk', lesson:'Cost-at-completion estimates grow during delivery — approving at P50 without P80 reserve is a govern', prompt:'HS2 Phase 1 real programme Rail / Transit actual outturn $44.6B +140% cost growth +36 months slip failure mode: Scope growth, ground conditions, open corridor risk' },
+  { name:'Riyadh Metro', sector:'Rail / Transit', mode:'Earth', cost_bn:22.5, cost_growth_pct:12, schedule_slip_months:24, failure_mode:'Systems integration and operational readiness timeline', lesson:'International rail programmes with multiple concessions face interface risk proportional to contract', prompt:'Riyadh Metro real programme Rail / Transit actual outturn $22.5B +12% cost growth +24 months slip failure mode: Systems integration and operational readiness timeline' },
+  { name:'Hinkley Point C', sector:'Nuclear / Energy', mode:'Earth', cost_bn:35.0, cost_growth_pct:94, schedule_slip_months:60, failure_mode:'FOAK EPR supply chain, first-pour concrete issues, nuclear-grade welding failure', lesson:'GDA is the real critical path — not construction. Every 6 months of GDA slip costs £1B+ in financing', prompt:'Hinkley Point C real programme Nuclear / Energy actual outturn $35.0B +94% cost growth +60 months slip failure mode: FOAK EPR supply chain, first-pour concrete issues, nuclear-grade welding failures' },
+  { name:'Olkiluoto 3 (Finland)', sector:'Nuclear / Energy', mode:'Earth', cost_bn:11.0, cost_growth_pct:300, schedule_slip_months:168, failure_mode:'FOAK EPR complexity, safety system integration, regulatory hold-points', lesson:'New reactor designs have 3-5x baseline cost growth on first deployment', prompt:'Olkiluoto 3 (Finland) real programme Nuclear / Energy actual outturn $11.0B +300% cost growth +168 months slip failure mode: FOAK EPR complexity, safety system integration, regulatory hold-points' },
+  { name:'Vogtle Units 3 & 4 (Georgia)', sector:'Nuclear / Energy', mode:'Earth', cost_bn:34.0, cost_growth_pct:113, schedule_slip_months:84, failure_mode:'FOAK AP1000 design changes, contractor performance, qualified labour shortage', lesson:'Fixed-price EPC contracts on nuclear FOAK do not transfer risk — they transfer insolvency', prompt:'Vogtle Units 3 & 4 (Georgia) real programme Nuclear / Energy actual outturn $34.0B +113% cost growth +84 months slip failure mode: FOAK AP1000 design changes, contractor performance, qualified labour shortage' },
+  { name:'Ajax Armoured Vehicles (UK)', sector:'Defence / Secure Infrastructure', mode:'Earth', cost_bn:5.5, cost_growth_pct:57, schedule_slip_months:120, failure_mode:'EMC/vibration issues, crew safety, training system integration — none on critica', lesson:'Operational acceptance is the real programme gate, not platform delivery', prompt:'Ajax Armoured Vehicles (UK) real programme Defence / Secure Infrastructure actual outturn $5.5B +57% cost growth +120 months slip failure mode: EMC/vibration issues, crew safety, training system integration — none on critical path' },
+  { name:'Watchkeeper UAV Programme', sector:'Defence / Secure Infrastructure', mode:'Earth', cost_bn:1.3, cost_growth_pct:130, schedule_slip_months:120, failure_mode:'Civil airspace certification never achieved — airworthiness not a delivery const', lesson:'Regulatory acceptance must be on the master critical path from day one', prompt:'Watchkeeper UAV Programme real programme Defence / Secure Infrastructure actual outturn $1.3B +130% cost growth +120 months slip failure mode: Civil airspace certification never achieved — airworthiness not a delivery constraint' },
+  { name:'F-35 Joint Strike Fighter', sector:'Defence / Secure Infrastructure', mode:'Earth', cost_bn:412.0, cost_growth_pct:68, schedule_slip_months:96, failure_mode:'Software integration complexity, concurrent development and production', lesson:'Software-intensive defence programmes have 3-5x baseline schedule assumptions', prompt:'F-35 Joint Strike Fighter real programme Defence / Secure Infrastructure actual outturn $412.0B +68% cost growth +96 months slip failure mode: Software integration complexity, concurrent development and production' },
+  { name:'Microsoft Azure UK South (Slough campus)', sector:'Digital Infrastructure / Hyperscale Data Centre', mode:'Earth', cost_bn:3.2, cost_growth_pct:15, schedule_slip_months:18, failure_mode:'Grid connection delay, DNO queue, cooling commissioning', lesson:'Grid connection must be a signed agreement, not a queue position — energisation delays are now syste', prompt:'Microsoft Azure UK South (Slough campus) real programme Digital Infrastructure / Hyperscale Data Centre actual outturn $3.2B +15% cost growth +18 months slip failure mode: Grid connection delay, DNO queue, cooling commissioning' },
+  { name:'Amazon AWS Dublin Campus', sector:'Digital Infrastructure / Hyperscale Data Centre', mode:'Earth', cost_bn:4.2, cost_growth_pct:20, schedule_slip_months:14, failure_mode:'Planning opposition, grid capacity, water usage consent', lesson:'Data centres in water-stressed regions face novel consent constraints not in traditional risk regist', prompt:'Amazon AWS Dublin Campus real programme Digital Infrastructure / Hyperscale Data Centre actual outturn $4.2B +20% cost growth +14 months slip failure mode: Planning opposition, grid capacity, water usage consent' },
+  { name:'AstraZeneca Macclesfield Expansion', sector:'Life Sciences / Biologics Manufacturing', mode:'Earth', cost_bn:1.2, cost_growth_pct:30, schedule_slip_months:24, failure_mode:'Validation deferred post-construction, clean utility qualification delay', lesson:'CQV is a programme deliverable — not a post-construction activity', prompt:'AstraZeneca Macclesfield Expansion real programme Life Sciences / Biologics Manufacturing actual outturn $1.2B +30% cost growth +24 months slip failure mode: Validation deferred post-construction, clean utility qualification delay' },
+  { name:'Pfizer Ringaskiddy Ireland', sector:'Life Sciences / Biologics Manufacturing', mode:'Earth', cost_bn:1.5, cost_growth_pct:18, schedule_slip_months:18, failure_mode:'Regulatory submission delayed by CMC dossier readiness', lesson:'Regulatory submission is the revenue gate — it must be on the programme critical path', prompt:'Pfizer Ringaskiddy Ireland real programme Life Sciences / Biologics Manufacturing actual outturn $1.5B +18% cost growth +18 months slip failure mode: Regulatory submission delayed by CMC dossier readiness' },
+  { name:'Intel Ohio Fab (Planned)', sector:'Semiconductor / Advanced Manufacturing', mode:'Earth', cost_bn:28.0, cost_growth_pct:0, schedule_slip_months:36, failure_mode:'Workforce shortage, UPW complexity, tool delivery slippage', lesson:'Tool delivery sequences must be confirmed orders — OEM intent letters are not programme commitments', prompt:'Intel Ohio Fab (Planned) real programme Semiconductor / Advanced Manufacturing actual outturn $28.0B +0% cost growth +36 months slip failure mode: Workforce shortage, UPW complexity, tool delivery slippage' },
+  { name:'TSMC Arizona Fab', sector:'Semiconductor / Advanced Manufacturing', mode:'Earth', cost_bn:40.0, cost_growth_pct:35, schedule_slip_months:30, failure_mode:'Specialised workforce unavailable locally, tool delivery, UPW systems', lesson:'Fab yields in new geographies are systematically below initial projections', prompt:'TSMC Arizona Fab real programme Semiconductor / Advanced Manufacturing actual outturn $40.0B +35% cost growth +30 months slip failure mode: Specialised workforce unavailable locally, tool delivery, UPW systems' },
+  { name:'Samsung Taylor Texas Fab', sector:'Semiconductor / Advanced Manufacturing', mode:'Earth', cost_bn:17.0, cost_growth_pct:20, schedule_slip_months:24, failure_mode:'Market demand timing, workforce availability, tool delivery', lesson:'Semiconductor fabs require 5-8 year horizon planning — market timing risk is structural', prompt:'Samsung Taylor Texas Fab real programme Semiconductor / Advanced Manufacturing actual outturn $17.0B +20% cost growth +24 months slip failure mode: Market demand timing, workforce availability, tool delivery' },
+  { name:'Britishvolt (Failed)', sector:'Battery / Gigafactory', mode:'Earth', cost_bn:3.8, cost_growth_pct:0, schedule_slip_months:0, failure_mode:'Grid connection, cell chemistry qualification, BMS supply chain — all unconfirme', lesson:'A gigafactory without a confirmed grid connection and qualified cell chemistry is a building, not a ', prompt:'Britishvolt (Failed) real programme Battery / Gigafactory actual outturn $3.8B +0% cost growth +0 months slip failure mode: Grid connection, cell chemistry qualification, BMS supply chain — all unconfirmed at commitment' },
+  { name:'Northvolt Ett (Sweden)', sector:'Battery / Gigafactory', mode:'Earth', cost_bn:8.0, cost_growth_pct:40, schedule_slip_months:36, failure_mode:'Yield ramp 16x below target — 1GWh/year achieved vs 16GWh target', lesson:'Battery yield ramp is the board metric — building capacity for an unqualified product is not product', prompt:'Northvolt Ett (Sweden) real programme Battery / Gigafactory actual outturn $8.0B +40% cost growth +36 months slip failure mode: Yield ramp 16x below target — 1GWh/year achieved vs 16GWh target' },
+  { name:'Hornsea 2 Offshore Wind Farm', sector:'Energy / Utilities', mode:'Earth', cost_bn:3.0, cost_growth_pct:20, schedule_slip_months:18, failure_mode:'Grid connection 18 months late — DNO queue backlog', lesson:'Grid connection queue position is not an energisation date — it is a forecast', prompt:'Hornsea 2 Offshore Wind Farm real programme Energy / Utilities actual outturn $3.0B +20% cost growth +18 months slip failure mode: Grid connection 18 months late — DNO queue backlog' },
+  { name:'Neart na Gaoithe Offshore Wind (Scotland)', sector:'Energy / Utilities', mode:'Earth', cost_bn:3.5, cost_growth_pct:25, schedule_slip_months:48, failure_mode:'Aviation radar objection known at planning — not treated as programme constraint', lesson:'Third-party consent risks must be treated as critical path items at project inception', prompt:'Neart na Gaoithe Offshore Wind (Scotland) real programme Energy / Utilities actual outturn $3.5B +25% cost growth +48 months slip failure mode: Aviation radar objection known at planning — not treated as programme constraint' },
+  { name:'Hinkley Point C Nuclear (Energy angle)', sector:'Energy / Utilities', mode:'Earth', cost_bn:35.0, cost_growth_pct:94, schedule_slip_months:60, failure_mode:'FOAK construction, supply chain, regulatory timeline', lesson:'Nuclear baseload power has a 50-year asset life — the approval case must reflect lifetime value not ', prompt:'Hinkley Point C Nuclear (Energy angle) real programme Energy / Utilities actual outturn $35.0B +94% cost growth +60 months slip failure mode: FOAK construction, supply chain, regulatory timeline' },
+  { name:'Thames Water AMP7 Capital Programme', sector:'Water / Environmental Infrastructure', mode:'Earth', cost_bn:3.7, cost_growth_pct:40, schedule_slip_months:24, failure_mode:'Procurement and supply chain capacity, site access — 40% below delivery target', lesson:'Utility capital programmes require contracted supply chain at programme start — not competitive proc', prompt:'Thames Water AMP7 Capital Programme real programme Water / Environmental Infrastructure actual outturn $3.7B +40% cost growth +24 months slip failure mode: Procurement and supply chain capacity, site access — 40% below delivery target' },
+  { name:'SMETS2 Smart Meter Rollout (UK)', sector:'Water / Environmental Infrastructure', mode:'Earth', cost_bn:13.9, cost_growth_pct:90, schedule_slip_months:60, failure_mode:'Comms infrastructure complexity, back-office platform readiness, MDU access', lesson:'Smart meter programmes fail at the back-office integration layer, not at the physical meter', prompt:'SMETS2 Smart Meter Rollout (UK) real programme Water / Environmental Infrastructure actual outturn $13.9B +90% cost growth +60 months slip failure mode: Comms infrastructure complexity, back-office platform readiness, MDU access' },
+  { name:'NBN Co (Australia) Smart Infrastructure', sector:'Water / Environmental Infrastructure', mode:'Earth', cost_bn:51.0, cost_growth_pct:985, schedule_slip_months:72, failure_mode:'Engineering complexity, copper network assumptions, multi-technology mix', lesson:'Utility rollout programmes in mixed urban/rural geographies have 3-10x baseline complexity assumptio', prompt:'NBN Co (Australia) Smart Infrastructure real programme Water / Environmental Infrastructure actual outturn $51.0B +985% cost growth +72 months slip failure mode: Engineering complexity, copper network assumptions, multi-technology mix' },
+  { name:'Chevron Gorgon LNG (Australia)', sector:'Oil & Gas / Process Infrastructure', mode:'Earth', cost_bn:54.0, cost_growth_pct:54, schedule_slip_months:36, failure_mode:'Brownfield interface complexity, remote logistics, HAZOP findings', lesson:'Brownfield LNG interface complexity is systematically underestimated at project inception', prompt:'Chevron Gorgon LNG (Australia) real programme Oil & Gas / Process Infrastructure actual outturn $54.0B +54% cost growth +36 months slip failure mode: Brownfield interface complexity, remote logistics, HAZOP findings' },
+  { name:'Shell Prelude FLNG (Australia)', sector:'Oil & Gas / Process Infrastructure', mode:'Earth', cost_bn:12.0, cost_growth_pct:50, schedule_slip_months:60, failure_mode:'FOAK floating LNG technology — never achieved nameplate capacity', lesson:'FOAK floating process technology has 5x cost growth assumption vs comparable fixed infrastructure', prompt:'Shell Prelude FLNG (Australia) real programme Oil & Gas / Process Infrastructure actual outturn $12.0B +50% cost growth +60 months slip failure mode: FOAK floating LNG technology — never achieved nameplate capacity' },
+  { name:'Cobre Panama Copper Mine (First Quantum)', sector:'Mining / Metals Infrastructure', mode:'Earth', cost_bn:10.0, cost_growth_pct:100, schedule_slip_months:0, failure_mode:'Shut by government order — community licence-to-operate not treated as board gat', lesson:'$10B built and operating, then shut. Community opposition must be a board approval gate, not a stake', prompt:'Cobre Panama Copper Mine (First Quantum) real programme Mining / Metals Infrastructure actual outturn $10.0B +100% cost growth +0 months slip failure mode: Shut by government order — community licence-to-operate not treated as board gate' },
+  { name:'Roy Hill Iron Ore Mine (Australia)', sector:'Mining / Metals Infrastructure', mode:'Earth', cost_bn:10.0, cost_growth_pct:20, schedule_slip_months:24, failure_mode:'Rail and port logistics, processing plant yield ramp', lesson:'Mining logistics corridors require the same programme rigour as the mine itself', prompt:'Roy Hill Iron Ore Mine (Australia) real programme Mining / Metals Infrastructure actual outturn $10.0B +20% cost growth +24 months slip failure mode: Rail and port logistics, processing plant yield ramp' },
+  { name:'Heathrow Terminal 5', sector:'Airport / Aviation', mode:'Earth', cost_bn:4.3, cost_growth_pct:5, schedule_slip_months:0, failure_mode:'34,000 bags lost on day 1 — IT/baggage integration not a programme deliverable', lesson:'Construction on time and budget is not success — ORAT must be on the master critical path', prompt:'Heathrow Terminal 5 real programme Airport / Aviation actual outturn $4.3B +5% cost growth +0 months slip failure mode: 34,000 bags lost on day 1 — IT/baggage integration not a programme deliverable' },
+  { name:'Berlin Brandenburg Airport', sector:'Airport / Aviation', mode:'Earth', cost_bn:7.3, cost_growth_pct:363, schedule_slip_months:108, failure_mode:'Fire safety integration, IT, regulatory approval — all post-construction', lesson:'Airport safety and regulatory approval is the opening gate — not construction practical completion', prompt:'Berlin Brandenburg Airport real programme Airport / Aviation actual outturn $7.3B +363% cost growth +108 months slip failure mode: Fire safety integration, IT, regulatory approval — all post-construction' },
+  { name:'Royal Liverpool Hospital', sector:'Healthcare / Hospital Infrastructure', mode:'Earth', cost_bn:0.8, cost_growth_pct:80, schedule_slip_months:60, failure_mode:'Structural defects, infection-control compliance, PFI contractor insolvency', lesson:'PFI construction risk transfer does not transfer commissioning and occupation risk', prompt:'Royal Liverpool Hospital real programme Healthcare / Hospital Infrastructure actual outturn $0.8B +80% cost growth +60 months slip failure mode: Structural defects, infection-control compliance, PFI contractor insolvency' },
+  { name:'New Royal Adelaide Hospital', sector:'Healthcare / Hospital Infrastructure', mode:'Earth', cost_bn:2.3, cost_growth_pct:60, schedule_slip_months:24, failure_mode:'Clinical commissioning not on master schedule, operational transition not contra', lesson:'Clinical commissioning is a 12-18 month programme requiring a dedicated team and critical path', prompt:'New Royal Adelaide Hospital real programme Healthcare / Hospital Infrastructure actual outturn $2.3B +60% cost growth +24 months slip failure mode: Clinical commissioning not on master schedule, operational transition not contracted' },
+  { name:'A303 Stonehenge Tunnel', sector:'Roads / Highways Infrastructure', mode:'Earth', cost_bn:2.1, cost_growth_pct:50, schedule_slip_months:36, failure_mode:'UNESCO/DCO legal challenge post-contract award', lesson:'Third-party consent risks that are known but unresolved at contract award transfer to the client', prompt:'A303 Stonehenge Tunnel real programme Roads / Highways Infrastructure actual outturn $2.1B +50% cost growth +36 months slip failure mode: UNESCO/DCO legal challenge post-contract award' },
+  { name:'A14 Cambridge to Huntingdon', sector:'Roads / Highways Infrastructure', mode:'Earth', cost_bn:1.5, cost_growth_pct:0, schedule_slip_months:0, failure_mode:'Utility diversions were the critical path for 60% of works', lesson:'Utility diversion timelines are systematically underestimated — third-party access is not in the con', prompt:'A14 Cambridge to Huntingdon real programme Roads / Highways Infrastructure actual outturn $1.5B +0% cost growth +0 months slip failure mode: Utility diversions were the critical path for 60% of works' },
+  { name:'Felixstowe South Quay Extension', sector:'Ports / Marine Infrastructure', mode:'Earth', cost_bn:0.4, cost_growth_pct:15, schedule_slip_months:12, failure_mode:'Marine ground conditions, operational cutover constraints', lesson:'Port redevelopments require contingency for dredging ground conditions — seabed assumptions drive P8', prompt:'Felixstowe South Quay Extension real programme Ports / Marine Infrastructure actual outturn $0.4B +15% cost growth +12 months slip failure mode: Marine ground conditions, operational cutover constraints' },
+  { name:'London Gateway Phase 2', sector:'Ports / Marine Infrastructure', mode:'Earth', cost_bn:1.8, cost_growth_pct:20, schedule_slip_months:18, failure_mode:'Terminal IT/OT integration 18 months late — not in EPC contract boundary', lesson:'Terminal operating systems are the ports critical path at commissioning — not the quay wall', prompt:'London Gateway Phase 2 real programme Ports / Marine Infrastructure actual outturn $1.8B +20% cost growth +18 months slip failure mode: Terminal IT/OT integration 18 months late — not in EPC contract boundary' },
+  { name:'BT Openreach FTTP Rollout (UK)', sector:'Telecoms / Digital Infrastructure', mode:'Earth', cost_bn:15.0, cost_growth_pct:50, schedule_slip_months:36, failure_mode:'Wayleave complexity in MDUs and dense urban areas — 2+ years behind target', lesson:'Wayleave acquisition is the critical path for FTTP — not network build', prompt:'BT Openreach FTTP Rollout (UK) real programme Telecoms / Digital Infrastructure actual outturn $15.0B +50% cost growth +36 months slip failure mode: Wayleave complexity in MDUs and dense urban areas — 2+ years behind target' },
+  { name:'NBN Co Multi-Technology Mix (Australia)', sector:'Telecoms / Digital Infrastructure', mode:'Earth', cost_bn:51.0, cost_growth_pct:985, schedule_slip_months:72, failure_mode:'Multi-technology complexity, copper network assumptions, contractor performance', lesson:'National broadband rollouts in mixed geographies require 5-10x baseline cost assumptions', prompt:'NBN Co Multi-Technology Mix (Australia) real programme Telecoms / Digital Infrastructure actual outturn $51.0B +985% cost growth +72 months slip failure mode: Multi-technology complexity, copper network assumptions, contractor performance' },
+  { name:'James Webb Space Telescope (JWST)', sector:'Space / Mission Assurance', mode:'Space', cost_bn:10.0, cost_growth_pct:1400, schedule_slip_months:168, failure_mode:'Systems integration complexity, cryogenic testing failures, scope growth visible', lesson:'FOAK space systems have 14-15x baseline cost growth assumptions — qualification must be on the criti', prompt:'James Webb Space Telescope (JWST) real programme Space / Mission Assurance actual outturn $10.0B +1400% cost growth +168 months slip failure mode: Systems integration complexity, cryogenic testing failures, scope growth visible early' },
+  { name:'Artemis / SLS Programme', sector:'Space / Mission Assurance', mode:'Space', cost_bn:93.0, cost_growth_pct:200, schedule_slip_months:60, failure_mode:'Fixed-price Boeing contract removed schedule incentives, propulsion complexity', lesson:'Fixed-price contracting on FOAK space systems transfers insolvency risk, not schedule risk', prompt:'Artemis / SLS Programme real programme Space / Mission Assurance actual outturn $93.0B +200% cost growth +60 months slip failure mode: Fixed-price Boeing contract removed schedule incentives, propulsion complexity' },
+  { name:'OneWeb Satellite Constellation', sector:'Space / Mission Assurance', mode:'Space', cost_bn:3.4, cost_growth_pct:70, schedule_slip_months:36, failure_mode:'Bankruptcy — launch cadence, ground segment, customer revenue all optimistic', lesson:'Satellite constellation business cases require contracted anchor customers before launch commitment', prompt:'OneWeb Satellite Constellation real programme Space / Mission Assurance actual outturn $3.4B +70% cost growth +36 months slip failure mode: Bankruptcy — launch cadence, ground segment, customer revenue all optimistic' },
+  { name:'Iridium NEXT Constellation', sector:'Space / Mission Assurance', mode:'Space', cost_bn:3.0, cost_growth_pct:0, schedule_slip_months:0, failure_mode:'Managed successfully — named launch provider, contracted cadence, anchor custome', lesson:'Successful constellation reference: contracted launch, proven bus, anchor customer base from day 1', prompt:'Iridium NEXT Constellation real programme Space / Mission Assurance actual outturn $3.0B +0% cost growth +0 months slip failure mode: Managed successfully — named launch provider, contracted cadence, anchor customers' },
+  { name:'Lunar Gateway (Planned)', sector:'Space / Mission Assurance', mode:'Space', cost_bn:40.0, cost_growth_pct:30, schedule_slip_months:36, failure_mode:'International partner coordination, launch cadence, FOAK life support', lesson:'Cislunar infrastructure requires autonomous recovery capability — Earth-based contingency is a 3-day', prompt:'Lunar Gateway (Planned) real programme Space / Mission Assurance actual outturn $40.0B +30% cost growth +36 months slip failure mode: International partner coordination, launch cadence, FOAK life support' },
+  { name:'Mars InSight Mission', sector:'Space / Mission Assurance', mode:'Space', cost_bn:0.83, cost_growth_pct:25, schedule_slip_months:24, failure_mode:'Heat probe failed to penetrate Martian soil — regolith properties not in design ', lesson:'Mars surface properties require margin for FOAK geophysical assumptions', prompt:'Mars InSight Mission real programme Space / Mission Assurance actual outturn $0.83B +25% cost growth +24 months slip failure mode: Heat probe failed to penetrate Martian soil — regolith properties not in design basis' },
+  { name:'Tottenham Hotspur Stadium', sector:'Stadia / Events Infrastructure', mode:'Earth', cost_bn:1.2, cost_growth_pct:25, schedule_slip_months:9, failure_mode:'Retractable pitch mechanism, FA inspection, safety certification delay', lesson:'Event-deadline driven construction compresses commissioning — safety certification is the opening ga', prompt:'Tottenham Hotspur Stadium real programme Stadia / Events Infrastructure actual outturn $1.2B +25% cost growth +9 months slip failure mode: Retractable pitch mechanism, FA inspection, safety certification delay' },
+  { name:'Wembley Stadium Redevelopment', sector:'Stadia / Events Infrastructure', mode:'Earth', cost_bn:0.8, cost_growth_pct:40, schedule_slip_months:18, failure_mode:'Steelwork fabrication, contractor disputes, safety system integration', lesson:'Stadium arch and signature structural elements carry 2-3x contingency assumption', prompt:'Wembley Stadium Redevelopment real programme Stadia / Events Infrastructure actual outturn $0.8B +40% cost growth +18 months slip failure mode: Steelwork fabrication, contractor disputes, safety system integration' },
+  { name:'Riyadh Metro (Saudi Arabia)', sector:'Rail / Transit', mode:'Earth', cost_bn:22.5, cost_growth_pct:12, schedule_slip_months:24, failure_mode:'Systems integration and operational readiness timeline across 6 concessions', lesson:'Multi-concession metro programmes require a single systems integrator with contractual authority ove', prompt:'Riyadh Metro (Saudi Arabia) real programme Rail / Transit actual outturn $22.5B +12% cost growth +24 months slip failure mode: Systems integration and operational readiness timeline across 6 concessions' },
+  { name:'California High Speed Rail (USA)', sector:'Rail / Transit', mode:'Earth', cost_bn:128.0, cost_growth_pct:1000, schedule_slip_months:180, failure_mode:'Environmental review, land acquisition, design changes — NEPA timeline structura', lesson:'US rail mega-projects require NEPA completion before cost can be baselined — pre-NEPA estimates are ', prompt:'California High Speed Rail (USA) real programme Rail / Transit actual outturn $128.0B +1000% cost growth +180 months slip failure mode: Environmental review, land acquisition, design changes — NEPA timeline structural constraint' },
+  { name:'Sydney Metro Northwest', sector:'Rail / Transit', mode:'Earth', cost_bn:8.3, cost_growth_pct:5, schedule_slip_months:0, failure_mode:'Successfully delivered — TBM tunnelling, systems integration on schedule', lesson:'Strong project reference: alliance contract model, TBM tunnelling, single systems integrator', prompt:'Sydney Metro Northwest real programme Rail / Transit actual outturn $8.3B +5% cost growth +0 months slip failure mode: Successfully delivered — TBM tunnelling, systems integration on schedule' },
+  { name:'Grand Paris Express (France)', sector:'Rail / Transit', mode:'Earth', cost_bn:36.0, cost_growth_pct:45, schedule_slip_months:48, failure_mode:'Ground conditions, geology variability, post-COVID procurement inflation', lesson:'Paris basin geology is more complex than initial surveys indicated — ground risk reserve must reflec', prompt:'Grand Paris Express (France) real programme Rail / Transit actual outturn $36.0B +45% cost growth +48 months slip failure mode: Ground conditions, geology variability, post-COVID procurement inflation' },
+  { name:'NEOM THE LINE Power Infrastructure', sector:'Energy / Power Infrastructure', mode:'Earth', cost_bn:500.0, cost_growth_pct:0, schedule_slip_months:0, failure_mode:'FOAK megacity — no comparable. Technology readiness of autonomous systems is the', lesson:'No reference class exists for THE LINE. Apply maximum OBA and require independent technical review o', prompt:'NEOM THE LINE Power Infrastructure real programme Energy / Power Infrastructure actual outturn $500.0B +0% cost growth +0 months slip failure mode: FOAK megacity — no comparable. Technology readiness of autonomous systems is the primary risk.' },
+  { name:'Snowy 2.0 Pumped Hydro (Australia)', sector:'Energy / Power Infrastructure', mode:'Earth', cost_bn:12.0, cost_growth_pct:233, schedule_slip_months:60, failure_mode:'TBM breakdown, ground conditions, geological fault — 3.3km TBM stuck for 14 mont', lesson:'Deep underground works in complex geology — apply 3-5x TBM programme contingency', prompt:'Snowy 2.0 Pumped Hydro (Australia) real programme Energy / Power Infrastructure actual outturn $12.0B +233% cost growth +60 months slip failure mode: TBM breakdown, ground conditions, geological fault — 3.3km TBM stuck for 14 months' },
+  { name:'Barakah Nuclear Power (UAE)', sector:'Nuclear / Regulated Generation', mode:'Earth', cost_bn:32.4, cost_growth_pct:62, schedule_slip_months:72, failure_mode:'Regulatory approval timeline, ENEC/IAEA safety case, operational licensing', lesson:'First nuclear plant in the Arab world — regulatory approval timeline was the real critical path, not', prompt:'Barakah Nuclear Power (UAE) real programme Nuclear / Regulated Generation actual outturn $32.4B +62% cost growth +72 months slip failure mode: Regulatory approval timeline, ENEC/IAEA safety case, operational licensing' },
+  { name:'Gordie Howe Bridge (Canada-USA)', sector:'Roads / Highways Infrastructure', mode:'Earth', cost_bn:5.7, cost_growth_pct:90, schedule_slip_months:24, failure_mode:'Bi-national procurement complexity, COVID, steel fabrication delays', lesson:'Cross-border infrastructure requires harmonised procurement rules — different national standards add', prompt:'Gordie Howe Bridge (Canada-USA) real programme Roads / Highways Infrastructure actual outturn $5.7B +90% cost growth +24 months slip failure mode: Bi-national procurement complexity, COVID, steel fabrication delays' },
+  { name:'Desalination Plant Jubail II (Saudi Arabia)', sector:'Water / Environmental Infrastructure', mode:'Earth', cost_bn:1.4, cost_growth_pct:15, schedule_slip_months:12, failure_mode:'Process performance at extreme ambient temperature — membrane degradation', lesson:'Middle East desalination must be designed for 50°C+ ambient — standard membrane specifications are i', prompt:'Desalination Plant Jubail II (Saudi Arabia) real programme Water / Environmental Infrastructure actual outturn $1.4B +15% cost growth +12 months slip failure mode: Process performance at extreme ambient temperature — membrane degradation' },
+  { name:'Melbourne Water Smart Meter Rollout', sector:'Water / Environmental Infrastructure', mode:'Earth', cost_bn:0.6, cost_growth_pct:25, schedule_slip_months:18, failure_mode:'Back-office data platform readiness, meter reading system integration', lesson:'Smart meter rollouts fail at the data layer — field installation is the easy part', prompt:'Melbourne Water Smart Meter Rollout real programme Water / Environmental Infrastructure actual outturn $0.6B +25% cost growth +18 months slip failure mode: Back-office data platform readiness, meter reading system integration' },
+  { name:'Kashagan Phase 1 (Kazakhstan)', sector:'Oil & Gas / Process Infrastructure', mode:'Earth', cost_bn:50.0, cost_growth_pct:400, schedule_slip_months:120, failure_mode:'H2S corrosion — pipeline design failed at commissioning, 3-year restart delay', lesson:'Sour gas processing requires independent material qualification — no deviation from specification pe', prompt:'Kashagan Phase 1 (Kazakhstan) real programme Oil & Gas / Process Infrastructure actual outturn $50.0B +400% cost growth +120 months slip failure mode: H2S corrosion — pipeline design failed at commissioning, 3-year restart delay' },
+  { name:'Ichthys LNG (Australia)', sector:'Oil & Gas / Process Infrastructure', mode:'Earth', cost_bn:45.0, cost_growth_pct:50, schedule_slip_months:24, failure_mode:'Module fabrication, labour costs, commissioning complexity', lesson:'LNG final cost is determined by module fabrication quality and commissioning duration — not field de', prompt:'Ichthys LNG (Australia) real programme Oil & Gas / Process Infrastructure actual outturn $45.0B +50% cost growth +24 months slip failure mode: Module fabrication, labour costs, commissioning complexity' },
+  { name:'Oyu Tolgoi Underground Mine (Mongolia)', sector:'Mining / Metals Infrastructure', mode:'Earth', cost_bn:7.0, cost_growth_pct:60, schedule_slip_months:48, failure_mode:'Ground conditions, geotechnical complexity, caveback — production delayed', lesson:'Block cave mining in complex ground requires geotechnical margin — cave propagation cannot be accele', prompt:'Oyu Tolgoi Underground Mine (Mongolia) real programme Mining / Metals Infrastructure actual outturn $7.0B +60% cost growth +48 months slip failure mode: Ground conditions, geotechnical complexity, caveback — production delayed' },
+  { name:'Jansen Potash Mine (Canada)', sector:'Mining / Metals Infrastructure', mode:'Earth', cost_bn:5.7, cost_growth_pct:0, schedule_slip_months:0, failure_mode:'On schedule — strong project controls, single-owner BHP, definitive feasibility', lesson:'Single-owner mega-mine with completed definitive feasibility study and no joint venture complexity —', prompt:'Jansen Potash Mine (Canada) real programme Mining / Metals Infrastructure actual outturn $5.7B +0% cost growth +0 months slip failure mode: On schedule — strong project controls, single-owner BHP, definitive feasibility' },
+  { name:'AUKUS Submarine Programme (Australia/UK/USA)', sector:'Defence / Secure Infrastructure', mode:'Earth', cost_bn:268.0, cost_growth_pct:0, schedule_slip_months:0, failure_mode:'FOAK nuclear-powered submarine in Australia — no comparable. Workforce, regulato', lesson:'No reference class exists for AUKUS — it is simultaneously a FOAK submarine programme, FOAK nuclear ', prompt:'AUKUS Submarine Programme (Australia/UK/USA) real programme Defence / Secure Infrastructure actual outturn $268.0B +0% cost growth +0 months slip failure mode: FOAK nuclear-powered submarine in Australia — no comparable. Workforce, regulatory, industrial base all new.' },
+  { name:'Chandrayaan-3 (India Lunar)', sector:'Space / Mission Assurance', mode:'Space', cost_bn:0.075, cost_growth_pct:0, schedule_slip_months:0, failure_mode:'Chandrayaan-2 lander failed — software bug in braking sequence. Chandrayaan-3 co', lesson:'Lunar landing requires exhaustive failure mode simulation — Chandrayaan-3 cost 10x less than Apollo ', prompt:'Chandrayaan-3 (India Lunar) real programme Space / Mission Assurance actual outturn $0.075B +0% cost growth +0 months slip failure mode: Chandrayaan-2 lander failed — software bug in braking sequence. Chandrayaan-3 corrected and succeeded.' },
+  { name:'Starlink Constellation (SpaceX)', sector:'Space / Mission Assurance', mode:'Space', cost_bn:30.0, cost_growth_pct:0, schedule_slip_months:0, failure_mode:'Successfully scaled — reusable launch, vertical integration, iterative design', lesson:'Vertical integration (own launch + own satellite) is the only structure that achieves constellation ', prompt:'Starlink Constellation (SpaceX) real programme Space / Mission Assurance actual outturn $30.0B +0% cost growth +0 months slip failure mode: Successfully scaled — reusable launch, vertical integration, iterative design' }
+];
+
+
 const showcaseSectors = ['All', ...Array.from(new Set(showcaseProjects.map(p => p.sector)))];
 
 
@@ -458,6 +525,242 @@ function Kpi({ icon: Icon, label, value, sub, hot }) {
 function Table({ rows = [], cols = [], moneyCols = [] }) {
   return <div className="tableWrap"><table><thead><tr>{cols.map(c => <th key={c[0]}>{c[1]}</th>)}</tr></thead><tbody>{rows.map((r, i) => <tr key={i}>{cols.map(c => <td key={c[0]}>{moneyCols.includes(c[0]) ? fmt(r[c[0]]) : String(r[c[0]] ?? '')}</td>)}</tr>)}</tbody></table></div>;
 }
+// ── ACCOUNT PANEL ─────────────────────────────────────────────────────────────
+function AccountPanel({ email, setEmail, projects, loading, onLoad, onDelete, onSave, onLoadProjects, onClose, model }) {
+  const [inputEmail, setInputEmail] = React.useState(email || '');
+  return <section className="savedPanel">
+    <div className="savedHeader"><h2 style={{fontSize:'14px'}}>Your Account <span style={{fontSize:'10px',color:'#8df7ff',marginLeft:'4px'}}>cross-device projects</span></h2><button onClick={onClose}>✕</button></div>
+    <div style={{padding:'14px 16px',borderBottom:'1px solid rgba(255,255,255,0.07)'}}>
+      <p style={{fontSize:'11px',color:'#64748b',marginBottom:'8px'}}>Enter your email to save and load projects across devices. No password needed — just your email.</p>
+      <div style={{display:'flex',gap:'8px'}}>
+        <input value={inputEmail} onChange={e => setInputEmail(e.target.value)} placeholder="your@email.com"
+          style={{flex:1,background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.12)',borderRadius:'3px',padding:'7px 10px',color:'#e2e8f0',fontSize:'12px'}}/>
+        <button onClick={() => { setEmail(inputEmail); onLoadProjects(inputEmail); try { localStorage.setItem('casey_account_email', inputEmail); } catch {} }}
+          style={{background:'rgba(141,247,255,0.1)',border:'1px solid rgba(141,247,255,0.25)',color:'#8df7ff',padding:'7px 14px',borderRadius:'3px',cursor:'pointer',fontSize:'11px',fontWeight:'700'}}>Load →</button>
+      </div>
+      {model && email && email.includes('@') && <button onClick={onSave}
+        style={{marginTop:'8px',width:'100%',background:'rgba(141,247,255,0.08)',border:'1px solid rgba(141,247,255,0.2)',color:'#8df7ff',padding:'7px',borderRadius:'3px',cursor:'pointer',fontSize:'11px',fontWeight:'700'}}>
+        ↓ Save current project to account
+      </button>}
+    </div>
+    {loading && <div style={{padding:'20px',textAlign:'center',color:'#475569',fontSize:'12px'}}>Loading…</div>}
+    {!loading && projects.length === 0 && email && <div style={{padding:'20px',textAlign:'center',color:'#475569',fontSize:'12px'}}>No saved projects yet. Run a project and save it here.</div>}
+    <div className="savedGrid">
+      {projects.map(p => <div className="savedCard" key={p.id}>
+        <div className="savedMeta"><span>{p.subsector||'Capital Programme'}</span><em>{p.saved_at ? new Date(p.saved_at).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : ''}</em></div>
+        <h3>{p.title}</h3>
+        <div className="savedStats">
+          <div><span>P50</span><b>{p.cost_p50||'—'}</b></div>
+          <div><span>Duration</span><b>{p.schedule||'—'}</b></div>
+          <div><span>Confidence</span><b>{p.confidence_pct ? p.confidence_pct+'%' : '—'}</b></div>
+          <div><span>Risk</span><b>{p.risk||'—'}</b></div>
+        </div>
+        <div className="savedActions">
+          <button className="savedLoad" onClick={() => onLoad(p)}>Load →</button>
+          <button className="savedDelete" onClick={() => onDelete(p.id)}>Delete</button>
+        </div>
+      </div>)}
+    </div>
+  </section>;
+}
+
+// ── COMPARE PANEL ─────────────────────────────────────────────────────────────
+function ComparePanel({ promptA, setPromptA, promptB, setPromptB, onRun, loading, result, error, onClose, currentModel }) {
+  const [bmFilter, setBmFilter] = React.useState('All');
+  const [bmSearch, setBmSearch] = React.useState('');
+  const [activeTab, setActiveTab] = React.useState('pick'); // 'pick' | 'results'
+
+  const sectors = ['All','Rail / Transit','Nuclear / Energy','Defence / Secure Infrastructure',
+    'Digital Infrastructure / Hyperscale Data Centre','Life Sciences / Biologics Manufacturing',
+    'Semiconductor / Advanced Manufacturing','Battery / Gigafactory','Energy / Utilities',
+    'Water / Environmental Infrastructure','Oil & Gas / Process Infrastructure',
+    'Mining / Metals Infrastructure','Airport / Aviation','Ports / Marine Infrastructure',
+    'Roads / Highways Infrastructure','Space / Mission Assurance','Healthcare / Hospital Infrastructure',
+    'Stadia / Events Infrastructure','Telecoms / Digital Infrastructure'];
+
+  const filtered = REAL_BENCHMARKS.filter(b => {
+    const matchSector = bmFilter === 'All' || b.sector === bmFilter;
+    const matchSearch = !bmSearch || b.name.toLowerCase().includes(bmSearch.toLowerCase()) || b.sector.toLowerCase().includes(bmSearch.toLowerCase());
+    return matchSector && matchSearch;
+  });
+
+  const delta = result?.delta;
+  const pa = result?.programme_a;
+  const pb = result?.programme_b;
+  const wc = { A: '#10b981', B: '#8df7ff', EQUAL: '#f59e0b' };
+
+  React.useEffect(() => {
+    if (result) setActiveTab('results');
+  }, [result]);
+
+  return <section className="savedPanel" style={{width:'min(980px,100vw)'}}>
+    <div className="savedHeader">
+      <div>
+        <h2 style={{fontSize:'14px'}}>Programme Comparison</h2>
+        <p style={{fontSize:'11px',color:'#475569',margin:'2px 0 0'}}>Compare any two programmes — your project vs a real benchmark, two delivery options, or two contractor bids.</p>
+      </div>
+      <button onClick={onClose}>✕</button>
+    </div>
+
+    {/* Tab row */}
+    <div style={{display:'flex',gap:'0',borderBottom:'1px solid rgba(255,255,255,0.07)'}}>
+      {[['pick','Set up comparison'],['results','Results']].map(([t,l]) =>
+        <button key={t} onClick={() => setActiveTab(t)}
+          style={{padding:'8px 16px',fontSize:'11px',fontWeight:activeTab===t?'800':'400',
+                  color:activeTab===t?'#8df7ff':'#475569',
+                  borderBottom:activeTab===t?'2px solid #8df7ff':'2px solid transparent',
+                  background:'none',border:'none',cursor:'pointer',letterSpacing:'.06em'}}>{l}</button>)}
+    </div>
+
+    {activeTab === 'pick' && <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0',height:'calc(100vh - 130px)',overflow:'hidden'}}>
+      {/* LEFT: Option A — Real benchmark or custom */}
+      <div style={{borderRight:'1px solid rgba(255,255,255,0.07)',display:'flex',flexDirection:'column',overflow:'hidden'}}>
+        <div style={{padding:'10px 14px',borderBottom:'1px solid rgba(255,255,255,0.05)',flexShrink:0}}>
+          <div style={{fontSize:'9px',fontWeight:'800',letterSpacing:'.12em',color:'#10b981',marginBottom:'6px'}}>OPTION A — REFERENCE CASE</div>
+          <p style={{fontSize:'10px',color:'#475569',margin:'0 0 6px'}}>Pick a real completed programme from the library below, or type your own.</p>
+          <textarea value={promptA} onChange={e => setPromptA(e.target.value)} rows={3}
+            placeholder="Select from library below or type your own programme description..."
+            style={{width:'100%',background:'rgba(16,185,129,0.05)',border:'1px solid rgba(16,185,129,0.2)',borderRadius:'3px',padding:'7px',color:'#e2e8f0',fontSize:'11px',resize:'vertical',boxSizing:'border-box'}}/>
+          {currentModel && <button onClick={() => setPromptA(currentModel.prompt || '')}
+            style={{marginTop:'4px',width:'100%',background:'rgba(16,185,129,0.08)',border:'1px solid rgba(16,185,129,0.2)',color:'#10b981',padding:'5px',borderRadius:'3px',cursor:'pointer',fontSize:'10px',fontWeight:'700'}}>
+            Use current project as Option A →
+          </button>}
+        </div>
+        {/* Benchmark filter */}
+        <div style={{padding:'8px 10px',borderBottom:'1px solid rgba(255,255,255,0.05)',flexShrink:0,display:'flex',gap:'6px',alignItems:'center'}}>
+          <input value={bmSearch} onChange={e => setBmSearch(e.target.value)} placeholder="Search..."
+            style={{flex:1,background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'3px',padding:'4px 8px',color:'#e2e8f0',fontSize:'10px'}}/>
+          <select value={bmFilter} onChange={e => setBmFilter(e.target.value)}
+            style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'3px',padding:'4px 6px',color:'#94a3b8',fontSize:'10px'}}>
+            {['All','Rail / Transit','Nuclear / Energy','Defence / Secure Infrastructure',
+              'Digital Infrastructure / Hyperscale Data Centre','Life Sciences / Biologics Manufacturing',
+              'Semiconductor / Advanced Manufacturing','Battery / Gigafactory','Energy / Utilities',
+              'Water / Environmental Infrastructure','Oil & Gas / Process Infrastructure',
+              'Mining / Metals Infrastructure','Airport / Aviation','Roads / Highways Infrastructure',
+              'Space / Mission Assurance','Ports / Marine Infrastructure'].map(s =>
+              <option key={s} value={s}>{s === 'All' ? 'All sectors' : s}</option>)}
+          </select>
+        </div>
+        {/* Benchmark list */}
+        <div style={{flex:1,overflowY:'auto'}}>
+          {filtered.map(b => <div key={b.name}
+            onClick={() => setPromptA(b.prompt)}
+            style={{padding:'8px 12px',borderBottom:'1px solid rgba(255,255,255,0.04)',cursor:'pointer',
+                    background:promptA===b.prompt?'rgba(16,185,129,0.08)':'transparent',
+                    transition:'background 0.15s'}}
+            onMouseEnter={e => e.currentTarget.style.background='rgba(255,255,255,0.04)'}
+            onMouseLeave={e => e.currentTarget.style.background=promptA===b.prompt?'rgba(16,185,129,0.08)':'transparent'}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:'2px'}}>
+              <span style={{fontSize:'11px',fontWeight:'700',color:'#e2e8f0'}}>{b.name}</span>
+              <div style={{display:'flex',gap:'4px',flexShrink:0,marginLeft:'6px'}}>
+                {b.mode==='Space' && <span style={{background:'rgba(141,247,255,0.1)',color:'#8df7ff',fontSize:'8px',padding:'1px 5px',borderRadius:'2px',fontWeight:'800'}}>SPACE</span>}
+                {b.cost_growth_pct > 50 && <span style={{background:'rgba(239,68,68,0.12)',color:'#fca5a5',fontSize:'8px',padding:'1px 5px',borderRadius:'2px',fontWeight:'800'}}>+{b.cost_growth_pct}%</span>}
+              </div>
+            </div>
+            <div style={{fontSize:'9px',color:'#475569'}}>{b.sector}</div>
+            <div style={{display:'flex',gap:'8px',marginTop:'2px'}}>
+              <span style={{fontSize:'9px',color:'#64748b'}}>Actual: ${b.cost_bn}B</span>
+              {b.schedule_slip_months > 0 && <span style={{fontSize:'9px',color:'#f59e0b'}}>+{b.schedule_slip_months}mo slip</span>}
+              {b.cost_growth_pct > 0 && <span style={{fontSize:'9px',color:'#ef4444'}}>+{b.cost_growth_pct}% cost</span>}
+            </div>
+            {b.failure_mode && <div style={{fontSize:'9px',color:'#334155',marginTop:'1px',fontStyle:'italic'}}>{b.failure_mode.slice(0,70)}{b.failure_mode.length>70?'…':''}</div>}
+          </div>)}
+        </div>
+      </div>
+
+      {/* RIGHT: Option B — your project or custom */}
+      <div style={{display:'flex',flexDirection:'column',overflow:'hidden'}}>
+        <div style={{padding:'10px 14px',borderBottom:'1px solid rgba(255,255,255,0.05)',flexShrink:0}}>
+          <div style={{fontSize:'9px',fontWeight:'800',letterSpacing:'.12em',color:'#8df7ff',marginBottom:'6px'}}>OPTION B — YOUR PROJECT OR CUSTOM</div>
+          <p style={{fontSize:'10px',color:'#475569',margin:'0 0 6px'}}>Describe the programme you want to test against Option A. Can be your live project or a hypothetical.</p>
+          <textarea value={promptB} onChange={e => setPromptB(e.target.value)} rows={3}
+            placeholder="e.g. New metro line Lagos Nigeria 45km elevated urban rail 2031 delivery..."
+            style={{width:'100%',background:'rgba(141,247,255,0.05)',border:'1px solid rgba(141,247,255,0.2)',borderRadius:'3px',padding:'7px',color:'#e2e8f0',fontSize:'11px',resize:'vertical',boxSizing:'border-box'}}/>
+          {currentModel && <button onClick={() => setPromptB(currentModel.prompt || '')}
+            style={{marginTop:'4px',width:'100%',background:'rgba(141,247,255,0.06)',border:'1px solid rgba(141,247,255,0.15)',color:'#8df7ff',padding:'5px',borderRadius:'3px',cursor:'pointer',fontSize:'10px',fontWeight:'700'}}>
+            Use current project as Option B →
+          </button>}
+        </div>
+        <div style={{padding:'14px',borderBottom:'1px solid rgba(255,255,255,0.05)',flex:1}}>
+          <div style={{fontSize:'9px',fontWeight:'800',letterSpacing:'.1em',color:'#64748b',marginBottom:'10px'}}>HOW COMPARISON WORKS</div>
+          {[
+            ['◆','CASEY runs both through the full intelligence engine'],
+            ['📊','Cost, schedule, confidence and risk are calculated independently'],
+            ['⚖️','A delta is generated: cost %, confidence gap, schedule variance'],
+            ['🎯','A board verdict names which option is more defensible and why'],
+            ['📋','Real benchmark data enriches both sides of the comparison'],
+            ['⏱','Takes 8–12 seconds — both models run simultaneously'],
+          ].map(([icon,text]) => <div key={text} style={{display:'flex',gap:'8px',marginBottom:'7px',fontSize:'11px',color:'#94a3b8',alignItems:'flex-start'}}>
+            <span style={{flexShrink:0,fontSize:'12px'}}>{icon}</span><span>{text}</span>
+          </div>)}
+        </div>
+        <div style={{padding:'12px 14px',flexShrink:0}}>
+          <button onClick={onRun} disabled={loading||!promptA.trim()||!promptB.trim()}
+            style={{width:'100%',background:loading||!promptA.trim()||!promptB.trim()?'rgba(141,247,255,0.05)':'rgba(141,247,255,0.1)',border:'1px solid rgba(141,247,255,0.3)',color:'#8df7ff',padding:'10px',borderRadius:'4px',cursor:loading||!promptA.trim()||!promptB.trim()?'default':'pointer',fontSize:'13px',fontWeight:'800',letterSpacing:'.06em'}}>
+            {loading ? '◌ Building intelligence packs…' : '◆ Run comparison'}
+          </button>
+          {error && <div style={{marginTop:'8px',color:'#fca5a5',fontSize:'11px'}}>{error}</div>}
+          {loading && <p style={{textAlign:'center',color:'#475569',fontSize:'11px',marginTop:'8px'}}>Running both programmes through CASEY — this takes 8–12 seconds.</p>}
+        </div>
+      </div>
+    </div>}
+
+    {activeTab === 'results' && <div style={{overflowY:'auto',height:'calc(100vh - 130px)',padding:'14px 16px'}}>
+      {!result && !loading && <div style={{textAlign:'center',padding:'40px',color:'#475569',fontSize:'12px'}}>
+        Set up and run a comparison to see results here.
+        <br/><button onClick={() => setActiveTab('pick')} style={{marginTop:'12px',background:'rgba(141,247,255,0.1)',border:'1px solid rgba(141,247,255,0.2)',color:'#8df7ff',padding:'7px 16px',borderRadius:'3px',cursor:'pointer',fontSize:'11px',fontWeight:'700'}}>← Back to set up</button>
+      </div>}
+      {loading && <div style={{textAlign:'center',padding:'40px',color:'#64748b',fontSize:'12px'}}>Building both intelligence packs…</div>}
+      {result && delta && !loading && <>
+        {/* Verdict */}
+        <div style={{background:'rgba(255,255,255,0.03)',border:`2px solid ${wc[delta.winner]||'#8df7ff'}`,borderRadius:'5px',padding:'12px 16px',marginBottom:'12px'}}>
+          <div style={{fontSize:'9px',fontWeight:'800',letterSpacing:'.12em',color:wc[delta.winner]||'#8df7ff',marginBottom:'4px'}}>
+            {delta.winner==='EQUAL' ? 'EQUAL — NO CLEAR PREFERENCE' : `OPTION ${delta.winner} PREFERRED`}
+          </div>
+          <p style={{fontSize:'12px',color:'#e2e8f0',lineHeight:'1.6',margin:0}}>{delta.winner_reason}</p>
+        </div>
+        {/* Delta strip */}
+        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'8px',marginBottom:'12px'}}>
+          {[['Cost',delta.cost_verdict,delta.cost_delta_pct?(delta.cost_delta_pct>0?'+':'')+delta.cost_delta_pct+'%':'—'],
+            ['Confidence',delta.confidence_verdict,delta.confidence_delta?(delta.confidence_delta>0?'+':'')+delta.confidence_delta+'pts':'—'],
+            ['Schedule',delta.schedule_verdict,delta.schedule_delta_months?(delta.schedule_delta_months>0?'+':'')+delta.schedule_delta_months+' mo':'—']
+          ].map(([label,verdict,diff])=><div key={label} style={{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:'4px',padding:'10px',textAlign:'center'}}>
+            <div style={{fontSize:'9px',color:'#475569',fontWeight:'800',letterSpacing:'.08em',marginBottom:'4px'}}>{label}</div>
+            <div style={{fontSize:'12px',color:'#e2e8f0',fontWeight:'700',marginBottom:'2px'}}>{verdict}</div>
+            <div style={{fontSize:'13px',color:'#8df7ff',fontWeight:'800'}}>{diff}</div>
+          </div>)}
+        </div>
+        {/* Side by side */}
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px',marginBottom:'12px'}}>
+          {[[pa,'#10b981','Option A'],[pb,'#8df7ff','Option B']].map(([p,clr,label],i) => p &&
+            <div key={i} style={{background:'rgba(255,255,255,0.02)',border:`1px solid ${clr}33`,borderRadius:'4px',padding:'12px'}}>
+              <div style={{fontSize:'9px',fontWeight:'800',letterSpacing:'.1em',color:clr,marginBottom:'8px'}}>{label} — {p.label}</div>
+              {[['P50 Cost',p.cost_p50],['P80 Exposure',p.cost_p80],['Schedule',p.schedule],
+                ['Confidence',p.confidence_pct?p.confidence_pct+'%':'—'],['Risk rating',p.risk],
+                ['Sector',p.subsector],['Gate readiness',p.gate_review_readiness],
+                ['OBA-adjusted P50',p.oba_adjusted_p50],['Programme mortality',p.programme_mortality_risk],
+                ['Governing constraint',p.governing_constraint],
+              ].filter(([,v]) => v && v !== '—').map(([k,v]) =>
+                <div key={k} style={{display:'flex',justifyContent:'space-between',padding:'3px 0',borderBottom:'1px solid rgba(255,255,255,0.04)',fontSize:'11px'}}>
+                  <span style={{color:'#475569'}}>{k}</span>
+                  <span style={{color:'#e2e8f0',fontWeight:'600',textAlign:'right',maxWidth:'58%',lineHeight:'1.3'}}>{String(v).slice(0,50)}</span>
+                </div>)}
+              {p.board_attack_1 && <div style={{marginTop:'8px',padding:'7px',background:'rgba(255,255,255,0.03)',borderRadius:'3px',fontSize:'10px',color:'#64748b',lineHeight:'1.5'}}>
+                <b style={{color:clr,display:'block',marginBottom:'2px',fontSize:'9px',letterSpacing:'.08em'}}>BOARD CHALLENGE:</b>
+                {p.board_attack_1}
+              </div>}
+            </div>
+          )}
+        </div>
+        <div style={{textAlign:'right'}}>
+          <button onClick={() => setActiveTab('pick')} style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)',color:'#94a3b8',padding:'6px 14px',borderRadius:'3px',cursor:'pointer',fontSize:'11px'}}>← Run another comparison</button>
+        </div>
+      </>}
+    </div>}
+  </section>;
+}
+
+
 // ── SAVED PROJECTS PANEL ────────────────────────────────────────────────────
 function SavedProjectsPanel({ projects, onLoad, onDelete, onClose }) {
   if (!projects.length) return <section className="savedPanel">
@@ -569,6 +872,101 @@ function DemoBanner({ model }) {
     <span style={{fontSize:'14px'}}>{d.icon}</span>
     <div style={{flex:1}}><span style={{fontWeight:'700',color:d.text}}>{d.label}</span><span style={{color:'#475569',marginLeft:'8px',fontSize:'10px'}}>{model.demo_headline || 'Pre-built reference case. Run your own project from the console for a project-specific output.'}</span></div>
     <span style={{fontSize:'9px',color:'#334155',fontWeight:'800',letterSpacing:'.1em',background:'rgba(255,255,255,0.04)',padding:'2px 6px',borderRadius:'2px'}}>DEMO</span>
+  </div>;
+}
+
+// ── ONBOARDING GUIDE ─────────────────────────────────────────────────────────
+function OnboardingGuide({ onClose }) {
+  const [step, setStep] = React.useState(0);
+  const steps = [
+    {
+      icon: '◆',
+      title: 'What is CASEY?',
+      body: 'CASEY is a capital programme intelligence platform. You describe any infrastructure, defence, space or industrial programme in plain English — CASEY generates a full cost estimate (P10/P50/P90), risk register, schedule, scenario analysis, board attack simulation and export pack. In seconds.',
+      sub: 'Used by programme directors, investment committees, and project sponsors to challenge cost plans, test scenarios, and prepare for board approval.',
+    },
+    {
+      icon: '📝',
+      title: 'How to describe your project',
+      body: 'Just type what it is. Include: sector, location, scale, key constraints. You don't need a cost plan or a schedule — CASEY builds one from sector intelligence.',
+      examples: [
+        'New metro line Lagos Nigeria 45km elevated rail 2031 delivery federal funding',
+        'South Africa smart meter rollout 4 million connections 14 months $1B',
+        'Lunar fuel depot ISRU methane oxygen production Mars transit support',
+        'Nuclear SMR fleet UK 10 reactors grid decarbonisation regulated generation',
+      ],
+      sub: 'The more context you give, the more specific the output. Location matters — it changes currency, regulatory framework, financing, and OBA.',
+    },
+    {
+      icon: '📊',
+      title: 'What you get',
+      body: 'Every project generates 106 intelligence fields across these tabs:',
+      bullets: [
+        'Overview — executive summary, P50/P80, confidence score, board verdict',
+        'Scenarios — base, faster, cheaper, lower risk, premium — instant re-run each',
+        'Cost — CBS breakdown with unit rates, P10/P50/P90 per line item',
+        'Risk — cause, event, impact, probability, owner, trigger, mitigation',
+        'QCRA/QSRA — Monte Carlo P-curves and tornado chart',
+        'Advisor — gate review G0-G5, OBA assessment, procurement heatmap, failure pattern',
+        'Benchmarks — 63 named real programmes that calibrated the model',
+        'Exports — cost workbook, risk register, XER schedule, board PDF',
+      ],
+    },
+    {
+      icon: '⚖️',
+      title: 'Programme comparison',
+      body: 'Use the Compare button to run two programmes side by side. Good for:',
+      bullets: [
+        'Your project vs a real completed programme (Crossrail, JWST, Hinkley...)',
+        'Two delivery options — faster vs cheaper vs lower risk',
+        'Two contractor proposals with different scope boundaries',
+        'Your P50 vs the historical reference class for your sector',
+      ],
+      sub: 'Click "Compare ◆" in the nav, pick a real benchmark from the library as Option A, describe your project as Option B, and run.',
+    },
+    {
+      icon: '💡',
+      title: 'Tips for better outputs',
+      bullets: [
+        'Name the location — "Nigeria" vs "UK" changes financing, OBA and regulatory framework',
+        'State the budget if you have one — CASEY will challenge it against reference class',
+        'Mention known constraints — "federal funding", "NEPA required", "single contractor"',
+        'Use Class 5 for early feasibility, Class 1 for near-tender estimates',
+        'Run the Scenarios tab to see how cost/schedule/confidence respond to each trade-off',
+        'Use the Advisor tab for the questions your board will ask — before they do',
+      ],
+    },
+  ];
+  const s = steps[step];
+  return <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'}}>
+    <div style={{background:'#0c1a2e',border:'1px solid rgba(141,247,255,0.2)',borderRadius:'8px',padding:'28px 32px',maxWidth:'560px',width:'100%',position:'relative'}}>
+      <button onClick={onClose} style={{position:'absolute',top:'14px',right:'16px',background:'none',border:'none',color:'#475569',cursor:'pointer',fontSize:'18px'}}>✕</button>
+      <div style={{fontSize:'10px',fontWeight:'800',letterSpacing:'.15em',color:'#8df7ff',marginBottom:'6px'}}>GETTING STARTED — STEP {step+1} OF {steps.length}</div>
+      <div style={{fontSize:'32px',marginBottom:'8px'}}>{s.icon}</div>
+      <h2 style={{fontSize:'18px',fontWeight:'800',color:'#e2e8f0',marginBottom:'10px'}}>{s.title}</h2>
+      <p style={{fontSize:'13px',color:'#94a3b8',lineHeight:'1.7',marginBottom:'10px'}}>{s.body}</p>
+      {s.examples && <div style={{marginBottom:'10px'}}>
+        <div style={{fontSize:'10px',fontWeight:'800',letterSpacing:'.1em',color:'#64748b',marginBottom:'6px'}}>EXAMPLE PROMPTS:</div>
+        {s.examples.map(e => <div key={e} style={{background:'rgba(141,247,255,0.05)',border:'1px solid rgba(141,247,255,0.1)',borderRadius:'3px',padding:'6px 10px',marginBottom:'5px',fontSize:'11px',color:'#cbd5e1',fontStyle:'italic'}}>"{e}"</div>)}
+      </div>}
+      {s.bullets && <ul style={{margin:'0 0 10px',padding:'0 0 0 0',listStyle:'none'}}>
+        {s.bullets.map(b => <li key={b} style={{fontSize:'12px',color:'#94a3b8',padding:'4px 0',borderBottom:'1px solid rgba(255,255,255,0.04)',display:'flex',gap:'8px',alignItems:'flex-start'}}>
+          <span style={{color:'#8df7ff',flexShrink:0}}>→</span><span>{b}</span>
+        </li>)}
+      </ul>}
+      {s.sub && <p style={{fontSize:'11px',color:'#475569',fontStyle:'italic',marginBottom:'10px',lineHeight:'1.6'}}>{s.sub}</p>}
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:'16px'}}>
+        <div style={{display:'flex',gap:'6px'}}>
+          {steps.map((_,i) => <div key={i} style={{width:i===step?'20px':'6px',height:'6px',borderRadius:'3px',background:i===step?'#8df7ff':'rgba(141,247,255,0.2)',transition:'all 0.2s'}}/>)}
+        </div>
+        <div style={{display:'flex',gap:'8px'}}>
+          {step > 0 && <button onClick={() => setStep(s => s-1)} style={{background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.1)',color:'#94a3b8',padding:'7px 16px',borderRadius:'3px',cursor:'pointer',fontSize:'12px'}}>← Back</button>}
+          {step < steps.length-1
+            ? <button onClick={() => setStep(s => s+1)} style={{background:'rgba(141,247,255,0.1)',border:'1px solid rgba(141,247,255,0.3)',color:'#8df7ff',padding:'7px 18px',borderRadius:'3px',cursor:'pointer',fontSize:'12px',fontWeight:'700'}}>Next →</button>
+            : <button onClick={onClose} style={{background:'rgba(141,247,255,0.15)',border:'1px solid rgba(141,247,255,0.4)',color:'#8df7ff',padding:'7px 18px',borderRadius:'3px',cursor:'pointer',fontSize:'12px',fontWeight:'800'}}>Start using CASEY ◆</button>}
+        </div>
+      </div>
+    </div>
   </div>;
 }
 
@@ -1707,7 +2105,23 @@ function App() {
   const [confidencePulse, setConfidencePulse] = useState(false);
   const [showShowcase, setShowShowcase] = useState(false);
 
-  useEffect(() => { get('/v26/demo-library').catch(() => null); }, []);
+  useEffect(() => {
+    // Ping backend on page load to pre-warm Render instance & check status
+    const checkBackend = async () => {
+      try {
+        await get('/health');
+        setBackendStatus('ok');
+      } catch {
+        try {
+          await get('/v26/demo-library');
+          setBackendStatus('ok');
+        } catch {
+          setBackendStatus('down');
+        }
+      }
+    };
+    checkBackend();
+  }, []);
   
 const scenarioInsightMap95 = {
   base: 'Mechanical completion is not the true finish line; validated production readiness and deviation closure are the real board decision gates.',
@@ -2000,6 +2414,92 @@ function parseMoneyLocal(v) {
   });
   const [showSaved, setShowSaved] = React.useState(false);
   const [showInvestor, setShowInvestor] = React.useState(false);
+  const [showOnboarding, setShowOnboarding] = React.useState(() => {
+    try { return !localStorage.getItem('casey_onboarding_done'); } catch { return true; }
+  });
+  const [backendStatus, setBackendStatus] = React.useState('unknown');
+
+  // ── ACCOUNT STATE ──────────────────────────────────────────────────────────
+  const [accountEmail, setAccountEmail] = React.useState(() => {
+    try { return localStorage.getItem('casey_account_email') || ''; } catch { return ''; }
+  });
+  const [accountProjects, setAccountProjects] = React.useState([]);
+  const [showAccount, setShowAccount] = React.useState(false);
+  const [accountLoading, setAccountLoading] = React.useState(false);
+
+  // ── COMPARE STATE ──────────────────────────────────────────────────────────
+  const [showCompare, setShowCompare] = React.useState(false);
+  const [comparePromptA, setComparePromptA] = React.useState('');
+  const [comparePromptB, setComparePromptB] = React.useState('');
+  const [compareResult, setCompareResult] = React.useState(null);
+  const [compareLoading, setCompareLoading] = React.useState(false);
+  const [compareError, setCompareError] = React.useState(''); // 'ok' | 'down' | 'unknown'
+
+  // ── ACCOUNT FUNCTIONS ────────────────────────────────────────────────────────
+  async function loadAccountProjects(email) {
+    if (!email || !email.includes('@')) return;
+    setAccountLoading(true);
+    try {
+      const res = await apiFetch(`/account/projects?email=${encodeURIComponent(email)}`);
+      if (res.ok) { const d = await res.json(); setAccountProjects(d.projects || []); }
+    } catch {}
+    setAccountLoading(false);
+  }
+
+  async function saveToAccount() {
+    if (!model || !accountEmail || !accountEmail.includes('@')) return;
+    try {
+      await post('/account/save-project', {
+        email: accountEmail,
+        title: model.title || model.prompt || 'Unnamed',
+        subsector: model.subsector || '',
+        prompt: model.prompt || prompt,
+        cost_p50: model.cost_p50 || '',
+        schedule: model.schedule || '',
+        confidence_pct: model.confidence_pct || 0,
+        risk: model.risk || '',
+        scenario: scenario,
+        model_json: JSON.stringify(model)
+      });
+      localStorage.setItem('casey_account_email', accountEmail);
+      await loadAccountProjects(accountEmail);
+    } catch(e) { console.error(e); }
+  }
+
+  async function loadAccountProject(proj) {
+    try {
+      const res = await apiFetch(`/account/project/${proj.id}?email=${encodeURIComponent(accountEmail)}`);
+      if (res.ok) {
+        const d = await res.json();
+        const m = normalizeModelForUI(d.model || d);
+        setModel(m); setPrompt(d.prompt || ''); setScenario(d.scenario || 'base');
+        setProjectContext(lockedProjectContext(m, d.prompt || ''));
+        setShowAccount(false); setShow(false); setTab('overview');
+      }
+    } catch(e) { console.error(e); }
+  }
+
+  async function deleteAccountProject(id) {
+    try {
+      await apiFetch(`/account/project/${id}?email=${encodeURIComponent(accountEmail)}`, { method: 'DELETE' });
+      await loadAccountProjects(accountEmail);
+    } catch {}
+  }
+
+  // ── COMPARE FUNCTION ──────────────────────────────────────────────────────
+  async function runComparison() {
+    if (!comparePromptA.trim() || !comparePromptB.trim()) return;
+    setCompareLoading(true); setCompareError(''); setCompareResult(null);
+    try {
+      const result = await post('/compare', {
+        prompt_a: comparePromptA, prompt_b: comparePromptB,
+        client_a: 'Option A', client_b: 'Option B',
+        class_level: 3, schedule_level: 3
+      });
+      setCompareResult(result);
+    } catch(e) { setCompareError(String(e.message || e)); }
+    setCompareLoading(false);
+  }
 
   function saveCurrentProject() {
     if (!model) return;
@@ -2068,18 +2568,7 @@ function parseMoneyLocal(v) {
         demo: true,
         active_model: null
       };
-      const res = await apiFetch('/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      if (!res.ok) {
-        const txt = await res.text().catch(() => '');
-        let detail = `Status ${res.status}`;
-        try { detail = JSON.parse(txt)?.detail || txt || detail; } catch {}
-        throw new Error(detail);
-      }
-      const m = await res.json();
+      const m = await post('/generate', payload);
       // Mark as demo client-side so DemoBanner renders correctly
       m.demo_mode = true;
       m.demo_type = cfg.demo_type;
@@ -2094,12 +2583,14 @@ function parseMoneyLocal(v) {
       setTab('overview');
     } catch(e) {
       const msg = String(e.message || e);
+      const isNetworkError = msg.includes('fetch') || msg.includes('network') || msg.includes('500');
       setError(JSON.stringify({
-        message: 'Reference case unavailable — backend may be starting up.',
-        sub: msg + ' Try again in 20 seconds, or browse the Showcase Library.',
+        message: isNetworkError ? 'Backend is starting up — please wait 20 seconds and try again.' : 'Reference case unavailable.',
+        sub: isNetworkError ? 'Render free-tier instances sleep after inactivity. The backend is waking up — click "Run Earth Demo" or "Run Space Demo" again in 20 seconds.' : msg + ' Browse the Showcase Library while waiting.',
         email: 'deepa@caseai.co.uk',
         linkedin: 'https://www.linkedin.com/company/caseai'
       }));
+      setBackendStatus('down');
       setShow(false);
     } finally {
       setLoading(false);
@@ -2234,7 +2725,7 @@ function parseMoneyLocal(v) {
       const safeProject = normalizeModelForUI({ ...model });
       const r = await post('/chat', { question: q, project: safeProject, demo: true });
       const answer = normalizeChatAnswer(r);
-      setChat(x => [...x, { role: 'assistant', text: String(answer || 'CASEY returned no advisor response.') }]);
+      setChat(x => [...x, { role: 'assistant', text: String(answer || 'CASEY returned no advisor response.'), delta: r?.delta || null }]);
     } catch (e) {
       setChat(x => [...x, { role: 'assistant', text: 'CASEY advisor recovered from a request error. The governance challenge remains: do not rely on headline progress alone. Ask: What is the board really deciding?' }]);
     }
@@ -2346,13 +2837,23 @@ function parseMoneyLocal(v) {
       <button onClick={() => setTrialOpen(true)}>Free run</button>
       <button onClick={() => { setModel(null); setShow(false); setShowShowcase(true); setError(''); }}>Showcase library</button>
       {savedProjects.length > 0 && <button onClick={() => setShowSaved(s => !s)} style={{position:'relative'}}>Saved <span style={{background:'#8df7ff',color:'#0a1628',borderRadius:'10px',padding:'1px 6px',fontSize:'10px',fontWeight:'900',marginLeft:'4px'}}>{savedProjects.length}</span></button>}
-      {model && <button onClick={saveCurrentProject} style={{color:'#8df7ff',fontWeight:'700'}}>↓ Save project</button>}
+      {model && <button onClick={saveCurrentProject} style={{color:'#8df7ff',fontWeight:'700'}}>↓ Save (local)</button>}
+      <button onClick={() => setShowAccount(s => !s)} style={{color:'#8df7ff',fontWeight:'700'}}>Account</button>
+      <button onClick={() => setShowCompare(s => !s)} style={{color:'#b18cff',fontWeight:'700'}}>Compare ◆</button>
       <button onClick={runEarth}>Earth demo</button>
       <button onClick={runSpace}>Space demo</button>
       <button onClick={() => setShowInvestor(s => !s)} style={{color:'#b18cff',fontWeight:'700'}}>Investor brief</button>
+      <button onClick={() => setShowOnboarding(true)} style={{color:'#64748b',fontSize:'10px',fontWeight:'700',letterSpacing:'.06em'}}>How to use</button>
       <a href={emailLink}>Request access</a>
+      <span style={{display:'flex',alignItems:'center',gap:'4px',fontSize:'9px',color:backendStatus==='ok'?'#10b981':backendStatus==='down'?'#ef4444':'#64748b',fontWeight:'700',letterSpacing:'.08em'}}>
+        <span style={{width:'6px',height:'6px',borderRadius:'50%',background:backendStatus==='ok'?'#10b981':backendStatus==='down'?'#ef4444':'#475569',display:'inline-block'}}/>
+        {backendStatus==='ok'?'LIVE':backendStatus==='down'?'OFFLINE':'...'}
+      </span>
     </nav></header>
+    {showOnboarding && <OnboardingGuide onClose={() => { setShowOnboarding(false); try { localStorage.setItem('casey_onboarding_done','1'); } catch {} }}/>}
     {showSaved && <SavedProjectsPanel projects={savedProjects} onLoad={loadSaved} onDelete={deleteSaved} onClose={() => setShowSaved(false)}/>}
+    {showAccount && <AccountPanel email={accountEmail} setEmail={setAccountEmail} projects={accountProjects} loading={accountLoading} onLoad={loadAccountProject} onDelete={deleteAccountProject} onSave={saveToAccount} onLoadProjects={loadAccountProjects} onClose={() => setShowAccount(false)} model={model}/>}
+    {showCompare && <ComparePanel promptA={comparePromptA} setPromptA={setComparePromptA} promptB={comparePromptB} setPromptB={setComparePromptB} onRun={runComparison} loading={compareLoading} result={compareResult} error={compareError} onClose={() => setShowCompare(false)} currentModel={model}/>}
     {showInvestor && <InvestorPanel onClose={() => setShowInvestor(false)}/>}
     <main className={model ? 'v50Console' : 'v50Console emptyConsole'}>
       {error && !showShowcase && !show && <GatedMessage raw={error} onDismiss={() => setError('')} onShowcase={() => { setError(''); setShowShowcase(true); }} onEarth={() => { setError(''); runEarth(); }} onSpace={() => { setError(''); runSpace(); }}/>}
@@ -2711,16 +3212,54 @@ function parseMoneyLocal(v) {
           </section>}
 
           {/* ORIGINAL ADVISOR PANEL */}
-          <section className="layout two advisorElite challengeRoom"><Card><h2>CASEY Board Assurance Console</h2><p className="advisorIntro">Click any question. CASEY answers instantly using the live programme model — not a generic response. Each answer references your actual P50, P80, confidence level and sector. Generate a project first for the most specific answers.</p><div className="advisorPrompts bigButtons">{['What is the board not seeing?','What does a conventional project controls report miss?','What evidence is missing before this becomes board-approvable?','What is the real governing chain?','Which assumptions collapse confidence first?','What is the board really deciding?','If this programme fails, what will be blamed publicly?','Give me CASEY POSITION.','What has management not yet evidenced?','What would destroy board confidence fastest?','What reported green item is not yet board-defensible?','How does CASEY differ from a conventional report?','What is the one intervention that changes confidence fastest?','What would an external assurance reviewer challenge first?'].map(x=><button key={x} data-question={x} onClick={()=>ask(x)}><Brain size={14}/>{x}</button>)}</div><div className="chatBox boardInterrogation">{chat.length ? chat.map((m,i)=><div key={i} className={`msg ${m.role}`}>{(() => {
+          <section className="layout two advisorElite challengeRoom"><Card><h2>CASEY Board Assurance Console</h2>
+<p className="advisorIntro">Ask any question about the live programme. CASEY answers using the actual model data — not a generic response. <b style={{color:'#8df7ff'}}>Try a "what if" question to rerun the model with a constraint applied.</b></p>
+<div style={{background:'rgba(141,247,255,0.05)',border:'1px solid rgba(141,247,255,0.12)',borderRadius:'4px',padding:'8px 12px',marginBottom:'10px',fontSize:'11px'}}>
+  <div style={{fontSize:'9px',fontWeight:'800',letterSpacing:'.1em',color:'#8df7ff',marginBottom:'5px'}}>WHAT-IF EXAMPLES — type these or use as inspiration</div>
+  {[
+    'What if contractor A wins the signalling package?',
+    'What if we apply a single-source constraint on the main civils package?',
+    'What if planning approval is delayed by 18 months?',
+    'What if we accelerate delivery by 12 months?',
+    'What if funding is capped at the P50 and no P80 reserve is held?',
+  ].map(x => <button key={x} onClick={() => ask(x)}
+    style={{display:'block',width:'100%',textAlign:'left',background:'rgba(141,247,255,0.06)',border:'1px solid rgba(141,247,255,0.15)',color:'#8df7ff',padding:'5px 10px',borderRadius:'3px',marginBottom:'4px',cursor:'pointer',fontSize:'11px',fontStyle:'italic'}}>
+    "{x}"
+  </button>)}
+</div>
+<div className="advisorPrompts bigButtons">{['What is the board not seeing?','What evidence is missing before approval?','What is the real governing constraint?','Which assumptions collapse confidence first?','What are the top risks?','Is this programme gate-ready?','What is the OBA-adjusted outturn?','Give me CASEY POSITION.','What would an external reviewer challenge first?','What is the P80 exposure?','Walk me through the procurement risks.','What does the benchmark data say?'].map(x=><button key={x} data-question={x} onClick={()=>ask(x)}><Brain size={14}/>{x}</button>)}</div><div className="chatBox boardInterrogation">{chat.length ? chat.map((m,i)=><div key={i} className={`msg ${m.role}`}>{(() => {
     const lines = String(m.text||'').split('\n');
-    return lines.map((line, li) => {
+    const textBlock = lines.map((line, li) => {
       if (!line.trim()) return <div key={li} style={{height:'5px'}}/>;
       if (line.startsWith('**') && line.endsWith('**') && line.length > 4)
         return <div key={li} className="chatHeading">{line.replace(/\*\*/g,'')}</div>;
       const parts = line.split(/\*\*([^*]+)\*\*/g);
       return <p key={li} className="chatLine">{parts.map((p,pi)=>pi%2===1?<strong key={pi}>{p}</strong>:p)}</p>;
     });
-  })()}</div>) : <div className="msg assistant"><b>Board attack ready.</b><br/>Click any challenge above. CASEY will answer against the active scenario, not as a generic chatbot.</div>}</div><div className="ask"><input value={chatQ} onChange={e=>setChatQ(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')ask()}} placeholder="Ask any board challenge question — e.g. What would destroy board confidence fastest?"/><button onClick={() => ask(chatQ)}>Ask</button></div></Card><Card><h2>Live Client Challenge Room</h2><p className="advisorIntro">Upload a client cost estimate, XER schedule or risk register — or use the demo buttons below. CASEY challenges the document like an independent reviewer: identifies unpriced exposure, evidence gaps, reserve weaknesses and the questions to ask before committing capital.</p><div className="challengeHero"><span>CASEY INTAKE NORMALISATION ENGINE</span><b>Messy file → schema detection → WBS/CBS inference → evidence gaps → board attack → export-ready challenge</b></div><div className="challengeModeStrip"><b>Choose the file type to challenge</b><span>These buttons show the exact review style. Upload your own file below and CASEY will replace the sample with parsed source-file numbers.</span></div><div className="challengeButtons pro">
+    const d = m.delta;
+    const deltaBlock = d && !d.error ? <div style={{marginTop:'10px',background:'rgba(141,247,255,0.05)',border:'1px solid rgba(141,247,255,0.2)',borderRadius:'4px',padding:'10px 12px'}}>
+      <div style={{fontSize:'9px',fontWeight:'800',letterSpacing:'.12em',color:'#8df7ff',marginBottom:'6px'}}>◆ MODEL RECALCULATED — CONSTRAINT APPLIED</div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'8px',marginBottom:'8px'}}>
+        {d.cost_delta_bn !== undefined && <div style={{textAlign:'center',padding:'6px',background:'rgba(255,255,255,0.03)',borderRadius:'3px'}}>
+          <div style={{fontSize:'9px',color:'#475569',marginBottom:'2px'}}>Cost delta</div>
+          <div style={{fontSize:'13px',fontWeight:'800',color:d.cost_delta_bn>0?'#fca5a5':'#10b981'}}>{d.cost_delta_bn>0?'+':''}{d.cost_delta_bn?.toFixed(1)}B</div>
+          <div style={{fontSize:'10px',color:'#8df7ff'}}>{d.new_p50}</div>
+        </div>}
+        {d.confidence_delta !== undefined && <div style={{textAlign:'center',padding:'6px',background:'rgba(255,255,255,0.03)',borderRadius:'3px'}}>
+          <div style={{fontSize:'9px',color:'#475569',marginBottom:'2px'}}>Confidence</div>
+          <div style={{fontSize:'13px',fontWeight:'800',color:d.confidence_delta<0?'#fca5a5':'#10b981'}}>{d.confidence_delta>0?'+':''}{d.confidence_delta}pts</div>
+          <div style={{fontSize:'10px',color:'#8df7ff'}}>{d.new_confidence}%</div>
+        </div>}
+        {d.schedule_delta_months !== undefined && <div style={{textAlign:'center',padding:'6px',background:'rgba(255,255,255,0.03)',borderRadius:'3px'}}>
+          <div style={{fontSize:'9px',color:'#475569',marginBottom:'2px'}}>Schedule delta</div>
+          <div style={{fontSize:'13px',fontWeight:'800',color:d.schedule_delta_months>0?'#fca5a5':'#10b981'}}>{d.schedule_delta_months>0?'+':''}{d.schedule_delta_months}mo</div>
+          <div style={{fontSize:'10px',color:'#8df7ff'}}>{d.new_schedule}</div>
+        </div>}
+      </div>
+      {d.new_governing_constraint && <div style={{fontSize:'10px',color:'#94a3b8',borderTop:'1px solid rgba(255,255,255,0.06)',paddingTop:'6px'}}>New governing constraint: <b style={{color:'#e2e8f0'}}>{d.new_governing_constraint}</b></div>}
+    </div> : null;
+    return <>{textBlock}{deltaBlock}</>;
+  })()}</div>) : <div className="msg assistant"><b>Board attack ready.</b><br/>Click any challenge above. CASEY will answer against the active scenario, not as a generic chatbot.</div>}</div><div className="ask"><input value={chatQ} onChange={e=>setChatQ(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')ask()}} placeholder="Ask anything — e.g. What if contractor A wins signalling? What is the P80 exposure? Is this gate-ready?"/><button onClick={() => ask(chatQ)}>Ask</button></div></Card><Card><h2>Live Client Challenge Room</h2><p className="advisorIntro">Upload a client cost estimate, XER schedule or risk register — or use the demo buttons below. CASEY challenges the document like an independent reviewer: identifies unpriced exposure, evidence gaps, reserve weaknesses and the questions to ask before committing capital.</p><div className="challengeHero"><span>CASEY INTAKE NORMALISATION ENGINE</span><b>Messy file → schema detection → WBS/CBS inference → evidence gaps → board attack → export-ready challenge</b></div><div className="challengeModeStrip"><b>Choose the file type to challenge</b><span>These buttons show the exact review style. Upload your own file below and CASEY will replace the sample with parsed source-file numbers.</span></div><div className="challengeButtons pro">
   <button onClick={()=>setUploadResult({filename:'Contractor_Cost_Estimate_v27_FINAL.xlsx', file_type:'COST ESTIMATE', schema_confidence:'Auto-mapped', findings:['Estimate structure normalised. Cost packages identified across direct works, preliminaries and risk allowance.','The headline P50 number is present — but there is no P80/P90 basis. This is how a submitted estimate can understate exposure: the headline looks fixed but the downside is unpriced.','Contingency is present as a lump sum. CASEY cannot verify it is sized against quantified risk exposure rather than a percentage of direct cost — a common tender-basis weakness.','Basis statements are missing on 6 of the major packages. Without basis, there is no evidence of what was included or excluded — and no way to challenge scope creep later.'], red_flags:['Commercial observation: No P80/P90 range provided. The estimate looks precise but carries unquantified downside. Ask the contractor to provide a risk-adjusted range.','Commercial observation: Lump-sum contingency with no risk linkage. This is not yet a quantified reserve. Require QCRA support.','No CBS/WBS mapping. Cannot verify completeness of scope coverage or trace costs to programme activities.','Escalation basis not stated. For a multi-year programme, this is a material omission.'], next_steps:['Require the contractor to provide a P50/P80/P90 range with QCRA support.','Mandate a CBS that maps to the programme WBS and schedule activities.','Commission an independent cost review before approving the headline number.','Run CASEY QCRA alongside the contractor estimate — compare the P80 positions.'], epc_challenge:true})}><FileSpreadsheet size={18}/><b>Challenge contractor cost estimate</b><span>Detect hidden exposure, lump-sum contingency and missing basis statements.</span></button>
   <button onClick={()=>setUploadResult({filename:'Programme_Schedule_FINAL_v14.xer', file_type:'SCHEDULE (XER)', schema_confidence:'Logic mapped', findings:['Schedule logic parsed. Activities identified across civil, systems, commissioning and handover phases.','Critical path identified — but float analysis reveals operationally unusable buffer. The management date assumes best-case access windows throughout.','Logic gaps detected: 8 activities have no predecessor. These are schedule anchors — they cannot be challenged because they have no upstream dependency. This can prevent a reliable view of the real critical path.','Commissioning and trial running phases show compressed durations. These are the activities most likely to slip — and they sit directly before the opening/handover milestone.'], red_flags:['Commercial observation: Open-ended activities with no predecessor — schedule logic issue that can overstate available float.','Commercial observation: Commissioning duration appears optimistic against comparable programmes. A single failed integration test resets the clock.','Float is nominal, not operationally usable. Access windows, possession permits and operator acceptance are not confirmed in the logic.','Board date is driven by the earliest path. It should be driven by the P80/P90 QSRA finish date.'], next_steps:['Require the contractor to close all open ends and confirm predecessor logic.','Run QSRA and require the P80/P90 finish date to be the board commitment date.','Validate all commissioning durations against independent benchmarks.','Name the owner of the critical-path constraint.'], epc_challenge:true})}><Workflow size={18}/><b>Challenge programme schedule</b><span>Detect schedule padding, unusable float and optimistic commissioning dates.</span></button>
   <button onClick={()=>setUploadResult({filename:'Risk_Register_v8_Draft.xlsx', file_type:'RISK REGISTER', schema_confidence:'Schema mapped', findings:['Risk register schema mapped. Cause, event, impact and owner columns identified.','CASEY challenges every risk without a named trigger, quantified residual exposure and evidence closure date.','7 risks have mitigation confidence below 50%. These are not mitigated — they are noted. The reserve needs to account for them.','4 risks are flagged as Evidence required. These are open exposures — the source file does not yet provide the evidence that the risk is under control.'], red_flags:['Commercial observation: Mitigations are written as action phrases ("to be confirmed", "in progress") rather than evidence closure. A mitigation is only valid when the evidence is complete.','Commercial observation: Residual exposure is not reconciled to the reserve. This is the most common way a risk register hides real exposure — risks exist on paper but the money is not in the budget.','4 risks require evidence that has not been provided. These cannot be treated as mitigated for board approval purposes.','Owner accountability: all risks assigned to programme-level owners. Board needs named individual owners with accountability.'], next_steps:['Require every risk to have: named owner, confirmed trigger, quantified residual and evidence closure date.','Reconcile residual exposure to reserve — any gap requires additional provision.','The 4 Evidence Required risks must be resolved or escalated to the board as open items.','Export the challenged register after QCRA/QSRA alignment and use the board attack questions.'], epc_challenge:true})}><ShieldAlert size={18}/><b>Challenge risk register</b><span>Detect unmitigated risks, missing evidence and reserve reconciliation gaps.</span></button>
