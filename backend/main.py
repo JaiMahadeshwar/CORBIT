@@ -2257,7 +2257,27 @@ def build_model(prompt:str, client:str="", class_level:int=3, schedule_level:int
     lines=[]
     for cbs,desc,typ,basis,pct in sector_cost_lines(mode,subsector):
         p50=raw_cost*pct
-        lines.append({"cbs":cbs,"description":desc,"type":typ,"basis":basis,"p10_bn":round(p50*low,3),"p50_bn":round(p50,3),"p90_bn":round(p50*high,3),"impact_basis":f"{desc} priced as {pct:.1%} of P50 from sector template, location factor {loc_mult:.2f}, scale factor {scale_mult:.2f}, complexity factor {comp_mult:.2f}."})
+        # Derive unit cost from sector and line type
+        _uc_map = {
+            'rail': {'Civil works': ('£m/km', 50), 'Signalling': ('£m/km', 12), 'Stations': ('£m/station', 80), 'Rolling stock': ('£m/train', 35), 'Utility': ('£m/site', 8)},
+            'nuclear': {'Nuclear island': ('£m/GW', 3200), 'Equipment': ('£m/GW', 1800), 'Safety systems': ('£m/reactor', 420), 'Balance': ('£m/GW', 800), 'Civil': ('£m/m²', 18)},
+            'data_centre': {'Grid': ('£m/MW', 1.8), 'Cooling': ('£m/MW', 0.9), 'Transformers': ('£m/unit', 2.5), 'Civil': ('£m/m²', 3.5), 'Generators': ('£m/MW', 0.6)},
+            'life_sciences': {'Cleanroom': ('£m/m²', 12), 'HVAC': ('£m/m²', 3.5), 'Process': ('£m/suite', 45), 'Utility': ('£m/suite', 18), 'Validation': ('£m/suite', 8)},
+            'semiconductor': {'Fab shell': ('£m/m²', 25), 'UPW': ('£m/site', 180), 'Tooling': ('£m/wafer start', 0.4), 'Cleanroom': ('£m/m²', 35), 'Utility': ('£m/m²', 8)},
+            'energy': {'Grid': ('£m/km', 4.2), 'Generation': ('£m/MW', 1.4), 'HVDC': ('£m/km', 3.8), 'Civil': ('£m/ha', 0.8), 'Permits': ('£m/consent', 2)},
+            'space': {'Launch': ('£m/launch', 85), 'Payload': ('£m/kg', 0.35), 'Power': ('£m/kW', 0.25), 'Ground': ('£m/site', 45), 'Software': ('£m/SLOC', 0.0004)},
+            'defence': {'Secure facilities': ('£m/m²', 8.5), 'Mission systems': ('£m/system', 120), 'Comms': ('£m/node', 18), 'Utilities': ('£m/site', 12), 'Training': ('£m/suite', 22)},
+            'gigafactory': {'Grid': ('£m/MW', 1.8), 'Cell production': ('£m/GWh', 65), 'Civil': ('£m/m²', 2.8), 'Module assembly': ('£m/GWh', 28), 'BMS': ('£m/GWh', 12)},
+            'ports': {'Quay': ('£m/m', 0.35), 'Dredging': ('£m/m³', 0.008), 'Cranes': ('£m/crane', 18), 'Yard': ('£m/ha', 4.5), 'Rail': ('£m/km', 12)},
+            'airport': {'Terminal': ('£m/m²', 7.5), 'Runway': ('£m/km', 85), 'Baggage': ('£m/pier', 45), 'Taxiway': ('£m/km', 18), 'ATC': ('£m/site', 55)},
+        }
+        _uc_sector = _uc_map.get(key, {})
+        _unit_rate, _unit_label = '—', '—'
+        for k, (ul, ur) in _uc_sector.items():
+            if k.lower() in desc.lower():
+                _unit_label, _unit_rate = ul, f'{ul.split("/")[0].strip()} {ur:,.0f}'
+                break
+        lines.append({"cbs":cbs,"description":desc,"type":typ,"basis":basis,"p10_bn":round(p50*low,3),"p50_bn":round(p50,3),"p90_bn":round(p50*high,3),"unit_rate":_unit_rate,"unit_label":_unit_label,"impact_basis":f"{desc} priced as {pct:.1%} of P50 from sector template, location factor {loc_mult:.2f}, scale factor {scale_mult:.2f}, complexity factor {comp_mult:.2f}."})
     schedules_by_level={str(l):schedule_rows(mode,subsector,months,l) for l in range(1,6)}
     primary_schedule=schedules_by_level[str(schedule_level)]
     primary_costs=lines
@@ -3423,53 +3443,52 @@ def revenue_machine():
 # Pre-built showcase models for the platform demo
 # ═══════════════════════════════════════════════════════════════════
 
+# ── DEMO CACHE — models pre-built at first request, served instantly thereafter ──
+_DEMO_CACHE: dict = {}
+
+def _get_demo(key: str, prompt: str, demo_type: str, demo_label: str, demo_headline: str):
+    """Build demo model on first call, serve from cache on subsequent calls."""
+    if key not in _DEMO_CACHE:
+        try:
+            m = build_model(prompt, "ControlOrbit Demo", 3, 4, "base")
+            m["demo_mode"] = True
+            m["demo_type"] = demo_type
+            m["demo_label"] = demo_label
+            m["demo_headline"] = demo_headline
+            _DEMO_CACHE[key] = m
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+    return _DEMO_CACHE[key]
+
 @app.get("/demo/earth")
 def demo_earth():
-    """HS2 Phase 2b — the definitive Earth infrastructure demo."""
-    try:
-        m = build_model(
-            "HS2 Phase 2b tunnelling stations signalling systems integration possessions operator acceptance UK rail",
-            "ControlOrbit Demo", 3, 4, "base"
-        )
-        m["demo_mode"] = True
-        m["demo_type"] = "earth"
-        m["demo_label"] = "HS2 Phase 2b — Rail Mega Programme"
-        m["demo_headline"] = "A full-programme intelligence pack generated in 4 seconds. Click any tab to explore the output."
-        return m
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    """HS2 Phase 2b — Earth infrastructure reference case."""
+    return _get_demo(
+        "earth",
+        "HS2 Phase 2b tunnelling stations signalling systems integration possessions operator acceptance UK rail",
+        "earth", "HS2 Phase 2b — Rail Mega Programme",
+        "Full programme intelligence pack — cost, schedule, risk, benchmarks, board attack and exports. Generated in 4 seconds."
+    )
 
 @app.get("/demo/space")
 def demo_space():
-    """Lunar Base Alpha — the definitive Space infrastructure demo."""
-    try:
-        m = build_model(
-            "Lunar Base Alpha life support nuclear surface power autonomous commissioning resupply logistics 1000 crew",
-            "ControlOrbit Demo", 3, 4, "base"
-        )
-        m["demo_mode"] = True
-        m["demo_type"] = "space"
-        m["demo_label"] = "Lunar Base Alpha — Deep Space Mega Programme"
-        m["demo_headline"] = "First-of-kind space programme intelligence. TRL risk, launch logistics, autonomous commissioning."
-        return m
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    """Lunar Base Alpha — Space infrastructure reference case."""
+    return _get_demo(
+        "space",
+        "Lunar Base Alpha life support nuclear surface power autonomous commissioning resupply logistics 1000 crew",
+        "space", "Lunar Base Alpha — Deep Space Mega Programme",
+        "First-of-kind space programme intelligence. TRL risk, launch logistics, autonomous commissioning."
+    )
 
 @app.get("/demo/awre")
 def demo_awre():
-    """AWRE Aldermaston — the definitive Defence demo."""
-    try:
-        m = build_model(
-            "AWRE Aldermaston nuclear warhead facility upgrade classified defence sovereign supply chain security accreditation UK MOD",
-            "ControlOrbit Demo", 3, 3, "base"
-        )
-        m["demo_mode"] = True
-        m["demo_type"] = "defence"
-        m["demo_label"] = "AWRE Aldermaston — Defence Nuclear Infrastructure"
-        m["demo_headline"] = "Classified programme intelligence. Security accreditation, sovereign supply chain, operational acceptance."
-        return m
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    """AWRE Aldermaston — Defence reference case."""
+    return _get_demo(
+        "awre",
+        "AWRE Aldermaston nuclear warhead facility upgrade classified defence sovereign supply chain security accreditation UK MOD",
+        "defence", "AWRE Aldermaston — Defence Nuclear Infrastructure",
+        "Classified programme intelligence. Security accreditation, sovereign supply chain, operational acceptance."
+    )
 
 @app.get("/demo/gigafactory")
 def demo_gigafactory():
