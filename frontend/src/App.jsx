@@ -460,7 +460,7 @@ function Table({ rows = [], cols = [], moneyCols = [] }) {
 // ── SAVED PROJECTS PANEL ────────────────────────────────────────────────────
 function SavedProjectsPanel({ projects, onLoad, onDelete, onClose }) {
   if (!projects.length) return <section className="savedPanel">
-    <div className="savedHeader"><h2>Saved Projects</h2><button onClick={onClose}>✕ Close</button></div>
+    <div className="savedHeader"><h2 style={{fontSize:'14px'}}>Saved Projects</h2><button onClick={onClose}>✕ Close</button></div>
     <div style={{padding:'40px',textAlign:'center',color:'#475569'}}>
       <p style={{fontSize:'14px'}}>No saved projects yet.</p>
       <p style={{fontSize:'12px',marginTop:'6px'}}>After running a project, click "Save Project" to store it here.</p>
@@ -491,30 +491,35 @@ function SavedProjectsPanel({ projects, onLoad, onDelete, onClose }) {
 function InvestorPanel({ onClose }) {
   const metrics = [
     { label: 'Global infrastructure spend', value: '$4.5T/year', note: 'Annual capex across all sectors CASEY covers' },
-    { label: 'T&T project controls revenue', value: '~£2.4B', note: 'Turner & Townsend 2023 revenue — primary displacement target' },
-    { label: 'Advisory fee per project', value: '£50K–£5M', note: 'What clients pay T&T/Arup/Faithful+Gould per engagement' },
-    { label: 'CASEY generation time', value: '4 seconds', note: 'vs 6–12 weeks for a traditional cost consultant pack' },
+    { label: 'Global project advisory market', value: '~£45B/year', note: 'Annual spend on project controls, cost management and programme advisory worldwide' },
+    { label: 'Advisory fee per project', value: '£50K–£5M', note: 'Typical range for a single project controls or cost advisory engagement' },
+    { label: 'CASEY generation time', value: '4 seconds', note: 'vs 6–12 weeks for a conventional advisory engagement' },
     { label: 'Sectors covered', value: '15+ sectors', note: 'Rail, nuclear, defence, space, pharma, data centres, ports, airports, energy, mining, water, gigafactory, semiconductors, ports, ISRU' },
     { label: 'Countries / jurisdictions', value: '70+', note: 'Full location intelligence: currency, framework, approval body, OBA, financing' },
     { label: 'Named global benchmarks', value: '63 programmes', note: 'Real cost growth %, schedule slip months, failure mode, lesson — per sector' },
-    { label: 'Fields per project output', value: '106 fields', note: 'vs a 40-page static Word document from a traditional advisor' },
+    { label: 'Fields per project output', value: '106 fields', note: 'vs a 40-page static document from a traditional advisory engagement' },
   ];
   const moats = [
     { title: 'Reference class data moat', body: 'CASEY embeds 63 named global programmes with real cost growth, schedule slip, and failure modes. Replicating this requires years of manual curation — it cannot be scraped.' },
     { title: 'Sector ontology lock', body: 'Every project routes through a sector-specific causal chain (rail → possessions → signalling → systems integration). Generic LLMs cannot do this without the ontology.' },
     { title: 'OBA engine', body: 'Optimism bias quantified per location using Flyvbjerg 2003/2022 and HM Treasury Green Book. No competitor has location-aware OBA in the output.' },
     { title: 'Board attack simulation', body: 'The tool generates the 5 questions a real investment committee will ask — sector-specific, project-specific, with real P50/P80 numbers. This is impossible to replicate from a static template.' },
-    { title: 'Speed × breadth', body: 'T&T charges £200K and takes 8 weeks. CASEY delivers 4 seconds. An investor who sees both outputs in the same room immediately understands the displacement.' },
+    { title: 'Speed × breadth', body: 'A traditional advisory engagement costs £50K–£200K and takes 6–12 weeks. CASEY delivers the same intelligence in 4 seconds. The moment a client sees both outputs side by side, the conversation changes.' },
   ];
   const revenue = [
     { tier: 'SaaS — Project packs', model: 'Per run or monthly seat', price: '$500–$2,000/run or $5K–$25K/month', tam: 'Programme directors, investment committees, project sponsors' },
     { tier: 'Enterprise licence', model: 'Annual contract + private models', price: '$150K–$1M/year', tam: 'Tier 1 contractors, development banks, sovereign wealth funds' },
-    { tier: 'Consulting displacement', model: 'White-label + outcome share', price: '$5M+ deals', tam: 'Replacing T&T, Faithful+Gould, AECOM PM, Currie+Brown engagements' },
+    { tier: 'Platform displacement', model: 'White-label + outcome share', price: '$5M+ deals', tam: 'Tier 1 programme sponsors, development banks, major infrastructure clients' },
     { tier: 'MDB / IFI deployment', model: 'World Bank / ADB platform licence', price: '$10M+ multi-year', tam: 'World Bank IDA/IBRD mandates reference class forecasting' },
   ];
   return <section className="investorPanel">
     <div className="investorHeader">
-      <div><span style={{fontSize:'10px',fontWeight:'800',letterSpacing:'.15em',color:'#8df7ff'}}>CASEY INVESTOR BRIEF</span><h2>The intelligence stack T&T cannot build</h2><p>CASEY is a capital programme intelligence platform that displaces traditional cost consulting. Here is the investment case.</p></div>
+      <div>
+        <span style={{fontSize:'10px',fontWeight:'800',letterSpacing:'.15em',color:'#8df7ff'}}>CASEY INVESTOR BRIEF</span>
+        <h2>The CASEY investment case</h2>
+        <p style={{fontSize:'12px',color:'#64748b',margin:'4px 0 0',lineHeight:'1.5'}}>CASEY is a capital programme intelligence platform — it generates cost estimates, risk registers, scenario analysis and board-grade outputs for infrastructure projects anywhere in the world, in seconds.</p>
+        <p style={{fontSize:'11px',color:'#475569',margin:'6px 0 0',padding:'6px 10px',background:'rgba(141,247,255,0.04)',borderRadius:'3px',border:'1px solid rgba(141,247,255,0.1)'}}>The numbers below are market-level figures. The demo projects (HS2, Lunar Base, Microsoft AI etc.) are reference cases that show the tool working — real clients use CASEY on their own live programmes.</p>
+      </div>
       <button onClick={onClose}>✕ Close</button>
     </div>
     <div className="investorGrid">
@@ -538,7 +543,7 @@ function InvestorPanel({ onClose }) {
           </div>)}
         </div>
         <div style={{marginTop:'16px',padding:'12px',background:'rgba(141,247,255,0.05)',borderRadius:'4px',border:'1px solid rgba(141,247,255,0.12)'}}>
-          <p style={{fontSize:'11px',color:'#94a3b8',lineHeight:'1.6',margin:0}}><b style={{color:'#8df7ff'}}>The displacement thesis:</b> Turner & Townsend 2023 revenue was ~£2.4B. Every £1M of CASEY ARR replaces £4M+ of incumbent advisory spend — because a single CASEY licence replaces a team of 6–10 consultants. This is a category-defining displacement, not an incremental software play.</p>
+          <p style={{fontSize:'11px',color:'#94a3b8',lineHeight:'1.6',margin:0}}><b style={{color:'#8df7ff'}}>The thesis:</b> The global project advisory market is worth £45B+ per year. CASEY compresses 6–12 weeks of manual advisory work into 4 seconds. Every £1M of CASEY ARR represents £4M+ of advisory spend that clients no longer need to commission manually. This is a category-defining shift, not an incremental software play.</p>
         </div>
       </div>
     </div>
@@ -553,15 +558,16 @@ function InvestorPanel({ onClose }) {
 function DemoBanner({ model }) {
   if (!model?.demo_mode) return null;
   const labels = {
-    earth: { icon: '🚄', label: 'Earth Demo — HS2 Phase 2b Rail Mega Programme', color: 'rgba(16,185,129,0.15)', border: 'rgba(16,185,129,0.3)', text: '#10b981' },
-    space: { icon: '🌕', label: 'Space Demo — Lunar Base Alpha Deep Space Infrastructure', color: 'rgba(141,247,255,0.08)', border: 'rgba(141,247,255,0.25)', text: '#8df7ff' },
-    defence: { icon: '🛡️', label: 'Defence Demo — AWRE Aldermaston Nuclear Infrastructure', color: 'rgba(245,158,11,0.1)', border: 'rgba(245,158,11,0.3)', text: '#f59e0b' },
-    gigafactory: { icon: '⚡', label: 'Gigafactory Demo — Battery Manufacturing UK', color: 'rgba(177,140,255,0.1)', border: 'rgba(177,140,255,0.3)', text: '#b18cff' },
+    earth: { icon: '🚄', label: 'Reference case — HS2 Phase 2b', color: 'rgba(16,185,129,0.1)', border: 'rgba(16,185,129,0.25)', text: '#10b981' },
+    space: { icon: '🌕', label: 'Reference case — Lunar Base Alpha', color: 'rgba(141,247,255,0.06)', border: 'rgba(141,247,255,0.2)', text: '#8df7ff' },
+    defence: { icon: '🛡️', label: 'Reference case — AWRE Aldermaston', color: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.25)', text: '#f59e0b' },
+    gigafactory: { icon: '⚡', label: 'Reference case — Gigafactory UK', color: 'rgba(177,140,255,0.08)', border: 'rgba(177,140,255,0.25)', text: '#b18cff' },
   };
-  const d = labels[model.demo_type] || { icon: '◆', label: model.demo_label || 'CASEY Demo', color: 'rgba(141,247,255,0.06)', border: 'rgba(141,247,255,0.2)', text: '#8df7ff' };
-  return <div style={{background:d.color,border:`1px solid ${d.border}`,borderRadius:'4px',padding:'7px 14px',marginBottom:'8px',display:'flex',alignItems:'center',gap:'10px',fontSize:'11px'}}>
-    <span style={{fontSize:'18px'}}>{d.icon}</span>
-    <div><span style={{fontWeight:'800',color:d.text,letterSpacing:'.08em'}}>{d.label}</span><span style={{color:'#64748b',marginLeft:'10px'}}>{model.demo_headline || 'Pre-built reference case — run your own project from the console.'}</span></div>
+  const d = labels[model.demo_type] || { icon: '◆', label: model.demo_label || 'Reference case', color: 'rgba(141,247,255,0.06)', border: 'rgba(141,247,255,0.2)', text: '#8df7ff' };
+  return <div style={{background:d.color,border:`1px solid ${d.border}`,borderRadius:'3px',padding:'6px 12px',marginBottom:'8px',display:'flex',alignItems:'center',gap:'8px',fontSize:'11px'}}>
+    <span style={{fontSize:'14px'}}>{d.icon}</span>
+    <div style={{flex:1}}><span style={{fontWeight:'700',color:d.text}}>{d.label}</span><span style={{color:'#475569',marginLeft:'8px',fontSize:'10px'}}>{model.demo_headline || 'Pre-built reference case. Run your own project from the console for a project-specific output.'}</span></div>
+    <span style={{fontSize:'9px',color:'#334155',fontWeight:'800',letterSpacing:'.1em',background:'rgba(255,255,255,0.04)',padding:'2px 6px',borderRadius:'2px'}}>DEMO</span>
   </div>;
 }
 
@@ -1059,7 +1065,7 @@ function exportAuditSpine(model, direct, indirect, reserves, reconcileCheck) {
     { label:'Scenario lock', value:String(model?.scenario_label || model?.scenario || 'Base'), detail:'Cards, narratives, QCRA/QSRA and exports are stamped from the selected scenario payload.' },
     { label:'P-tail linkage', value: qcra.p80 ? fmt(qcra.p80) : 'P80 active', detail:`Cost P80 and QSRA P80 ${qsra.p80 || '—'} months are visible for board challenge.` },
     { label:'Evidence gate', value: String(confidenceLens(model).headline || ''), detail: String(confidenceLens(model).decisionRule || '') },
-    { label:'Competitive threat', value:'High', detail:'Replaces manual slide-production with auditable scenario propagation and board attack logic.' },
+    { label:'Audit readiness', value:'High', detail:'Scenario propagation is traceable end-to-end — every cost, schedule and risk output is stamped from the same source payload.' },
     ...(model?.stress_test_applied ? [{
       label:'Stress test applied',
       value: String(model.stress_test_applied).replace(/_/g,' ').toUpperCase(),
@@ -1080,8 +1086,8 @@ function IncumbentPressurePanel({ model, direct, indirect, reserves, reconcileCh
   return <>
     <section className="layout two incumbentPressure">
       <Card className="threatCard">
-        <h2>Incumbent consultant pressure test</h2>
-        <p className="big">Designed to make a traditional PMO / cost-consultant deck look slow, static and non-auditable without making unsupported claims about any named firm.</p>
+        <h2>CASEY vs traditional project controls</h2>
+        <p style={{fontSize:'12px',color:'#64748b',marginBottom:'10px'}}>How CASEY output compares to a conventional advisory report — same deliverable, different depth and speed.</p>
         {delta.map((x,i)=><div className="versusRow" key={x.old}><span>{i+1}</span><b>{x.old}</b><ArrowRight size={16}/><strong>{x.casey}</strong></div>)}
       </Card>
       <Card className="threatCard">
@@ -1579,14 +1585,14 @@ function AdvisoryFeeCounter({ model }) {
     <Card className="feeCounter">
       <div className="feeHeader">
         <div>
-          <h2>What this just replaced</h2>
+          <h2 style={{fontSize:'13px'}}>Equivalent advisory engagement value</h2>
           <p className="feeSubtitle">
-            A traditional early-stage advisory engagement for the same deliverables.
-            No firm names — just the numbers.
+            Equivalent early-stage advisory engagement cost for the same deliverables.
+            Market rate ranges — no specific firm referenced.
           </p>
         </div>
         <div className="feeTotalBox">
-          <span className="feeLabel">Advisory equivalent</span>
+          <span className="feeLabel" style={{fontSize:'9px'}}>Advisory equivalent</span>
           <span className="feeTotalLow">£{low}k – </span>
           <span className="feeTotalHigh">£{animVal}k</span>
           <span className="feeTimeLabel">6 – 10 weeks</span>
@@ -2309,7 +2315,7 @@ function parseMoneyLocal(v) {
     <main className={model ? 'v50Console' : 'v50Console emptyConsole'}>
       {error && !showShowcase && !show && <GatedMessage raw={error} onDismiss={() => setError('')} onShowcase={() => { setError(''); setShowShowcase(true); }} onEarth={() => { setError(''); runEarth(); }} onSpace={() => { setError(''); runSpace(); }}/>}
       {!model && showShowcase && <ShowcaseLibrary onRun={runShowcase} onBack={() => setShowShowcase(false)} />}
-      {!model && !show && !showShowcase && <section className="commandGrid"><Card className="command"><h1>Generate a live project model</h1><label>Project command</label><textarea value={prompt} onChange={e => setPrompt(e.target.value)} /> <div className="chips">{examples.map(x => <button key={x} onClick={() => setPrompt(x)}>{x}</button>)}</div><div className="grid4"><input value={client} onChange={e => setClient(e.target.value)} placeholder="Client / operator"/><select value={classLevel} onChange={e => setClassLevel(e.target.value)}>{[1,2,3,4,5].map(x => <option key={x} value={x}>Class {x}</option>)}</select><select value={scheduleLevel} onChange={e => setScheduleLevel(e.target.value)}>{[1,2,3,4,5].map(x => <option key={x} value={x}>Level {x}</option>)}</select><select value={scenario} onChange={e => setScenario(e.target.value)}>{scenarios.map(x => <option key={x} value={x}>{x}</option>)}</select></div><button className="primary" onClick={() => generate()}><Sparkles/> Generate full intelligence pack</button><button className="secondary" onClick={() => { setShowShowcase(true); setError(''); }}><Globe2/> Open global showcase library</button></Card><Card><h2>What CASEY will produce</h2>{['Executive summary and recommendation','Direct / indirect / reserve cost view','Scenario-linked estimate, schedule and confidence','Risk register with cause, event, impact and mitigation','QCRA + QSRA curves and tornado drivers','Pricing and next-step contact actions'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card></section>}
+      {!model && !show && !showShowcase && <section className="commandGrid"><Card className="command"><h1 style={{fontSize:'18px',marginBottom:'8px'}}>Generate a project</h1><label>Project command</label><textarea value={prompt} onChange={e => setPrompt(e.target.value)} /> <div className="chips">{examples.map(x => <button key={x} onClick={() => setPrompt(x)}>{x}</button>)}</div><div className="grid4"><input value={client} onChange={e => setClient(e.target.value)} placeholder="Client / operator"/><select value={classLevel} onChange={e => setClassLevel(e.target.value)}>{[1,2,3,4,5].map(x => <option key={x} value={x}>Class {x}</option>)}</select><select value={scheduleLevel} onChange={e => setScheduleLevel(e.target.value)}>{[1,2,3,4,5].map(x => <option key={x} value={x}>Level {x}</option>)}</select><select value={scenario} onChange={e => setScenario(e.target.value)}>{scenarios.map(x => <option key={x} value={x}>{x}</option>)}</select></div><button className="primary" onClick={() => generate()}><Sparkles/> Generate full intelligence pack</button><button className="secondary" onClick={() => { setShowShowcase(true); setError(''); }}><Globe2/> Open global showcase library</button></Card><Card><h2>What CASEY generates</h2><p style={{fontSize:'11px',color:'#64748b',marginBottom:'10px'}}>From a single project description — in seconds.</p>{['Executive summary with P50, schedule and confidence score','Cost workbook — direct, indirect, reserve by CBS line','5 scenario trade-offs: base, faster, cheaper, lower risk, premium','Risk register — cause, event, impact, owner, trigger, mitigation','QCRA/QSRA probability curves and tornado chart','Board attack simulation — 5 questions your committee will ask','Location intelligence, financing context and OBA assessment','Procurement packages with lead times and single-source flags'].map((x,i)=><div className="reason" style={{padding:'5px 0',borderBottom:'1px solid rgba(255,255,255,0.04)'}} key={x}><span style={{color:'#8df7ff',marginRight:'8px',fontSize:'10px',fontWeight:'800'}}>{i+1}</span><span style={{fontSize:'11px'}}>{x}</span></div>)}</Card></section>}
       {model && <>
         <DemoBanner model={model}/>
         <section className="confidenceEngineBadge"><b>{model.confidence_engine_label || 'CASEY Confidence Engine'}</b><span>{safeRender(typeof model.confidence_engine_detail === 'object' ? model.confidence_engine_detail?.plain_english || 'Benchmark + probabilistic + sector-trained reasoning' : model.confidence_engine_detail || 'Benchmark + probabilistic + sector-trained reasoning')}</span></section>
@@ -2330,15 +2336,15 @@ function parseMoneyLocal(v) {
           <span style={{fontSize:'11px',color:'#94a3b8'}}>Exports available below. Earth Demo, Space Demo and Showcase Library always free.</span>
           <a href="mailto:hello@controlorbit.com?subject=CASEY Full Access" style={{marginLeft:'auto',fontSize:'11px',color:'#8df7ff',fontWeight:'700',textDecoration:'none',background:'rgba(141,247,255,0.1)',padding:'4px 12px',borderRadius:'3px',border:'1px solid rgba(141,247,255,0.3)'}}>Request full access →</a>
         </div>}
-      <nav className="tabs">{[['overview','Overview'],['compare','Scenarios'],['delta','Scenario Intel'],['causal','Causal OS'],['cost','Cost'],['schedule','Schedule'],['risk','Risk'],['monte','QCRA/QSRA'],['outputs','Outputs'],['assurance','Assurance'],['runtime','Live Stress Test'],['advisor','Advisor'],['method','Methodology'],['benchmark','Benchmarks'],['pricing','Pricing']].map(x => <button key={x[0]} className={tab===x[0]?'active':''} onClick={() => setTab(x[0])}>{x[1]}</button>)}</nav>
+      <nav className="tabs">{[['overview','Overview'],['compare','Scenarios'],['delta','Intel'],['causal','Causal'],['cost','Cost'],['schedule','Schedule'],['risk','Risk'],['monte','QCRA/QSRA'],['outputs','Outputs'],['assurance','Assurance'],['runtime','Stress Test'],['advisor','Advisor'],['method','Method'],['benchmark','Benchmarks'],['pricing','Pricing']].map(x => <button key={x[0]} className={tab===x[0]?'active':''} onClick={() => setTab(x[0])}>{x[1]}</button>)}</nav>
         {tab === 'overview' && <>
           {model.executive_shock_insight && <section className="layout one"><Card className="shockCard"><h2>⚡ Live model update</h2><p>{model.executive_shock_insight}</p></Card></section>}
           <section className="layout two">
-            <Card><h2>Executive intelligence summary</h2><p className="big">{model.executive_summary || `${model.title} has been classified as ${safeRender(model.subsector)}. CASEY generated a first-pass cost, schedule, risk and confidence model for the selected scenario.`}</p><div className="miniMetrics"><b><span>Direct cost</span>{fmt(direct)}</b><b><span>Indirect cost</span>{fmt(indirect)}</b><b><span>Risk / reserve</span>{fmt(reserves)}</b></div><h3>Recommendation</h3>{(model.next_best_actions || []).slice(0,5).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{safeRender(x)}</div>)}</Card>
+            <Card><h2>Executive intelligence summary</h2><p style={{fontSize:'13px',lineHeight:'1.6'}}>{model.executive_summary || `${model.title} has been classified as ${safeRender(model.subsector)}. CASEY generated a first-pass cost, schedule, risk and confidence model for the selected scenario.`}</p><div className="miniMetrics"><b><span>Direct cost</span>{fmt(direct)}</b><b><span>Indirect cost</span>{fmt(indirect)}</b><b><span>Risk / reserve</span>{fmt(reserves)}</b></div><h3>Recommendation</h3>{(model.next_best_actions || []).slice(0,5).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{safeRender(x)}</div>)}</Card>
             <Card><h2>Board briefing</h2>{(model.board_briefing || model.board_challenge_questions || []).slice(0,5).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{safeRender(x)}</div>)}<h3>CASEY thinking</h3><p className="caseyThinking">{model.casey_thinking || 'CASEY interprets this as a system-of-systems infrastructure programme requiring cost, schedule, risk and decision intelligence.'}</p></Card>
           </section>
           <section className="layout two eliteLayer">
-            <Card className="confidenceMeaningCard"><h2>What confidence means</h2><h3>{safeRender(confLens?.headline)}</h3><p className="big">{safeRender(confLens?.meaning)}</p><div className="reason"><span>!</span><b>Decision rule</b><br/>{safeRender(confLens?.decisionRule)}</div><div className="reason"><span>→</span><b>Primary constraint</b><br/>{safeRender(confLens?.constraint)}</div><div className="reason"><span>%</span><b>Plain English</b><br/>Confidence is not optimism. It is CASEY board-defensibility score based on benchmark fit, evidence maturity, procurement certainty, schedule logic, reserve adequacy and scenario posture.</div></Card>
+            <Card className="confidenceMeaningCard" style={{padding:'12px 14px'}}><h2 style={{fontSize:'12px',marginBottom:'6px'}}>What the confidence score means</h2><h3 style={{fontSize:'13px'}}>{safeRender(confLens?.headline)}</h3><p className="big">{safeRender(confLens?.meaning)}</p><div className="reason"><span>!</span><b>Decision rule</b><br/>{safeRender(confLens?.decisionRule)}</div><div className="reason"><span>→</span><b>Primary constraint</b><br/>{safeRender(confLens?.constraint)}</div><div className="reason"><span>%</span><b>Plain English</b><br/>Confidence is not optimism. It is CASEY board-defensibility score based on benchmark fit, evidence maturity, procurement certainty, schedule logic, reserve adequacy and scenario posture.</div></Card>
             <Card><h2>Likely board questions</h2>{boardQuestions(model).slice(0,6).map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}<h3>CASEY final position</h3><p className="caseyThinking finalPosition">{finalPosition(model)}</p></Card>
           </section>
           <IncumbentPressurePanel model={model} direct={direct} indirect={indirect} reserves={reserves} reconcileCheck={reconcileCheck}/>
@@ -2367,7 +2373,7 @@ function parseMoneyLocal(v) {
           <section className="layout one"><AdvisoryFeeCounter model={model}/></section>
         </>}
 
-        {tab === 'compare' && <section className="layout two"><Card><h2>Scenario comparison</h2><p className="big">Switch options before paying for another advisory cycle. Each button re-runs cost, schedule, confidence, risk register, QCRA/QSRA and exports from the same source of truth.</p>{model?.stress_test_applied && <div style={{background:"rgba(245,158,11,0.1)",border:"1px solid rgba(245,158,11,0.3)",borderRadius:"3px",padding:"8px 12px",marginBottom:"10px",fontSize:"11px",color:"#f59e0b"}}><b>STRESS TEST ACTIVE: {String(model.stress_test_applied).replace(/_/g," ").toUpperCase()}</b><br/>{model.stress_test_note} — P50 now {safeRender(model.cost_p50)}, confidence {model.confidence_pct}%. Scenario re-runs below use the stressed baseline.</div>}<div className="runtimeInline"><button onClick={()=>setTab('runtime')}><Zap size={15}/> Open Live Stress Test</button><button onClick={()=>runShock('signalling_slip')}>Simulate 4-month signalling slip</button><button onClick={()=>runShock('procurement_gap')}>Simulate procurement evidence gap</button></div>{(()=>{
+        {tab === 'compare' && <section className="layout two"><Card><h2>Scenario comparison</h2><p style={{fontSize:'12px',color:'#64748b',marginBottom:'10px'}}>Re-run any scenario below. Each recalculates cost, schedule, confidence, risk register and exports from the same source of truth — instantly.</p>{model?.stress_test_applied && <div style={{background:"rgba(245,158,11,0.1)",border:"1px solid rgba(245,158,11,0.3)",borderRadius:"3px",padding:"8px 12px",marginBottom:"10px",fontSize:"11px",color:"#f59e0b"}}><b>STRESS TEST ACTIVE: {String(model.stress_test_applied).replace(/_/g," ").toUpperCase()}</b><br/>{model.stress_test_note} — P50 now {safeRender(model.cost_p50)}, confidence {model.confidence_pct}%. Scenario re-runs below use the stressed baseline.</div>}<div className="runtimeInline"><button onClick={()=>setTab('runtime')}><Zap size={15}/> Open Live Stress Test</button><button onClick={()=>runShock('signalling_slip')}>Simulate 4-month signalling slip</button><button onClick={()=>runShock('procurement_gap')}>Simulate procurement evidence gap</button></div>{(()=>{
   const baseRow=scenarioMatrix.find(x=>x.scenario==='base')||{};
   const bCost=parseMoneyLocal(baseRow.cost_p50||baseRow.cost||'0');
   const bConf=parseInt(String(baseRow.confidence_pct||baseRow.confidence||'50'));
@@ -2411,7 +2417,7 @@ function parseMoneyLocal(v) {
         {tab === 'cost' && <section className="layout two"><Card><h2>Scenario cost bridge vs Base</h2><p className="chartCaption">This explains why the selected scenario is cheaper or more expensive than Base before showing the workbook lines.</p>{model?.stress_test_applied && <div style={{background:"rgba(141,247,255,0.05)",borderLeft:"2px solid #8df7ff",padding:"8px 12px",marginBottom:"8px",fontSize:"11px",color:"#8df7ff"}}>Stress test applied: {String(model.stress_test_applied).replace(/_/g," ")} — cost recalculated to {safeRender(model.cost_p50)}. The waterfall below reflects this change.</div>}{costWaterfall.map((x,i)=><div className={`reason ${x.kind==='total'?'deltaReason':''}`} key={i}><span>{i+1}</span><b>{x.driver}</b><br/>{x.kind==='total'?x.value:(x.value_bn>=0?'+':'−') + ' ' + x.value}</div>)}<h3>Cost estimate workbook</h3><Table rows={costs} cols={[["cbs","CBS"],["description","Description"],["type","Type"],["p10_bn","Low/P10"],["p50_bn","Most likely/P50"],["p90_bn","High/P90"],["impact_basis","Basis"]]} moneyCols={["p10_bn","p50_bn","p90_bn"]}/></Card><Card><h2>Cost composition</h2><p className="chartCaption">Direct, indirect and reserve are scenario-controlled and reconciled to selected P50. For the detailed uncertainty view use QCRA/QSRA.</p><ResponsiveContainer width="100%" height={320}><BarChart data={[{name:'Direct',value:direct},{name:'Indirect',value:indirect},{name:'Reserve',value:reserves}]}><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis dataKey="name"/><YAxis/><Tooltip/><Bar dataKey="value" fill="#8df7ff"/></BarChart></ResponsiveContainer></Card></section>}
         {tab === 'schedule' && <section className="layout two"><Card><h2>Schedule bridge vs Base</h2><p className="chartCaption">This is the month-by-month reason the scenario becomes faster or slower than Base.</p>{scheduleWaterfall.map((x,i)=><div className={`reason ${x.kind==='total'?'deltaReason':''}`} key={i}><span>{i+1}</span><b>{x.driver}</b><br/>{x.kind==='total'?`${x.months} months`:(x.months>=0?'+':'') + x.months + ' months'}</div>)}<h3>Scenario schedule logic</h3><Table rows={schedule} cols={[["activity_id","Activity"],["phase","Phase"],["activity","Name"],["predecessor","Pred"],["duration_months","Months"],["critical","Critical"],["basis","Basis"]]}/></Card><Card><h2>QSRA finish-date curve</h2><p className="chartCaption">P50 equals the headline schedule. P80/P90 show how severe the delivery tail becomes after the scenario trade-off.</p><div className="metrics"><div>P50<b>{qsra.p50} mo</b></div><div>P80<b>{qsra.p80} mo</b></div><div>P90<b>{qsra.p90} mo</b></div></div><ResponsiveContainer width="100%" height={280}><LineChart data={curve}><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis dataKey="percentile"/><YAxis/><Tooltip formatter={(v) => [`${v} months`, "QSRA finish date"]}/><ReferenceLine x={50} stroke="#ffffff88" label="P50 = headline"/><ReferenceLine x={80} stroke="#ffffff55" label="P80 = board risk"/><Line type="monotone" name="QSRA finish date" dataKey="schedule_months" stroke="#b18cff" strokeWidth={4}/></LineChart></ResponsiveContainer><div className="reason p80Translation"><span>1/5</span>{safeRender(p80Talk.schedule)}</div><div className="reason p80Translation"><span>!</span>{safeRender(p80Talk.board)}</div>{(model.monte_carlo?.curve_readout || []).slice(1).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{x}</div>)}</Card></section>}
         {tab === 'risk' && <section className="layout two"><Card><h2>Risk Register Pro</h2><p>Risk output should include cause, event, impact, owner, mitigation and links to WBS/CBS. These risks drive the QCRA/QSRA P-curves — the top 3 by EMV determine the P80 tail.</p>{model?.stress_test_applied && <div style={{background:"rgba(239,68,68,0.08)",borderLeft:"2px solid #ef4444",padding:"6px 10px",marginBottom:"8px",fontSize:"11px",color:"#ef4444"}}>Stress test applied: risk posture has shifted. Confidence is now {model.confidence_pct}%. The risks below drove this position before the shock was applied.</div>}<Table rows={risks} cols={[['risk_id','ID'],['risk','Risk'],['cause','Cause'],['event','Event'],['impact','Impact'],['probability_pct','Prob %'],['activity_id','Activity'],['cbs','CBS'],['owner','Owner'],['mitigation','Mitigation']]}/></Card><Card><h2>Top exposure drivers</h2><ResponsiveContainer width="100%" height={380}><BarChart data={tornado} layout="vertical"><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis type="number"/><YAxis dataKey="driver" type="category" width={150}/><Tooltip/><Bar dataKey="contribution" fill="#8df7ff"/></BarChart></ResponsiveContainer></Card></section>}
-        {tab === 'monte' && <section className="layout two"><Card><h2>QCRA cost range curve</h2>{model?.stress_test_applied && <div style={{background:'rgba(245,158,11,0.08)',borderLeft:'2px solid #f59e0b',padding:'6px 10px',marginBottom:'8px',fontSize:'11px',color:'#f59e0b'}}>Stress test active: {String(model.stress_test_applied).replace(/_/g,' ')} — P50 updated to {safeRender(model.cost_p50)}. Download Export QCRA/QSRA to capture the stressed curves.</div>}<p className="chartCaption">This is not a spend forecast over time. It is the probability range: P50 matches the headline cost, P80/P90 visualise the downside contingency tail created by the selected scenario.</p><div className="metrics"><div>P50 headline<b>{safeRender(model.cost_p50)}</b></div><div>P80 risk exposure<b>{fmt(qcra.p80)}</b></div><div>P90 stress case<b>{fmt(qcra.p90)}</b></div></div><ResponsiveContainer width="100%" height={280}><AreaChart data={curve}><defs><linearGradient id="caseyG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#8df7ff" stopOpacity=".55"/><stop offset="1" stopColor="#8df7ff" stopOpacity="0"/></linearGradient></defs><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis dataKey="percentile"/><YAxis/><Tooltip formatter={(v) => [`$${Number(v).toFixed(1)}B`, "QCRA total outturn"]}/><ReferenceLine x={50} stroke="#ffffff88" label="P50 = headline"/><ReferenceLine x={80} stroke="#ffffff55" label="P80 = board risk"/><Area type="monotone" name="QCRA total outturn" dataKey="cost_bn" stroke="#8df7ff" fill="url(#caseyG)"/></AreaChart></ResponsiveContainer>{(model.monte_carlo?.curve_readout || []).slice(0,1).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{safeRender(x)}</div>)}<div className="reason p80Translation"><span>1/5</span>{safeRender(p80Talk.cost)}</div><div className="reason"><span>!</span>This curve is a probability distribution, not spend over time. The x-axis is confidence percentile. P50 equals the headline estimate; P80/P90 are board downside exposure.</div></Card><Card><h2>QSRA schedule range curve</h2><p className="chartCaption">P50 matches the headline duration. P80/P90 show the likely board conversation if critical path risk lands.</p><div className="metrics"><div>P50 headline<b>{qsra.p50} mo</b></div><div>P80 risk date<b>{qsra.p80} mo</b></div><div>P90 stress date<b>{qsra.p90} mo</b></div></div><ResponsiveContainer width="100%" height={280}><LineChart data={curve}><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis dataKey="percentile"/><YAxis/><Tooltip formatter={(v) => [`${v} months`, "QSRA finish date"]}/><ReferenceLine x={50} stroke="#ffffff88" label="P50 = headline"/><ReferenceLine x={80} stroke="#ffffff55" label="P80 = board risk"/><Line type="monotone" name="QSRA finish date" dataKey="schedule_months" stroke="#b18cff" strokeWidth={4}/></LineChart></ResponsiveContainer><div className="reason p80Translation"><span>1/5</span>{safeRender(p80Talk.schedule)}</div><div className="reason p80Translation"><span>!</span>{safeRender(p80Talk.board)}</div>{(model.monte_carlo?.curve_readout || []).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{safeRender(x)}</div>)}</Card></section>}
+        {tab === 'monte' && <section className="layout two"><Card><h2>QCRA cost range curve</h2>{model?.stress_test_applied && <div style={{background:'rgba(245,158,11,0.08)',borderLeft:'2px solid #f59e0b',padding:'6px 10px',marginBottom:'8px',fontSize:'11px',color:'#f59e0b'}}>Stress test active: {String(model.stress_test_applied).replace(/_/g,' ')} — P50 updated to {safeRender(model.cost_p50)}. Download Export QCRA/QSRA to capture the stressed curves.</div>}<p style={{fontSize:'11px',color:'#64748b',marginBottom:'8px'}}>Probability range — not a spend forecast. P50 = headline. P80/P90 = board downside exposure.</p><div className="metrics"><div>P50 headline<b>{safeRender(model.cost_p50)}</b></div><div>P80 risk exposure<b>{fmt(qcra.p80)}</b></div><div>P90 stress case<b>{fmt(qcra.p90)}</b></div></div><ResponsiveContainer width="100%" height={280}><AreaChart data={curve}><defs><linearGradient id="caseyG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#8df7ff" stopOpacity=".55"/><stop offset="1" stopColor="#8df7ff" stopOpacity="0"/></linearGradient></defs><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis dataKey="percentile"/><YAxis/><Tooltip formatter={(v) => [`$${Number(v).toFixed(1)}B`, "QCRA total outturn"]}/><ReferenceLine x={50} stroke="#ffffff88" label="P50 = headline"/><ReferenceLine x={80} stroke="#ffffff55" label="P80 = board risk"/><Area type="monotone" name="QCRA total outturn" dataKey="cost_bn" stroke="#8df7ff" fill="url(#caseyG)"/></AreaChart></ResponsiveContainer>{(model.monte_carlo?.curve_readout || []).slice(0,1).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{safeRender(x)}</div>)}<div className="reason p80Translation"><span>1/5</span>{safeRender(p80Talk.cost)}</div><div className="reason"><span>!</span>This curve is a probability distribution, not spend over time. The x-axis is confidence percentile. P50 equals the headline estimate; P80/P90 are board downside exposure.</div></Card><Card><h2>QSRA schedule range curve</h2><p className="chartCaption">P50 matches the headline duration. P80/P90 show the likely board conversation if critical path risk lands.</p><div className="metrics"><div>P50 headline<b>{qsra.p50} mo</b></div><div>P80 risk date<b>{qsra.p80} mo</b></div><div>P90 stress date<b>{qsra.p90} mo</b></div></div><ResponsiveContainer width="100%" height={280}><LineChart data={curve}><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis dataKey="percentile"/><YAxis/><Tooltip formatter={(v) => [`${v} months`, "QSRA finish date"]}/><ReferenceLine x={50} stroke="#ffffff88" label="P50 = headline"/><ReferenceLine x={80} stroke="#ffffff55" label="P80 = board risk"/><Line type="monotone" name="QSRA finish date" dataKey="schedule_months" stroke="#b18cff" strokeWidth={4}/></LineChart></ResponsiveContainer><div className="reason p80Translation"><span>1/5</span>{safeRender(p80Talk.schedule)}</div><div className="reason p80Translation"><span>!</span>{safeRender(p80Talk.board)}</div>{(model.monte_carlo?.curve_readout || []).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{safeRender(x)}</div>)}</Card></section>}
         {tab === 'delta' && <section className="layout two">
           <Card><h2>Strategic Delta Intelligence</h2><p>What changed because this scenario was selected.</p>
             {(model.scenario_delta_intelligence || []).map((x,i)=><div className="reason" key={i}><span>{i+1}</span><b>{x.label}: {x.value}</b><br/>{x.meaning}</div>)}
@@ -2454,7 +2460,7 @@ function parseMoneyLocal(v) {
           <button onClick={() => download('/export/all', model, `${model.id || 'casey'}_FULL_BOARD_PACK.zip`)}><Download/> Generate Full Pack ZIP</button>
           <a className="contactBtn" href={emailLink}><Mail/> Request Enterprise Review</a></div></Card><Card><h2>What the pack delivers</h2>{['Executive control centre with project, scenario, class, level and confidence clearly identified','Scenario comparison covering Base, Faster, Cheaper, Lower Risk and Premium cases','Selected estimate class plus all class levels for audit and challenge','Direct, indirect and reserve cost views with QCRA cost curve and cost tornado','All schedule levels with QSRA schedule curve and schedule tornado','Risk register with cause, event, impact, owner, mitigation, trigger and quantified likelihood','Basis of Estimate, assumptions, exclusions and benchmark validation','Commercial next steps: buyer action, procurement challenge and board decision path'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card></section>}
 
-        {tab === 'assurance' && <><IncumbentPressurePanel model={model} direct={direct} indirect={indirect} reserves={reserves} reconcileCheck={reconcileCheck}/><section className="layout two"><Card><h2>Assurance room weapons</h2>{['Open with the P80/P90 exposure, not the headline P50.','Ask which evidence package retires the governing constraint.','Force every mitigation to name owner, trigger, residual exposure and date.','Show scenario trade-offs live before anyone can defend a single-point estimate.','Export the audit model immediately so the conversation moves from opinion to traceability.'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card><Card><h2>What scares traditional advisors</h2>{['CASEY moves faster than manual assurance cycles.','Every scenario rewrites cost, schedule, confidence and board posture from one payload.','The system exposes contradictions instead of polishing the management story.','It turns static reports into live investment-committee interrogation.'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card></section><section className="layout one"><ProgrammeHealthSignal onRunHealthCheck={runHealthCheck}/></section></>}
+        {tab === 'assurance' && <><IncumbentPressurePanel model={model} direct={direct} indirect={indirect} reserves={reserves} reconcileCheck={reconcileCheck}/><section className="layout two"><Card><h2>Assurance room weapons</h2>{['Open with the P80/P90 exposure, not the headline P50.','Ask which evidence package retires the governing constraint.','Force every mitigation to name owner, trigger, residual exposure and date.','Show scenario trade-offs live before anyone can defend a single-point estimate.','Export the audit model immediately so the conversation moves from opinion to traceability.'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card><Card><h2>Why CASEY changes the conversation</h2>{['CASEY recalculates cost, schedule, confidence and board posture from one source of truth in seconds.','Every scenario is a complete recalculation — not a slide edit.','The system surfaces contradictions rather than polishing the management narrative.','Static reports become live investment-committee intelligence.'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card></section><section className="layout one"><ProgrammeHealthSignal onRunHealthCheck={runHealthCheck}/></section></>}
 
         {tab === 'advisor' && <>
           {/* INSTITUTIONAL AUTHORITY LINE — the one sentence */}
@@ -2497,7 +2503,7 @@ function parseMoneyLocal(v) {
 
           {/* TRADITIONAL vs CASEY */}
           {model?.traditional_vs_casey?.casey && <section className="layout two">
-            <Card style={{borderLeft:'2px solid rgba(239,68,68,0.4)'}}><h2 style={{color:'#ff6b7d'}}>What the T&T deck says</h2>
+            <Card style={{borderLeft:'2px solid rgba(239,68,68,0.4)'}}><h2 style={{color:'#ff6b7d'}}>What a conventional report says</h2>
               <p style={{color:'#94a3b8',fontStyle:'italic',lineHeight:'1.6'}}>{safeRender(model.traditional_vs_casey.traditional)}</p>
               <p style={{fontSize:'11px',color:'#475569',marginTop:'8px',borderTop:'1px solid rgba(255,255,255,0.06)',paddingTop:'8px'}}>{safeRender(model.traditional_vs_casey.incumbent_line)}</p>
             </Card>
@@ -2509,7 +2515,7 @@ function parseMoneyLocal(v) {
 
           {/* BOARD ATTACK SIMULATION */}
           {(model?.board_attack_simulation||[]).length > 0 && <section className="layout one"><Card><h2>Board attack simulation — the 5 questions this board will ask</h2>
-            <p style={{fontSize:'11px',color:'#64748b',marginBottom:'12px'}}>These are sector-specific, programme-specific challenges that a serious investment committee will table. CASEY generates them from live model data — not a generic template. T&T cannot answer these in the room without CASEY.</p>
+            <p style={{fontSize:'11px',color:'#64748b',marginBottom:'12px'}}>These are sector-specific, programme-specific challenges that a serious investment committee will table. CASEY generates each one from live model data — your actual P50, P80, sector, and governing constraints. Not a template.</p>
             {(model.board_attack_simulation||[]).map((q,i)=><div key={i} style={{display:'flex',gap:'10px',padding:'10px 0',borderBottom:'1px solid rgba(255,255,255,0.05)'}}>
               <span style={{color:'#f59e0b',fontWeight:'900',flexShrink:0,fontSize:'11px',paddingTop:'1px'}}>{i+1}.</span>
               <span style={{color:'#e2e8f0',lineHeight:'1.5',fontSize:'13px'}}>{safeRender(q)}</span>
@@ -2579,9 +2585,9 @@ function parseMoneyLocal(v) {
             {(model.second_order_contradictions||[]).map((x,i)=><div key={i} className="reason" style={{borderLeft:'2px solid rgba(245,158,11,0.4)',paddingLeft:'10px',marginBottom:'6px'}}><span style={{color:'#f59e0b',fontWeight:'800',marginRight:'6px'}}>{i+1}.</span>{safeRender(x)}</div>)}
           </Card></section>}
 
-          {/* PROCUREMENT HEATMAP — T&T charges £75K for this */}
+          {/* PROCUREMENT HEATMAP */}
           {(model?.procurement_heatmap||[]).length > 0 && <section className="layout one"><Card><h2>📦 Procurement intelligence — packages, lead times, single-source flags</h2>
-            <p style={{fontSize:'11px',color:'#64748b',marginBottom:'12px'}}>Every package that T&T would take 6 weeks to map. CASEY generates it in 4 seconds from sector ontology and location context. Single-source flags are the primary commercial risk in each sector.</p>
+            <p style={{fontSize:'11px',color:'#64748b',marginBottom:'12px'}}>CASEY maps every procurement package from sector intelligence and location context. Single-source flags identify the highest commercial exposure in each package — these are the items that can break a programme date.</p>
             <div style={{overflowX:'auto'}}>
               <table style={{width:'100%',borderCollapse:'collapse',fontSize:'11px'}}>
                 <thead><tr style={{borderBottom:'1px solid rgba(255,255,255,0.1)'}}>
@@ -2601,9 +2607,9 @@ function parseMoneyLocal(v) {
             </div>
           </Card></section>}
 
-          {/* HISTORICAL FAILURE PATTERN — the sentence that makes T&T go quiet */}
+          {/* HISTORICAL FAILURE PATTERN */}
           {model?.if_this_fails && <section className="layout one"><Card style={{borderLeft:'3px solid rgba(239,68,68,0.5)',background:'rgba(239,68,68,0.03)'}}><h2 style={{color:'#ff6b7d'}}>⚠ If this programme fails — the named historical pattern</h2>
-            <p style={{fontSize:'11px',color:'#64748b',marginBottom:'10px'}}>This is what CASEY says in the room when T&T is presenting green dashboards. Named programmes, named failure modes, named costs. This is what makes a cost consultant go quiet.</p>
+            <p style={{fontSize:'11px',color:'#64748b',marginBottom:'10px'}}>Named programmes, real cost growth figures, actual failure modes. This is the sector intelligence that makes a green dashboard insufficient — the historical pattern that governs what happens next if the governing constraint is not closed.</p>
             <p style={{color:'#e2e8f0',lineHeight:'1.7',fontSize:'13px'}}>{safeRender(model.if_this_fails)}</p>
           </Card></section>}
 
@@ -2625,7 +2631,7 @@ function parseMoneyLocal(v) {
             </Card>
           </section>}
 
-          {/* GATE REVIEW READINESS — this is what T&T's IPA review costs £200K */}
+          {/* GATE REVIEW READINESS */}
           {model?.gate_review_readiness && <section className="layout two">
             <Card><h2>🚦 Gate review readiness — G0 to G5</h2>
               <div style={{display:'flex',alignItems:'center',gap:'16px',marginBottom:'12px'}}>
@@ -2659,7 +2665,7 @@ function parseMoneyLocal(v) {
           </section>}
 
           {/* ORIGINAL ADVISOR PANEL */}
-          <section className="layout two advisorElite challengeRoom"><Card><h2>CASEY Board Assurance Console</h2><p className="advisorIntro">Click any question. CASEY answers instantly using the live programme model — not a generic response. Each answer references your actual P50, P80, confidence level and sector. Generate a project first for the most specific answers.</p><div className="advisorPrompts bigButtons">{['What is the board not seeing?','What would a traditional cost consultant say that CASEY challenges?','What evidence is missing before this becomes board-approvable?','What is the real governing chain?','Which assumptions collapse confidence first?','What is the board really deciding?','If this programme fails, what will be blamed publicly?','Give me CASEY POSITION.','What has management not yet evidenced?','What would destroy board confidence fastest?','What reported green item is not yet board-defensible?','Show Traditional Controls vs CASEY.','What is the one intervention that changes confidence fastest?','What would an external assurance reviewer challenge first?'].map(x=><button key={x} data-question={x} onClick={()=>ask(x)}><Brain size={14}/>{x}</button>)}</div><div className="chatBox boardInterrogation">{chat.length ? chat.map((m,i)=><div key={i} className={`msg ${m.role}`}>{(() => {
+          <section className="layout two advisorElite challengeRoom"><Card><h2>CASEY Board Assurance Console</h2><p className="advisorIntro">Click any question. CASEY answers instantly using the live programme model — not a generic response. Each answer references your actual P50, P80, confidence level and sector. Generate a project first for the most specific answers.</p><div className="advisorPrompts bigButtons">{['What is the board not seeing?','What does a conventional project controls report miss?','What evidence is missing before this becomes board-approvable?','What is the real governing chain?','Which assumptions collapse confidence first?','What is the board really deciding?','If this programme fails, what will be blamed publicly?','Give me CASEY POSITION.','What has management not yet evidenced?','What would destroy board confidence fastest?','What reported green item is not yet board-defensible?','How does CASEY differ from a conventional report?','What is the one intervention that changes confidence fastest?','What would an external assurance reviewer challenge first?'].map(x=><button key={x} data-question={x} onClick={()=>ask(x)}><Brain size={14}/>{x}</button>)}</div><div className="chatBox boardInterrogation">{chat.length ? chat.map((m,i)=><div key={i} className={`msg ${m.role}`}>{(() => {
     const lines = String(m.text||'').split('\n');
     return lines.map((line, li) => {
       if (!line.trim()) return <div key={li} style={{height:'5px'}}/>;
@@ -2676,10 +2682,10 @@ function parseMoneyLocal(v) {
 }
 
         {tab === 'runtime' && <HolyGrailRuntime model={model} scenario={scenario} generate={generate} runShock={runShock}/>}
-        {tab === 'method' && <section className="layout two"><Card><h2>How CASEY calculated this</h2>{['Cost model: selected class estimate, sector template, location factor, complexity factor and scenario modifier.','Schedule model: level-based delivery logic, phase durations, critical path sensitivity and scenario acceleration/delay factors.','QCRA: cost exposure model using low / most likely / high impacts and risk-weighted contingency.','QSRA: schedule exposure model using activity-linked O/M/P delay ranges and critical path sensitivity.','Confidence score translated for executives: board-defensibility based on benchmark similarity, evidence maturity, procurement certainty, schedule logic, contingency adequacy and scenario posture.'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card><Card><h2>Commercial readiness</h2><p className="big">This is first-pass project controls intelligence. It is designed to accelerate challenge, option testing and board preparation before final contractor tender or signed cost plan.</p><a className="contactBtn huge" href={emailLink}><Mail/> Send project for review</a></Card></section>}
+        {tab === 'method' && <section className="layout two"><Card><h2>How CASEY calculated this</h2>{['Cost model: selected class estimate, sector template, location factor, complexity factor and scenario modifier.','Schedule model: level-based delivery logic, phase durations, critical path sensitivity and scenario acceleration/delay factors.','QCRA: cost exposure model using low / most likely / high impacts and risk-weighted contingency.','QSRA: schedule exposure model using activity-linked O/M/P delay ranges and critical path sensitivity.','Confidence score translated for executives: board-defensibility based on benchmark similarity, evidence maturity, procurement certainty, schedule logic, contingency adequacy and scenario posture.'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card><Card><h2>Commercial readiness</h2><p style={{fontSize:'12px',color:'#64748b'}}>First-pass intelligence for challenge, option testing and board preparation — before contractor tender or signed cost plan.</p><a className="contactBtn huge" href={emailLink}><Mail/> Send project for review</a></Card></section>}
         {tab === 'benchmark' && <section className="layout two">
-          <Card><h2>Named global benchmarks — what CASEY used</h2>
-            <p className="chartCaption">These are the real-world programmes that calibrated the model. Cost growth %, schedule slip and failure mode are from public record.</p>
+          <Card><h2>Named global benchmarks</h2>
+            <p style={{fontSize:'11px',color:'#64748b',marginBottom:'8px'}}>These are real programmes from public record — OECD, parliamentary accounts committees, company filings, academic literature (Flyvbjerg et al). Cost growth % and schedule slip are actuals, not estimates. CASEY routes every project through the closest matching comparables and applies their delivery behaviour to confidence, reserve and P80/P90 exposure.</p>
             <div style={{overflowX:'auto'}}>
               <table style={{width:'100%',borderCollapse:'collapse',fontSize:'11px'}}>
                 <thead><tr style={{borderBottom:'1px solid rgba(255,255,255,0.1)'}}>
@@ -2711,18 +2717,18 @@ function parseMoneyLocal(v) {
 
         {tab === 'pricing' && <section className="layout two">
           <Card><h2>CASEY Access</h2>
-            <p style={{fontSize:'12px',color:'#64748b',marginBottom:'16px'}}>Every tier replaces £50K–£5M of incumbent advisory spend. One CASEY licence does the work of a team of 8–12 consultants — in 4 seconds.</p>
+            <p style={{fontSize:'12px',color:'#64748b',marginBottom:'16px'}}>CASEY compresses months of advisory work into seconds. Each tier is designed around the value it delivers to the programme — not the cost of producing it manually.</p>
             <div className="pricingGrid">
-              <div className="priceCard"><b>Pilot</b><strong style={{color:'#10b981'}}>From £5,000</strong><span>1 live project review, full output pack, board pack walkthrough. Replaces a £50K T&T preliminary advisory note.</span><a href={emailLink}>Start pilot</a></div>
+              <div className="priceCard"><b>Pilot</b><strong style={{color:'#10b981'}}>From £5,000</strong><span>1 live project review, full intelligence pack, and a board pack walkthrough with your team.</span><a href={emailLink}>Start pilot</a></div>
               <div className="priceCard hot"><b>Professional</b><strong style={{color:'#8df7ff'}}>From £30,000/year</strong><span>Unlimited project packs, all sectors, all scenarios, full export suite. Replaces 1–3 advisory engagements per year.</span><a href={emailLink}>Request access</a></div>
               <div className="priceCard"><b>Enterprise</b><strong style={{color:'#b18cff'}}>From £150,000/year</strong><span>Private deployment, SSO, team seats, custom benchmark library, white-label. Replaces a full cost consultancy retainer.</span><a href={emailLink}>Book demo</a></div>
             </div>
             <div style={{marginTop:'16px',padding:'10px 14px',background:'rgba(141,247,255,0.04)',borderRadius:'4px',border:'1px solid rgba(141,247,255,0.1)'}}>
-              <p style={{fontSize:'11px',color:'#64748b',lineHeight:'1.6',margin:0}}><b style={{color:'#8df7ff'}}>The displacement calculation:</b> Turner & Townsend charge £200K for a global benchmark study. £75K for a location risk note. £150K for a financing advisory. CASEY generates all three simultaneously in 4 seconds. Enterprise at £150K replaces 3–5 advisory engagements at £50K–£200K each.</p>
+              <p style={{fontSize:'11px',color:'#64748b',lineHeight:'1.6',margin:0}}><b style={{color:'#8df7ff'}}>The value calculation:</b> A global benchmark study, location risk assessment, and financing context advisory typically cost £200K–£400K combined and take 8–12 weeks. CASEY generates all three simultaneously in 4 seconds. Enterprise access at £150K represents a fraction of a single comparable advisory engagement.</p>
             </div>
           </Card>
           <Card><h2>Send this project now</h2>
-            <p className="big">Turn demo interest into pipeline immediately. Forward this output to your investment committee, board pack, or programme sponsor.</p>
+            <p style={{fontSize:'12px',color:'#64748b',marginBottom:'12px'}}>Send this output to your investment committee, board pack, or programme sponsor.</p>
             <a className="contactBtn huge" href={emailLink}><Mail size={16}/> Send project for review</a>
             {model && <button className="primary" style={{marginTop:'12px',width:'100%'}} onClick={() => download('/export/all', model, 'CASEY_Output_Pack.zip')}><Download size={15}/> Download full intelligence pack</button>}
             <div style={{marginTop:'16px',borderTop:'1px solid rgba(255,255,255,0.06)',paddingTop:'14px'}}>
@@ -2744,6 +2750,49 @@ function parseMoneyLocal(v) {
 }
 
 // ── SAVED PROJECTS + INVESTOR CSS ────────────────────────────────────────────
+// ── COMPACT DENSITY OVERRIDE CSS ─────────────────────────────────────────────
+const compactDensityCSS = `
+  /* Tighter headings throughout */
+  .v50EliteApp .card h2 { font-size: 12px !important; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 8px !important; }
+  .v50EliteApp .card h3 { font-size: 11px !important; font-weight: 700; margin: 10px 0 6px; }
+  .v50EliteApp .reason { padding: 5px 0 !important; font-size: 12px !important; line-height: 1.5 !important; }
+  .v50EliteApp .card { padding: 14px 16px !important; }
+  .v50EliteApp .big { font-size: 13px !important; line-height: 1.6 !important; }
+  .v50EliteApp .chartCaption { font-size: 11px !important; color: #64748b; margin-bottom: 8px !important; }
+  /* KPI strip - more compact */
+  .v50EliteApp .kpis { gap: 6px !important; padding: 8px 0 !important; }
+  /* Tabs - tighter */
+  .v50EliteApp .tabs button { font-size: 10px !important; padding: 5px 10px !important; }
+  /* Scenario rail - compact */
+  .v50EliteApp .scenarioRail button { padding: 7px 10px !important; }
+  .v50EliteApp .scenarioRail button b { font-size: 11px !important; }
+  .v50EliteApp .scenarioRail button span { font-size: 10px !important; }
+  /* Overview section gaps */
+  .v50EliteApp .layout { gap: 10px !important; margin-bottom: 10px !important; }
+  /* IntelligenceMeta rail */
+  .v50EliteApp .orbitalMetaRail { padding: 6px 14px !important; gap: 16px !important; font-size: 10px !important; }
+  /* Confidence badge */
+  .v50EliteApp .confidenceEngineBadge { padding: 5px 14px !important; font-size: 10px !important; }
+  /* Mission cards */
+  .v50EliteApp .intelCard { padding: 8px 10px !important; }
+  .v50EliteApp .intelCard b { font-size: 11px !important; }
+  .v50EliteApp .intelCard p { font-size: 10px !important; }
+  /* fee counter */
+  .v50EliteApp .feeRow { padding: 4px 0 !important; font-size: 11px !important; }
+  /* Audit spine */
+  .v50EliteApp .auditSpine { padding: 4px 0 !important; font-size: 11px !important; }
+  /* Advisor prompts */
+  .v50EliteApp .advisorPrompts button { font-size: 11px !important; padding: 6px 10px !important; }
+  /* Export strip */
+  .v50EliteApp .v50ExportStrip button { font-size: 10px !important; padding: 5px 10px !important; }
+`;
+if (!document.querySelector('#casey-compact-css')) {
+  const s = document.createElement('style');
+  s.id = 'casey-compact-css';
+  s.textContent = compactDensityCSS;
+  document.head.appendChild(s);
+}
+
 const savedInvestorCSS = `
 .savedPanel,.investorPanel{position:fixed;top:0;right:0;width:min(640px,100vw);height:100vh;background:#0c1a2e;border-left:1px solid rgba(141,247,255,0.15);z-index:900;overflow-y:auto;display:flex;flex-direction:column;}
 .savedHeader,.investorHeader{padding:18px 20px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;justify-content:space-between;align-items:flex-start;flex-shrink:0;background:#0a1628;}
