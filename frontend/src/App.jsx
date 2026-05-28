@@ -888,7 +888,7 @@ function OnboardingGuide({ onClose }) {
     {
       icon: '📝',
       title: 'How to describe your project',
-      body: 'Just type what it is. Include: sector, location, scale, key constraints. You don't need a cost plan or a schedule — CASEY builds one from sector intelligence.',
+      body: 'Just type what it is. Include: sector, location, scale, key constraints. You do not need a cost plan or a schedule — CASEY builds one from sector intelligence.',
       examples: [
         'New metro line Lagos Nigeria 45km elevated rail 2031 delivery federal funding',
         'South Africa smart meter rollout 4 million connections 14 months $1B',
