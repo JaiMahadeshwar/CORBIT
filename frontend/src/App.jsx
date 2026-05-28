@@ -1,3 +1,4 @@
+// CASEY V166 FINAL - v20260525034327
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -452,7 +453,7 @@ function Logo({ large = false }) {
 function Kpi({ icon: Icon, label, value, sub, hot }) {
   const n = Number(String((value || '') + ' ' + (sub || '')).match(/(\d+)%/)?.[1] || 0);
   const band = hot ? (n >= 80 ? 'riskLow' : n >= 60 ? 'riskMedium' : 'riskHigh') : '';
-  return <Card className={`v50Kpi ${hot ? 'hot' : ''} ${band}`}><Icon size={21}/><div><p>{safeRender(label)}</p><b>{safeRender(value)}</b><span>{safeRender(sub)}</span></div></Card>;
+  return <Card className={`v50Kpi ${hot ? 'hot' : ''} ${band}`}><Icon size={21}/><div><p>{label}</p><b>{value}</b><span>{sub}</span></div></Card>;
 }
 function Table({ rows = [], cols = [], moneyCols = [] }) {
   return <div className="tableWrap"><table><thead><tr>{cols.map(c => <th key={c[0]}>{c[1]}</th>)}</tr></thead><tbody>{rows.map((r, i) => <tr key={i}>{cols.map(c => <td key={c[0]}>{moneyCols.includes(c[0]) ? fmt(r[c[0]]) : String(r[c[0]] ?? '')}</td>)}</tr>)}</tbody></table></div>;
@@ -505,7 +506,15 @@ function Briefing({ open, onClose, onEarth, onSpace }) {
 }
 
 function OneShotDemo({ open, onClose, onComplete }) {
-  const [form, setForm] = useState({ email: '', project_description: '' });
+  const [form, setForm] = useState({
+    email: '',
+    project_type: 'Earth',
+    project_description: '',
+    location: 'Auto-inferred from project brief',
+    size_or_capacity: 'Auto-inferred from project brief',
+    stage: 'Concept / early feasibility',
+    biggest_concern: 'Cost, schedule and risk confidence'
+  });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
@@ -513,181 +522,133 @@ function OneShotDemo({ open, onClose, onComplete }) {
 
   function update(k, v) { setForm(x => ({ ...x, [k]: v })); }
 
-  // ── Live brief intelligence ──────────────────────────────────────────
-  // Reads what the user is typing and returns real-time guidance
-  function readBrief(text) {
-    const t = String(text || '').toLowerCase();
-    const words = t.replace(/\s+/g,' ').trim().split(' ').filter(Boolean);
-    const w = words.length;
-    const sector =
-      /(rail|metro|tram|hs2|crossrail|elizabeth line|overground|signalling|possession|rolling stock|track|light rail|brt|bus rapid|underground|subway|commuter rail|freight rail|level crossing)/.test(t) ? 'rail' :
-      /(nuclear|smr|reactor|gda|hinkley|sizewell|wylfa|bradwell|safety case|radiological|nuclear grade|enrichment|decommission|sellafield|magnox|agr|pressurised water|boiling water|fast reactor|fusion|tokamak)/.test(t) ? 'nuclear' :
-      /(data cent|data center|datacenter|hyperscale|gpu cluster|pue |server hall|ai campus|compute cluster|colocation|colo |cloud campus)/.test(t) ? 'data_centre' :
-      /(submarine|dockyard|naval|aukus|warship|frigate|destroyer|aircraft carrier|awre|aldermaston|burghfield|defence|defense|classified|sovereign supply|mod |ministry of defence|military|barracks|munitions|weapons|ordnance|radar|sonar|nato|gchq|mi5|mi6|prison|custody|detention|police station|court.*build|probation)/.test(t) ? 'defence' :
-      /(pharma|gmp|validation|biologics|sterile|fill.finish|cqv|mhra|fda.*approv|cleanroom.*pharma|drug.*manufactur|api.*manufactur|vaccine|bioreactor|cell.*therapy|gene therapy|clinical.*manufactur|life science)/.test(t) ? 'pharma' :
-      /(semiconductor|wafer|euv|cleanroom.*chip|tsmc|intel fab|yield ramp|lithography|advanced manufactur|microchip|integrated circuit)/.test(t) ? 'semiconductor' :
-      /(gigafactory|giga.*factory|battery.*factory|battery.*manufactur|ev.*manufactur|electric vehicle.*plant|cathode|anode.*manufactur|lithium.*process|battery.*cell|cell.*manufactur)/.test(t) ? 'gigafactory' :
-      /(oil field|gas field|lng|liquefied natural gas|fpso|offshore.*platform|subsea|pipeline.*oil|refinery|petrochemical|cracker|lng.*terminal|gas.*terminal|upstream|downstream|midstream|wellhead|compressor.*station|gas.*processing|carbon capture|ccus|ccs)/.test(t) ? 'oil_gas' :
-      /(mine |mining|quarry|open.*pit|underground.*mine|tailings|ore.*processing|concentrator|smelter|lithium.*mine|copper.*mine|gold.*mine|coal.*mine|potash|mineral.*process|heap.*leach)/.test(t) ? 'mining' :
-      /(airport|terminal.*aviation|baggage.*system|runway|airside|orat.*airport|atc |apron|caa |faa |taxiway|air traffic|heathrow|gatwick|stansted|aviation.*infrastr)/.test(t) ? 'airport' :
-      /(hospital|nhs|clinical.*build|ward|operating theatre|patient.*facility|healthcare campus|mental health.*unit|diagnostic.*centre|mri.*build|radiotherapy|cancer.*centre|hospice|care.*home)/.test(t) ? 'healthcare' :
-      /(wind farm|solar farm|battery storage|grid connection|substation|offshore wind|onshore wind|hydrogen.*plant|electrolyser|tidal.*energy|wave.*energy|pumped hydro|hydro.*power|biomass.*plant|waste.*energy|energy.*storage|power.*station|combined.*cycle|ccgt|peaker.*plant|smart.*grid|grid.*upgrade|transmission.*line|hvdc|national grid|distribution.*network|solar.*park|floating.*solar)/.test(t) ? 'energy' :
-      /(water.*treatment|desalin|wastewater|sewage|sewer|reservoir|smart meter|meter rollout|water.*main|water.*network|flood.*defence|flood.*alleviation|drainage|stormwater|irrigation|water.*supply|utility.*network|clean.*water|drinking water|ofwat|anglian water|thames water|severn trent|yorkshire water|southern water|united utilities)/.test(t) ? 'water' :
-      /(5g|telecoms|telecom|fibre.*rollout|fiber.*optic|broadband.*rollout|mobile.*network|mast.*install|tower.*rollout|subsea.*cable|cable.*landing|openreach|bt.*infrastr|network.*rollout|digital.*infrastr|rural.*connectivity|gigabit)/.test(t) ? 'telecoms' :
-      /(motorway|highway|expressway|bridge.*road|tunnel.*road|road.*widening|junction.*upgrade|bypass|dual.*carriageway|grade.*separation|road.*scheme|trunk road|smart motorway)/.test(t) ? 'roads' :
-      /(moon|lunar|mars|martian|orbit|orbital|leo |geo |meo |lagrange|satellite|launch vehicle|rocket.*develop|spacecraft|astronaut|cosmonaut|isru|cislunar|spaceport|launch.*pad|launch.*complex|space station|space.*habitat|reusable.*launch|small.*sat|cubesat|deep space|interplanetary|asteroid|space.*telescope|earth.*observation|sar.*satellite|gnss|space.*refuel|on.*orbit.*service|debris.*removal)/.test(t) ? 'space' :
-      /(port |harbour|harbor|quay|berth|container.*terminal|cruise.*terminal|ferry.*terminal|marine.*infrastr|breakwater|dry.*dock|ship.*repair|logistics.*hub|distribution.*centre|freight.*terminal|intermodal|inland.*port)/.test(t) ? 'ports' :
-      /(university|school.*build|college.*build|academy.*build|student.*accommodation|campus.*build|library.*build|museum.*build|civic.*centre|town.*hall|government.*build|embassy|fire.*station|community.*centre)/.test(t) ? 'civic' :
-      /(stadium|arena|velodrome|aquatic.*centre|olympic|commonwealth.*games|sports.*facility|convention.*centre|exhibition.*centre|concert.*hall|leisure.*centre)/.test(t) ? 'stadia' :
-      /(mixed.*use|regeneration|masterplan|urban.*development|residential.*large|build.*to.*rent|urban.*realm|enabling.*works|civil.*works)/.test(t) ? 'civil' : '';
-    const hasLocation = /(uk|united kingdom|england|scotland|wales|northern ireland|london|manchester|birmingham|leeds|glasgow|edinburgh|bristol|liverpool|sheffield|cardiff|belfast|usa|united states|america|texas|california|new york|north carolina|arizona|boston|chicago|florida|washington|europe|france|paris|germany|berlin|netherlands|amsterdam|sweden|norway|denmark|finland|spain|madrid|italy|rome|poland|middle east|saudi arabia|riyadh|dubai|uae|abu dhabi|qatar|doha|kuwait|bahrain|oman|jordan|egypt|cairo|africa|south africa|johannesburg|cape town|nigeria|lagos|nairobi|kenya|ghana|accra|ethiopia|morocco|tanzania|asia|india|mumbai|delhi|bangalore|singapore|malaysia|indonesia|jakarta|philippines|thailand|bangkok|vietnam|pakistan|china|beijing|shanghai|shenzhen|hong kong|taiwan|japan|tokyo|south korea|seoul|australia|sydney|melbourne|new zealand|canada|toronto|vancouver|brazil|latin america|mexico|colombia|chile|argentina|gulf|gcc|offshore|national|domestic)/.test(t);
-    const hasCost = /(\$|£|€|¥|\d+[\s]*(billion|million|bn|mn|b\b|m\b|usd|gbp|eur|trillion))/.test(t);
-    const hasScale = /(\d+[\s]*(mw|gw|km|beds|units|meters|metres|satellites|modules|stations|terminals|floors|sqm|ha|acres|connections|homes|masts|turbines|panels|vehicles|trains|aircraft|ships|wells|schools|wards|seats|routes|berths|cells|wafers|doses|tonnes|tpa|bpd))/.test(t);
-    const hasDuration = /(\d+[\s]*(month|year|week|quarter|yr\b|mo\b|phase)|by\s*20\d\d|completion\s*20\d\d|deliver.*20\d\d|open.*20\d\d)/.test(t);
-    const hasChallenge = /(cost|schedule|risk|procurement|approval|commissioning|interface|regulatory|evidence|safety|qualification|consent|finance|funding|delay|overrun|confidence|critical path|planning|permitting|supply chain|workforce|integration|handover|acceptance)/.test(t);
-    const missing = [];
-    if (!hasLocation && w > 4) missing.push('location or country');
-    if (!hasCost && !hasScale && w > 6) missing.push('cost, capacity or scale');
-    if (!hasDuration && w > 10) missing.push('programme duration or target date');
-    if (!hasChallenge && w > 12) missing.push('main challenge');
-    const sectorHints = {
-      rail:         'Rail detected. Add: possession access (confirmed or assumed?), operator acceptance date, signalling integration on critical path?',
-      nuclear:      'Nuclear detected — GDA, safety case and FOAK supply chain applied. Add: site, reactor type, new build or modification, safety case timeline.',
-      data_centre:  'Data centre detected. Add: grid connection contracted or assumed, cooling technology, delivery date contracted or target.',
-      defence:      'Defence programme detected — CASEY applies sovereign supply chain, classified systems, operational acceptance and security accreditation. Add: new build, upgrade or extension, key programme milestone.',
-      pharma:       'Pharma/GMP detected. Add: validation scope, regulatory body (FDA/MHRA), NPV milestone or product launch date driving delivery.',
-      semiconductor:'Fab detected. Add: tool install sequence, UPW and chemical system scope, yield ramp in programme boundary.',
-      gigafactory:  'Gigafactory/battery manufacturing detected. Add: cell chemistry, production capacity (GWh/year), utility complexity.',
-      oil_gas:      'Oil, gas or CCS detected. Add: offshore or onshore, brownfield or greenfield, long-lead items, regulatory consent status.',
-      mining:       'Mining detected. Add: commodity, open-pit or underground, processing plant scope, environmental consent.',
-      airport:      'Airport detected. Add: ORAT in scope, airside access constraints, regulatory body (CAA/FAA/EASA), live operations interface.',
-      healthcare:   'Healthcare detected. Add: clinical commissioning scope, NHS or private pathway, MEP complexity.',
-      energy:       'Energy programme detected. Add: grid connection contracted, DNO/TSO engagement, commissioning sequence, contracted or merchant revenue.',
-      water:        'Water/utilities detected. Add: treatment capacity or connection count, regulatory consent status, comms infrastructure scope.',
-      telecoms:     'Telecoms detected. Add: coverage obligation contracted or voluntary, wayleave and planning complexity, rural or urban rollout.',
-      roads:        'Roads/highways detected. Add: environmental consent status, utilities diversion scope, live-traffic working involved.',
-      space:        'Space programme detected — CASEY applies launch logistics, TRL risk, autonomous commissioning and mission assurance. Add: launch vehicle, current TRL, programme phase, FOAK technology involved.',
-      ports:        'Port/maritime detected. Add: vessel class and berth dimensions, marine consent status, dredging scope, port operational during construction.',
-      civic:        'Civic/education infrastructure detected. Add: funding route (public/private), planning consent status, user brief completeness.',
-      stadia:       'Stadium/events detected. Add: event-day capacity, operational date (event-deadline driven?), broadcast and safety certification.',
-      civil:        'Civil/mixed-use detected. Add: procurement route (EPC/D&B/management contract), enabling works scope, key approval gateway.',
-    };
-    return { sector, w, hasLocation, hasCost, hasScale, hasDuration, hasChallenge, missing, sectorHint: sectorHints[sector] || (w >= 4 ? 'Keep going — name the asset: hospital, wind farm, satellite, pipeline, stadium, mine, fab, school…' : '') };
-  }
-  const brief = readBrief(form.project_description);
-  const briefWords = brief.w;
-  const hasEmail = form.email.includes('@') && form.email.includes('.');
-  const hasNonsense = /(asdf|qwerty|lorem ipsum|ignore previous|jailbreak|write a poem|forget instructions)/.test(String(form.project_description).toLowerCase());
-  const canRun = hasEmail && briefWords >= 8 && !hasNonsense;
-
-  // Quality score 0-4
-  const quality = [brief.hasLocation, brief.hasCost || brief.hasScale, brief.hasDuration, brief.hasChallenge].filter(Boolean).length;
-  const qualityColor = quality >= 3 ? '#10b981' : quality >= 2 ? '#f59e0b' : '#ef4444';
-  const qualityLabel = quality >= 4 ? 'Excellent brief' : quality >= 3 ? 'Good — ready to run' : quality >= 2 ? 'Add more detail' : briefWords >= 4 ? 'Keep going…' : '';
-
   function inferType(text) {
-    return /(moon|lunar|mars|orbit|leo |geo |satellite|launch vehicle|rocket|spacecraft|astronaut|isru|cislunar)/.test(String(text||'').toLowerCase()) ? 'Space' : 'Earth';
+    const t = String(text || '').toLowerCase();
+    const earthStrong = /(north carolina|carolina|cambridge|boston|arizona|texas|uk|usa|united states|riyadh|dubai|qatar|gmp|aseptic|fill-finish|fill finish|fda|cqv|biologics|therapeutics|pharma|pharmaceutical|cold-chain|clean utilities|semiconductor|data centre|data center|airport|rail|hospital|nuclear|hydrogen|desalination|defence|defense)/.test(t);
+    const spaceStrong = /(moon|lunar|mars|orbit|orbital|leo|cislunar|cis-lunar|spaceport|launch vehicle|launch pad|rocket|satellite constellation|space data|orbital ai|deep space|propellant depot|asteroid)/.test(t);
+    const productLaunchOnly = /(commercial launch demand|product launch|market launch|launch demand)/.test(t) && !/(rocket|spaceport|launch vehicle|launch pad|orbital|leo|lunar|mars)/.test(t);
+    if (productLaunchOnly || (earthStrong && !spaceStrong)) return 'Earth';
+    return spaceStrong ? 'Space' : 'Earth';
+  }
+  function inferLocation(text) {
+    const t = String(text || '').toLowerCase();
+    if (/leo|low earth orbit/.test(t)) return 'LEO';
+    if (/moon|lunar/.test(t)) return 'Lunar surface';
+    if (/mars/.test(t)) return 'Mars';
+    if (/cislunar|cis-lunar/.test(t)) return 'Cislunar space';
+    if (/riyadh|saudi/.test(t)) return 'Riyadh, Saudi Arabia';
+    if (/dubai|uae|abu dhabi/.test(t)) return 'UAE';
+    if (/texas|usa|america|arizona/.test(t)) return 'United States';
+    if (/uk|london|manchester/.test(t)) return 'United Kingdom';
+    return 'Auto-inferred from project brief';
+  }
+  function inferCapacity(text) {
+    const m = String(text || '').match(/(\d+[\s-]?(mw|gw|km|beds|satellites|crew|m2|sqm|terminals|stations|halls|modules))/i);
+    return m ? m[1] : 'Auto-inferred from project brief';
+  }
+  function inferConcern(text) {
+    const t = String(text || '').toLowerCase();
+    if (/thermal|radiation|launch|orbit|servicing|relay|latency/.test(t)) return 'Space logistics / orbital dependency';
+    if (/grid|power|cooling|energy/.test(t)) return 'Power, utilities and commissioning risk';
+    if (/cost|budget|estimate/.test(t)) return 'Cost estimate challenge';
+    if (/schedule|critical path|delay/.test(t)) return 'Schedule risk / critical path';
+    if (/risk|approval|regulatory|consent/.test(t)) return 'Risk register quality';
+    return 'Cost, schedule and risk confidence';
   }
   function clientToken() {
     let t = localStorage.getItem('casey_public_demo_token');
-    if (!t) { t = crypto.randomUUID ? crypto.randomUUID() : String(Date.now())+Math.random(); localStorage.setItem('casey_public_demo_token',t); }
+    if (!t) { t = crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random(); localStorage.setItem('casey_public_demo_token', t); }
     return t;
   }
   function fingerprint() {
-    return [navigator.userAgent,navigator.language,Intl.DateTimeFormat().resolvedOptions().timeZone,screen.width+'x'+screen.height].join('|');
+    return [navigator.userAgent, navigator.language, Intl.DateTimeFormat().resolvedOptions().timeZone, screen.width + 'x' + screen.height, screen.colorDepth].join('|');
   }
+
+  function normalisedWords(text) {
+    return String(text || '').replace(/\s+/g, ' ').trim().split(' ').filter(Boolean);
+  }
+  function briefSignals(text) {
+    const t = String(text || '').toLowerCase();
+    const asset = /(data centre|data center|datacenter|airport|rail|metro|hospital|fab|semiconductor|nuclear|smr|hydrogen|grid|desalination|defence|defense|campus|plant|facility|biologics|therapeutics|gmp|aseptic|fill-finish|fda|cqv|pharma|manufacturing|orbital|leo|lunar|moon|mars|spaceport|satellite|propellant|habitat|thermal rejection|relay communications)/.test(t);
+    const place = /(north carolina|carolina|arizona|texas|boston|london|cambridge|manchester|riyadh|dubai|uae|uk|usa|united states|saudi|moon|lunar|mars|leo|orbit|orbital|cislunar|spaceport)/.test(t);
+    const concern = /(cost|schedule|risk|procurement|approval|commissioning|regulatory|interface|utilities|critical path|supply chain|phasing|validation|qualification|resilience|thermal|radiation|servicing|power|grid|fda|cqv|inspection|continuity|launch cadence|long-lead|long lead)/.test(t);
+    const nonsense = /(asdf|qwerty|lorem ipsum|blah blah|hello world|ignore previous|jailbreak|write a poem|recipe|football match|dating)/.test(t);
+    return { asset, place, concern, nonsense };
+  }
+  const briefWords = normalisedWords(form.project_description).length;
+  const hasEmail = form.email.includes('@') && form.email.includes('.');
+  const signals = briefSignals(form.project_description);
+  const hasBrief = briefWords >= 10 && signals.asset && !signals.nonsense;
+  const strongBrief = briefWords >= 18 && signals.asset && (signals.place || signals.concern);
+  const canRun = hasEmail && (hasBrief || strongBrief);
+
   async function submit() {
     setBusy(true); setError(''); setResult(null);
-    if (form.email.includes('@')) {
-      try { localStorage.setItem('casey_user_email', form.email.toLowerCase().trim()); } catch(e) {}
-    }
     try {
-      const r = await post('/public-demo/generate', { ...form, project_type: inferType(form.project_description), client_token: clientToken(), fingerprint: fingerprint() });
+      const brief = form.project_description;
+      const payload = {
+        ...form,
+        project_type: inferType(brief),
+        location: inferLocation(brief),
+        size_or_capacity: inferCapacity(brief),
+        biggest_concern: inferConcern(brief),
+        client_token: clientToken(),
+        fingerprint: fingerprint()
+      };
+      const r = await post('/public-demo/generate', payload);
       setResult(r);
       onComplete?.(r.model);
-      // Mark free run as used after successful OneShotDemo run
-      try { if (!['jaimahadeshwar@yahoo.com','test@yahoo.com','deepa@caseai.co.uk','admin@controlorbit.com','demo@controlorbit.com','jai@controlorbit.com'].includes((form.email||'').toLowerCase().trim())) { localStorage.setItem('casey_demo_used','1'); } } catch(e) {}
-    } catch(e) {
-      let msg = String(e.message||e);
-      try { const p=JSON.parse(msg); msg=typeof p.detail==='object'?(p.detail.message||JSON.stringify(p.detail)):(p.detail||msg); } catch {}
+    } catch (e) {
+      let msg = String(e.message || e);
+      try {
+        const parsed = JSON.parse(msg);
+        const detail = parsed.detail;
+        msg = typeof detail === 'object' ? (detail.message || (detail.issues ? detail.issues.join(' ') : JSON.stringify(detail))) : (detail || msg);
+      } catch {}
       setError(msg);
     } finally { setBusy(false); }
   }
 
+  const example = `Describe the programme.
+
+Examples:
+• 500MW hyperscale AI data centre campus in Texas with grid constraints, liquid cooling and accelerated delivery.
+• Orbital AI data centre in LEO with modular compute clusters, thermal rejection systems, autonomous servicing and relay communications.
+• Lunar logistics hub supporting autonomous cargo operations, landing pads, power storage and surface mobility.
+• Semiconductor fab in Arizona with cleanroom, UPW systems, process tools and utility complexity.`;
+
   return <div className="publicDemoOverlay boomDemoOverlay">
-    <div className="publicDemoModal boomDemoModal" style={{maxWidth:'720px',width:'96vw',maxHeight:'92vh',overflowY:'auto'}}>
+    <div className="publicDemoModal boomDemoModal">
       <button className="publicDemoClose" onClick={onClose}>×</button>
-
-      <div className="boomHeader" style={{paddingBottom:'8px'}}>
-        <p className="demoKicker" style={{marginBottom:'4px'}}>CASEY Intelligence Run — 1 free programme</p>
-        <h2 style={{fontSize:'clamp(22px,3.5vw,34px)',marginBottom:'4px',lineHeight:'1.1'}}>Describe your programme.</h2>
-        <p className="demoSub" style={{fontSize:'12px',lineHeight:'1.4',marginBottom:'0'}}>Type anything — CASEY reads as you go and guides you to get the sharpest output.</p>
+      <div className="boomHeader">
+        <p className="demoKicker">CASEY Intelligence Run</p>
+        <h2>Describe one programme.</h2>
+        <p className="demoSub">Type the project. CASEY infers the sector, location, scale, schedule logic and risk profile.</p>
       </div>
-
-      {/* Email */}
-      <label style={{display:'block',fontSize:'10px',fontWeight:'800',letterSpacing:'.12em',color:'#8df7ff',marginBottom:'4px',marginTop:'4px'}}>WORK EMAIL
-        <input value={form.email} onChange={e=>update('email',e.target.value)} placeholder="you@company.com" style={{display:'block',width:'100%',marginTop:'4px',padding:'9px 12px',background:'rgba(255,255,255,0.04)',border:`1px solid ${hasEmail?'rgba(141,247,255,0.3)':'rgba(255,255,255,0.1)'}`,borderRadius:'4px',color:'#e2e8f0',fontSize:'14px',boxSizing:'border-box',outline:'none'}}/>
+      <label className="boomEmail">Work email
+        <input value={form.email} onChange={e=>update('email', e.target.value)} placeholder="you@company.com" />
       </label>
-
-      {/* Brief */}
-      <label style={{display:'block',fontSize:'10px',fontWeight:'800',letterSpacing:'.12em',color:'#8df7ff',margin:'12px 0 4px'}}>PROGRAMME BRIEF
-        <textarea value={form.project_description} onChange={e=>update('project_description',e.target.value)} rows={7} placeholder={"Start typing — any programme, any sector, anywhere.\n\nExamples:\n• Smart meter rollout South Africa, 4M connections, 14 months, $1B\n• AWRE Aldermaston nuclear facility upgrade, classified systems\n• Lunar Base Alpha — life support, nuclear power, autonomous commissioning\n• HS2 tunnelling and signalling, possession windows, 178 months"} style={{display:'block',width:'100%',marginTop:'6px',padding:'10px 12px',background:'rgba(255,255,255,0.03)',border:`1px solid ${briefWords>=8?'rgba(141,247,255,0.2)':'rgba(255,255,255,0.08)'}`,borderRadius:'4px',color:'#e2e8f0',fontSize:'13px',lineHeight:'1.6',resize:'vertical',boxSizing:'border-box',fontFamily:'inherit',outline:'none'}}/>
+      <label className="projectBriefLabel boomBrief">Programme brief
+        <textarea value={form.project_description} onChange={e=>update('project_description', e.target.value)} placeholder={example} autoFocus />
       </label>
-
-      {/* Live CASEY reading — progressive coaching */}
-      {briefWords >= 2 && !hasNonsense && <div style={{marginTop:'8px',padding:'10px 14px',background:'rgba(141,247,255,0.04)',border:'1px solid rgba(141,247,255,0.12)',borderRadius:'4px',fontSize:'12px',lineHeight:'1.6'}}>
-
-        {/* Stage 1: no sector yet — nudge toward asset type */}
-        {!brief.sector && briefWords < 6 && <div style={{color:'#64748b'}}>
-          Keep going — name the <b style={{color:'#94a3b8'}}>asset type</b>. Examples: hospital, wind farm, nuclear plant, data centre, satellite, pipeline, stadium, mine, rail line, smart meter rollout…
-        </div>}
-
-        {/* Stage 2: sector detected — give specific guidance */}
-        {brief.sector && <div style={{marginBottom:brief.missing.length>0?'8px':'0'}}>
-          <span style={{color:'#8df7ff',fontWeight:'800',fontSize:'10px',letterSpacing:'.1em',marginRight:'8px'}}>✓ {brief.sector.replace('_',' ').toUpperCase()} DETECTED</span>
-          <span style={{color:'#cbd5e1'}}>{brief.sectorHint}</span>
-        </div>}
-
-        {/* Stage 3: what's still missing — shown as sentence not pills */}
-        {brief.missing.length > 0 && briefWords >= 4 && <div style={{marginTop:'4px'}}>
-          {!brief.hasLocation && <div style={{color:'#f59e0b',fontSize:'11px',marginBottom:'2px'}}>📍 <b>Location:</b> Add a city, country or region — e.g. "in South Africa", "across the UK", "Texas".</div>}
-          {!brief.hasCost && !brief.hasScale && briefWords >= 6 && <div style={{color:'#f59e0b',fontSize:'11px',marginBottom:'2px'}}>💰 <b>Scale or cost:</b> Add a number — e.g. "$1B", "500MW", "4 million connections", "200 beds".</div>}
-          {!brief.hasDuration && briefWords >= 8 && <div style={{color:'#f59e0b',fontSize:'11px',marginBottom:'2px'}}>📅 <b>Timeline:</b> Add a duration or target date — e.g. "14 months", "by 2027", "36-month programme".</div>}
-          {!brief.hasChallenge && briefWords >= 12 && <div style={{color:'#f59e0b',fontSize:'11px'}}>⚠ <b>Main challenge:</b> What matters most — cost confidence, schedule risk, procurement, approval or commissioning?</div>}
-        </div>}
-
-        {/* Stage 4: brief is strong — confirm and encourage */}
-        {canRun && quality >= 3 && <div style={{color:'#10b981',fontWeight:'700',fontSize:'12px',marginTop: brief.missing.length>0?'6px':'0'}}>
-          ✓ Strong brief — CASEY will generate sector-calibrated cost, schedule, risk and board intelligence.
-        </div>}
-        {canRun && quality < 3 && <div style={{color:'#94a3b8',fontSize:'11px',marginTop:'4px'}}>
-          Ready to run. Add more detail for sharper results — the more specific the brief, the more CASEY can challenge it.
-        </div>}
-      </div>}
-
-      {/* Status row */}
-      <div style={{display:'flex',gap:'10px',margin:'8px 0',alignItems:'center',flexWrap:'wrap'}}>
-        <span style={{fontSize:'11px',color:briefWords>=8?'#10b981':'#64748b',fontWeight:'700'}}>{briefWords} words {briefWords>=8?'✓':briefWords>0?'(need 8+)':''}</span>
-        {hasEmail && <span style={{fontSize:'11px',color:'#10b981',fontWeight:'700'}}>Email ✓</span>}
-        {brief.sector && <span style={{fontSize:'11px',color:'#8df7ff',fontWeight:'700',background:'rgba(141,247,255,0.08)',padding:'2px 8px',borderRadius:'10px'}}>{brief.sector.replace('_',' ').toUpperCase()}</span>}
-        {briefWords>=8 && quality>=2 && <span style={{fontSize:'11px',color:qualityColor,fontWeight:'700',marginLeft:'auto'}}>{qualityLabel}</span>}
+      <div className="boomQuality">
+        <span className={hasBrief || strongBrief ? 'ok' : ''}>{briefWords} words</span>
+        <span className={hasEmail ? 'ok' : ''}>Email</span>
+        <span>Earth/Space auto-inferred</span>
+        <span>Demo launch mode</span>
       </div>
-
-      {error && <div style={{fontSize:'12px',color:'#ef4444',padding:'8px 10px',background:'rgba(239,68,68,0.08)',borderRadius:'4px',marginBottom:'8px'}}>{error}</div>}
-      {busy && <div className="missionProcessing"><Rocket size={18}/><div><b>CASEY is building your intelligence pack</b><span>Parsing brief, applying {brief.sector||'infrastructure'} benchmarks…</span></div></div>}
-      {result && <div className="publicDemoSuccess"><b>Intelligence pack ready.</b><span>Close this and explore your model.</span></div>}
-
-      <div style={{display:'flex',gap:'8px',marginTop:'4px'}}>
-        <button className="heroBtn" disabled={!canRun||busy} onClick={submit} style={{flex:1,opacity:canRun&&!busy?1:0.5}}>
-          {busy?'Building…':canRun?'⚡ RUN CASEY':'Complete the brief above'}
-        </button>
-        <button className="ghostBtn" onClick={onClose} style={{flex:0,padding:'0 16px'}}>Close</button>
+      {!canRun && !error && form.project_description && <div className="publicDemoHint">Add a real asset, location/environment and main concern. CASEY can infer the rest.</div>}
+      {error && <div className="publicDemoError">{error}</div>}
+      {busy && <div className="missionProcessing"><Rocket size={22}/><div><b>CASEY is thinking</b><span>Parsing infrastructure archetype · Building benchmark memory · Running schedule intelligence · Mapping risk exposure</span></div></div>}
+      {result && <div className="publicDemoSuccess"><b>{result.run_id}</b><span>Intelligence pack generated. The full console is now open behind this window.</span></div>}
+      <div className="publicDemoActions boomActions">
+        <button className="heroBtn" disabled={!canRun || busy} onClick={submit}>{busy ? 'CASEY is building the pack...' : 'Run CASEY'}</button>
+        <button className="ghostBtn" onClick={onClose}>Close</button>
       </div>
-      <p style={{fontSize:'10px',color:'#334155',marginTop:'8px',textAlign:'center'}}>One free intelligence run per visitor. First-pass strategic output — not a certified estimate.</p>
+      <p className="demoFinePrint">CASEY only runs on credible infrastructure briefs. Outputs are first-pass strategic intelligence, not certified estimates.</p>
     </div>
   </div>;
 }
-
 
 function Loading({ text }) {
   const stages = ['CASEY recalibrating confidence curves...', 'Applying live sector calibration signals...', 'Running procurement and delivery-tail model...', 'Comparing against benchmark archetypes...', 'Stamping scenario/base deltas into exports...'];
@@ -950,7 +911,7 @@ function exportAuditSpine(model, direct, indirect, reserves, reconcileCheck) {
     { label:'Cost reconciliation', value: reconcileCheck < 0.02 ? 'PASS' : 'CHECK', detail:`Direct ${fmt(direct)} + Indirect ${fmt(indirect)} + Reserve ${fmt(reserves)} = ${fmt(direct+indirect+reserves)} vs P50 ${fmt(total)}` },
     { label:'Scenario lock', value:String(model?.scenario_label || model?.scenario || 'Base'), detail:'Cards, narratives, QCRA/QSRA and exports are stamped from the selected scenario payload.' },
     { label:'P-tail linkage', value: qcra.p80 ? fmt(qcra.p80) : 'P80 active', detail:`Cost P80 and QSRA P80 ${qsra.p80 || '—'} months are visible for board challenge.` },
-    { label:'Evidence gate', value: String(confidenceLens(model).headline || ''), detail: String(confidenceLens(model).decisionRule || '') },
+    { label:'Evidence gate', value: confidenceLens(model).headline, detail: confidenceLens(model).decisionRule },
     { label:'Competitive threat', value:'High', detail:'Replaces manual slide-production with auditable scenario propagation and board attack logic.' },
     ...(model?.stress_test_applied ? [{
       label:'Stress test applied',
@@ -981,7 +942,7 @@ function IncumbentPressurePanel({ model, direct, indirect, reserves, reconcileCh
         <p>These are the questions a serious investment committee will ask before the project team can hide behind green dashboards.</p>
         {attacks.map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{x}</div>)}
         <h3>Audit spine</h3>
-        {spine.map((x,i)=><div className={`auditSpine ${x.value==='PASS'?'pass':''}`} key={x.label}><span>{i+1}</span><b>{x.label}: {safeRender(x.value)}</b><em>{safeRender(x.detail)}</em></div>)}
+        {spine.map((x,i)=><div className={`auditSpine ${x.value==='PASS'?'pass':''}`} key={x.label}><span>{i+1}</span><b>{x.label}: {x.value}</b><em>{x.detail}</em></div>)}
       </Card>
     </section>
     {ifFails && (
@@ -1825,77 +1786,25 @@ function parseMoneyLocal(v) {
   }
 
 
-  // ── Demo gate ────────────────────────────────────────────────────────
-  // NEVER locked: Earth Demo, Space Demo, Showcase, Pricing, Film, Request Access
-  // 1 free run: generate() via OneShotDemo modal
-  // ADMIN (unlimited): localhost, admin emails, ?admin=casey2024
-
-  const CASEY_ADMIN_EMAILS = [
-    'deepa@caseai.co.uk','admin@controlorbit.com','demo@controlorbit.com',
-    'jaimahadeshwar@yahoo.com','jai@controlorbit.com','test@yahoo.com',
-    'jai@caseai.co.uk','deepa@controlorbit.com'
-  ];
-  const CASEY_ADMIN_URL_KEYS = ['casey2024','casey','corbit2024','admin2024'];
-
+  // ── Demo gate (1 run per visitor, admin bypass via ?admin=KEY) ───────
   const isAdminUser = React.useMemo(() => {
     try {
-      // 1. Localhost / local dev — always admin
-      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname === '0.0.0.0') return true;
-      // 2. URL key bypass — ?admin=casey2024 or ?admin=casey
       const params = new URLSearchParams(window.location.search);
-      const k = (params.get('admin') || params.get('admin_key') || '').toLowerCase().trim();
-      if (CASEY_ADMIN_URL_KEYS.includes(k)) return true;
-      // 3. Admin email stored from previous modal run
-      const storedEmail = (localStorage.getItem('casey_user_email') || '').toLowerCase().trim();
-      if (storedEmail && CASEY_ADMIN_EMAILS.includes(storedEmail)) return true;
-      return false;
+      const k = params.get('admin') || params.get('admin_key') || '';
+      return k.length > 4;
     } catch(e) { return false; }
   }, []);
-
   const [demoUsed, setDemoUsed] = React.useState(() => {
     try {
-      // Never locked on localhost
-      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') return false;
-      // URL key always bypasses
       const params = new URLSearchParams(window.location.search);
-      const k = (params.get('admin') || params.get('admin_key') || '').toLowerCase().trim();
-      if (CASEY_ADMIN_URL_KEYS.includes(k)) return false;
-      // Admin email bypasses
-      const storedEmail = (localStorage.getItem('casey_user_email') || '').toLowerCase().trim();
-      if (storedEmail && CASEY_ADMIN_EMAILS.includes(storedEmail)) return false;
-      // Check if free run has been used
+      if (params.get('admin') || params.get('admin_key')) return false;
       return localStorage.getItem('casey_demo_used') === '1';
     } catch(e) { return false; }
   });
-
   const [demoDownloads, setDemoDownloads] = React.useState(() => {
     try { return parseInt(localStorage.getItem('casey_demo_downloads') || '0'); }
     catch(e) { return 0; }
   });
-
-  // Mark the free run as used — only called after a real generate(), never after instant demos
-  function markDemoUsed() {
-    try {
-      localStorage.setItem('casey_demo_used', '1');
-      setDemoUsed(true);
-    } catch(e) {}
-  }
-
-  async function loadInstantDemo(type) {
-    setLoading(true); setError(''); setModel(null); setTab('overview');
-    try {
-      const BACKEND = import.meta.env.VITE_BACKEND_URL || 'https://corbit-1.onrender.com';
-      const res = await fetch(`${BACKEND}/demo/${type}`);
-      if (!res.ok) throw new Error('Demo unavailable — backend may be waking up, try again in 30 seconds.');
-      const m = await res.json();
-      setModel(m);
-      setPrompt(m.prompt || '');
-      setScenario(m.scenario || 'base');
-      setClient('ControlOrbit Demo');
-    } catch(e) {
-      setError(String(e.message || e));
-    } finally { setLoading(false); }
-  }
 
   async function generate(nextScenario = scenario, nextPrompt = prompt, activeContext = model || projectContext, clientOverride = client) {
     setError(''); setShow(false);
@@ -1910,10 +1819,8 @@ function parseMoneyLocal(v) {
     setConfidencePulse(true);
     setTimeout(() => setPropagating(false), 1600);
     setLoading(true); setTab(nextScenario !== 'base' ? 'compare' : 'overview');
-    // Demo gate — fires only for real generate() calls, never for instant demos
+    // Demo gate
     if (!isAdminUser && demoUsed && !activeContext) {
-      setLoading(false); setPropagating(false);
-      setError('Your free CASEY intelligence run has been used. Explore the Earth or Space demos, browse the Showcase Library, or contact us for full access.');
       setTab('pricing');
       return;
     }
@@ -1930,8 +1837,6 @@ function parseMoneyLocal(v) {
       const m = normalizeModelForUI(await post('/generate', payload));
       const nextContext = lockedProjectContext(m, canonicalPrompt);
       setModel(m); setProjectContext(nextContext); setScenario(nextScenario); setPrompt(canonicalPrompt);
-      // Mark free run as used (only for real generate calls, not instant demos)
-      if (!isAdminUser && !activeContext) { markDemoUsed(); }
     } catch (e) {
       let raw = String(e.message || e);
       try {
@@ -1946,8 +1851,8 @@ function parseMoneyLocal(v) {
     }
     finally { setLoading(false); setSimulationStage(''); setConfidencePulse(false); }
   }
-  function runEarth() { setProjectContext(null); loadInstantDemo('earth'); }
-  function runSpace() { setShowShowcase(false); setProjectContext(null); loadInstantDemo('space'); }
+  function runEarth() { setProjectContext(null); generate('base', earthPrompt, null); }
+  function runSpace() { setShowShowcase(false); setProjectContext(null); generate('base', spacePrompt, null); }
   function runShowcase(project) { setClient(project.client || 'Strategic reference case'); setShow(false); setShowShowcase(false); setProjectContext(null); setScenario('base'); setPrompt(project.prompt); generate('base', project.prompt, null, project.client || 'Strategic reference case'); }
   function advisorQuestionText(input) {
     if (typeof input === 'string') return input.trim();
@@ -2110,7 +2015,7 @@ function parseMoneyLocal(v) {
   const reconcileCheck = targetP50 ? Math.abs((direct + indirect + reserves) - targetP50) : 0;
   const emailBody = model ? [
     'Please review this project in CASEY.', '', `Project: ${model.title}`, `Scenario: ${model.scenario_label || scenario}`,
-    `P50 Cost: ${safeRender(model.cost_p50)}`, `Cost Range: ${safeRender(model.cost_range)}`, `Schedule: ${safeRender(model.schedule)}`,
+    `P50 Cost: ${model.cost_p50}`, `Cost Range: ${model.cost_range}`, `Schedule: ${model.schedule}`,
     `Risk / Confidence: ${model.risk} / ${model.confidence_pct}%`
   ].join('\n') : 'Please send me CASEY access.';
   const emailLink = `mailto:hello@casey.ai?subject=${encodeURIComponent('CASEY project review')}&body=${encodeURIComponent(emailBody)}`;
@@ -2129,10 +2034,10 @@ function parseMoneyLocal(v) {
       {!model && showShowcase && <ShowcaseLibrary onRun={runShowcase} onBack={() => setShowShowcase(false)} />}
       {!model && !show && !showShowcase && <section className="commandGrid"><Card className="command"><h1>Generate a live project model</h1><label>Project command</label><textarea value={prompt} onChange={e => setPrompt(e.target.value)} /> <div className="chips">{examples.map(x => <button key={x} onClick={() => setPrompt(x)}>{x}</button>)}</div><div className="grid4"><input value={client} onChange={e => setClient(e.target.value)} placeholder="Client / operator"/><select value={classLevel} onChange={e => setClassLevel(e.target.value)}>{[1,2,3,4,5].map(x => <option key={x} value={x}>Class {x}</option>)}</select><select value={scheduleLevel} onChange={e => setScheduleLevel(e.target.value)}>{[1,2,3,4,5].map(x => <option key={x} value={x}>Level {x}</option>)}</select><select value={scenario} onChange={e => setScenario(e.target.value)}>{scenarios.map(x => <option key={x} value={x}>{x}</option>)}</select></div><button className="primary" onClick={() => generate()}><Sparkles/> Generate full intelligence pack</button><button className="secondary" onClick={() => setShowShowcase(true)}><Globe2/> Open global showcase library</button></Card><Card><h2>What CASEY will produce</h2>{['Executive summary and recommendation','Direct / indirect / reserve cost view','Scenario-linked estimate, schedule and confidence','Risk register with cause, event, impact and mitigation','QCRA + QSRA curves and tornado drivers','Pricing and next-step contact actions'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card></section>}
       {model && <>
-        <section className="confidenceEngineBadge"><b>{model.confidence_engine_label || 'CASEY Confidence Engine'}</b><span>{safeRender(typeof model.confidence_engine_detail === 'object' ? model.confidence_engine_detail?.plain_english || 'Benchmark + probabilistic + sector-trained reasoning' : model.confidence_engine_detail || 'Benchmark + probabilistic + sector-trained reasoning')}</span></section>
+        <section className="confidenceEngineBadge"><b>{model.confidence_engine_label || 'CASEY Confidence Engine'}</b><span>{model.confidence_engine_detail || 'Benchmark + probabilistic + sector-trained reasoning'}</span></section>
         <TrustRuntimeBar model={model}/>
         <LiveCalibrationStrip model={model}/>
-        <section className="kpis"><Kpi icon={Globe2} label="Mode / sector" value={safeRender(model.mode)} sub={safeRender(model.subsector)}/><Kpi icon={Activity} label="P50 cost" value={safeRender(model.cost_p50)} sub={safeRender(model.cost_range)}/><Kpi icon={Zap} label="Schedule" value={safeRender(model.schedule)} sub={`QSRA P80 ${model.monte_carlo?.qsra?.p80 || '—'} months`}/><Kpi icon={ShieldAlert} label="Delivery confidence" value={safeRender(confidenceLens(model)?.headline)} sub={`${safeRender(model.risk)} risk · ${safeRender(model.confidence_pct)}% · ${safeRender(model.scenario_label)}`} hot/></section>
+        <section className="kpis"><Kpi icon={Globe2} label="Mode / sector" value={model.mode} sub={model.subsector}/><Kpi icon={Activity} label="P50 cost" value={model.cost_p50} sub={model.cost_range}/><Kpi icon={Zap} label="Schedule" value={model.schedule} sub={`QSRA P80 ${model.monte_carlo?.qsra?.p80 || '—'} months`}/><Kpi icon={ShieldAlert} label="Delivery confidence" value={confidenceLens(model).headline} sub={`${model.risk} risk · ${model.confidence_pct}% · ${model.scenario_label}`} hot/></section>
         <IntelligenceMeta model={model} mode={viewMode} setMode={setViewMode}/>
         <PropagationPulse scenario={scenario} active={propagating}/>
         <ScenarioSelector scenario={scenario} generate={generate} matrix={scenarioMatrix} model={model} prompt={prompt} projectContext={projectContext}/>
@@ -2142,20 +2047,19 @@ function parseMoneyLocal(v) {
           onRisk={() => download('/export/risk-register', model, `${model.id || 'casey'}_DEMO_RISK_REGISTER.xlsx`)}
           onXer={() => download('/export/xer', model, `${model.id || 'casey'}_DEMO_SCHEDULE.xer`)}
           onQcra={() => download('/export/qcra-qsra', model, `${model.id || 'casey'}_DEMO_QCRA_QSRA.xlsx`)}/>
-        {demoUsed && !isAdminUser && model && <div style={{background:'rgba(245,158,11,0.1)',borderBottom:'1px solid rgba(245,158,11,0.25)',padding:'8px 20px',display:'flex',gap:'16px',alignItems:'center',flexWrap:'wrap'}}>
-          <span style={{fontSize:'11px',color:'#f59e0b',fontWeight:'800'}}>✓ FREE RUN COMPLETE</span>
-          <span style={{fontSize:'11px',color:'#94a3b8'}}>Exports available below. Earth Demo, Space Demo and Showcase Library always free.</span>
-          <a href="mailto:hello@controlorbit.com?subject=CASEY Full Access" style={{marginLeft:'auto',fontSize:'11px',color:'#8df7ff',fontWeight:'700',textDecoration:'none',background:'rgba(141,247,255,0.1)',padding:'4px 12px',borderRadius:'3px',border:'1px solid rgba(141,247,255,0.3)'}}>Request full access →</a>
-        </div>}
+        {demoUsed && !isAdminUser && <div style={{background:'rgba(245,158,11,0.15)',borderBottom:'1px solid rgba(245,158,11,0.3)',padding:'6px 16px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+        <span style={{fontSize:'11px',color:'#f59e0b',fontWeight:'700'}}>DEMO: 1 run used. Results and 1 export available. <a href="/pricing" style={{color:'#fff',textDecoration:'underline'}} onClick={e=>{e.preventDefault();setTab('pricing');}}>Get full access →</a></span>
+        <span style={{fontSize:'10px',color:'#64748b'}}>Reset: clear browser cache or use private window</span>
+      </div>}
       <nav className="tabs">{[['overview','Overview'],['compare','Scenarios'],['delta','Scenario Intel'],['causal','Causal OS'],['cost','Cost'],['schedule','Schedule'],['risk','Risk'],['monte','QCRA/QSRA'],['outputs','Outputs'],['assurance','Assurance'],['runtime','Live Stress Test'],['advisor','Advisor'],['method','Methodology'],['pricing','Pricing']].map(x => <button key={x[0]} className={tab===x[0]?'active':''} onClick={() => setTab(x[0])}>{x[1]}</button>)}</nav>
         {tab === 'overview' && <>
           {model.executive_shock_insight && <section className="layout one"><Card className="shockCard"><h2>⚡ Live model update</h2><p>{model.executive_shock_insight}</p></Card></section>}
           <section className="layout two">
-            <Card><h2>Executive intelligence summary</h2><p className="big">{model.executive_summary || `${model.title} has been classified as ${safeRender(model.subsector)}. CASEY generated a first-pass cost, schedule, risk and confidence model for the selected scenario.`}</p><div className="miniMetrics"><b><span>Direct cost</span>{fmt(direct)}</b><b><span>Indirect cost</span>{fmt(indirect)}</b><b><span>Risk / reserve</span>{fmt(reserves)}</b></div><h3>Recommendation</h3>{(model.next_best_actions || []).slice(0,5).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{safeRender(x)}</div>)}</Card>
-            <Card><h2>Board briefing</h2>{(model.board_briefing || model.board_challenge_questions || []).slice(0,5).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{safeRender(x)}</div>)}<h3>CASEY thinking</h3><p className="caseyThinking">{model.casey_thinking || 'CASEY interprets this as a system-of-systems infrastructure programme requiring cost, schedule, risk and decision intelligence.'}</p></Card>
+            <Card><h2>Executive intelligence summary</h2><p className="big">{model.executive_summary || `${model.title} has been classified as ${model.subsector}. CASEY generated a first-pass cost, schedule, risk and confidence model for the selected scenario.`}</p><div className="miniMetrics"><b><span>Direct cost</span>{fmt(direct)}</b><b><span>Indirect cost</span>{fmt(indirect)}</b><b><span>Risk / reserve</span>{fmt(reserves)}</b></div><h3>Recommendation</h3>{(model.next_best_actions || []).slice(0,5).map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card>
+            <Card><h2>Board briefing</h2>{(model.board_briefing || model.board_challenge_questions || []).slice(0,5).map((x,i)=><div className="reason" key={String(x)}><span>{i+1}</span>{x}</div>)}<h3>CASEY thinking</h3><p className="caseyThinking">{model.casey_thinking || 'CASEY interprets this as a system-of-systems infrastructure programme requiring cost, schedule, risk and decision intelligence.'}</p></Card>
           </section>
           <section className="layout two eliteLayer">
-            <Card className="confidenceMeaningCard"><h2>What confidence means</h2><h3>{safeRender(confLens?.headline)}</h3><p className="big">{safeRender(confLens?.meaning)}</p><div className="reason"><span>!</span><b>Decision rule</b><br/>{safeRender(confLens?.decisionRule)}</div><div className="reason"><span>→</span><b>Primary constraint</b><br/>{safeRender(confLens?.constraint)}</div><div className="reason"><span>%</span><b>Plain English</b><br/>Confidence is not optimism. It is CASEY board-defensibility score based on benchmark fit, evidence maturity, procurement certainty, schedule logic, reserve adequacy and scenario posture.</div></Card>
+            <Card className="confidenceMeaningCard"><h2>What confidence means</h2><h3>{confLens.headline}</h3><p className="big">{confLens.meaning}</p><div className="reason"><span>!</span><b>Decision rule</b><br/>{confLens.decisionRule}</div><div className="reason"><span>→</span><b>Primary constraint</b><br/>{confLens.constraint}</div><div className="reason"><span>%</span><b>Plain English</b><br/>Confidence is not optimism. It is CASEY board-defensibility score based on benchmark fit, evidence maturity, procurement certainty, schedule logic, reserve adequacy and scenario posture.</div></Card>
             <Card><h2>Likely board questions</h2>{boardQuestions(model).slice(0,6).map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}<h3>CASEY final position</h3><p className="caseyThinking finalPosition">{finalPosition(model)}</p></Card>
           </section>
           <IncumbentPressurePanel model={model} direct={direct} indirect={indirect} reserves={reserves} reconcileCheck={reconcileCheck}/>
@@ -2165,12 +2069,12 @@ function parseMoneyLocal(v) {
           </section>
           <LiveCalibrationPanel model={model}/>
           {baseVs?.base && <section className="layout two">
-            <Card className="shockCard"><h2>Scenario vs Base</h2><p>{safeRender(baseVs.plain_english)}</p><div className="miniMetrics"><b><span>Base P50</span>{safeRender(baseVs.base?.cost_p50)}<small>{safeRender(baseVs.base?.schedule_months)} mo · {safeRender(baseVs.base?.confidence_pct)}%</small></b><b><span>{safeRender(baseVs.selected?.scenario)} P50</span>{safeRender(baseVs.selected?.cost_p50)}<small>{safeRender(baseVs.selected?.schedule_months)} mo · {safeRender(baseVs.selected?.confidence_pct)}%</small></b>{baseVs.delta && <b><span>Delta</span>{safeRender(baseVs.delta.cost_direction) === 'same' ? 'No cost move' : `${safeRender(baseVs.delta.cost)} ${safeRender(baseVs.delta.cost_direction)}`}<small>{safeRender(baseVs.delta.months)} mo · {safeRender(baseVs.delta.confidence_pts)} pts</small></b>}</div></Card>
+            <Card className="shockCard"><h2>Scenario vs Base</h2><p>{safeRender(baseVs.plain_english)}</p><div className="miniMetrics"><b><span>Base P50</span>{baseVs.base.cost_p50}<small>{baseVs.base.schedule_months} mo · {baseVs.base.confidence_pct}%</small></b><b><span>{baseVs.selected.scenario} P50</span>{baseVs.selected.cost_p50}<small>{baseVs.selected.schedule_months} mo · {baseVs.selected.confidence_pct}%</small></b>{baseVs.delta && <b><span>Delta</span>{baseVs.delta.cost_direction === 'same' ? 'No cost move' : `${baseVs.delta.cost} ${baseVs.delta.cost_direction}`}<small>{baseVs.delta.months} mo · {baseVs.delta.confidence_pts} pts</small></b>}</div></Card>
             <Card><h2>What changed and why</h2>{(model.scenario_delta_intelligence || []).slice(0,5).map((x,i)=><div className="reason" key={i}><span>{i+1}</span><b>{x.label}: {x.value}</b><br/>{x.meaning}</div>)}</Card>
           </section>}
           <section className="layout two">
             <Card><h2>Mission control signals</h2><div className="missionCardGrid">{(model.mission_control_cards || []).slice(0,6).map((c,i)=><div className="intelCard" key={i}><b>{c.label}</b><p>{c.signal}</p><span>{c.severity}</span></div>)}</div></Card>
-            <Card><h2>Uncertainty narrative</h2><p>{safeRender(model.uncertainty_narrative?.estimate_maturity)}</p><p>{safeRender(model.uncertainty_narrative?.schedule_maturity)}</p><p>{safeRender(model.uncertainty_narrative?.interpretation)}</p><h3>Benchmark comparison</h3>{(model.benchmark_comparison || []).slice(0,4).map((b,i)=><div className="reason" key={i}><span>{i+1}</span><b>{safeRender(b?.archetype)}</b> · {safeRender(b?.anchor_cost)} · {safeRender(b?.anchor_duration_months)} months</div>)}</Card>
+            <Card><h2>Uncertainty narrative</h2><p>{model.uncertainty_narrative?.estimate_maturity}</p><p>{model.uncertainty_narrative?.schedule_maturity}</p><p>{model.uncertainty_narrative?.interpretation}</p><h3>Benchmark comparison</h3>{(model.benchmark_comparison || []).slice(0,4).map((b,i)=><div className="reason" key={i}><span>{i+1}</span><b>{b.archetype}</b> · {b.anchor_cost} · {b.anchor_duration_months} months</div>)}</Card>
           </section>
           <section className="layout two"><BenchmarkIntelligence model={model}/><CausalGraph model={model}/></section>
           <section className="layout two">
@@ -2184,7 +2088,7 @@ function parseMoneyLocal(v) {
           <section className="layout one"><AdvisoryFeeCounter model={model}/></section>
         </>}
 
-        {tab === 'compare' && <section className="layout two"><Card><h2>Scenario comparison</h2><p className="big">Switch options before paying for another advisory cycle. Each button re-runs cost, schedule, confidence, risk register, QCRA/QSRA and exports from the same source of truth.</p>{model?.stress_test_applied && <div style={{background:"rgba(245,158,11,0.1)",border:"1px solid rgba(245,158,11,0.3)",borderRadius:"3px",padding:"8px 12px",marginBottom:"10px",fontSize:"11px",color:"#f59e0b"}}><b>STRESS TEST ACTIVE: {String(model.stress_test_applied).replace(/_/g," ").toUpperCase()}</b><br/>{model.stress_test_note} — P50 now {safeRender(model.cost_p50)}, confidence {model.confidence_pct}%. Scenario re-runs below use the stressed baseline.</div>}<div className="runtimeInline"><button onClick={()=>setTab('runtime')}><Zap size={15}/> Open Live Stress Test</button><button onClick={()=>runShock('signalling_slip')}>Simulate 4-month signalling slip</button><button onClick={()=>runShock('procurement_gap')}>Simulate procurement evidence gap</button></div>{(()=>{
+        {tab === 'compare' && <section className="layout two"><Card><h2>Scenario comparison</h2><p className="big">Switch options before paying for another advisory cycle. Each button re-runs cost, schedule, confidence, risk register, QCRA/QSRA and exports from the same source of truth.</p>{model?.stress_test_applied && <div style={{background:"rgba(245,158,11,0.1)",border:"1px solid rgba(245,158,11,0.3)",borderRadius:"3px",padding:"8px 12px",marginBottom:"10px",fontSize:"11px",color:"#f59e0b"}}><b>STRESS TEST ACTIVE: {String(model.stress_test_applied).replace(/_/g," ").toUpperCase()}</b><br/>{model.stress_test_note} — P50 now {model.cost_p50}, confidence {model.confidence_pct}%. Scenario re-runs below use the stressed baseline.</div>}<div className="runtimeInline"><button onClick={()=>setTab('runtime')}><Zap size={15}/> Open Live Stress Test</button><button onClick={()=>runShock('signalling_slip')}>Simulate 4-month signalling slip</button><button onClick={()=>runShock('procurement_gap')}>Simulate procurement evidence gap</button></div>{(()=>{
   const baseRow=scenarioMatrix.find(x=>x.scenario==='base')||{};
   const bCost=parseMoneyLocal(baseRow.cost_p50||baseRow.cost||'0');
   const bConf=parseInt(String(baseRow.confidence_pct||baseRow.confidence||'50'));
@@ -2225,10 +2129,10 @@ function parseMoneyLocal(v) {
     </button>;
   })}</div>;
 })()}</Card><Card><h2>Buyer decision lens</h2>{['Base: balanced reference case for board challenge','Faster: more capex, lower confidence, shorter duration','Cheaper: lower authorisation number, longer schedule, higher residual risk','Lower Risk: higher reserve, longer duration, stronger confidence','Premium: resilience and optionality bought with visible capex premium'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}<h3>Current trade-off</h3><div className="triLens"><b>Gained</b>{tradePack.gained.map(x=><span key={x}>{x}</span>)}<b>Sacrificed</b>{tradePack.sacrificed.map(x=><span key={x}>{x}</span>)}<b>Exposed</b>{tradePack.exposed.map(x=><span key={x}>{x}</span>)}</div></Card></section>}
-        {tab === 'cost' && <section className="layout two"><Card><h2>Scenario cost bridge vs Base</h2><p className="chartCaption">This explains why the selected scenario is cheaper or more expensive than Base before showing the workbook lines.</p>{model?.stress_test_applied && <div style={{background:"rgba(141,247,255,0.05)",borderLeft:"2px solid #8df7ff",padding:"8px 12px",marginBottom:"8px",fontSize:"11px",color:"#8df7ff"}}>Stress test applied: {String(model.stress_test_applied).replace(/_/g," ")} — cost recalculated to {safeRender(model.cost_p50)}. The waterfall below reflects this change.</div>}{costWaterfall.map((x,i)=><div className={`reason ${x.kind==='total'?'deltaReason':''}`} key={i}><span>{i+1}</span><b>{x.driver}</b><br/>{x.kind==='total'?x.value:(x.value_bn>=0?'+':'−') + ' ' + x.value}</div>)}<h3>Cost estimate workbook</h3><Table rows={costs} cols={[["cbs","CBS"],["description","Description"],["type","Type"],["p10_bn","Low/P10"],["p50_bn","Most likely/P50"],["p90_bn","High/P90"],["impact_basis","Basis"]]} moneyCols={["p10_bn","p50_bn","p90_bn"]}/></Card><Card><h2>Cost composition</h2><p className="chartCaption">Direct, indirect and reserve are scenario-controlled and reconciled to selected P50. For the detailed uncertainty view use QCRA/QSRA.</p><ResponsiveContainer width="100%" height={320}><BarChart data={[{name:'Direct',value:direct},{name:'Indirect',value:indirect},{name:'Reserve',value:reserves}]}><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis dataKey="name"/><YAxis/><Tooltip/><Bar dataKey="value" fill="#8df7ff"/></BarChart></ResponsiveContainer></Card></section>}
-        {tab === 'schedule' && <section className="layout two"><Card><h2>Schedule bridge vs Base</h2><p className="chartCaption">This is the month-by-month reason the scenario becomes faster or slower than Base.</p>{scheduleWaterfall.map((x,i)=><div className={`reason ${x.kind==='total'?'deltaReason':''}`} key={i}><span>{i+1}</span><b>{x.driver}</b><br/>{x.kind==='total'?`${x.months} months`:(x.months>=0?'+':'') + x.months + ' months'}</div>)}<h3>Scenario schedule logic</h3><Table rows={schedule} cols={[["activity_id","Activity"],["phase","Phase"],["activity","Name"],["predecessor","Pred"],["duration_months","Months"],["critical","Critical"],["basis","Basis"]]}/></Card><Card><h2>QSRA finish-date curve</h2><p className="chartCaption">P50 equals the headline schedule. P80/P90 show how severe the delivery tail becomes after the scenario trade-off.</p><div className="metrics"><div>P50<b>{qsra.p50} mo</b></div><div>P80<b>{qsra.p80} mo</b></div><div>P90<b>{qsra.p90} mo</b></div></div><ResponsiveContainer width="100%" height={280}><LineChart data={curve}><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis dataKey="percentile"/><YAxis/><Tooltip formatter={(v) => [`${v} months`, "QSRA finish date"]}/><ReferenceLine x={50} stroke="#ffffff88" label="P50 = headline"/><ReferenceLine x={80} stroke="#ffffff55" label="P80 = board risk"/><Line type="monotone" name="QSRA finish date" dataKey="schedule_months" stroke="#b18cff" strokeWidth={4}/></LineChart></ResponsiveContainer><div className="reason p80Translation"><span>1/5</span>{safeRender(p80Talk.schedule)}</div><div className="reason p80Translation"><span>!</span>{safeRender(p80Talk.board)}</div>{(model.monte_carlo?.curve_readout || []).slice(1).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{x}</div>)}</Card></section>}
-        {tab === 'risk' && <section className="layout two"><Card><h2>Risk Register Pro</h2><p>Risk output should include cause, event, impact, owner, mitigation and links to WBS/CBS. These risks drive the QCRA/QSRA P-curves — the top 3 by EMV determine the P80 tail.</p>{model?.stress_test_applied && <div style={{background:"rgba(239,68,68,0.08)",borderLeft:"2px solid #ef4444",padding:"6px 10px",marginBottom:"8px",fontSize:"11px",color:"#ef4444"}}>Stress test applied: risk posture has shifted. Confidence is now {model.confidence_pct}%. The risks below drove this position before the shock was applied.</div>}<Table rows={risks} cols={[['risk_id','ID'],['risk','Risk'],['cause','Cause'],['event','Event'],['impact','Impact'],['probability_pct','Prob %'],['activity_id','Activity'],['cbs','CBS'],['owner','Owner'],['mitigation','Mitigation']]}/></Card><Card><h2>Top exposure drivers</h2><ResponsiveContainer width="100%" height={380}><BarChart data={tornado} layout="vertical"><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis type="number"/><YAxis dataKey="driver" type="category" width={150}/><Tooltip/><Bar dataKey="contribution" fill="#8df7ff"/></BarChart></ResponsiveContainer></Card></section>}
-        {tab === 'monte' && <section className="layout two"><Card><h2>QCRA cost range curve</h2>{model?.stress_test_applied && <div style={{background:'rgba(245,158,11,0.08)',borderLeft:'2px solid #f59e0b',padding:'6px 10px',marginBottom:'8px',fontSize:'11px',color:'#f59e0b'}}>Stress test active: {String(model.stress_test_applied).replace(/_/g,' ')} — P50 updated to {safeRender(model.cost_p50)}. Download Export QCRA/QSRA to capture the stressed curves.</div>}<p className="chartCaption">This is not a spend forecast over time. It is the probability range: P50 matches the headline cost, P80/P90 visualise the downside contingency tail created by the selected scenario.</p><div className="metrics"><div>P50 headline<b>{safeRender(model.cost_p50)}</b></div><div>P80 risk exposure<b>{fmt(qcra.p80)}</b></div><div>P90 stress case<b>{fmt(qcra.p90)}</b></div></div><ResponsiveContainer width="100%" height={280}><AreaChart data={curve}><defs><linearGradient id="caseyG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#8df7ff" stopOpacity=".55"/><stop offset="1" stopColor="#8df7ff" stopOpacity="0"/></linearGradient></defs><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis dataKey="percentile"/><YAxis/><Tooltip formatter={(v) => [`$${Number(v).toFixed(1)}B`, "QCRA total outturn"]}/><ReferenceLine x={50} stroke="#ffffff88" label="P50 = headline"/><ReferenceLine x={80} stroke="#ffffff55" label="P80 = board risk"/><Area type="monotone" name="QCRA total outturn" dataKey="cost_bn" stroke="#8df7ff" fill="url(#caseyG)"/></AreaChart></ResponsiveContainer>{(model.monte_carlo?.curve_readout || []).slice(0,1).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{safeRender(x)}</div>)}<div className="reason p80Translation"><span>1/5</span>{safeRender(p80Talk.cost)}</div><div className="reason"><span>!</span>This curve is a probability distribution, not spend over time. The x-axis is confidence percentile. P50 equals the headline estimate; P80/P90 are board downside exposure.</div></Card><Card><h2>QSRA schedule range curve</h2><p className="chartCaption">P50 matches the headline duration. P80/P90 show the likely board conversation if critical path risk lands.</p><div className="metrics"><div>P50 headline<b>{qsra.p50} mo</b></div><div>P80 risk date<b>{qsra.p80} mo</b></div><div>P90 stress date<b>{qsra.p90} mo</b></div></div><ResponsiveContainer width="100%" height={280}><LineChart data={curve}><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis dataKey="percentile"/><YAxis/><Tooltip formatter={(v) => [`${v} months`, "QSRA finish date"]}/><ReferenceLine x={50} stroke="#ffffff88" label="P50 = headline"/><ReferenceLine x={80} stroke="#ffffff55" label="P80 = board risk"/><Line type="monotone" name="QSRA finish date" dataKey="schedule_months" stroke="#b18cff" strokeWidth={4}/></LineChart></ResponsiveContainer><div className="reason p80Translation"><span>1/5</span>{safeRender(p80Talk.schedule)}</div><div className="reason p80Translation"><span>!</span>{safeRender(p80Talk.board)}</div>{(model.monte_carlo?.curve_readout || []).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{safeRender(x)}</div>)}</Card></section>}
+        {tab === 'cost' && <section className="layout two"><Card><h2>Scenario cost bridge vs Base</h2><p className="chartCaption">This explains why the selected scenario is cheaper or more expensive than Base before showing the workbook lines.</p>{model?.stress_test_applied && <div style={{background:"rgba(141,247,255,0.05)",borderLeft:"2px solid #8df7ff",padding:"8px 12px",marginBottom:"8px",fontSize:"11px",color:"#8df7ff"}}>Stress test applied: {String(model.stress_test_applied).replace(/_/g," ")} — cost recalculated to {model.cost_p50}. The waterfall below reflects this change.</div>}{costWaterfall.map((x,i)=><div className={`reason ${x.kind==='total'?'deltaReason':''}`} key={i}><span>{i+1}</span><b>{x.driver}</b><br/>{x.kind==='total'?x.value:(x.value_bn>=0?'+':'−') + ' ' + x.value}</div>)}<h3>Cost estimate workbook</h3><Table rows={costs} cols={[["cbs","CBS"],["description","Description"],["type","Type"],["p10_bn","Low/P10"],["p50_bn","Most likely/P50"],["p90_bn","High/P90"],["impact_basis","Basis"]]} moneyCols={["p10_bn","p50_bn","p90_bn"]}/></Card><Card><h2>Cost composition</h2><p className="chartCaption">Direct, indirect and reserve are scenario-controlled and reconciled to selected P50. For the detailed uncertainty view use QCRA/QSRA.</p><ResponsiveContainer width="100%" height={320}><BarChart data={[{name:'Direct',value:direct},{name:'Indirect',value:indirect},{name:'Reserve',value:reserves}]}><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis dataKey="name"/><YAxis/><Tooltip/><Bar dataKey="value" fill="#8df7ff"/></BarChart></ResponsiveContainer></Card></section>}
+        {tab === 'schedule' && <section className="layout two"><Card><h2>Schedule bridge vs Base</h2><p className="chartCaption">This is the month-by-month reason the scenario becomes faster or slower than Base.</p>{scheduleWaterfall.map((x,i)=><div className={`reason ${x.kind==='total'?'deltaReason':''}`} key={i}><span>{i+1}</span><b>{x.driver}</b><br/>{x.kind==='total'?`${x.months} months`:(x.months>=0?'+':'') + x.months + ' months'}</div>)}<h3>Scenario schedule logic</h3><Table rows={schedule} cols={[["activity_id","Activity"],["phase","Phase"],["activity","Name"],["predecessor","Pred"],["duration_months","Months"],["critical","Critical"],["basis","Basis"]]}/></Card><Card><h2>QSRA finish-date curve</h2><p className="chartCaption">P50 equals the headline schedule. P80/P90 show how severe the delivery tail becomes after the scenario trade-off.</p><div className="metrics"><div>P50<b>{qsra.p50} mo</b></div><div>P80<b>{qsra.p80} mo</b></div><div>P90<b>{qsra.p90} mo</b></div></div><ResponsiveContainer width="100%" height={280}><LineChart data={curve}><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis dataKey="percentile"/><YAxis/><Tooltip formatter={(v) => [`${v} months`, "QSRA finish date"]}/><ReferenceLine x={50} stroke="#ffffff88" label="P50 = headline"/><ReferenceLine x={80} stroke="#ffffff55" label="P80 = board risk"/><Line type="monotone" name="QSRA finish date" dataKey="schedule_months" stroke="#b18cff" strokeWidth={4}/></LineChart></ResponsiveContainer><div className="reason p80Translation"><span>1/5</span>{p80Talk.schedule}</div><div className="reason p80Translation"><span>!</span>{p80Talk.board}</div>{(model.monte_carlo?.curve_readout || []).slice(1).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{x}</div>)}</Card></section>}
+        {tab === 'risk' && <section className="layout two"><Card><h2>Risk Register Pro</h2><p>Risk output should include cause, event, impact, owner, mitigation and links to WBS/CBS. These risks drive the QCRA/QSRA P-curves — the top 3 by EMV determine the P80 tail.</p>{model?.stress_test_applied && <div style={{background:"rgba(239,68,68,0.08)",borderLeft:"2px solid #ef4444",padding:"6px 10px",marginBottom:"8px",fontSize:"11px",color:"#ef4444"}}>Stress test applied: risk posture has shifted. Confidence is now {model.confidence_pct}%. The risks below drove this position before the shock was applied.</div>}<Table rows={risks} cols={[['risk_id','ID'],['title','Risk'],['cause','Cause'],['event','Event'],['impact','Impact'],['probability_pct','Prob %'],['activity_id','Activity'],['cbs','CBS'],['owner','Owner'],['mitigation','Mitigation']]}/></Card><Card><h2>Top exposure drivers</h2><ResponsiveContainer width="100%" height={380}><BarChart data={tornado} layout="vertical"><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis type="number"/><YAxis dataKey="driver" type="category" width={150}/><Tooltip/><Bar dataKey="contribution" fill="#8df7ff"/></BarChart></ResponsiveContainer></Card></section>}
+        {tab === 'monte' && <section className="layout two"><Card><h2>QCRA cost range curve</h2>{model?.stress_test_applied && <div style={{background:'rgba(245,158,11,0.08)',borderLeft:'2px solid #f59e0b',padding:'6px 10px',marginBottom:'8px',fontSize:'11px',color:'#f59e0b'}}>Stress test active: {String(model.stress_test_applied).replace(/_/g,' ')} — P50 updated to {model.cost_p50}. Download Export QCRA/QSRA to capture the stressed curves.</div>}<p className="chartCaption">This is not a spend forecast over time. It is the probability range: P50 matches the headline cost, P80/P90 visualise the downside contingency tail created by the selected scenario.</p><div className="metrics"><div>P50 headline<b>{model.cost_p50}</b></div><div>P80 risk exposure<b>{fmt(qcra.p80)}</b></div><div>P90 stress case<b>{fmt(qcra.p90)}</b></div></div><ResponsiveContainer width="100%" height={280}><AreaChart data={curve}><defs><linearGradient id="caseyG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#8df7ff" stopOpacity=".55"/><stop offset="1" stopColor="#8df7ff" stopOpacity="0"/></linearGradient></defs><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis dataKey="percentile"/><YAxis/><Tooltip formatter={(v) => [`$${Number(v).toFixed(1)}B`, "QCRA total outturn"]}/><ReferenceLine x={50} stroke="#ffffff88" label="P50 = headline"/><ReferenceLine x={80} stroke="#ffffff55" label="P80 = board risk"/><Area type="monotone" name="QCRA total outturn" dataKey="cost_bn" stroke="#8df7ff" fill="url(#caseyG)"/></AreaChart></ResponsiveContainer>{(model.monte_carlo?.curve_readout || []).slice(0,1).map((x,i)=><div className="reason" key={i}><span>i</span>{x}</div>)}<div className="reason p80Translation"><span>1/5</span>{p80Talk.cost}</div><div className="reason"><span>!</span>This curve is a probability distribution, not spend over time. The x-axis is confidence percentile. P50 equals the headline estimate; P80/P90 are board downside exposure.</div></Card><Card><h2>QSRA schedule range curve</h2><p className="chartCaption">P50 matches the headline duration. P80/P90 show the likely board conversation if critical path risk lands.</p><div className="metrics"><div>P50 headline<b>{qsra.p50} mo</b></div><div>P80 risk date<b>{qsra.p80} mo</b></div><div>P90 stress date<b>{qsra.p90} mo</b></div></div><ResponsiveContainer width="100%" height={280}><LineChart data={curve}><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis dataKey="percentile"/><YAxis/><Tooltip formatter={(v) => [`${v} months`, "QSRA finish date"]}/><ReferenceLine x={50} stroke="#ffffff88" label="P50 = headline"/><ReferenceLine x={80} stroke="#ffffff55" label="P80 = board risk"/><Line type="monotone" name="QSRA finish date" dataKey="schedule_months" stroke="#b18cff" strokeWidth={4}/></LineChart></ResponsiveContainer><div className="reason p80Translation"><span>1/5</span>{p80Talk.schedule}</div><div className="reason p80Translation"><span>!</span>{p80Talk.board}</div>{(model.monte_carlo?.curve_readout || []).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{x}</div>)}</Card></section>}
         {tab === 'delta' && <section className="layout two">
           <Card><h2>Strategic Delta Intelligence</h2><p>What changed because this scenario was selected.</p>
             {(model.scenario_delta_intelligence || []).map((x,i)=><div className="reason" key={i}><span>{i+1}</span><b>{x.label}: {x.value}</b><br/>{x.meaning}</div>)}
@@ -2273,131 +2177,7 @@ function parseMoneyLocal(v) {
 
         {tab === 'assurance' && <><IncumbentPressurePanel model={model} direct={direct} indirect={indirect} reserves={reserves} reconcileCheck={reconcileCheck}/><section className="layout two"><Card><h2>Assurance room weapons</h2>{['Open with the P80/P90 exposure, not the headline P50.','Ask which evidence package retires the governing constraint.','Force every mitigation to name owner, trigger, residual exposure and date.','Show scenario trade-offs live before anyone can defend a single-point estimate.','Export the audit model immediately so the conversation moves from opinion to traceability.'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card><Card><h2>What scares traditional advisors</h2>{['CASEY moves faster than manual assurance cycles.','Every scenario rewrites cost, schedule, confidence and board posture from one payload.','The system exposes contradictions instead of polishing the management story.','It turns static reports into live investment-committee interrogation.'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card></section><section className="layout one"><ProgrammeHealthSignal onRunHealthCheck={runHealthCheck}/></section></>}
 
-        {tab === 'advisor' && <>
-          {/* INSTITUTIONAL AUTHORITY LINE — the one sentence */}
-          {model?.institutional_authority_line && <section className="layout one"><div style={{background:'linear-gradient(135deg,rgba(141,247,255,0.06),rgba(177,140,255,0.06))',border:'1px solid rgba(141,247,255,0.2)',borderRadius:'6px',padding:'14px 20px',display:'flex',gap:'12px',alignItems:'flex-start'}}>
-            <span style={{color:'#8df7ff',fontWeight:'900',fontSize:'10px',letterSpacing:'.15em',flexShrink:0,paddingTop:'2px'}}>AUTHORITY LINE</span>
-            <p style={{color:'#e2e8f0',fontSize:'13px',lineHeight:'1.6',margin:0,fontStyle:'italic'}}>{safeRender(model.institutional_authority_line)}</p>
-          </div></section>}
-
-          {/* PROGRAMME MORTALITY + CONFIDENCE TRAJECTORY */}
-          {model?.programme_mortality_risk && <section className="layout two">
-            <Card><h2>Programme mortality risk</h2>
-              <div style={{display:'flex',alignItems:'baseline',gap:'8px',marginBottom:'8px'}}>
-                <span style={{fontSize:'48px',fontWeight:'900',color:model.programme_mortality_risk.pct>60?'#ef4444':model.programme_mortality_risk.pct>35?'#f59e0b':'#10b981'}}>{model.programme_mortality_risk.pct}%</span>
-                <span style={{fontSize:'12px',fontWeight:'800',color:model.programme_mortality_risk.pct>60?'#ef4444':model.programme_mortality_risk.pct>35?'#f59e0b':'#10b981'}}>{model.programme_mortality_risk.label}</span>
-              </div>
-              <p style={{fontSize:'12px',color:'#94a3b8',lineHeight:'1.5'}}>{safeRender(model.programme_mortality_risk.narrative)}</p>
-              {model.programme_mortality_risk.comparable && <p style={{fontSize:'11px',color:'#64748b',marginTop:'8px',fontStyle:'italic'}}>{safeRender(model.programme_mortality_risk.comparable)}</p>}
-            </Card>
-            <Card><h2>Confidence trajectory</h2>
-              {model?.confidence_trajectory && <>
-                <div style={{display:'flex',alignItems:'center',gap:'10px',marginBottom:'8px'}}>
-                  <span style={{fontSize:'18px',fontWeight:'900',color:model.confidence_trajectory.direction==='DECLINING'?'#ef4444':model.confidence_trajectory.direction==='IMPROVING'?'#10b981':'#f59e0b'}}>{model.confidence_trajectory.direction}</span>
-                </div>
-                <p style={{fontSize:'12px',color:'#94a3b8',lineHeight:'1.5'}}>{safeRender(model.confidence_trajectory.narrative)}</p>
-                <p style={{fontSize:'11px',color:'#64748b',marginTop:'8px',borderTop:'1px solid rgba(255,255,255,0.06)',paddingTop:'8px'}}>{safeRender(model.confidence_trajectory.next_gate)}</p>
-              </>}
-            </Card>
-          </section>}
-
-          {/* BEHAVIOURAL FORECAST + INTERVENTION INTELLIGENCE */}
-          {model?.behavioural_forecast && <section className="layout two">
-            <Card><h2>Behavioural forecast</h2>
-              <p style={{color:'#8df7ff',fontStyle:'italic',lineHeight:'1.6',fontSize:'13px'}}>{safeRender(model.behavioural_forecast)}</p>
-              <p style={{fontSize:'11px',color:'#475569',marginTop:'8px'}}>Based on comparable {safeRender(model.subsector)} programmes — what CASEY expects to happen next if the governing constraint is not evidenced before approval.</p>
-            </Card>
-            <Card><h2>Intervention intelligence</h2>
-              {(model?.intervention_intelligence||model?.governance_challenges||[]).map((x,i)=><div className="reason" key={i} style={{borderLeft:'2px solid rgba(141,247,255,0.3)',paddingLeft:'10px',marginBottom:'6px'}}><span style={{color:'#8df7ff',fontWeight:'800',marginRight:'6px'}}>{i+1}.</span>{safeRender(x)}</div>)}
-            </Card>
-          </section>}
-
-          {/* TRADITIONAL vs CASEY */}
-          {model?.traditional_vs_casey?.casey && <section className="layout two">
-            <Card style={{borderLeft:'2px solid rgba(239,68,68,0.4)'}}><h2 style={{color:'#ff6b7d'}}>What the T&T deck says</h2>
-              <p style={{color:'#94a3b8',fontStyle:'italic',lineHeight:'1.6'}}>{safeRender(model.traditional_vs_casey.traditional)}</p>
-              <p style={{fontSize:'11px',color:'#475569',marginTop:'8px',borderTop:'1px solid rgba(255,255,255,0.06)',paddingTop:'8px'}}>{safeRender(model.traditional_vs_casey.incumbent_line)}</p>
-            </Card>
-            <Card style={{borderLeft:'2px solid rgba(141,247,255,0.4)'}}><h2 style={{color:'#8df7ff'}}>What CASEY reads underneath</h2>
-              <p style={{color:'#e2e8f0',lineHeight:'1.6'}}>{safeRender(model.traditional_vs_casey.casey)}</p>
-              <p style={{fontSize:'11px',color:'#64748b',marginTop:'8px',borderTop:'1px solid rgba(255,255,255,0.06)',paddingTop:'8px'}}>{safeRender(model.traditional_vs_casey.gap)}</p>
-            </Card>
-          </section>}
-
-          {/* BOARD ATTACK SIMULATION */}
-          {(model?.board_attack_simulation||[]).length > 0 && <section className="layout one"><Card><h2>Board attack simulation — the 5 questions this board will ask</h2>
-            <p style={{fontSize:'11px',color:'#64748b',marginBottom:'12px'}}>These are sector-specific, programme-specific challenges that a serious investment committee will table. CASEY generates them from live model data — not a generic template. T&T cannot answer these in the room without CASEY.</p>
-            {(model.board_attack_simulation||[]).map((q,i)=><div key={i} style={{display:'flex',gap:'10px',padding:'10px 0',borderBottom:'1px solid rgba(255,255,255,0.05)'}}>
-              <span style={{color:'#f59e0b',fontWeight:'900',flexShrink:0,fontSize:'11px',paddingTop:'1px'}}>{i+1}.</span>
-              <span style={{color:'#e2e8f0',lineHeight:'1.5',fontSize:'13px'}}>{safeRender(q)}</span>
-            </div>)}
-          </Card></section>}
-
-          {/* LOCATION + FINANCING CONTEXT */}
-          {model?.location_context?.framework && <section className="layout two">
-            <Card><h2>📍 Location intelligence</h2>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px',marginBottom:'10px'}}>
-                <div><div style={{fontSize:'9px',color:'#64748b',fontWeight:'800',letterSpacing:'.1em',marginBottom:'3px'}}>LOCATION</div><div style={{fontSize:'14px',color:'#e2e8f0',fontWeight:'700'}}>{safeRender(model.location||'Global')}</div></div>
-                <div><div style={{fontSize:'9px',color:'#64748b',fontWeight:'800',letterSpacing:'.1em',marginBottom:'3px'}}>CURRENCY</div><div style={{fontSize:'14px',color:'#8df7ff',fontWeight:'700'}}>{safeRender(model.location_context.currency)}</div></div>
-              </div>
-              <div style={{marginBottom:'8px'}}><div style={{fontSize:'9px',color:'#64748b',fontWeight:'800',letterSpacing:'.1em',marginBottom:'3px'}}>REGULATORY FRAMEWORK</div><div style={{fontSize:'12px',color:'#cbd5e1',lineHeight:'1.5'}}>{safeRender(model.location_context.framework)}</div></div>
-              <div style={{marginBottom:'8px'}}><div style={{fontSize:'9px',color:'#64748b',fontWeight:'800',letterSpacing:'.1em',marginBottom:'3px'}}>APPROVAL BODY</div><div style={{fontSize:'12px',color:'#cbd5e1'}}>{safeRender(model.location_context.approval_body)}</div></div>
-              <div style={{padding:'8px',background:'rgba(245,158,11,0.06)',borderRadius:'3px',border:'1px solid rgba(245,158,11,0.15)'}}><div style={{fontSize:'9px',color:'#f59e0b',fontWeight:'800',letterSpacing:'.1em',marginBottom:'3px'}}>OBA NOTE FOR THIS LOCATION</div><div style={{fontSize:'11px',color:'#94a3b8',lineHeight:'1.5'}}>{safeRender(model.location_context.optimism_bias_note)}</div></div>
-            </Card>
-            {model?.financing_context && <Card><h2>💰 Financing context</h2>
-              <div style={{marginBottom:'8px'}}><div style={{fontSize:'9px',color:'#64748b',fontWeight:'800',letterSpacing:'.1em',marginBottom:'3px'}}>PRIMARY SOURCE</div><div style={{fontSize:'13px',color:'#8df7ff',fontWeight:'700'}}>{safeRender(model.financing_context.primary_source)}</div></div>
-              <div style={{marginBottom:'8px'}}><div style={{fontSize:'9px',color:'#64748b',fontWeight:'800',letterSpacing:'.1em',marginBottom:'3px'}}>SECONDARY SOURCE</div><div style={{fontSize:'12px',color:'#cbd5e1'}}>{safeRender(model.financing_context.secondary_source)}</div></div>
-              <div style={{marginBottom:'8px'}}><div style={{fontSize:'9px',color:'#64748b',fontWeight:'800',letterSpacing:'.1em',marginBottom:'3px'}}>STRUCTURE</div><div style={{fontSize:'12px',color:'#cbd5e1'}}>{safeRender(model.financing_context.structure)}</div></div>
-              <div style={{marginBottom:'8px',padding:'6px 8px',background:'rgba(239,68,68,0.06)',borderRadius:'3px',border:'1px solid rgba(239,68,68,0.12)'}}><div style={{fontSize:'9px',color:'#ef4444',fontWeight:'800',letterSpacing:'.1em',marginBottom:'3px'}}>CURRENCY RISK</div><div style={{fontSize:'11px',color:'#fca5a5'}}>{safeRender(model.financing_context.currency_risk)}</div></div>
-              <div style={{marginBottom:'8px'}}><div style={{fontSize:'9px',color:'#64748b',fontWeight:'800',letterSpacing:'.1em',marginBottom:'3px'}}>PROCUREMENT RULES</div><div style={{fontSize:'11px',color:'#64748b'}}>{safeRender(model.financing_context.procurement_rules)}</div></div>
-              <div style={{padding:'6px 8px',background:'rgba(141,247,255,0.04)',borderRadius:'3px',border:'1px solid rgba(141,247,255,0.1)'}}><div style={{fontSize:'11px',color:'#94a3b8',lineHeight:'1.5',fontStyle:'italic'}}>{safeRender(model.financing_context.sector_note)}</div></div>
-              <div style={{marginTop:'8px',padding:'6px 8px',background:'rgba(245,158,11,0.06)',borderRadius:'3px'}}><div style={{fontSize:'9px',color:'#f59e0b',fontWeight:'800',letterSpacing:'.1em',marginBottom:'3px'}}>BANKABILITY</div><div style={{fontSize:'12px',color:'#fcd34d',fontWeight:'700'}}>{safeRender(model.financing_context.bankability_verdict)}</div></div>
-            </Card>}
-          </section>}
-
-          {/* GATE REVIEW READINESS */}
-          {model?.gate_review_readiness && <section className="layout two">
-            <Card><h2>Gate review readiness</h2>
-              <div style={{display:'flex',gap:'12px',alignItems:'center',marginBottom:'10px'}}>
-                <span style={{fontSize:'24px',fontWeight:'900',color:model.gate_review_readiness.overall_verdict==='READY'?'#10b981':model.gate_review_readiness.overall_verdict==='CONDITIONAL'?'#f59e0b':'#ef4444'}}>{model.gate_review_readiness.overall_verdict}</span>
-                <span style={{fontSize:'13px',color:'#94a3b8'}}>at {safeRender(model.gate_review_readiness.current_gate_readiness)}</span>
-              </div>
-              <p style={{fontSize:'12px',color:'#64748b',marginBottom:'10px',lineHeight:'1.5'}}>{safeRender(model.gate_review_readiness.ipa_alignment)}</p>
-              <p style={{fontSize:'11px',color:'#f59e0b',fontStyle:'italic'}}>{safeRender(model.gate_review_readiness.critical_gate_risk)}</p>
-              <div style={{marginTop:'10px'}}>
-                <div style={{fontSize:'10px',color:'#475569',fontWeight:'800',letterSpacing:'.1em',marginBottom:'6px'}}>NEXT GATE — EVIDENCE REQUIRED</div>
-                {(model.gate_review_readiness.next_gate_actions||[]).map((a,i)=><div key={i} style={{fontSize:'11px',color:'#cbd5e1',padding:'3px 0',borderBottom:'1px solid rgba(255,255,255,0.04)',display:'flex',gap:'6px'}}><span style={{color:'#8df7ff',flexShrink:0}}>→</span>{safeRender(a)}</div>)}
-              </div>
-            </Card>
-            <Card><h2>Optimism bias assessment</h2>
-              {model?.optimism_bias_assessment && <>
-                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px',marginBottom:'10px'}}>
-                  <div style={{background:'rgba(239,68,68,0.08)',padding:'8px',borderRadius:'4px',border:'1px solid rgba(239,68,68,0.2)'}}>
-                    <div style={{fontSize:'9px',color:'#ef4444',fontWeight:'900',letterSpacing:'.1em'}}>STATED P50</div>
-                    <div style={{fontSize:'18px',fontWeight:'900',color:'#fca5a5'}}>{safeRender(model.cost_p50)}</div>
-                    <div style={{fontSize:'9px',color:'#64748b'}}>{safeRender(model.schedule)}</div>
-                  </div>
-                  <div style={{background:'rgba(245,158,11,0.08)',padding:'8px',borderRadius:'4px',border:'1px solid rgba(245,158,11,0.2)'}}>
-                    <div style={{fontSize:'9px',color:'#f59e0b',fontWeight:'900',letterSpacing:'.1em'}}>OBA ADJUSTED</div>
-                    <div style={{fontSize:'18px',fontWeight:'900',color:'#fcd34d'}}>{safeRender(model.optimism_bias_assessment.oba_adjusted_p50)}</div>
-                    <div style={{fontSize:'9px',color:'#64748b'}}>{safeRender(model.optimism_bias_assessment.oba_adjusted_schedule)}</div>
-                  </div>
-                </div>
-                <p style={{fontSize:'11px',color:'#94a3b8',lineHeight:'1.5',marginBottom:'6px'}}>{safeRender(model.optimism_bias_assessment.verdict)}</p>
-                <p style={{fontSize:'10px',color:'#475569',fontStyle:'italic'}}>{safeRender(model.optimism_bias_assessment.oba_source)}</p>
-                <p style={{fontSize:'11px',color:'#f59e0b',marginTop:'8px',padding:'6px 8px',background:'rgba(245,158,11,0.06)',borderRadius:'3px',lineHeight:'1.5'}}>{safeRender(model.optimism_bias_assessment.board_challenge)}</p>
-              </>}
-            </Card>
-          </section>}
-
-          {/* SECOND ORDER CONTRADICTIONS */}
-          {(model?.second_order_contradictions||[]).length > 0 && <section className="layout one"><Card><h2>Second-order contradictions</h2>
-            <p style={{fontSize:'11px',color:'#64748b',marginBottom:'10px'}}>What the optimistic case creates downstream — risks that appear only when the preferred scenario is examined under pressure.</p>
-            {(model.second_order_contradictions||[]).map((x,i)=><div key={i} className="reason" style={{borderLeft:'2px solid rgba(245,158,11,0.4)',paddingLeft:'10px',marginBottom:'6px'}}><span style={{color:'#f59e0b',fontWeight:'800',marginRight:'6px'}}>{i+1}.</span>{safeRender(x)}</div>)}
-          </Card></section>}
-
-          {/* ORIGINAL ADVISOR PANEL */}
-          <section className="layout two advisorElite challengeRoom"><Card><h2>CASEY Board Assurance Console</h2><p className="advisorIntro">Click any question. CASEY answers instantly using the live programme model — not a generic response. Each answer references your actual P50, P80, confidence level and sector. Generate a project first for the most specific answers.</p><div className="advisorPrompts bigButtons">{['What is the board not seeing?','What would a traditional cost consultant say that CASEY challenges?','What evidence is missing before this becomes board-approvable?','What is the real governing chain?','Which assumptions collapse confidence first?','What is the board really deciding?','If this programme fails, what will be blamed publicly?','Give me CASEY POSITION.','What has management not yet evidenced?','What would destroy board confidence fastest?','What reported green item is not yet board-defensible?','Show Traditional Controls vs CASEY.','What is the one intervention that changes confidence fastest?','What would an external assurance reviewer challenge first?'].map(x=><button key={x} data-question={x} onClick={()=>ask(x)}><Brain size={14}/>{x}</button>)}</div><div className="chatBox boardInterrogation">{chat.length ? chat.map((m,i)=><div key={i} className={`msg ${m.role}`}>{(() => {
+        {tab === 'advisor' && <section className="layout two advisorElite challengeRoom"><Card><h2>CASEY Board Assurance Console</h2><p className="advisorIntro">Click any question. CASEY answers instantly using the live programme model — not a generic response. Each answer references your actual P50, P80, confidence level and sector. Generate a project first for the most specific answers.</p><div className="advisorPrompts bigButtons">{['What is the board not seeing?','What would a traditional cost consultant say that CASEY challenges?','What evidence is missing before this becomes board-approvable?','What is the real governing chain?','Which assumptions collapse confidence first?','What is the board really deciding?','If this programme fails, what will be blamed publicly?','Give me CASEY POSITION.','What has management not yet evidenced?','What would destroy board confidence fastest?','What reported green item is not yet board-defensible?','Show Traditional Controls vs CASEY.','What is the one intervention that changes confidence fastest?','What would an external assurance reviewer challenge first?'].map(x=><button key={x} data-question={x} onClick={()=>ask(x)}><Brain size={14}/>{x}</button>)}</div><div className="chatBox boardInterrogation">{chat.length ? chat.map((m,i)=><div key={i} className={`msg ${m.role}`}>{(() => {
     const lines = String(m.text||'').split('\n');
     return lines.map((line, li) => {
       if (!line.trim()) return <div key={li} style={{height:'5px'}}/>;
@@ -2410,8 +2190,7 @@ function parseMoneyLocal(v) {
   <button onClick={()=>setUploadResult({filename:'Contractor_Cost_Estimate_v27_FINAL.xlsx', file_type:'COST ESTIMATE', schema_confidence:'Auto-mapped', findings:['Estimate structure normalised. Cost packages identified across direct works, preliminaries and risk allowance.','The headline P50 number is present — but there is no P80/P90 basis. This is how a submitted estimate can understate exposure: the headline looks fixed but the downside is unpriced.','Contingency is present as a lump sum. CASEY cannot verify it is sized against quantified risk exposure rather than a percentage of direct cost — a common tender-basis weakness.','Basis statements are missing on 6 of the major packages. Without basis, there is no evidence of what was included or excluded — and no way to challenge scope creep later.'], red_flags:['Commercial observation: No P80/P90 range provided. The estimate looks precise but carries unquantified downside. Ask the contractor to provide a risk-adjusted range.','Commercial observation: Lump-sum contingency with no risk linkage. This is not yet a quantified reserve. Require QCRA support.','No CBS/WBS mapping. Cannot verify completeness of scope coverage or trace costs to programme activities.','Escalation basis not stated. For a multi-year programme, this is a material omission.'], next_steps:['Require the contractor to provide a P50/P80/P90 range with QCRA support.','Mandate a CBS that maps to the programme WBS and schedule activities.','Commission an independent cost review before approving the headline number.','Run CASEY QCRA alongside the contractor estimate — compare the P80 positions.'], epc_challenge:true})}><FileSpreadsheet size={18}/><b>Challenge contractor cost estimate</b><span>Detect hidden exposure, lump-sum contingency and missing basis statements.</span></button>
   <button onClick={()=>setUploadResult({filename:'Programme_Schedule_FINAL_v14.xer', file_type:'SCHEDULE (XER)', schema_confidence:'Logic mapped', findings:['Schedule logic parsed. Activities identified across civil, systems, commissioning and handover phases.','Critical path identified — but float analysis reveals operationally unusable buffer. The management date assumes best-case access windows throughout.','Logic gaps detected: 8 activities have no predecessor. These are schedule anchors — they cannot be challenged because they have no upstream dependency. This can prevent a reliable view of the real critical path.','Commissioning and trial running phases show compressed durations. These are the activities most likely to slip — and they sit directly before the opening/handover milestone.'], red_flags:['Commercial observation: Open-ended activities with no predecessor — schedule logic issue that can overstate available float.','Commercial observation: Commissioning duration appears optimistic against comparable programmes. A single failed integration test resets the clock.','Float is nominal, not operationally usable. Access windows, possession permits and operator acceptance are not confirmed in the logic.','Board date is driven by the earliest path. It should be driven by the P80/P90 QSRA finish date.'], next_steps:['Require the contractor to close all open ends and confirm predecessor logic.','Run QSRA and require the P80/P90 finish date to be the board commitment date.','Validate all commissioning durations against independent benchmarks.','Name the owner of the critical-path constraint.'], epc_challenge:true})}><Workflow size={18}/><b>Challenge programme schedule</b><span>Detect schedule padding, unusable float and optimistic commissioning dates.</span></button>
   <button onClick={()=>setUploadResult({filename:'Risk_Register_v8_Draft.xlsx', file_type:'RISK REGISTER', schema_confidence:'Schema mapped', findings:['Risk register schema mapped. Cause, event, impact and owner columns identified.','CASEY challenges every risk without a named trigger, quantified residual exposure and evidence closure date.','7 risks have mitigation confidence below 50%. These are not mitigated — they are noted. The reserve needs to account for them.','4 risks are flagged as Evidence required. These are open exposures — the source file does not yet provide the evidence that the risk is under control.'], red_flags:['Commercial observation: Mitigations are written as action phrases ("to be confirmed", "in progress") rather than evidence closure. A mitigation is only valid when the evidence is complete.','Commercial observation: Residual exposure is not reconciled to the reserve. This is the most common way a risk register hides real exposure — risks exist on paper but the money is not in the budget.','4 risks require evidence that has not been provided. These cannot be treated as mitigated for board approval purposes.','Owner accountability: all risks assigned to programme-level owners. Board needs named individual owners with accountability.'], next_steps:['Require every risk to have: named owner, confirmed trigger, quantified residual and evidence closure date.','Reconcile residual exposure to reserve — any gap requires additional provision.','The 4 Evidence Required risks must be resolved or escalated to the board as open items.','Export the challenged register after QCRA/QSRA alignment and use the board attack questions.'], epc_challenge:true})}><ShieldAlert size={18}/><b>Challenge risk register</b><span>Detect unmitigated risks, missing evidence and reserve reconciliation gaps.</span></button>
-</div><h3>Upload real file</h3><label className="upload proUpload"><Upload size={18}/> Upload estimate / XER / risk workbook<input type="file" onChange={upload}/></label><ProfessionalIntakeResult result={uploadResult} model={model}/></Card></section></>
-}
+</div><h3>Upload real file</h3><label className="upload proUpload"><Upload size={18}/> Upload estimate / XER / risk workbook<input type="file" onChange={upload}/></label><ProfessionalIntakeResult result={uploadResult} model={model}/></Card></section>}
 
         {tab === 'runtime' && <HolyGrailRuntime model={model} scenario={scenario} generate={generate} runShock={runShock}/>}
         {tab === 'method' && <section className="layout two"><Card><h2>How CASEY calculated this</h2>{['Cost model: selected class estimate, sector template, location factor, complexity factor and scenario modifier.','Schedule model: level-based delivery logic, phase durations, critical path sensitivity and scenario acceleration/delay factors.','QCRA: cost exposure model using low / most likely / high impacts and risk-weighted contingency.','QSRA: schedule exposure model using activity-linked O/M/P delay ranges and critical path sensitivity.','Confidence score translated for executives: board-defensibility based on benchmark similarity, evidence maturity, procurement certainty, schedule logic, contingency adequacy and scenario posture.'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card><Card><h2>Commercial readiness</h2><p className="big">This is first-pass project controls intelligence. It is designed to accelerate challenge, option testing and board preparation before final contractor tender or signed cost plan.</p><a className="contactBtn huge" href={emailLink}><Mail/> Send project for review</a></Card></section>}
