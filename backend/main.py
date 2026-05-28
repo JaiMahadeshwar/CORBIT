@@ -8162,7 +8162,8 @@ def _v136_tt_killer_fields(model: dict, key: str, L: dict) -> dict:
         'traditional': f"Civil progress and cost spend appear on track. Programme shows {p50} outturn with {sched} completion. Risk register has been updated. Contractor reporting green.",
         'casey': f"CASEY reads the programme as {conf}% board-defensible against {_framework} standards. The governing constraint is {constraints}. Until this has a named owner and evidence closure date, the {p50} P50 is not a defensible approval position for {_approval}. The dashboard is green; the programme is not.",
         'gap': f"The gap between traditional reporting and CASEY intelligence: traditional controls measure what has happened. CASEY measures what will happen if the governing constraint is not closed before the approval gateway. {_oba_note}",
-        'incumbent_line': f"'A conventional project controls report would show this as a ' + risk.lower() + ' risk programme at ' + p50 + '. CASEY challenges whether the P80 is adequately reserved, whether the critical path has a named owner, and whether ' + _approval + ' is making a decision or deferring one.'location_framework': _framework,
+        'incumbent_line': f"A conventional project controls report would present this as a {risk.lower()} risk programme at {p50}. CASEY challenges whether the P80 is adequately reserved, whether the critical path has a named owner, and whether {_approval} is making a decision or deferring one.",
+        'location_framework': _framework,
         'approval_body': _approval,
         'financing_context': _financing,
     }
