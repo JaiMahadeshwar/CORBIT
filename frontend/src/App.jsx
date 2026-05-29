@@ -717,11 +717,17 @@ function ComparePanel({ promptA, setPromptA, promptB, setPromptB, onRun, loading
           <button onClick={()=>{setBmFilter(suggestion.sector);}} style={{fontSize:'10px',color:'#8df7ff',background:'rgba(141,247,255,0.08)',border:'1px solid rgba(141,247,255,0.2)',padding:'3px 10px',borderRadius:'3px',cursor:'pointer',fontWeight:'700'}}>Filter to {suggestion.sector} →</button>
         </div>}
         <div style={{padding:'10px 14px',borderBottom:'1px solid rgba(255,255,255,0.05)',flexShrink:0,flex:1}}>
-          <div style={{fontSize:'9px',fontWeight:'800',letterSpacing:'.1em',color:'#64748b',marginBottom:'8px'}}>WHAT THE COMPARISON PRODUCES</div>
-          {[['◆','Full intelligence pack for both programmes — P50, P80, confidence, gate readiness'],['⚖️','Side-by-side delta: cost, schedule, confidence, risk exposure, P80 gap'],['🎯','Sector match check — tells you if the comparison is like-for-like or cross-sector'],['⚠','Risk comparison — top risks, shared risk themes, EMV delta, P80 gap'],['📋','3–5 specific recommendations for your decision'],['🌍','Works for any country, sector, size — Earth or Space'],['⏱','Takes 10–15 seconds — both models run in parallel'],].map(([icon,text])=>
-            <div key={text} style={{display:'flex',gap:'8px',marginBottom:'6px',fontSize:'10px',color:'#94a3b8',alignItems:'flex-start'}}>
-              <span style={{flexShrink:0}}>{icon}</span><span style={{lineHeight:'1.4'}}>{text}</span>
-            </div>)}
+          <div style={{fontSize:'9px',fontWeight:'800',letterSpacing:'.1em',color:'#64748b',marginBottom:'8px'}}>HOW TO COMPARE YOUR PROJECT</div>
+          {[
+            ['1','Pick a reference (Option A)','Select a real programme from the library on the left — any sector, any country. Or type your own. Use the sector filter to find like-for-like matches.'],
+            ['2','Describe your project (Option B)','Type your programme on the right — sector, country, scale, constraints. Your current loaded project pre-fills automatically.'],
+            ['3','Run','CASEY runs both independently through the full intelligence engine. 10-15 seconds.'],
+            ['4','Read results','You get: cost delta, confidence gap, P80 gap, sector match verdict, risk comparison with EMV, top risks for each, and 3-5 specific recommendations.'],
+          ].map(([num, title, body]) => <div key={num} style={{display:'flex',gap:'8px',marginBottom:'7px',paddingBottom:'7px',borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
+            <div style={{background:'rgba(141,247,255,0.1)',color:'#8df7ff',fontSize:'10px',fontWeight:'800',width:'18px',height:'18px',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,marginTop:'1px'}}>{num}</div>
+            <div><div style={{fontSize:'10px',fontWeight:'700',color:'#e2e8f0',marginBottom:'1px'}}>{title}</div><div style={{fontSize:'9px',color:'#64748b',lineHeight:'1.4'}}>{body}</div></div>
+          </div>)}
+          <div style={{fontSize:'9px',color:'#475569',lineHeight:'1.4',padding:'5px',background:'rgba(255,255,255,0.02)',borderRadius:'3px'}}>Works for any country, any sector, any size — Earth or Space. Upload a file or type a description.</div>
         </div>
         <div style={{padding:'10px 14px',flexShrink:0}}>
           <button onClick={onRun} disabled={loading||!promptA.trim()||!promptB.trim()}
@@ -1178,7 +1184,30 @@ function Loading({ text }) {
 }
 function ScenarioSelector({ scenario, generate, matrix=[], model=null, prompt='', projectContext=null }) {
   const labels = {base:'Base', faster:'Faster', cheaper:'Cheaper', lower_risk:'Lower Risk', premium:'Premium'};
-  return <section className="scenarioRail">{scenarios.map(s => { const row = matrix.find(x => x.scenario === s) || {}; const active = s === scenario; return <button key={s} className={active?'active':''} onClick={() => generate(s, model?.prompt || prompt, model || projectContext)}><b>{labels[s] || s}</b><span>{row.cost_p50 || '—'} · {row.schedule_months || '—'} mo · {row.confidence_pct || '—'}%</span><em>{row.risk || (active ? 'selected' : 'run scenario')}</em></button> })}</section>;
+  const icons = {base:'●', faster:'⚡', cheaper:'↓$', lower_risk:'⬆', premium:'★'};
+  const tips = {
+    base:'Reference case — balanced cost, schedule and confidence.',
+    faster:'Parallel procurement + acceleration. Cost goes up, schedule shortens.',
+    cheaper:'Value engineering + tighter scope. Cost drops, schedule extends slightly.',
+    lower_risk:'More surveys, assurance, stage gates. Better confidence, higher cost and longer schedule.',
+    premium:'Best-in-class governance. Highest cost, best confidence and evidence.'
+  };
+  const scList = ['base','faster','cheaper','lower_risk','premium'];
+  return <section className="scenarioRail">
+    <div style={{fontSize:'9px',color:'#475569',fontWeight:'700',letterSpacing:'.08em',marginBottom:'5px',paddingLeft:'2px'}}>SCENARIO TRADE-OFFS — click any card to recalculate everything with that trade-off applied</div>
+    {scList.map(s => {
+      const row = matrix.find(x => x.scenario === s) || {};
+      const active = s === scenario;
+      const hasCost = !!(row.cost_p50 && row.cost_p50 !== '—');
+      return <button key={s} className={active ? 'active' : ''} title={tips[s]||''}
+        onClick={() => generate(s, model?.prompt || prompt, model || projectContext)}>
+        <b>{icons[s]||''} {labels[s]||s}</b>
+        <span>{hasCost ? (row.cost_p50 + ' · ' + (row.schedule_months ? row.schedule_months+'mo' : '—') + ' · ' + (row.confidence_pct||'—')+'%') : 'click to run'}</span>
+        <em>{active ? '▶ selected' : (row.risk || 'run →')}</em>
+      </button>;
+    })}
+    <div style={{fontSize:'9px',color:'#334155',marginTop:'3px',paddingLeft:'2px'}}>Each scenario is a complete independent recalculation. Cost, schedule, confidence, risks and board language all update.</div>
+  </section>;
 }
 function ExportStrip({ model, onBoardPack, onExcel, onRisk, onXer, onQcra }) {
   if (!model) return null;
@@ -2073,6 +2102,71 @@ function GatedMessage({ raw, onDismiss, onShowcase, onEarth, onSpace }) {
   );
 }
 
+// ── SAVED PROJECTS PANEL ─────────────────────────────────────────────────────
+function SavedProjectsPanel({ projects, onLoad, onDelete, onClose }) {
+  return <section className="savedPanel">
+    <div className="savedHeader"><h2>Saved Projects <span style={{color:'#8df7ff',fontSize:'10px',fontWeight:'700',marginLeft:'4px'}}>local device</span></h2><button onClick={onClose}>✕</button></div>
+    {projects.length === 0 && <div style={{padding:'30px',textAlign:'center',color:'#475569',fontSize:'12px'}}>No saved projects yet. Run a project and click "Save (local)" to save it here.</div>}
+    <div className="savedGrid">
+      {projects.map((p,i) => <div className="savedCard" key={i}>
+        <div className="savedMeta"><span>{p.subsector||'Capital Programme'}</span><em>{p.saved_at ? new Date(p.saved_at).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : ''}</em></div>
+        <h3>{p.title||p.prompt?.slice(0,60)||'Unnamed'}</h3>
+        <div className="savedStats">
+          <div><span>P50</span><b>{p.cost_p50||p.model?.cost_p50||'—'}</b></div>
+          <div><span>Duration</span><b>{p.schedule||p.model?.schedule||'—'}</b></div>
+          <div><span>Confidence</span><b>{p.confidence_pct||(p.model?.confidence_pct?p.model.confidence_pct+'%':'—')}</b></div>
+          <div><span>Risk</span><b>{p.risk||p.model?.risk||'—'}</b></div>
+        </div>
+        <div className="savedActions">
+          <button className="savedLoad" onClick={() => onLoad(p)}>Load →</button>
+          <button className="savedDelete" onClick={() => onDelete(i)}>Delete</button>
+        </div>
+      </div>)}
+    </div>
+  </section>;
+}
+
+// ── INVESTOR PANEL ─────────────────────────────────────────────────────────────
+function InvestorPanel({ onClose }) {
+  return <section className="savedPanel" style={{maxWidth:'680px'}}>
+    <div className="savedHeader"><h2>CASEY — Investor Brief</h2><button onClick={onClose}>✕</button></div>
+    <div style={{padding:'20px 24px',overflowY:'auto'}}>
+      <div style={{marginBottom:'20px'}}>
+        <div style={{fontSize:'10px',fontWeight:'800',letterSpacing:'.12em',color:'#8df7ff',marginBottom:'6px'}}>THE MARKET PROBLEM</div>
+        <p style={{fontSize:'13px',color:'#94a3b8',lineHeight:'1.7'}}>A programme sponsor with a £500M infrastructure project normally commissions a cost consultant for a preliminary advisory note — 6 to 8 weeks, £50K to £150K — before deciding whether to proceed. CASEY generates the same structured output in 12 seconds. That is not incremental improvement. It changes the economics of early-phase capital programme decision-making.</p>
+      </div>
+      <div style={{marginBottom:'20px'}}>
+        <div style={{fontSize:'10px',fontWeight:'800',letterSpacing:'.12em',color:'#8df7ff',marginBottom:'6px'}}>WHAT CASEY DOES</div>
+        {[['106 intelligence fields','Every project generates P10/P50/P80/P90, risks, board attacks, OBA, gate review, procurement flags, benchmarks and 8 export formats — in under 12 seconds.'],
+          ['15 sector ontologies','Rail, nuclear, defence, data centres, space, life sciences, semiconductor, gigafactory, water, mining, airport, ports, roads, energy, healthcare — each with a distinct causal chain and failure pattern.'],
+          ['63 named real benchmarks','Every output is calibrated against real completed programmes: Crossrail (+88%), HS2 (+140%), Hinkley C (+94%), JWST (14x cost), Kashagan (+400%). Public record, named and cited.'],
+          ['42 country profiles','Full regulatory framework, approval body, financing structure and OBA note for 42 countries — including the UK, US, Australia, France, Germany, Japan, Singapore, Nigeria, Saudi Arabia, Kazakhstan and more.'],
+          ['Programme comparison','Run two projects side by side. CASEY returns a sector match assessment, risk delta, confidence gap, P80 exposure, and 3-5 specific recommendations. Works for any country, sector and size.'],
+        ].map(([title, body]) => <div key={title} style={{marginBottom:'12px',padding:'10px 14px',background:'rgba(141,247,255,0.04)',border:'1px solid rgba(141,247,255,0.1)',borderRadius:'4px'}}>
+          <div style={{fontSize:'11px',fontWeight:'800',color:'#e2e8f0',marginBottom:'3px'}}>{title}</div>
+          <p style={{fontSize:'11px',color:'#64748b',margin:0,lineHeight:'1.5'}}>{body}</p>
+        </div>)}
+      </div>
+      <div style={{marginBottom:'20px'}}>
+        <div style={{fontSize:'10px',fontWeight:'800',letterSpacing:'.12em',color:'#8df7ff',marginBottom:'6px'}}>REVENUE MODEL</div>
+        {[['Free tier','One free project run. Showcase library. Earth and Space demos. Lead capture on every run.'],
+          ['Enterprise licence','White-label API access for Tier 1 contractors and programme sponsors. £150K-£1M/year. The intelligence is sector-specific enough, exports are professional enough, and benchmark data is hard to replicate.'],
+          ['Advisory fee','CAS(E)Y-powered advisory engagements for investment committees. The platform generates the deliverable; the engagement captures the fee.'],
+        ].map(([tier, body]) => <div key={tier} style={{display:'flex',gap:'12px',padding:'8px 0',borderBottom:'1px solid rgba(255,255,255,0.05)'}}>
+          <div style={{fontSize:'10px',fontWeight:'800',color:'#8df7ff',minWidth:'90px',paddingTop:'2px'}}>{tier}</div>
+          <p style={{fontSize:'11px',color:'#64748b',margin:0,lineHeight:'1.5'}}>{body}</p>
+        </div>)}
+      </div>
+      <div style={{padding:'14px',background:'rgba(141,247,255,0.06)',border:'1px solid rgba(141,247,255,0.2)',borderRadius:'5px'}}>
+        <div style={{fontSize:'10px',fontWeight:'800',color:'#8df7ff',marginBottom:'6px'}}>GET IN TOUCH</div>
+        <p style={{fontSize:'12px',color:'#e2e8f0',margin:'0 0 8px',lineHeight:'1.5'}}>CASEY is built by ControlOrbit. For investment enquiries, enterprise licensing, or advisory partnerships:</p>
+        <a href="mailto:deepa@caseai.co.uk" style={{display:'block',color:'#8df7ff',fontSize:'12px',fontWeight:'700',textDecoration:'none',marginBottom:'4px'}}>✉ deepa@caseai.co.uk</a>
+        <a href="https://www.linkedin.com/company/caseai" target="_blank" rel="noopener noreferrer" style={{color:'#475569',fontSize:'11px',textDecoration:'none'}}>LinkedIn: ControlOrbit / CASEY</a>
+      </div>
+    </div>
+  </section>;
+}
+
 function DemoBanner({ model }) {
   if (!model) return null;
 
@@ -2927,7 +3021,7 @@ function parseMoneyLocal(v) {
           <span style={{fontSize:'11px',color:'#94a3b8'}}>Exports available below. Earth Demo, Space Demo and Showcase Library always free.</span>
           <a href="mailto:hello@controlorbit.com?subject=CASEY Full Access" style={{marginLeft:'auto',fontSize:'11px',color:'#8df7ff',fontWeight:'700',textDecoration:'none',background:'rgba(141,247,255,0.1)',padding:'4px 12px',borderRadius:'3px',border:'1px solid rgba(141,247,255,0.3)'}}>Request full access →</a>
         </div>}
-      <nav className="tabs">{[['overview','Overview'],['compare','Scenarios'],['delta','Intel'],['causal','Causal'],['cost','Cost'],['schedule','Schedule'],['risk','Risk'],['monte','QCRA/QSRA'],['outputs','Outputs'],['assurance','Assurance'],['runtime','Stress Test'],['advisor','Advisor'],['method','Method'],['benchmark','Benchmarks'],['pricing','Pricing']].map(x => <button key={x[0]} className={tab===x[0]?'active':''} onClick={() => setTab(x[0])}>{x[1]}</button>)}</nav>
+      <nav className="tabs">{[['overview','Overview'],['compare','Scenarios'],['delta','Intel'],['mortality','Mortality'],['market','Market'],['gaps','Evidence Gaps'],['paths','Delivery Paths'],['causal','Causal'],['cost','Cost'],['schedule','Schedule'],['risk','Risk'],['monte','QCRA/QSRA'],['outputs','Outputs'],['assurance','Assurance'],['runtime','Stress Test'],['advisor','Advisor'],['method','Method'],['benchmark','Benchmarks'],['pricing','Pricing']].map(x => <button key={x[0]} className={tab===x[0]?'active':''} onClick={() => setTab(x[0])}>{x[1]}</button>)}</nav>
         {tab === 'overview' && <>
           {model.executive_shock_insight && <section className="layout one"><Card className="shockCard"><h2>⚡ Live model update</h2><p>{model.executive_shock_insight}</p></Card></section>}
           <section className="layout two">
@@ -3037,6 +3131,162 @@ function parseMoneyLocal(v) {
           </Card>
           <Card><h2>Top Decisions Required</h2>
             {(model.top_decisions_required || []).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{x}</div>)}
+          </Card>
+        </section>}
+
+        {tab === 'mortality' && <section className="layout two">
+          <Card><h2 style={{color:'#ef4444'}}>Programme Mortality Engine</h2>
+            <p style={{fontSize:'11px',color:'#64748b',marginBottom:'10px'}}>Probability and named drivers of programme cancellation or fundamental restructuring. Consultants never produce this. CASEY generates it in 12 seconds.</p>
+            {(() => {
+              const m2 = model.programme_mortality_engine || {};
+              const score = m2.score || 0;
+              const col = score >= 70 ? '#ef4444' : score >= 45 ? '#f59e0b' : score >= 25 ? '#fbbf24' : '#10b981';
+              return <><div style={{display:'flex',alignItems:'center',gap:'16px',marginBottom:'12px',padding:'14px',background:'rgba(239,68,68,0.06)',border:`2px solid ${col}`,borderRadius:'5px'}}>
+                <div style={{fontSize:'48px',fontWeight:'900',color:col,lineHeight:1}}>{score}%</div>
+                <div><div style={{fontSize:'10px',fontWeight:'800',letterSpacing:'.1em',color:col,marginBottom:'3px'}}>PROGRAMME MORTALITY RISK</div>
+                <div style={{fontSize:'12px',color:'#e2e8f0',lineHeight:'1.4'}}>{m2.verdict || 'Run a project to see mortality analysis.'}</div></div>
+              </div>
+              <h3>Mortality drivers</h3>
+              {(m2.drivers || []).map((d,i) => <div className="reason" key={i}><span style={{background:'rgba(239,68,68,0.2)',color:'#ef4444'}}>{i+1}</span>{d}</div>)}
+              <h3 style={{marginTop:'10px'}}>How to reduce mortality risk</h3>
+              {(m2.mitigation || []).map((m3,i) => <div className="reason" key={i}><span style={{background:'rgba(16,185,129,0.15)',color:'#10b981'}}>{i+1}</span>{m3}</div>)}
+              </>;
+            })()}
+          </Card>
+          <Card><h2>Historical Precedents</h2>
+            <p style={{fontSize:'11px',color:'#64748b',marginBottom:'10px'}}>Named programmes from public record that failed, were restructured, or cancelled under similar conditions.</p>
+            {(model.programme_mortality_engine?.precedents || []).map((p2,i) => <div className="reason" key={i}><span>{i+1}</span>{p2}</div>)}
+            <h3 style={{marginTop:'12px'}}>Sector failure pattern</h3>
+            <p style={{fontSize:'12px',color:'#94a3b8',lineHeight:'1.6',fontStyle:'italic'}}>{safeRender(model.if_this_fails) || safeRender(model.sector_failure_pattern) || 'Run a project to see the sector failure pattern.'}</p>
+            <h3 style={{marginTop:'10px'}}>CASEY position</h3>
+            <p style={{fontSize:'11px',color:'#8df7ff',lineHeight:'1.6'}}>{safeRender((model.traditional_vs_casey || {}).casey_read) || 'CASEY position not available for this scenario.'}</p>
+          </Card>
+        </section>}
+
+        {tab === 'market' && <section className="layout two">
+          <Card><h2>Contractor Market Intelligence</h2>
+            <p style={{fontSize:'11px',color:'#64748b',marginBottom:'10px'}}>Who can deliver this programme, order book depth, supply chain concentration and single-source risk. This is what T&T and Jacobs charge £500/hr to produce.</p>
+            {(() => {
+              const mkt = model.contractor_market_intelligence || {};
+              return <><div style={{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:'4px',padding:'10px 14px',marginBottom:'10px'}}>
+                <div style={{fontSize:'9px',fontWeight:'800',letterSpacing:'.1em',color:'#8df7ff',marginBottom:'5px'}}>TIER 1 CONTRACTORS FOR THIS SECTOR</div>
+                <div style={{display:'flex',flexWrap:'wrap',gap:'5px'}}>
+                  {(mkt.tier1 || []).map(c => <span key={c} style={{background:'rgba(141,247,255,0.08)',border:'1px solid rgba(141,247,255,0.15)',color:'#e2e8f0',padding:'2px 8px',borderRadius:'20px',fontSize:'10px'}}>{c}</span>)}
+                </div>
+              </div>
+              {[['Order book',mkt.order_book],['Supply chain',mkt.supply_chain],['Single-source risk',mkt.single_source_risk],['Procurement recommendation',mkt.procurement_rec],['Labour market',mkt.labour]].filter(([,v])=>v).map(([k,v]) =>
+                <div key={k} style={{padding:'8px 0',borderBottom:'1px solid rgba(255,255,255,0.05)'}}>
+                  <div style={{fontSize:'9px',fontWeight:'800',color:'#8df7ff',marginBottom:'2px'}}>{k.toUpperCase()}</div>
+                  <p style={{fontSize:'11px',color:'#94a3b8',margin:0,lineHeight:'1.5'}}>{v}</p>
+                </div>)}
+              {mkt.capacity_note && <div style={{marginTop:'8px',padding:'8px 12px',background:'rgba(245,158,11,0.06)',border:'1px solid rgba(245,158,11,0.15)',borderRadius:'3px',fontSize:'11px',color:'#fde68a'}}>{mkt.capacity_note}</div>}
+              {mkt.location_note && <div style={{marginTop:'6px',padding:'8px 12px',background:'rgba(141,247,255,0.05)',border:'1px solid rgba(141,247,255,0.1)',borderRadius:'3px',fontSize:'11px',color:'#8df7ff'}}>{mkt.location_note}</div>}
+              </>;
+            })()}
+          </Card>
+          <Card><h2>Specialists and Procurement</h2>
+            {(() => {
+              const mkt = model.contractor_market_intelligence || {};
+              return <><div style={{marginBottom:'10px'}}>
+                <div style={{fontSize:'9px',fontWeight:'800',letterSpacing:'.1em',color:'#b18cff',marginBottom:'5px'}}>SPECIALIST ADVISORS AND SUBCONTRACTORS</div>
+                <div style={{display:'flex',flexWrap:'wrap',gap:'5px'}}>
+                  {(mkt.specialists || []).map(c => <span key={c} style={{background:'rgba(177,140,255,0.06)',border:'1px solid rgba(177,140,255,0.12)',color:'#e2e8f0',padding:'2px 8px',borderRadius:'20px',fontSize:'10px'}}>{c}</span>)}
+                </div>
+              </div>
+              <div style={{background:'rgba(141,247,255,0.04)',border:'1px solid rgba(141,247,255,0.1)',borderRadius:'4px',padding:'10px 14px'}}>
+                <div style={{fontSize:'9px',fontWeight:'800',color:'#8df7ff',marginBottom:'5px'}}>PROCUREMENT RECOMMENDATION</div>
+                <p style={{fontSize:'12px',color:'#e2e8f0',margin:0,lineHeight:'1.6'}}>{mkt.procurement_rec || 'Run a project to see procurement recommendation.'}</p>
+              </div>
+              <div style={{marginTop:'8px',background:'rgba(239,68,68,0.05)',border:'1px solid rgba(239,68,68,0.15)',borderRadius:'4px',padding:'10px 14px'}}>
+                <div style={{fontSize:'9px',fontWeight:'800',color:'#ef4444',marginBottom:'3px'}}>SINGLE-SOURCE RISK ASSESSMENT</div>
+                <p style={{fontSize:'11px',color:'#fca5a5',margin:0}}>{mkt.single_source_risk || '—'}</p>
+              </div>
+              </>;
+            })()}
+          </Card>
+        </section>}
+
+        {tab === 'gaps' && <section className="layout two">
+          <Card><h2>Evidence Gap Scanner</h2>
+            <p style={{fontSize:'11px',color:'#64748b',marginBottom:'10px'}}>Named evidence gaps that will block this programme at any gate review or PAC/NAO inquiry. An IPA assurance reviewer charges £800/day to produce this list. CASEY generates it in 12 seconds.</p>
+            {(model.evidence_gaps || []).length === 0 && <div style={{padding:'20px',textAlign:'center',color:'#475569',fontSize:'12px'}}>No evidence gaps detected, or no project loaded. Run a project to see the gap analysis.</div>}
+            {(model.evidence_gaps || []).map((gap,i) => {
+              const sevCol = gap.severity === 'CRITICAL' ? '#ef4444' : gap.severity === 'HIGH' ? '#f59e0b' : '#64748b';
+              return <div key={i} style={{marginBottom:'10px',padding:'10px 14px',background:'rgba(255,255,255,0.02)',border:`1px solid ${sevCol}33`,borderRadius:'4px',borderLeft:`3px solid ${sevCol}`}}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:'4px'}}>
+                  <div style={{fontSize:'12px',fontWeight:'800',color:'#e2e8f0'}}>{gap.gap}</div>
+                  <span style={{background:`${sevCol}18`,color:sevCol,fontSize:'8px',fontWeight:'800',padding:'2px 7px',borderRadius:'2px',flexShrink:0,marginLeft:'8px'}}>{gap.severity}</span>
+                </div>
+                <p style={{fontSize:'11px',color:'#94a3b8',margin:'0 0 5px',lineHeight:'1.5'}}>{gap.detail}</p>
+                <div style={{display:'flex',gap:'12px',fontSize:'10px'}}>
+                  <span style={{color:'#8df7ff'}}>Owner: {gap.owner}</span>
+                  <span style={{color:'#475569'}}>Close by: {gap.close_by}</span>
+                </div>
+                {gap.reference && <div style={{marginTop:'3px',fontSize:'9px',color:'#334155'}}>Ref: {gap.reference}</div>}
+              </div>;
+            })}
+          </Card>
+          <Card><h2>Gate Readiness Summary</h2>
+            {(() => {
+              const gate = model.gate_review_readiness || {};
+              const gaps = model.evidence_gaps || [];
+              const critical = gaps.filter(g => g.severity === 'CRITICAL').length;
+              const high = gaps.filter(g => g.severity === 'HIGH').length;
+              return <><div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'8px',marginBottom:'12px'}}>
+                {[['Critical gaps',critical,'#ef4444'],['High gaps',high,'#f59e0b'],['Total gaps',gaps.length,'#64748b']].map(([l,v,c]) =>
+                  <div key={l} style={{textAlign:'center',padding:'10px',background:'rgba(255,255,255,0.03)',borderRadius:'4px'}}>
+                    <div style={{fontSize:'28px',fontWeight:'900',color:c}}>{v}</div>
+                    <div style={{fontSize:'9px',color:'#475569',fontWeight:'700'}}>{l}</div>
+                  </div>)}
+              </div>
+              <div style={{padding:'10px 14px',background:'rgba(255,255,255,0.03)',borderRadius:'4px',marginBottom:'10px'}}>
+                <div style={{fontSize:'9px',fontWeight:'800',color:'#8df7ff',marginBottom:'3px'}}>GATE REVIEW VERDICT</div>
+                <p style={{fontSize:'12px',color:'#e2e8f0',margin:'0 0 4px',fontWeight:'700'}}>{gate.overall_verdict || '—'}</p>
+                <p style={{fontSize:'11px',color:'#64748b',margin:0}}>{gate.current_gate_readiness || '—'}</p>
+              </div>
+              {(gate.next_gate_actions || []).map((a,i) => <div className="reason" key={i}><span>{i+1}</span>{a}</div>)}
+              </>;
+            })()}
+          </Card>
+        </section>}
+
+        {tab === 'paths' && <section className="layout two">
+          <Card><h2>Three Delivery Paths</h2>
+            <p style={{fontSize:'11px',color:'#64748b',marginBottom:'10px'}}>Alternative delivery strategies for the same programme brief. CASEY produces this independently — consultants avoid it because it reduces the scope of their fee-earning engagement.</p>
+            {(model.delivery_paths || []).map((path,i) => {
+              const cols = ['#10b981','#8df7ff','#b18cff'];
+              const c = cols[i] || '#8df7ff';
+              return <div key={i} style={{marginBottom:'12px',padding:'12px 14px',background:'rgba(255,255,255,0.02)',border:`1px solid ${c}25`,borderRadius:'4px',borderLeft:`3px solid ${c}`}}>
+                <div style={{fontSize:'12px',fontWeight:'800',color:c,marginBottom:'4px'}}>{path.path}</div>
+                <p style={{fontSize:'11px',color:'#94a3b8',margin:'0 0 8px',lineHeight:'1.5'}}>{path.description}</p>
+                <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'6px',marginBottom:'8px'}}>
+                  {[['P50',path.cost_p50],['Schedule',path.schedule],['Confidence',path.confidence]].map(([l,v]) =>
+                    <div key={l} style={{textAlign:'center',padding:'5px',background:'rgba(255,255,255,0.04)',borderRadius:'3px'}}>
+                      <div style={{fontSize:'9px',color:'#475569',marginBottom:'1px'}}>{l}</div>
+                      <div style={{fontSize:'12px',fontWeight:'800',color:'#e2e8f0'}}>{v}</div>
+                    </div>)}
+                </div>
+                <div style={{fontSize:'10px',color:'#ef4444',marginBottom:'3px'}}><b>Key risk:</b> {path.key_risk}</div>
+                <div style={{fontSize:'10px',color:'#64748b',marginBottom:'5px'}}><b>Best for:</b> {path.best_for}</div>
+                <div style={{padding:'6px 10px',background:'rgba(141,247,255,0.04)',border:'1px solid rgba(141,247,255,0.1)',borderRadius:'3px',fontSize:'10px',color:'#8df7ff',lineHeight:'1.4'}}>
+                  <b>Board will ask:</b> {path.board_question}
+                </div>
+              </div>;
+            })}
+          </Card>
+          <Card><h2>How to Choose</h2>
+            <p style={{fontSize:'11px',color:'#64748b',marginBottom:'10px'}}>Use the Advisor tab to run a what-if on any path: ask "What if we go ECI?" and CASEY reruns the model with that constraint applied.</p>
+            <div style={{background:'rgba(141,247,255,0.04)',border:'1px solid rgba(141,247,255,0.12)',borderRadius:'4px',padding:'12px 14px',marginBottom:'10px'}}>
+              <div style={{fontSize:'10px',fontWeight:'800',color:'#8df7ff',marginBottom:'6px'}}>DECISION FRAMEWORK</div>
+              {[['Time is the primary constraint','Choose ECI or DBFO — accept cost premium to compress schedule.'],['Public accountability is critical','Choose conventional design-bid-build. Maximum audit trail.'],['Technical complexity is high','Choose ECI — contractor involvement de-risks buildability before commitment.'],['Capital preservation matters more than ownership','Consider PPP, concession or build-to-suit. Check HMT VFM test.'],['Capacity and certainty matter most','Choose premium scenario with ECI and independent assurance. Highest cost, lowest mortality risk.']].map(([q,a]) =>
+                <div key={q} style={{marginBottom:'8px',paddingBottom:'8px',borderBottom:'1px solid rgba(255,255,255,0.05)'}}>
+                  <div style={{fontSize:'10px',fontWeight:'700',color:'#e2e8f0',marginBottom:'2px'}}>{q}</div>
+                  <div style={{fontSize:'10px',color:'#64748b',lineHeight:'1.4'}}>{a}</div>
+                </div>)}
+            </div>
+            <div style={{padding:'10px 14px',background:'rgba(245,158,11,0.05)',border:'1px solid rgba(245,158,11,0.15)',borderRadius:'4px',fontSize:'11px',color:'#fde68a',lineHeight:'1.5'}}>
+              ⚠ A conventional advisory report will recommend one path. CASEY shows all three simultaneously — with cost, schedule and confidence implications for each — so the client can make an informed decision rather than accept a consultant recommendation.
+            </div>
           </Card>
         </section>}
 
@@ -3257,8 +3507,19 @@ function parseMoneyLocal(v) {
           </section>}
 
           {/* ORIGINAL ADVISOR PANEL */}
-          <section className="layout two advisorElite challengeRoom"><Card><h2>CASEY Board Assurance Console</h2>
-<p className="advisorIntro">Ask any question about the live programme. CASEY answers using the actual model data — not a generic response. <b style={{color:'#8df7ff'}}>Try a "what if" question to rerun the model with a constraint applied.</b></p>
+          <section className="layout two advisorElite challengeRoom"><Card><h2>CASEY Advisor — Ask anything about this programme</h2>
+<p className="advisorIntro">
+  <b style={{color:'#8df7ff'}}>What-if questions rerun the model with your constraint applied</b> — you get a new P50, confidence and schedule delta instantly.
+  Factual questions (risks, gate readiness, P80, procurement, benchmarks) answer from live model data.
+</p>
+<div style={{background:'rgba(141,247,255,0.05)',border:'1px solid rgba(141,247,255,0.1)',borderRadius:'4px',padding:'8px 12px',marginBottom:'8px',fontSize:'10px',color:'#64748b',lineHeight:'1.6'}}>
+  <b style={{color:'#8df7ff',display:'block',marginBottom:'3px'}}>Examples of what to ask:</b>
+  "What if contractor A wins the signalling package?" → reruns model, shows cost/confidence/schedule delta<br/>
+  "What are the top risks?" → full risk register from this model<br/>
+  "Is this programme gate-ready?" → G0-G5 gate review readiness verdict<br/>
+  "What will the board ask?" → board attack simulation questions<br/>
+  "What is the P80 exposure?" → P80, OBA-adjusted outturn and board challenge
+</div>
 <div style={{background:'rgba(141,247,255,0.05)',border:'1px solid rgba(141,247,255,0.12)',borderRadius:'4px',padding:'8px 12px',marginBottom:'10px',fontSize:'11px'}}>
   <div style={{fontSize:'9px',fontWeight:'800',letterSpacing:'.1em',color:'#8df7ff',marginBottom:'5px'}}>WHAT-IF EXAMPLES — type these or use as inspiration</div>
   {[
