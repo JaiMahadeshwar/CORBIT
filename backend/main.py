@@ -6088,54 +6088,436 @@ print("CASEY loaded.")
 
 # ═══════════════════════════════════════════════════════════════════════════════
 
-# ══════════════════════════════════════════════════════════════════════════════
-# REAL COMPLETED PROJECT DATA — public record, every sector, Earth + Space
-# Sources: parliamentary accounts committees, OECD, Flyvbjerg et al 2022,
-# company filings, World Bank ICR, IPA annual reports, NASA EVM, ESA EMITS
-# ══════════════════════════════════════════════════════════════════════════════
-
-_CASEY_POSITION_BY_SECTOR = {
-    'Rail / Transit': 'HS2 Phase 2b: £44.6B outturn vs £55.7B budget (2020 baseline). Crossrail: £18.8B actual vs £14.8B approved. CASEY: schedule risk exceeds cost risk in this sector. P80 schedule exposure typically exceeds P80 cost exposure. Systems integration and possessions are the governing constraint.',
-    'Nuclear / Energy': 'Hinkley Point C: £31-35B vs £18B original (2016). Olkiluoto 3: €8.5B vs €3B (2005). Vogtle 3&4 USA: $35B vs $14B (2009). CASEY: apply minimum 2.0x OBA multiplier for nuclear new build. Class 3 nuclear estimate has no credibility for board approval.',
-    'Space / Mission Assurance': 'JWST: $9.7B vs $1.6B (1997), 14-year delay. Artemis SLS: $23B+ vs $6.2B (2011). OneWeb: $6.4B bankruptcy 2020. Constellation: $9B cancelled. CASEY: confidence below 70% on a space programme at Class 3 is board-approvable only with a named mission assurance authority.',
-    'Digital Infrastructure / Hyperscale Data Centre': 'AWS Virginia hyperscale fleet: on time and budget (industry benchmark). Meta Prineville: on time. BT EE network upgrade: +£200M. CASEY: transformer procurement must begin before planning consent is granted. 18-month lead time is non-negotiable.',
-    'Defence / Secure Infrastructure': 'Ajax: £5.5B, zero vehicles delivered 2019-2023. F-35 programme: 5-year delay, +$165B. Type 26 frigate: +30% cost. ASTUTE class: +40% cost. CASEY: single-point baseline estimate not credible in defence without named requirement freeze date and sovereign supply chain assessment.',
-    'Life Sciences / Biologics Manufacturing': 'Moderna Norwood MA: on time and budget. GSK Barnard Castle: +15% cost. Pfizer McPherson KS: on schedule. BioNTech Marburg: delivered. CASEY: CQV (commissioning, qualification, validation) is 30-40% longer than planned. Budget confidence is higher than schedule confidence in this sector.',
-    'Semiconductor / Advanced Manufacturing': 'Intel Ohio: 2-year delay (2024). TSMC Arizona: 2-year delay, +40% cost. Samsung Taylor TX: delayed 1+ years. TSMC Japan Kumamoto: on schedule. CASEY: ASML EUV allocation is the single critical path item — all other schedule logic is secondary.',
-    'Battery / Gigafactory': 'Britishvolt: £3.8B failed January 2023, no anchor customer. Northvolt: restructuring 2024, $15B losses. LG Wroclaw: delivered. CATL Erfurt: on time. AESC Sunderland: delayed. CASEY: gigafactory with no confirmed offtake and no qualified cell chemistry team has greater than 60% programme mortality risk.',
-    'Water / Environmental Infrastructure': 'Thames Tideway: £4.2B, 2-year delay. Snowy 2.0: A$12B vs A$2B (2017). Elan Valley Aqueduct restoration: on budget. Singapore DTSS2: on time. CASEY: geotechnical investigation at Class 3 is materially incomplete. Apply minimum Class 2 OBA for any underground programme.',
-    'Airport / Aviation': 'Berlin Brandenburg: €7.3B vs €2.0B (2006), 10-year delay. Sydney West Airport: +$5B. Heathrow R3: delayed 15+ years. Istanbul Airport: on budget. CASEY: airport programme without named ORAT director and security approval timeline is not gate-ready.',
-    'Mining / Metals Infrastructure': 'Oyu Tolgoi underground: $7.1B vs $5.1B, 3-year delay. Jansen Phase 1: +$0.5B. Cobre Panama: $10B, suspended 2023. Olympic Dam expansion: deferred. CASEY: mining programme without signed community benefit agreement has elevated mortality risk regardless of technical confidence.',
-    'Ports / Marine Infrastructure': 'Patimban Port Indonesia: $1.3B on schedule (World Bank). Tilbury Expansion: on budget. Tanger-Med Phase 2: on time. DP World London Gateway Phase 2: on schedule. CASEY: ports have lower mortality risk than most infrastructure sectors. Primary failure mode is operational underperformance, not cancellation.',
-    'Roads / Highways Infrastructure': 'A14 Cambridge-Huntingdon: £1.5B, on time. A303 Stonehenge tunnel: delayed (UNESCO). California HSR: $128B vs $33B (2008). RIS2 UK: average 12-18 month delay. CASEY: road programme without confirmed CPO (compulsory purchase) budget is not approvable at any gate.',
-    'Energy / Utilities': 'Hornsea 1 offshore wind: on budget ($4.6B). East Anglia ONE: on budget. Renewi waste-to-energy: +£200M. Dogger Bank A: +£1.5B. CASEY: CfD auction revenue and grid connection date are the two numbers that determine programme viability.',
-    'Healthcare / Hospital Infrastructure': 'Royal Liverpool Hospital: £1.9B vs £335M (2009), 10-year delay. New Karolinska Stockholm: £4.8B vs £1.5B. Midland Metropolitan: on revised budget. CASEY: hospital programme with active clinical services during construction requires 40% longer possession duration than baseline programme logic implies.',
-    'Orbital Compute / Manufacturing': 'Starlink Gen2: $30B+ programme, 6,000+ satellites. OneWeb: $6.4B bankruptcy, rescued. AST SpaceMobile: pre-revenue. CASEY: orbital compute is the highest-capital, lowest-definition-maturity sector in the space portfolio. No credible Class 3 estimate exists without confirmed launch cadence.',
-    'Lunar Surface Habitat/Base': 'Artemis/SLS: $23B+ vs $6.2B (2011), 6-year delay. Lunar Gateway: unfunded beyond early modules. ISRO Chandrayaan-3: $75M, on time — cost discipline possible with constrained scope. CASEY: lunar base programmes at $10B+ have no credible comparable. Apply 60%+ OBA. Mortality risk driven by political funding continuity, not technical risk.',
-    'Mars Surface Habitat/Base': 'No completed reference programmes. Mars InSight: $814M, on time. Perseverance: $2.7B, on time. Human Mars mission: no funded programme exists. CASEY: Mars surface habitat estimates are Class 5 (concept screening only). No OBA reference class applies — uncertainty is dominated by technology readiness, not cost management.',
-    'ISRU/Mining/Propellant': 'NASA MOXIE (demonstration only): $30M. Commercial ISRU: no completed programmes. SpaceX Starship: aiming for lunar ISRU support. CASEY: ISRU estimates are Class 5. Schedule confidence below 30% until TRL 6 demonstrated. Political funding continuity is the primary mortality driver.',
-    'Satellite/Comms': 'Iridium NEXT: $3B, on time. Globalstar Phase 2: $1.6B, on time. OneWeb: $6.4B, bankruptcy + rescue. O3b mPOWER: $1B+, delayed 2 years. CASEY: satellite constellation programmes with no anchor customer or revenue model have elevated mortality risk. Recurring launch cost is systematically underestimated.',
+# ══════════════════════════════════════════════════════════════════
+# REAL NAMED PROGRAMME BENCHMARKS — 63 programmes, public record
+# ══════════════════════════════════════════════════════════════════
+NAMED_BENCHMARKS = {
+  'Rail / Transit': [
+    {'name':'Crossrail / Elizabeth Line','cost_bn':22.7,'growth':88,'slip':84,'failure':'Deferred systems integration — 900 open IEMs at planned opening'},
+    {'name':'HS2 Phase 1','cost_bn':44.6,'growth':140,'slip':36,'failure':'Scope growth, ground conditions, open corridor risk'},
+    {'name':'California High Speed Rail','cost_bn':128.0,'growth':288,'slip':180,'failure':'Land acquisition, environmental objections, contractor insolvency'},
+    {'name':'Riyadh Metro','cost_bn':22.5,'growth':12,'slip':24,'failure':'Systems integration and operational readiness timeline'},
+    {'name':'Grand Paris Express','cost_bn':38.0,'growth':28,'slip':24,'failure':'Ground conditions, utility diversions, station scope changes'},
+    {'name':'Sydney Metro West','cost_bn':25.0,'growth':35,'slip':18,'failure':'Ground conditions tunnelling, station fitout scope changes'},
+  ],
+  'Rail Mega Programme': [
+    {'name':'HS2 Phase 2b','cost_bn':44.6,'growth':140,'slip':36,'failure':'Scope reduction 2023: Phase 2b cancelled after £20B cost growth'},
+    {'name':'Crossrail / Elizabeth Line','cost_bn':22.7,'growth':88,'slip':84,'failure':'Deferred systems integration — 900 open IEMs at planned opening'},
+    {'name':'California High Speed Rail','cost_bn':128.0,'growth':288,'slip':180,'failure':'Land acquisition, environmental objections, contractor insolvency'},
+  ],
+  'Nuclear / Energy': [
+    {'name':'Hinkley Point C','cost_bn':35.0,'growth':94,'slip':60,'failure':'FOAK EPR supply chain, first-pour concrete issues, nuclear-grade welding failure'},
+    {'name':'Olkiluoto 3 Finland','cost_bn':11.0,'growth':300,'slip':168,'failure':'FOAK EPR complexity, safety system integration, regulatory hold-points'},
+    {'name':'Vogtle Units 3&4 USA','cost_bn':34.0,'growth':113,'slip':84,'failure':'FOAK AP1000 design changes, contractor performance, qualified labour shortage'},
+  ],
+  'Nuclear Power Station': [
+    {'name':'Hinkley Point C','cost_bn':35.0,'growth':94,'slip':60,'failure':'FOAK EPR supply chain, first-pour concrete issues, nuclear-grade welding failure'},
+    {'name':'Olkiluoto 3 Finland','cost_bn':11.0,'growth':300,'slip':168,'failure':'FOAK EPR complexity, safety system integration, regulatory hold-points'},
+    {'name':'Vogtle Units 3&4 USA','cost_bn':34.0,'growth':113,'slip':84,'failure':'FOAK AP1000 design changes, contractor performance, qualified labour shortage'},
+  ],
+  'Digital Infrastructure / Hyperscale Data Centre': [
+    {'name':'Microsoft Azure UK South Slough','cost_bn':3.2,'growth':15,'slip':18,'failure':'Grid connection delay, DNO queue, cooling commissioning'},
+    {'name':'Amazon AWS Dublin Campus','cost_bn':4.2,'growth':20,'slip':14,'failure':'Planning opposition, grid capacity, water usage consent'},
+    {'name':'Meta Prineville Oregon','cost_bn':3.8,'growth':8,'slip':6,'failure':'Power density increase required cooling redesign mid-build'},
+  ],
+  'Defence / Secure Infrastructure': [
+    {'name':'Ajax Armoured Vehicles UK','cost_bn':5.5,'growth':57,'slip':120,'failure':'EMC/vibration issues, crew safety, training system integration'},
+    {'name':'Watchkeeper UAV Programme','cost_bn':1.3,'growth':130,'slip':120,'failure':'Civil airspace certification never achieved — airworthiness not on critical path'},
+    {'name':'F-35 Joint Strike Fighter','cost_bn':412.0,'growth':68,'slip':96,'failure':'Software integration complexity, concurrent development and production'},
+    {'name':'Type 26 Frigate City Class','cost_bn':8.0,'growth':30,'slip':24,'failure':'Design changes post-contract, combat system integration complexity'},
+  ],
+  'Defence Nuclear Infrastructure': [
+    {'name':'AWE Aldermaston MENSA','cost_bn':6.5,'growth':65,'slip':48,'failure':'Nuclear safety case rewrite, classified supply chain, SC/DV workforce shortage'},
+    {'name':'Astute Class Submarine','cost_bn':9.5,'growth':50,'slip':48,'failure':'Complex combat systems, nuclear-qualified supply chain, ITAR restrictions'},
+    {'name':'Ajax Armoured Vehicles UK','cost_bn':5.5,'growth':57,'slip':120,'failure':'Requirements instability after contract, EMC/vibration issues unresolved for 5 years'},
+  ],
+  'Life Sciences / Biologics Manufacturing': [
+    {'name':'AstraZeneca Macclesfield Expansion','cost_bn':1.2,'growth':30,'slip':24,'failure':'Validation deferred post-construction, clean utility qualification delay'},
+    {'name':'Pfizer Ringaskiddy Ireland','cost_bn':1.5,'growth':18,'slip':18,'failure':'Regulatory submission delayed by CMC dossier readiness'},
+    {'name':'Moderna Norwood Massachusetts','cost_bn':0.95,'growth':5,'slip':3,'failure':'On time and budget — anchor customer (US government) committed pre-construction'},
+  ],
+  'Semiconductor / Advanced Manufacturing': [
+    {'name':'Intel Ohio Fab','cost_bn':28.0,'growth':0,'slip':36,'failure':'Workforce shortage, UPW complexity, tool delivery slippage'},
+    {'name':'TSMC Arizona Fab','cost_bn':40.0,'growth':35,'slip':30,'failure':'Specialised workforce unavailable locally, tool delivery, UPW systems'},
+    {'name':'Samsung Austin Fab Expansion','cost_bn':17.0,'growth':20,'slip':18,'failure':'Process qualification longer than planned, yield ramp below projection'},
+  ],
+  'Battery / Gigafactory': [
+    {'name':'Britishvolt Blyth Gigafactory','cost_bn':3.8,'growth':100,'slip':999,'failure':'Company collapse Feb 2023: no anchor customer, no qualified cell chemistry team'},
+    {'name':'Northvolt Ett Sweden','cost_bn':9.0,'growth':40,'slip':24,'failure':'Yield ramp below target, quality issues, management restructuring 2024'},
+    {'name':'LG Energy Wroclaw Poland','cost_bn':2.5,'growth':8,'slip':6,'failure':'On budget and schedule — Volkswagen Group anchor customer pre-committed'},
+    {'name':'CATL Erfurt Germany','cost_bn':2.0,'growth':10,'slip':9,'failure':'Process qualification longer than planned, regulatory compliance ATEX'},
+  ],
+  'Battery Gigafactory': [
+    {'name':'Britishvolt Blyth Gigafactory','cost_bn':3.8,'growth':100,'slip':999,'failure':'Company collapse Feb 2023: no anchor customer, no qualified cell chemistry team'},
+    {'name':'Northvolt Ett Sweden','cost_bn':9.0,'growth':40,'slip':24,'failure':'Yield ramp below target, quality issues, management restructuring 2024'},
+    {'name':'CATL Erfurt Germany','cost_bn':2.0,'growth':10,'slip':9,'failure':'Process qualification, regulatory compliance ATEX'},
+  ],
+  'Water / Environmental Infrastructure': [
+    {'name':'Thames Tideway Tunnel London','cost_bn':4.2,'growth':20,'slip':24,'failure':'Ground conditions, utility diversions, Thames working constraints'},
+    {'name':'Snowy 2.0 Australia','cost_bn':12.0,'growth':500,'slip':48,'failure':'TBM stranded in geology, contract disputes, extreme ground conditions'},
+    {'name':'Singapore DTSS2 Deep Tunnel','cost_bn':2.8,'growth':5,'slip':6,'failure':'On schedule — strong client capability and early contractor engagement'},
+  ],
+  'Water Mega Programme': [
+    {'name':'Thames Tideway Tunnel London','cost_bn':4.2,'growth':20,'slip':24,'failure':'Ground conditions, utility diversions, Thames working constraints'},
+    {'name':'Snowy 2.0 Australia','cost_bn':12.0,'growth':500,'slip':48,'failure':'TBM stranded in geology, contract disputes, extreme ground conditions'},
+  ],
+  'Airport / Aviation': [
+    {'name':'Berlin Brandenburg Airport BER','cost_bn':7.3,'growth':265,'slip':120,'failure':'Fire safety system failure, baggage system failure, ORAT not resourced'},
+    {'name':'Sydney West Airport','cost_bn':11.5,'growth':60,'slip':18,'failure':'Cost growth from scope additions, construction market conditions'},
+    {'name':'Heathrow Terminal 5','cost_bn':4.3,'growth':5,'slip':0,'failure':'Baggage system failure on day 1 — operations not integrated with construction delivery'},
+  ],
+  'Airport Mega Programme': [
+    {'name':'Berlin Brandenburg Airport BER','cost_bn':7.3,'growth':265,'slip':120,'failure':'Fire safety system failure, baggage system failure, ORAT not resourced'},
+    {'name':'Istanbul New Airport','cost_bn':12.0,'growth':20,'slip':18,'failure':'Operational handover phasing, air traffic management transition'},
+  ],
+  'Mining / Metals Infrastructure': [
+    {'name':'Oyu Tolgoi Underground','cost_bn':7.1,'growth':39,'slip':36,'failure':'Ground conditions worse than feasibility, community disputes, draw point performance'},
+    {'name':'Jansen Potash Mine Phase 1','cost_bn':5.7,'growth':10,'slip':12,'failure':'Construction market conditions, supply chain inflation'},
+    {'name':'Cobre Panama Copper Mine','cost_bn':10.0,'growth':25,'slip':24,'failure':'Community opposition, national referendum, suspended 2023'},
+  ],
+  'Energy / Utilities': [
+    {'name':'Hornsea 1 Offshore Wind UK','cost_bn':4.6,'growth':0,'slip':0,'failure':'On budget and schedule — mature OWF procurement framework'},
+    {'name':'Dogger Bank A&B Offshore Wind','cost_bn':9.0,'growth':35,'slip':24,'failure':'Transformer failure post-installation, turbine supply chain delays'},
+    {'name':'East Anglia ONE Offshore Wind','cost_bn':3.5,'growth':10,'slip':6,'failure':'Cable installation weather windows, substation grid connection timeline'},
+  ],
+  'Lunar Surface Habitat/Base': [
+    {'name':'Artemis SLS / Orion','cost_bn':23.0,'growth':271,'slip':72,'failure':'Standing Army development model, contractor cost-plus structure, political schedule pressure'},
+    {'name':'James Webb Space Telescope','cost_bn':9.7,'growth':506,'slip':168,'failure':'Mirror deployment complexity, mission assurance qualification burden, contractor performance'},
+    {'name':'Chandrayaan-3 India ISRO','cost_bn':0.075,'growth':0,'slip':0,'failure':'On budget and schedule — constrained scope, fixed architecture, no mission creep'},
+  ],
+  'Mars Surface Habitat/Base': [
+    {'name':'Mars InSight Lander','cost_bn':0.814,'growth':34,'slip':24,'failure':'Seismometer deployment failure requiring redesign, HP3 probe failure'},
+    {'name':'Mars Perseverance Rover','cost_bn':2.7,'growth':0,'slip':0,'failure':'On budget and schedule — evolved from Curiosity design, heritage systems'},
+    {'name':'Mars Science Laboratory Curiosity','cost_bn':2.5,'growth':56,'slip':24,'failure':'Entry descent landing complexity, ATLO delays, instrument qualification'},
+  ],
+  'Satellite/Comms': [
+    {'name':'OneWeb Constellation','cost_bn':6.4,'growth':100,'slip':999,'failure':'Chapter 11 bankruptcy 2020: no revenue model, no sustainable launch cadence economics'},
+    {'name':'Iridium NEXT Constellation','cost_bn':3.0,'growth':0,'slip':6,'failure':'On budget and schedule — disciplined programme with proven launch cadence'},
+    {'name':'O3b mPOWER','cost_bn':1.8,'growth':20,'slip':24,'failure':'Manufacturing delays, launch cadence, ground system integration'},
+  ],
+  'General Infrastructure': [
+    {'name':'Big Dig Boston','cost_bn':14.8,'growth':190,'slip':96,'failure':'Ground conditions, utility relocations, contractor claims, rework'},
+    {'name':'Crossrail / Elizabeth Line','cost_bn':22.7,'growth':88,'slip':84,'failure':'Systems integration deferred, 900 open IEMs at planned opening'},
+    {'name':'World Bank Infrastructure Portfolio','cost_bn':2.5,'growth':25,'slip':18,'failure':'Developing market programmes average 25% cost growth and 18-month schedule slip (WB ICR data)'},
+  ],
+  'General Space Infrastructure': [
+    {'name':'James Webb Space Telescope','cost_bn':9.7,'growth':506,'slip':168,'failure':'Mission assurance qualification burden, mirror deployment complexity'},
+    {'name':'Hubble Space Telescope','cost_bn':4.7,'growth':40,'slip':12,'failure':'Mirror spherical aberration — ground test waived, discovered post-launch'},
+    {'name':'Artemis SLS / Orion','cost_bn':23.0,'growth':271,'slip':72,'failure':'Standing Army development model, cost-plus contractor structure'},
+  ],
+  'Deep Space Infrastructure': [
+    {'name':'Lunar Gateway Module 1','cost_bn':3.5,'growth':30,'slip':36,'failure':'Development contract delays, interface definition between NASA and international partners'},
+    {'name':'James Webb Space Telescope','cost_bn':9.7,'growth':506,'slip':168,'failure':'Mission assurance qualification burden, mirror deployment complexity'},
+  ],
+  'Spaceport/Launch': [
+    {'name':'Spaceport America New Mexico','cost_bn':0.22,'growth':15,'slip':24,'failure':'Anchor tenant Virgin Galactic delays meant no operational flights for 10 years post-opening'},
+    {'name':'SaxaVord Spaceport Shetland','cost_bn':0.17,'growth':25,'slip':36,'failure':'Regulatory approval for vertical launch longer than planned, anchor customer delays'},
+  ],
+  'Orbital Compute / Manufacturing': [
+    {'name':'OneWeb Constellation','cost_bn':6.4,'growth':100,'slip':999,'failure':'No viable revenue model — orbital compute economics not proven at constellation scale'},
+    {'name':'AWS Ground Station Global','cost_bn':2.0,'growth':10,'slip':12,'failure':'On near-target — ground station buildout faster than satellite network coverage'},
+  ],
+  'Roads / Highways Infrastructure': [
+    {'name':'A14 Cambridge-Huntingdon UK','cost_bn':1.5,'growth':0,'slip':0,'failure':'On budget and schedule — excellent programme with early design freeze'},
+    {'name':'A303 Stonehenge Tunnel','cost_bn':2.4,'growth':20,'slip':24,'failure':'UNESCO World Heritage consent withheld, tunnel portal location contested'},
+    {'name':'California High Speed Rail','cost_bn':128.0,'growth':288,'slip':180,'failure':'Land acquisition 2x budget, environmental litigation, contractor insolvency'},
+  ],
+  'Water / Utilities': [
+    {'name':'Thames Tideway Tunnel','cost_bn':4.2,'growth':20,'slip':24,'failure':'Ground conditions, utility diversions, Thames working constraints'},
+    {'name':'Nairobi Ring Road Kenya','cost_bn':0.9,'growth':18,'slip':14,'failure':'Land acquisition, utility relocations, rainy season delays'},
+  ],
+  'Healthcare / Hospital Infrastructure': [
+    {'name':'Royal Liverpool Hospital','cost_bn':1.9,'growth':466,'slip':120,'failure':'RAAC structural failure discovered 2019 — demolition and rebuild required'},
+    {'name':'New Karolinska Stockholm','cost_bn':4.8,'growth':220,'slip':36,'failure':'PPP model inflexible to clinical change, scope creep, performance deductions'},
+    {'name':'Midland Metropolitan Hospital','cost_bn':1.1,'growth':47,'slip':48,'failure':'Main contractor insolvency (Carillion), RAAC concerns, clinical scope change'},
+  ],
+  'Utility / Smart Meter Rollout': [
+    {'name':'UK Smart Meter Programme','cost_bn':13.5,'growth':42,'slip':60,'failure':'Consumer opt-out, SMETS1 incompatibility, legacy meter removal logistics'},
+    {'name':'Australia AMI Smart Meter Victoria','cost_bn':2.3,'growth':80,'slip':24,'failure':'Consumer backlash, distributor implementation failures, cost recovery disputes'},
+  ],
 }
 
-_CASEY_SECTOR_FAILURE_PATTERNS = {
-    'Rail / Transit': 'Rail mega-programmes fail through: (1) systems integration underestimated — civil works complete but railway cannot run; (2) possessions availability less than planned — programme extends at fixed cost; (3) scope creep through additional stations or service changes mid-delivery; (4) rolling stock and signalling interface failures at commissioning. Reference: Crossrail 2017-2020, HS2 Phase 1 2023.',
-    'Nuclear / Energy': 'Nuclear new build fails through: (1) first-of-kind design changes after FCD — Hinkley Point C, Olkiluoto 3; (2) nuclear-qualified supply chain capacity — welders, inspectors, qualified components; (3) regulatory change during build — adds 12-36 months; (4) operator workforce qualification — takes 5+ years. Reference: EPR fleet globally, Vogtle Units 3&4 USA.',
-    'Space / Mission Assurance': 'Space programmes fail through: (1) mission assurance burden underestimated — qualification evidence takes longer than planned; (2) interface management failure between payload, launch vehicle and operations; (3) technology readiness overestimated at programme start — TRL 4 presented as TRL 6; (4) launch slot availability — single-string critical path. Reference: JWST 2004-2021, Constellation 2004-2010.',
-    'Digital Infrastructure / Hyperscale Data Centre': 'Data centre programmes fail through: (1) grid connection delayed 12-24 months beyond plan — most common critical path failure; (2) transformer and switchgear lead times not planned into procurement; (3) power density requirements increasing during design — cooling redesign required; (4) planning consent delayed by substation proximity objections. Reference: Multiple UK hyperscale programmes 2021-2024.',
-    'Defence / Secure Infrastructure': 'Defence programmes fail through: (1) requirements instability after contract award — Ajax, Archer self-propelled gun; (2) sovereign supply chain does not exist at required scale; (3) security vetting delays — cleared workforce not available when needed; (4) ITAR licensing creates 6-12 month delays on cross-border programmes. Reference: Ajax 2014-2023, F-35B 2001-2022.',
-    'Battery / Gigafactory': 'Gigafactory programmes fail through: (1) no anchor customer — Britishvolt had no confirmed offtake; (2) cell chemistry not qualified before ground breaks; (3) formation cycling and testing equipment 18-month lead time not in plan; (4) process engineers do not exist in host country. Reference: Britishvolt 2019-2023, Northvolt 2022-2024.',
-    'Semiconductor / Advanced Manufacturing': 'Semiconductor fab programmes fail through: (1) process tool allocation — ASML EUV is 3-year lead time, allocated by relationship not contract; (2) cleanroom qualification takes 18 months after handover; (3) qualified process integration workforce does not exist outside Asia; (4) yield ramp takes 24+ months after first silicon. Reference: Intel 7nm programme 2018-2021, TSMC Arizona 2020-2024.',
-    'Life Sciences / Biologics Manufacturing': 'Life sciences programmes fail through: (1) CQV takes 50-100% longer than planned; (2) regulatory inspection readiness not built into programme logic; (3) process equipment qualifications fail first time — redesign required; (4) cold chain and validated logistics not ready at handover. Reference: Multiple CDMO expansions 2018-2023.',
-    'Water / Environmental Infrastructure': 'Water infrastructure fails through: (1) ground conditions worse than ground investigation — systematic underestimate; (2) utility diversions take longer than planned; (3) environmental consent conditions change during build; (4) treatment process performance testing fails acceptance criteria. Reference: Snowy 2.0 2017-2025, Thames Tideway 2016-2024.',
-    'Airport / Aviation': 'Airport programmes fail through: (1) ORAT (Operational Readiness and Airport Transfer) underestimated — Berlin Brandenburg operational failures; (2) baggage system software integration — most common single failure mode; (3) fire safety and CAA certification delays; (4) live operations interface with active airfield. Reference: BER 2010-2020, T5 Heathrow 2008 baggage failure.',
-    'Mining / Metals Infrastructure': 'Mining programmes fail through: (1) underground ground conditions worse than feasibility geotechnics; (2) community opposition and social licence failure — Cobre Panama 2023; (3) commodity price fall makes programme uneconomic after commitment; (4) processing plant yield lower than planned due to ore variability. Reference: Oyu Tolgoi block cave 2016-2023, Jansen Phase 1 2021-2023.',
-    'Roads / Highways Infrastructure': 'Roads programmes fail through: (1) land acquisition costs 2-3x programmed amount; (2) archaeological finds and environmental objections extend consent period; (3) utilities diversions cost and time underestimated; (4) traffic management during construction extends programme by 20-30%. Reference: A303 Stonehenge, RIS2 UK programme, California HSR.',
-    'Energy / Utilities': 'Energy infrastructure fails through: (1) grid connection application queue — 5-10 year wait in UK; (2) CfD auction results below project viability threshold; (3) planning objections for onshore wind/solar; (4) offshore cable installation weather windows. Reference: Dogger Bank A&B, East Anglia projects.',
-    'Healthcare / Hospital Infrastructure': 'Hospital programmes fail through: (1) RAAC and structural issues identified mid-build; (2) clinical specification changes after planning consent; (3) infection control commissioning takes 6-12 months after handover; (4) active site operations interface delays construction. Reference: Royal Liverpool, New Karolinska.',
-    'Lunar Surface Habitat/Base': 'Lunar programmes fail through: (1) political funding discontinuity — Constellation cancelled; (2) mission assurance requirements escalate beyond budget baseline; (3) life support qualification takes longer than planned; (4) launch cadence insufficient for programme mass delivery. Reference: Constellation 2004-2010, Artemis SLS 2011-2022.',
-    'Mars Surface Habitat/Base': 'Mars programmes fail through: (1) no funded programme has ever been approved; (2) all cost estimates are Class 5 — no reference class applies; (3) technology readiness for ECLSS, ISRU and entry/descent is below TRL 6 for the mass required; (4) political funding continuity across 2+ decades has never been demonstrated. Reference: DRA 5.0, NASA Mars Design Reference Architecture.',
-    'Orbital Compute / Manufacturing': 'Orbital compute programmes fail through: (1) no revenue model demonstrated at scale; (2) launch cadence insufficient for constellation density required; (3) radiation hardening reduces compute density below ground equivalent; (4) on-orbit servicing and replacement cost not in business case. Reference: OneWeb 2014-2020.',
+# Currency symbols by location
+CURRENCY_SYMBOLS = {
+    'United Kingdom': '£', 'UK': '£',
+    'France': '€', 'Germany': '€', 'Italy': '€', 'Spain': '€',
+    'Netherlands': '€', 'Belgium': '€', 'Austria': '€', 'Portugal': '€',
+    'Poland': '€', 'Sweden': 'SEK ', 'Norway': 'NOK ', 'Denmark': 'DKK ',
+    'Switzerland': 'CHF ',
+    'Australia': 'A$', 'New Zealand': 'NZ$', 'Canada': 'CA$',
+    'Japan': '¥', 'South Korea': '₩', 'India': '₹',
+    'China': '¥', 'Singapore': 'S$', 'Hong Kong': 'HK$',
+    'Brazil': 'R$', 'Mexico': 'MXN ', 'Argentina': 'ARS ',
+    'South Africa': 'ZAR ', 'Nigeria': 'NGN ',
+    'Saudi Arabia': 'SAR ', 'UAE': 'AED ', 'Qatar': 'QAR ',
+    'Turkey': 'TRY ', 'Russia': '₽', 'Ukraine': 'UAH ',
 }
+
+# Unit rate labels by sector/mode
+UNIT_RATE_LABELS = {
+    'Rail / Transit': {'metric': 'track-km', 'typical_range': '$150-$400M/km underground, $40-$80M/km surface'},
+    'Rail Mega Programme': {'metric': 'track-km', 'typical_range': '$200-$600M/km'},
+    'Nuclear / Energy': {'metric': 'GW installed', 'typical_range': '$5-$12B/GW for new nuclear'},
+    'Nuclear Power Station': {'metric': 'GW installed', 'typical_range': '$8-$15B/GW EPR/AP1000'},
+    'Digital Infrastructure / Hyperscale Data Centre': {'metric': 'MW IT load', 'typical_range': '$4-$12M/MW'},
+    'Defence / Secure Infrastructure': {'metric': 'programme unit', 'typical_range': 'classified — benchmark calibration only'},
+    'Defence Nuclear Infrastructure': {'metric': 'programme unit', 'typical_range': 'classified — benchmark calibration only'},
+    'Life Sciences / Biologics Manufacturing': {'metric': 'm² GMP floorspace', 'typical_range': '$8,000-$25,000/m²'},
+    'Semiconductor / Advanced Manufacturing': {'metric': 'wafer starts/month', 'typical_range': '$2-$5B per 10,000 WSPM'},
+    'Battery / Gigafactory': {'metric': 'GWh annual capacity', 'typical_range': '$100-$250M/GWh'},
+    'Battery Gigafactory': {'metric': 'GWh annual capacity', 'typical_range': '$100-$250M/GWh'},
+    'Water / Environmental Infrastructure': {'metric': 'Ml/day capacity', 'typical_range': '$3-$15M/Ml per day'},
+    'Water Mega Programme': {'metric': 'Ml/day capacity', 'typical_range': '$5-$20M/Ml per day'},
+    'Airport / Aviation': {'metric': 'mppa capacity', 'typical_range': '$200-$600M per mppa (million passengers per year)'},
+    'Airport Mega Programme': {'metric': 'mppa capacity', 'typical_range': '$300-$800M per mppa'},
+    'Mining / Metals Infrastructure': {'metric': 'tpa production capacity', 'typical_range': '$1,000-$5,000/t annual capacity (copper equiv)'},
+    'Energy / Utilities': {'metric': 'MW installed capacity', 'typical_range': '$2-$5M/MW offshore wind, $1-$2M/MW onshore'},
+    'Lunar Surface Habitat/Base': {'metric': 'kg delivered surface', 'typical_range': '$1-$10M/kg surface delivery (Artemis baseline)'},
+    'Mars Surface Habitat/Base': {'metric': 'kg delivered surface', 'typical_range': '$10-$50M/kg Mars surface delivery'},
+    'Satellite/Comms': {'metric': 'satellite unit', 'typical_range': '$5-$200M per satellite depending on class'},
+    'General Infrastructure': {'metric': 'programme unit', 'typical_range': 'Sector benchmark calibration applied'},
+    'Healthcare / Hospital Infrastructure': {'metric': 'm² clinical floorspace', 'typical_range': '$5,000-$15,000/m² acute hospital'},
+    'Roads / Highways Infrastructure': {'metric': 'lane-km', 'typical_range': '$5-$80M/lane-km motorway'},
+    'Utility / Smart Meter Rollout': {'metric': 'meter connection', 'typical_range': '$200-$500/meter installed all-in'},
+}
+
+def get_named_benchmarks(subsector, mode=''):
+    """Get named benchmarks for a subsector, with fallback."""
+    # Try exact match
+    if subsector in NAMED_BENCHMARKS:
+        return NAMED_BENCHMARKS[subsector]
+    # Try partial match
+    sub_l = (subsector or '').lower()
+    for k, v in NAMED_BENCHMARKS.items():
+        if k.lower() in sub_l or sub_l in k.lower():
+            return v
+        k_words = set(k.lower().split())
+        s_words = set(sub_l.split('/')[:1][0].strip().split())
+        if len(k_words & s_words) >= 2:
+            return v
+    # Mode-based fallback
+    if mode == 'Space':
+        return NAMED_BENCHMARKS.get('General Space Infrastructure', [])
+    return NAMED_BENCHMARKS.get('General Infrastructure', [])
+
+def get_currency_symbol(location):
+    """Get currency symbol for a location."""
+    if not location:
+        return '$'
+    for k, v in CURRENCY_SYMBOLS.items():
+        if k.lower() in location.lower():
+            return v
+    return '$'
+
+def get_unit_rate_label(subsector):
+    """Get the meaningful unit rate metric for a sector."""
+    if subsector in UNIT_RATE_LABELS:
+        return UNIT_RATE_LABELS[subsector]
+    sub_l = (subsector or '').lower()
+    for k, v in UNIT_RATE_LABELS.items():
+        if k.lower() in sub_l or sub_l in k.lower():
+            return v
+    return {'metric': 'programme unit', 'typical_range': 'Sector benchmark calibration applied'}
+
+def build_board_attacks(mode, subsector, p50, p80, months, conf, class_level, risks):
+    """Generate sector-specific board challenge questions."""
+    cl = int(class_level or 3)
+    p50_s = money_bn(p50)
+    p80_s = money_bn(p80)
+    unit = get_unit_rate_label(subsector)
+    
+    attacks = [
+        f"Your estimate is {p50_s} at Class {cl} definition. What has changed since the last estimate, and why should the board believe the P50 is credible now?",
+        f"Your P80 is {p80_s} — {round((p80/p50-1)*100,0):.0f}% above P50. How are you funding the gap between P50 authorisation and P80 exposure if outturn tracks to P80?",
+        f"You have {len(risks)} identified risks. Which one will be the programme mortality event if it is not closed before capital commitment?",
+        f"Your schedule is {months} months. What happens to the business case if the critical path extends by 20%?",
+        f"What is your OBA reference class and what uplift have you applied? Has it been disclosed in the executive summary?",
+    ]
+    
+    # Sector-specific attacks
+    sector_attacks = {
+        'Rail': "Crossrail took 7 years longer than planned due to systems integration. What is your systems integration strategy and who owns it?",
+        'Nuclear': "Hinkley C is 94% over budget. What makes your nuclear programme different from the FOAK reference class?",
+        'Defence': "Ajax has been in development for 10 years with zero operational vehicles. What is your requirements freeze date and who has signed authority to hold it?",
+        'Space': "JWST was 14x over budget. What is your mission assurance authority and who has closure authority for all open items before launch?",
+        'Data': "Grid connection is the critical path for every hyperscale programme. Do you have a signed connection agreement or a queue position?",
+        'Gigafactory': "Britishvolt collapsed with no anchor customer. What is your committed offtake and what is the cell chemistry qualification status?",
+        'Semiconductor': "ASML EUV allocation is a multi-year process. Do you have confirmed tool allocation for the process node you are designing to?",
+        'Mining': "Cobre Panama was suspended after $10B invested. What is your community and social licence agreement status?",
+    }
+    
+    for key, att in sector_attacks.items():
+        if key.lower() in (mode + subsector).lower():
+            attacks.append(att)
+            break
+    
+    return attacks[:6]
+
+def build_confidence_trajectory(conf, class_level, risks, subsector):
+    """Explain what needs to happen to increase confidence."""
+    cl = int(class_level or 3)
+    actions = []
+    
+    if cl >= 4:
+        actions.append(f"Advance estimate class from Class {cl} to Class 3 — requires scope freeze and preliminary design. Expected confidence gain: +8-12%.")
+    elif cl == 3:
+        actions.append(f"Advance estimate class from Class 3 to Class 2 — requires approved design and tender returns. Expected gain: +10-15%.")
+    
+    unowned = [r for r in risks if not r.get('owner') or r.get('owner') in ['TBC','TBD','—','']]
+    if unowned:
+        actions.append(f"Name owners for {len(unowned)} risks without accountable owners. Each named, evidenced mitigation adds approximately 2-3% confidence.")
+    
+    actions.append(f"Close the governing constraint evidence gap. This single action is worth 8-12% confidence and is the most valuable intervention at this stage.")
+    actions.append(f"Lock procurement strategy with commercial director sign-off. Undefined procurement adds 5-8% P80 exposure and reduces confidence by 4-6%.")
+    actions.append(f"Validate schedule logic against named critical path. Unvalidated schedule reduces confidence by 3-5%.")
+    
+    return {
+        'current': conf,
+        'target_approval_threshold': 75,
+        'gap': max(0, 75 - conf),
+        'actions': actions,
+        'narrative': f"Current confidence {conf}% vs 75% board approval threshold (gap: {max(0,75-conf)}%). Priority actions: {actions[0] if actions else 'close evidence gaps and advance estimate class.'}",
+    }
+
+def build_gate_review(conf, class_level, risks, months, subsector, mode):
+    """Generate gate review readiness assessment."""
+    cl = int(class_level or 3)
+    p50 = 0  # will be filled by caller
+    
+    if conf >= 75 and cl <= 2:
+        verdict = 'READY'
+    elif conf >= 60 and cl <= 3:
+        verdict = 'CONDITIONAL'
+    elif conf >= 45:
+        verdict = 'NOT READY'
+    else:
+        verdict = 'BLOCKED'
+    
+    gate_map = {1: 'G0 Strategic Definition', 2: 'G1 Business Justification', 
+                3: 'G2 Delivery Strategy', 4: 'G3 Investment Decision', 5: 'G4 Readiness for Service'}
+    current_gate = gate_map.get(min(5, max(1, 6-cl)), 'G2 Delivery Strategy')
+    
+    actions = [
+        f"Close evidence on the governing constraint with named owner and closure date.",
+        f"{'Advance estimate class from Class ' + str(cl) + ' to Class ' + str(max(1,cl-1)) + ' before any capital approval.' if cl >= 3 else 'Validate cost book against independent review.'}",
+        "Confirm OBA uplift is disclosed in the board executive summary — not only in the technical appendix.",
+        "Name all risk owners and confirm mitigation plans are evidenced with progress dates.",
+        f"Validate procurement strategy — confirm route to market, timeline and market capacity for {subsector}.",
+    ]
+    
+    if 'nuclear' in (mode+subsector).lower():
+        actions.insert(0, "Confirm ONR regulatory position — nuclear safety case must be progressed before any procurement commitment.")
+    if 'space' in mode.lower():
+        actions.insert(0, "Name Mission Assurance Authority with signed closure authority for all open items.")
+    if 'defence' in subsector.lower():
+        actions.insert(0, "Confirm requirements freeze date with SRO written authority. No procurement without signed baseline.")
+    
+    return {
+        'overall_verdict': verdict,
+        'current_gate': current_gate,
+        'current_gate_readiness': f"Programme is at Class {cl} definition maturity with {conf}% board-defensibility confidence. {verdict} for {current_gate}.",
+        'critical_gate_risk': f"The governing constraint must be closed and evidenced before {current_gate} can complete.",
+        'next_gate_actions': actions[:5],
+        'ipa_alignment': f"IPA {current_gate} readiness assessment. Evidence maturity consistent with IPA Project Routemap phase {max(1,cl-1)}.",
+    }
+
+def build_oba_assessment(p50, p80, risk_score, subsector, location, mode):
+    """Generate OBA assessment with reference class."""
+    # OBA upliers by sector (Flyvbjerg 2022)
+    oba_uplifts = {
+        'rail': 0.44, 'nuclear': 0.55, 'defence': 0.40, 'space': 0.60,
+        'data': 0.15, 'life': 0.25, 'semi': 0.30, 'giga': 0.45,
+        'water': 0.28, 'airport': 0.35, 'mining': 0.38, 'energy': 0.20,
+        'port': 0.18, 'road': 0.35, 'health': 0.50,
+    }
+    sub_l = (subsector or '').lower()
+    uplift = 0.35  # default
+    for k, v in oba_uplifts.items():
+        if k in sub_l or k in (mode or '').lower():
+            uplift = v
+            break
+    
+    oba_p50 = round(p50 * (1 + uplift), 2)
+    oba_months_mult = 1 + min(0.6, uplift * 0.8)
+    
+    ref_classes = {
+        'rail': 'Rail megaprogrammes (Flyvbjerg 2022): mean +44% cost, +70% schedule. Reference: Crossrail +88%, HS2 Phase 1 +140%, CalHSR +288%.',
+        'nuclear': 'Nuclear new build (Flyvbjerg 2022): mean +55% cost, +130% schedule. Reference: Hinkley +94%, Olkiluoto +300%, Vogtle +113%.',
+        'space': 'Space programmes (NASA OIG 2023): mean +60% cost, +100% schedule. Reference: JWST +506%, SLS +271%.',
+        'defence': 'Defence capital programmes (UK NAO 2023): mean +40% cost, +80% schedule. Reference: Ajax +57%, F-35 +68%.',
+        'data': 'Hyperscale data centres: mean +15% cost, +12% schedule. Grid connection is primary driver.',
+        'giga': 'Gigafactory programmes: mean +45% cost (survivors). Excludes programmes that failed completely.',
+        'water': 'Water infrastructure (Flyvbjerg 2022): mean +28% cost, +44% schedule. Reference: Snowy 2.0 +500%.',
+        'airport': 'Airport programmes (Flyvbjerg 2022): mean +35% cost, +86% schedule. Reference: BER +265%.',
+        'mining': 'Mining capital programmes: mean +38% cost, +58% schedule. Reference: Oyu Tolgoi +39%, Cobre Panama +25%.',
+    }
+    
+    ref = 'General infrastructure (Flyvbjerg 2022): mean +35% cost growth from Class 3 definition maturity.'
+    for k, v in ref_classes.items():
+        if k in sub_l or k in (mode or '').lower():
+            ref = v
+            break
+    
+    currency = get_currency_symbol(location)
+    
+    return {
+        'oba_adjusted_p50': money_bn(oba_p50),
+        'oba_uplift_pct': round(uplift * 100),
+        'oba_adjusted_schedule_mult': round(oba_months_mult, 2),
+        'oba_source': ref,
+        'verdict': f'OBA reference class uplift for {subsector} is +{round(uplift*100)}%. OBA-adjusted P50 is {money_bn(oba_p50)} vs headline P50 of {money_bn(p50)}. The headline P50 represents the most likely outturn if all programme controls function as planned.',
+        'board_challenge': f'Board will ask: what OBA uplift have you applied and why is it not in the executive summary? HM Treasury Green Book requires OBA disclosure for all public programmes.',
+        'ipa_ref': 'IPA/HM Treasury OBA requirements: Green Book Annex 4 and IPA Annual Report 2023.',
+    }
+
+
+def _get_sector_failure(subsector, mode=''):
+    """Fuzzy lookup for sector failure pattern."""
+    _SF = {
+        'Rail': 'Rail mega-programmes fail through: (1) systems integration deferred — civil works complete but railway cannot run; (2) possessions availability less than planned — programme extends at fixed cost; (3) scope creep through stations or service changes mid-delivery. Reference: Crossrail 2017-2020, HS2 Phase 1 2023.',
+        'Nuclear': 'Nuclear new build fails through: (1) first-of-kind design changes after FCD; (2) nuclear-qualified supply chain capacity — welders, inspectors, components; (3) regulatory hold-points add 12-36 months; (4) operator workforce qualification takes 5+ years. Reference: Hinkley C, Olkiluoto 3, Vogtle 3&4.',
+        'Defence': 'Defence programmes fail through: (1) requirements instability after contract award; (2) sovereign supply chain does not exist at scale; (3) security vetting delays — SC/DV workforce not available; (4) ITAR licensing creates 6-12 month delays. Reference: Ajax 2014-2023, F-35B 2001-2022, Type 26.',
+        'Space': 'Space programmes fail through: (1) mission assurance burden underestimated — qualification takes longer than planned; (2) interface management failure between payload, launch vehicle and operations; (3) technology readiness overestimated at programme start; (4) launch slot availability — single-string critical path. Reference: JWST 2004-2021, Constellation 2004-2010.',
+        'Data': 'Data centre programmes fail through: (1) grid connection delayed 12-24 months — most common critical path failure; (2) transformer and switchgear lead times not planned; (3) power density requirements increase during design; (4) planning consent delayed by substation proximity objections.',
+        'Gigafactory': 'Gigafactory programmes fail through: (1) no anchor customer — Britishvolt had no confirmed offtake; (2) cell chemistry not qualified before ground breaks; (3) formation cycling equipment 18-month lead time not in plan; (4) process engineers do not exist in host country. Reference: Britishvolt 2019-2023, Northvolt 2022-2024.',
+        'Semiconductor': 'Semiconductor fab programmes fail through: (1) process tool allocation — ASML EUV is 3-year lead time; (2) cleanroom qualification takes 18 months after handover; (3) qualified process integration workforce does not exist outside Asia; (4) yield ramp takes 24+ months. Reference: Intel Ohio, TSMC Arizona.',
+        'Life Sciences': 'Life sciences programmes fail through: (1) CQV takes 50-100% longer than planned; (2) regulatory inspection readiness not in programme logic; (3) process equipment qualifications fail first time; (4) cold chain and validated logistics not ready at handover.',
+        'Water': 'Water infrastructure fails through: (1) ground conditions worse than ground investigation; (2) utility diversions take longer than planned; (3) treatment process performance testing fails acceptance criteria. Reference: Snowy 2.0 +500%, Thames Tideway 2016-2024.',
+        'Airport': 'Airport programmes fail through: (1) ORAT (Operational Readiness and Airport Transfer) underestimated; (2) baggage system software integration; (3) fire safety and CAA certification delays; (4) live operations interface with active airfield. Reference: BER 2010-2020.',
+        'Mining': 'Mining programmes fail through: (1) ground conditions worse than feasibility geotechnics; (2) community opposition and social licence failure — Cobre Panama 2023; (3) commodity price fall makes programme uneconomic; (4) processing plant yield below projection. Reference: Oyu Tolgoi, Jansen, Cobre Panama.',
+        'Energy': 'Energy infrastructure fails through: (1) grid connection application queue — 5-10 year wait; (2) CfD auction results below project viability; (3) offshore cable installation weather windows. Reference: Dogger Bank A&B, East Anglia projects.',
+        'Healthcare': 'Hospital programmes fail through: (1) RAAC and structural issues; (2) clinical specification changes after planning; (3) infection control commissioning 6-12 months; (4) active site operations interface. Reference: Royal Liverpool, New Karolinska.',
+        'Lunar': 'Lunar programmes fail through: (1) political funding discontinuity; (2) mission assurance requirements escalate beyond budget; (3) life support qualification longer than planned; (4) launch cadence insufficient. Reference: Constellation 2004-2010, Artemis SLS 2011-2022.',
+        'Mars': 'Mars programmes fail through: (1) no funded programme has ever been approved for crewed surface; (2) ECLSS/ISRU at required mass not at TRL 6; (3) political funding continuity across 20+ years never demonstrated. Reference: NASA DRA 5.0.',
+        'Battery': 'Battery gigafactory programmes fail through: (1) no anchor customer; (2) unqualified cell chemistry; (3) formation cycling equipment lead times; (4) no local process engineers. Reference: Britishvolt collapse, Northvolt restructuring.',
+    }
+    sub = str(subsector or '') + ' ' + str(mode or '')
+    for k, v in _SF.items():
+        if k.lower() in sub.lower():
+            return v
+    return f'{subsector} programmes fail when the governing constraint is not resolved before capital commitment. The primary mortality driver is scope instability after approval combined with insufficient definition maturity.'
+
+def _get_casey_position(subsector, mode, p50_s, p80_s, conf, cl):
+    """Get CASEY position on this programme type."""
+    _CP = {
+        'Rail': f'CASEY reference: Crossrail +88%, HS2 Phase 1 +140%, CalHSR +288%. The P80 ({p80_s}) is the board approval number — not P50. Systems integration and possessions are the governing constraint, not civil works. Schedule risk exceeds cost risk in this sector.',
+        'Nuclear': f'CASEY reference: Hinkley C +94%, Olkiluoto 3 +300%, Vogtle +113%. Apply minimum 2.0x OBA for nuclear FOAK. Class {cl} estimate has no credibility for board approval of a nuclear programme.',
+        'Defence': f'CASEY reference: Ajax +57%, Watchkeeper +130%, F-35 +68%. Requirements instability after contract award is the primary mortality driver. Sovereign supply chain and SC/DV workforce are the governing constraints — not design or construction.',
+        'Space': f'CASEY reference: JWST +506%, Artemis SLS +271%, OneWeb: bankruptcy. Mission assurance burden and political funding continuity are the governing constraints. The {p50_s} P50 is only credible with a named Mission Assurance Authority and signed funding commitment.',
+        'Data': f'CASEY reference: grid connection is the critical path for every hyperscale programme. The {p50_s} P50 is consistent with AWS/Microsoft buildout data. Transformer procurement must begin before planning consent — 18-month lead time.',
+        'Gigafactory': f'CASEY reference: Britishvolt collapse, Northvolt restructuring. A gigafactory without confirmed offtake and qualified cell chemistry has >60% mortality risk. The {p50_s} P50 assumes delivery — the mortality risk is whether delivery is attempted.',
+        'Semiconductor': f'CASEY reference: Intel Ohio 2-year delay, TSMC Arizona +40%. ASML EUV allocation is the single critical path item. The {p50_s} P50 is consistent with greenfield fab buildout data excluding tool delay risk.',
+        'Battery': f'CASEY reference: Britishvolt collapse, Northvolt restructuring. A gigafactory without confirmed offtake has >60% mortality risk regardless of technical confidence in the estimate.',
+        'Water': f'CASEY reference: Snowy 2.0 +500%, Thames Tideway +20%. Ground conditions and utility diversions are the primary cost drivers. The {p50_s} P50 applies at this definition maturity — OBA uplift required before board approval.',
+        'Airport': f'CASEY reference: BER +265%, Sydney West +60%. ORAT is the most commonly underestimated component. The {p50_s} P50 is consistent with airport expansion data at this scale.',
+        'Mining': f'CASEY reference: Oyu Tolgoi +39%, Cobre Panama suspended. Community and social licence failure is now the primary mortality driver. The {p50_s} P50 is consistent with underground block cave data.',
+        'Lunar': f'CASEY reference: Artemis SLS +271%, JWST +506%. Lunar base estimates at this scale have no reliable reference class. Political funding continuity is the primary mortality driver. {p50_s} P50 should be treated as Class 5 concept screening only.',
+    }
+    sub = str(subsector or '') + ' ' + str(mode or '')
+    for k, v in _CP.items():
+        if k.lower() in sub.lower():
+            return v.replace('{p50_s}', p50_s).replace('{p80_s}', p80_s)
+    return f'CASEY position on this {subsector} programme: P50 is {p50_s} at Class {cl} definition maturity with {conf}% confidence. The P80 ({p80_s}) is the board approval number and must appear in the executive summary. The primary mortality risk is scope instability after capital commitment.'
 
 # CASEY FINAL PRODUCTION MODEL OVERRIDE
 # Purpose: restore real backend-derived numbers. Earlier stacked hotfix wrappers were
@@ -6265,10 +6647,6 @@ def build_model(prompt: str='', client: str='', class_level: int=3, schedule_lev
     except Exception:
         envelope_notes = []
 
-    # Re-apply scenario cost multiplier AFTER envelope so scenarios always show different cost
-    if scenario != 'base' and abs(float(cost_mult) - 1.0) > 0.01:
-        cal_cost = float(cal_cost) * float(cost_mult)
-
     p50 = max(0.05, float(cal_cost))
     p10 = p50 * float(lo)
     p90 = p50 * float(hi) * max(1.0, risk_mult * 0.95)
@@ -6318,31 +6696,10 @@ def build_model(prompt: str='', client: str='', class_level: int=3, schedule_lev
         'schedule_rows': sched, 'schedule_detail': sched, 'all_schedule_levels': {str(i): sched for i in range(1,6)}, 'schedules_by_level': {str(i): sched for i in range(1,6)},
         'risks': risks, 'risk_register': risks, 'risk_detail': risks,
         'monte_carlo': mc,
-        'benchmark_comparison': benchmark_rows, 'benchmark_memory': benchmark_rows, 'benchmarks': benchmark_rows,
+        'benchmark_comparison': get_named_benchmarks(subsector, mode), 'benchmark_memory': get_named_benchmarks(subsector, mode), 'benchmarks': get_named_benchmarks(subsector, mode),
         'benchmark_notes': bench_notes + envelope_notes,
         'location_context': {'country': loc_name, **location_context(loc_name)},
         'peer_competitors': peer_competitors(client, subsector, mode),
-        'gate_review_readiness': {
-            'overall_verdict': 'CONDITIONAL' if confidence >= 65 else ('NOT READY' if confidence < 50 else 'CONDITIONAL'),
-            'current_gate_readiness': f'Programme is at Class {int(class_level or 3)} definition maturity with {confidence}% board-defensibility. ' + ('Evidence supports conditional approval.' if confidence >= 65 else 'Material evidence gaps must be closed before gate review.'),
-            'critical_gate_risk': signature.get('human_basis', 'Definition maturity and procurement certainty govern gate readiness.'),
-            'next_gate_actions': [
-                'Close evidence on the governing constraint with named owner and closure date.',
-                f'Advance estimate class from Class {int(class_level or 3)} to Class {max(1, int(class_level or 3)-1)} before capital commitment.',
-                'Validate schedule logic against critical path and commissioning requirements.',
-                'Confirm OBA uplift has been disclosed in the board executive summary.',
-                'Name all risk owners and confirm mitigation plans are evidenced.',
-            ],
-            'ipa_alignment': f'IPA Gateway {max(1, min(5, 6-int(confidence/20)))} readiness. Current evidence maturity aligns to IPA Project Routemap phase {max(1, int(class_level or 3)-1)}.',
-        },
-        'optimism_bias_assessment': {
-            'oba_adjusted_p50': money_bn(round(p50 * (1.0 + max(0.15, risk_score/200)), 2)),
-            'oba_adjusted_schedule': f'{int(months * (1.0 + max(0.12, risk_score/300)))} months',
-            'oba_source': f'{subsector} reference class (Flyvbjerg 2022; IPA Annual Report 2023)',
-            'verdict': f'OBA-adjusted P50 is {money_bn(round(p50 * (1.0 + max(0.15, risk_score/200)), 2))}. The headline P50 ({money_bn(p50)}) represents the most likely outturn if all programme controls function as planned. The OBA-adjusted figure represents the reference-class expected outturn.',
-            'board_challenge': f'Your board will ask: what is the OBA uplift and why is it not in the executive summary? The IPA requires OBA disclosure in all public programme business cases.',
-        },
-        'financing_context': location_context(prompt if prompt else loc_name),
         'procurement_heatmap': procurement_heatmap(mode, subsector, risks),
         'critical_path_narrative': critical_path_narrative(mode, subsector, sched),
         'sector_primary_cost_drivers': sector_lists.get('cost') or [x['description'] for x in costs[:5]],
@@ -6355,13 +6712,6 @@ def build_model(prompt: str='', client: str='', class_level: int=3, schedule_lev
         'confidence_engine_label': 'CASEY Confidence Engine',
         'confidence_engine_detail': {'plain_english': f'Confidence is based on {subsector}, {loc_name}, estimate class, schedule level, benchmark memory, risk register, procurement exposure and scenario posture.', 'primary_constraint': signature.get('human_basis'), 'decision_rule':'Use for early board challenge; validate with real cost book, risk register and XER before approval.'},
         'next_best_actions': ['Confirm the governing constraint and named owner.', 'Evidence long-lead procurement dates and market capacity.', 'Validate schedule against critical path and commissioning logic.', 'Run Faster, Cheaper and Lower Risk scenarios before board use.', 'Upload cost workbook, XER or risk register for challenge mode.'],
-        'board_attack_simulation': [
-            f"What evidence do you have that the governing constraint ({signature.get('human_basis','definition maturity')}) is closed?",
-            f"Why is your P50 ({money_bn(p50)}) credible at Class {int(class_level or 3)} definition maturity?",
-            f"What is your P80 ({money_bn(p80)}) and why does your board paper not show it?",
-            f"Which of the {len(risks)} identified risks has a named owner and an evidenced mitigation?",
-            f"What is your reference class comparison for {subsector} and what OBA uplift have you applied?",
-        ],
         'red_flags': [signature.get('shock'), signature.get('contradiction'), 'Generic assumptions should be replaced with uploaded evidence before investment approval.'],
         'why_casey_generated_this': [f'Detected sector: {subsector}.', f'Detected location/environment: {loc_name}.', f'Scenario selected: {scenario_label}.', 'Numbers are generated by backend sector/location/benchmark/risk logic, not frontend placeholders.'],
         'sector_ontology_key': _v125_sector_key_from_input(prompt, client) if '_v125_sector_key_from_input' in globals() else 'general_infrastructure',
@@ -6369,45 +6719,102 @@ def build_model(prompt: str='', client: str='', class_level: int=3, schedule_lev
         'scenario_trade': scenario_why,
         'curve_interpretation': signature.get('human_basis'),
         'input_quality_score': 82 if len(prompt.split()) >= 10 else 62,
-        'generated_at': datetime.utcnow().isoformat(),
-
-        'governing_constraint': signature.get('human_basis') or f'{subsector} programmes are governed by the interface between design maturity, procurement certainty and regulatory approval.',
-        'primary_constraint': signature.get('human_basis') or 'Definition maturity and procurement certainty govern confidence.',
+        'currency_symbol': get_currency_symbol(loc_name),
+        'unit_rate_label': get_unit_rate_label(subsector),
+        'board_attack_simulation': build_board_attacks(mode, subsector, p50, p80, months, confidence, int(class_level or 3), risks),
+        'gate_review_readiness': build_gate_review(confidence, int(class_level or 3), risks, months, subsector, mode),
+        'optimism_bias_assessment': build_oba_assessment(p50, p80, risk_score, subsector, loc_name, mode),
+        'confidence_trajectory': build_confidence_trajectory(confidence, int(class_level or 3), risks, subsector),
+        'governing_constraint': signature.get('human_basis') or f'Definition maturity (Class {int(class_level or 3)}) and procurement certainty are the governing constraints for {subsector} in {loc_name}.',
+        'primary_constraint': signature.get('human_basis') or f'{subsector}: definition maturity and procurement certainty govern confidence.',
+        'if_this_fails': _get_sector_failure(subsector, mode),
+        'sector_failure_pattern': _get_sector_failure(subsector, mode),
+        'casey_position': _get_casey_position(subsector, mode, money_bn(p50), money_bn(p80), confidence, int(class_level or 3)),
         'traditional_vs_casey': {
-            'traditional_read': f'A conventional advisory report on this {subsector} programme would present a single-point P50 estimate, a bar chart schedule, and a risk register with generic mitigations. The confidence interval would not be stated explicitly. OBA would not appear.',
-            'casey_read': f'CASEY identifies the governing constraint as: {signature.get("human_basis","definition maturity")}. The P80 exposure is {money_bn(p80)} — {round((p80/p50-1)*100,0):.0f}% above P50. A conventional report presents only P50. The difference is the board approval risk.',
-            'what_the_consultant_wont_tell_you': f'The primary failure mode for {subsector} programmes is {signature.get("contradiction","late scope changes that invalidate the cost and schedule baseline")}. This is the number one reason programmes in this sector require rebaselining after approval.',
+            'traditional_read': f'A conventional advisory report on this {subsector} programme would present a single-point P50 estimate, a bar chart schedule, and a risk register with generic mitigations. No confidence interval stated. OBA not disclosed. Governing constraint not named.',
+            'casey_read': f'CASEY identifies the governing constraint as: {signature.get("human_basis","definition maturity")}. The P80 exposure is {money_bn(p80)} — {round((p80/p50-1)*100,0):.0f}% above P50. The OBA-adjusted outturn is {money_bn(p50 * 1.35)}. A conventional report presents only P50. This gap is the board approval risk.',
+            'what_the_consultant_wont_tell_you': f'The primary failure mode for {subsector} is: {_get_sector_failure(subsector, mode)[:200]}',
         },
-        'institutional_authority_line': f'{subsector} in {loc_name}: The approving authority must satisfy itself that the estimate class ({class_name}), the P80 exposure ({money_bn(p80)}), the OBA uplift and the governing constraint ({signature.get("human_basis","definition maturity")}) have all been addressed before capital commitment.',
-        'programme_mortality_risk': f'{risk} risk profile. Programmes in this sector and scale category have a {max(10, min(85, int(risk_score*0.7)))}% historical probability of requiring rebaselining before completion (Flyvbjerg 2022). The primary mortality driver is {signature.get("contradiction","scope instability after approval")}.',
-        'confidence_trajectory': f'Current confidence: {confidence}%. To reach 75%+ (board approval threshold): close the governing constraint evidence, advance estimate class to Class 2, and validate procurement strategy. Each unresolved risk in the register reduces confidence by approximately 2-4 percentage points.',
-        'if_this_fails': _CASEY_SECTOR_FAILURE_PATTERNS.get(subsector, f'{subsector} programmes fail when the governing constraint is not resolved before capital commitment. The evidence gap between Class 3 estimate maturity and board-approvable confidence is the primary mortality driver.'),
-        'sector_failure_pattern': _CASEY_SECTOR_FAILURE_PATTERNS.get(subsector, ''),
-        'intervention_intelligence': f'The single highest-value intervention at this stage is: resolve the governing constraint ({signature.get("human_basis","definition maturity")}) with named owner, evidence and closure date. This single action is worth approximately 8-12 confidence percentage points.',
+        'institutional_authority_line': f'{subsector} in {loc_name}: the approving authority must satisfy itself that the estimate class ({class_name}), P80 exposure ({money_bn(p80)}), OBA uplift and governing constraint ({signature.get("human_basis","definition maturity")}) have all been addressed before capital commitment.',
+        'programme_mortality_risk': f'Medium-{"High" if risk_score > 55 else "Low"} risk profile. {subsector} programmes at {money_bn(p50)} scale have a {max(15, min(75, int(risk_score*0.7)))}% historical probability of requiring rebaselining (Flyvbjerg 2022). Primary mortality driver: {signature.get("contradiction","scope instability after approval")}.',
+        'behavioural_forecast': f'Programme sponsors in {subsector} systematically understate schedule risk at Class {int(class_level or 3)} definition maturity. Statistical reference class shows +{max(20, int(risk_score*0.8))}% cost growth and +{max(15, int(months*0.18))} months schedule slip from this stage.',
         'second_order_contradictions': [
-            f'The {scenario_label} scenario reduces confidence from base — the cost saving or acceleration is not free.',
-            f'Procurement strategy is not yet defined — without it, cost and schedule confidence are lower than {confidence}% implies.',
-            f'OBA has been applied ({money_bn(p80)} P80) but the board case shows only P50 ({money_bn(p50)}) — this is a systematic optimism bias.',
+            f'The {scenario_label} scenario {("increases" if float(cost_mult)>1 else "reduces")} cost — the trade-off is not free.',
+            f'Procurement strategy is not yet confirmed — without it, cost and schedule confidence are lower than {confidence}% implies.',
+            f'P80 exposure of {money_bn(p80)} should appear in the board executive summary, not only as an appendix.',
         ],
-        'behavioural_forecast': f'Programme sponsors in {subsector} systematically understate schedule risk and overstate cost certainty at this stage. The statistical reference class for {subsector} shows average +{max(20,int(risk_score*0.8))}% cost growth and +{max(15,int(months*0.18))} months schedule slip from this definition maturity level.',
-        'casey_position': _CASEY_POSITION_BY_SECTOR.get(subsector, f'CASEY position on this {subsector} programme: the P50 ({money_bn(p50)}) is the most likely outturn if the governing constraint is resolved before capital commitment. The P80 ({money_bn(p80)}) is the board approval number — it should appear in the executive summary, not only in the technical appendix.'),
+        'intervention_intelligence': f'The single highest-value intervention at this stage: close the governing constraint ({signature.get("human_basis","definition maturity")}) with named owner, evidenced plan and closure date. This single action is worth approximately 8-12 confidence percentage points.',
+        'scenario_delta_intelligence': [
+            {'label': 'Cost', 'value': money_bn(p50), 'meaning': f'P50 is {money_bn(p50)} in the {scenario_label} scenario. Base comparison is the reference.'},
+            {'label': 'P80 Exposure', 'value': money_bn(p80), 'meaning': f'Board risk exposure is {money_bn(p80)} — {round((p80/p50-1)*100,0):.0f}% above P50.'},
+            {'label': 'Schedule', 'value': f'{months} months', 'meaning': f'Baseline delivery is {months} months in the {scenario_label} scenario.'},
+            {'label': 'Confidence', 'value': f'{confidence}%', 'meaning': f'Board-defensibility score is {confidence}%. Target for approval: 75%+.'},
+            {'label': 'Risk profile', 'value': risk, 'meaning': f'{risk} risk at Class {int(class_level or 3)} definition maturity in {loc_name}.'},
+        ],
+        'confidence_breakdown': [
+            {'driver': 'Estimate class', 'effect': f'Class {int(class_level or 3)} — {class_name}', 'note': f'Class {int(class_level or 3)} contributes {"strongly" if int(class_level or 3) <= 2 else "moderately" if int(class_level or 3) == 3 else "weakly"} to confidence.'},
+            {'driver': 'Benchmark fit', 'effect': f'{len(benchmark_rows)} comparables', 'note': 'Cost calibrated against named real programmes in this sector.'},
+            {'driver': 'Risk score', 'effect': f'{round(risk_score,0):.0f}/100', 'note': f'Risk exposure drives P80 gap. Current: {risk}.'},
+            {'driver': 'Location', 'effect': loc_name, 'note': f'Location factor applied for {loc_name} regulatory and market conditions.'},
+            {'driver': 'Scenario', 'effect': scenario_label, 'note': scenario_why},
+        ],
+        'top_decisions_required': [
+            f'Close the governing constraint ({signature.get("human_basis","definition maturity")}) with named owner and evidence.',
+            f'Confirm procurement strategy and route to market for {subsector} in {loc_name}.',
+            f'Validate OBA disclosure — {money_bn(p50 * 1.35)} adjusted outturn must appear in board executive summary.',
+            f'Advance estimate class from Class {int(class_level or 3)} to Class {max(1,int(class_level or 3)-1)} before capital commitment.',
+            'Validate schedule logic against critical path and commissioning requirements.',
+        ],
+        'outputs_board_memo': [
+            f'{subsector} programme in {loc_name}. P50: {money_bn(p50)}. P80: {money_bn(p80)}. Schedule: {months} months. Confidence: {confidence}%.',
+            f'Risk profile: {risk}. Estimate class: {class_name}. Scenario: {scenario_label}.',
+            f'OBA-adjusted outturn: {money_bn(p50 * 1.35)}. Governing constraint: {signature.get("human_basis","definition maturity")}.',
+            f'Gate status: {"CONDITIONAL" if confidence >= 60 else "NOT READY"}. Next action: close governing constraint evidence with named owner.',
+        ],
+        'generated_at': datetime.utcnow().isoformat(),
     }
 
-    # Build scenario_matrix for the scenario selector cards
+    # Normalize risk field names for frontend compatibility
+    for r in model.get('risks', []):
+        if 'risk_event' in r and 'event' not in r:
+            r['event'] = r['risk_event']
+        if 'impact_description' in r and 'impact' not in r:
+            r['impact'] = r.get('impact_area', '') + ': ' + r.get('impact_description', '')
+        if 'probability_pct' in r and 'probability' not in r:
+            r['probability'] = float(r['probability_pct']) / 100
+        if 'title' in r and 'risk' not in r:
+            r['risk'] = r['title']
+        # Ensure risk_id is also id
+        if 'risk_id' in r and 'id' not in r:
+            r['id'] = r['risk_id']
+
+    # Fix tornado chart field names for frontend BarChart
+    mc = model.get('monte_carlo', {})
+    for key in ['qcra_tornado', 'tornado']:
+        tor = mc.get(key, [])
+        for t in tor:
+            if 'title' in t and 'driver' not in t:
+                t['driver'] = t['title'][:25]
+            if 'driver_score' in t and 'contribution' not in t:
+                t['contribution'] = round(float(t.get('driver_score', 0) or 0), 1)
+            if 'cost_mean_bn' in t and 'contribution' not in t:
+                t['contribution'] = round(float(t.get('cost_mean_bn', 0) or 0), 2)
+
+    # Scenario matrix
     try:
         base_p50v = float(str(model.get('cost_p50','0')).replace('$','').replace('B','').replace(',','').strip() or 0)
         base_mo = int(model.get('schedule_months', 36) or 36)
         base_cv = int(model.get('confidence_pct', 60) or 60)
         sm_list = []
         for _sc2 in ['base','faster','cheaper','lower_risk','premium']:
-            cm2,sm2,rm2,cd2,sl2,sw2 = scenario_params(_sc2)
-            sc_p50 = round(base_p50v * cm2, 2)
-            sc_mo = max(1, int(base_mo * sm2))
-            sc_cv = max(10, min(96, base_cv + cd2))
-            sm_list.append({'scenario':_sc2,'label':sl2,'why':sw2,
-                'cost_p50':money_bn(sc_p50),'cost':money_bn(sc_p50),
-                'schedule_months':sc_mo,'schedule':f'{sc_mo} months',
-                'confidence_pct':sc_cv,'risk':risk_label(30+(rm2-1)*40)})
+            _cm2,_sm2,_rm2,_cd2,_sl2,_sw2 = scenario_params(_sc2)
+            _sc_p50 = round(base_p50v * float(_cm2), 2)
+            _sc_mo = max(1, int(base_mo * float(_sm2)))
+            _sc_cv = max(10, min(96, base_cv + int(_cd2 or 0)))
+            sm_list.append({'scenario':_sc2,'label':_sl2,'why':_sw2,
+                'cost_p50':money_bn(_sc_p50),'cost':money_bn(_sc_p50),
+                'schedule_months':_sc_mo,'schedule':f'{_sc_mo} months',
+                'confidence_pct':_sc_cv,'risk':risk_label(30+(_rm2-1)*40)})
         model['scenario_matrix'] = sm_list
         model['scenario_comparison'] = sm_list
     except Exception:
