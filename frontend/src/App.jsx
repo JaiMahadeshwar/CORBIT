@@ -2002,35 +2002,72 @@ function ShowcaseLibrary({ onRun, onBack }) {
 }
 
 function GatedMessage({ raw, onDismiss, onShowcase, onEarth, onSpace }) {
-  let msg = "You've used your one free CASEY intelligence run.";
-  let sub = "Browse 40 free reference cases in the Showcase Library, run the Earth or Space demos, or contact us for full access.";
+  let msg = "You have used your one free CASEY intelligence run.";
+  let sub = "You can still browse 40 free reference cases in the Showcase Library and run the Earth or Space demos for free. For unlimited projects, get in touch.";
   let email = "deepa@caseai.co.uk";
   let linkedin = "https://www.linkedin.com/company/caseai";
+  let isStartingUp = false;
   try {
     const p = JSON.parse(raw);
     if (p.message) msg = p.message;
     if (p.sub) sub = p.sub;
     if (p.email) email = p.email;
     if (p.linkedin) linkedin = p.linkedin;
+    isStartingUp = !!(p.message && p.message.toLowerCase().includes('starting'));
   } catch {}
+
   return (
-    <div className="caseyGate">
-      <div className="caseyGateInner" style={{position:'relative'}}>
-        {onDismiss && <button onClick={onDismiss} style={{position:'absolute',top:'12px',right:'14px',background:'none',border:'none',color:'#475569',cursor:'pointer',fontSize:'18px',lineHeight:1}}>✕</button>}
-        <span className="caseyGateIcon">✦</span>
-        <h3>{msg}</h3>
-        <p>{sub}</p>
-        <div className="caseyGateCtas" style={{flexDirection:'column',gap:'8px'}}>
-          <div style={{display:'flex',gap:'8px',flexWrap:'wrap',justifyContent:'center'}}>
-            {onShowcase && <button onClick={onShowcase} className="caseyGateBtn" style={{background:'rgba(141,247,255,0.1)',border:'1px solid rgba(141,247,255,0.3)',color:'#8df7ff',cursor:'pointer',padding:'10px 18px',borderRadius:'4px',fontSize:'13px',fontWeight:'700'}}>Browse Showcase Library →</button>}
-            {onEarth && <button onClick={onEarth} className="caseyGateBtn" style={{background:'rgba(16,185,129,0.08)',border:'1px solid rgba(16,185,129,0.25)',color:'#10b981',cursor:'pointer',padding:'10px 18px',borderRadius:'4px',fontSize:'13px',fontWeight:'700'}}>🚄 Run Earth Demo</button>}
-            {onSpace && <button onClick={onSpace} className="caseyGateBtn" style={{background:'rgba(141,247,255,0.05)',border:'1px solid rgba(141,247,255,0.2)',color:'#8df7ff',cursor:'pointer',padding:'10px 18px',borderRadius:'4px',fontSize:'13px',fontWeight:'700'}}>🌕 Run Space Demo</button>}
+    <div style={{
+      position:'fixed',inset:0,background:'rgba(0,0,0,0.65)',zIndex:900,
+      display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'
+    }}>
+      <div style={{
+        background:'#0d1b2e',border:'1px solid rgba(141,247,255,0.25)',borderRadius:'8px',
+        padding:'28px 32px',maxWidth:'520px',width:'100%',position:'relative',
+        boxShadow:'0 24px 80px rgba(0,0,0,0.6)'
+      }}>
+        {onDismiss && <button onClick={onDismiss} style={{
+          position:'absolute',top:'14px',right:'16px',background:'rgba(255,255,255,0.06)',
+          border:'1px solid rgba(255,255,255,0.1)',color:'#94a3b8',cursor:'pointer',
+          fontSize:'14px',width:'28px',height:'28px',borderRadius:'50%',
+          display:'flex',alignItems:'center',justifyContent:'center',lineHeight:1
+        }}>✕</button>}
+
+        <div style={{fontSize:'22px',marginBottom:'10px'}}>{isStartingUp ? '⏳' : '✦'}</div>
+        <h3 style={{
+          fontSize:'17px',fontWeight:'800',color:'#e2e8f0',
+          marginBottom:'8px',paddingRight:'30px',lineHeight:'1.3'
+        }}>{msg}</h3>
+        <p style={{
+          fontSize:'13px',color:'#94a3b8',lineHeight:'1.6',marginBottom:'18px'
+        }}>{sub}</p>
+
+        {isStartingUp ? (
+          <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
+            <div style={{background:'rgba(245,158,11,0.08)',border:'1px solid rgba(245,158,11,0.2)',borderRadius:'5px',padding:'10px 14px',fontSize:'12px',color:'#fde68a',lineHeight:'1.5'}}>
+              The backend is waking up — this takes 20–30 seconds on first load. Click the demo button again after waiting.
+            </div>
+            <div style={{display:'flex',gap:'8px',flexWrap:'wrap'}}>
+              {onEarth && <button onClick={onEarth} style={{flex:1,background:'rgba(16,185,129,0.1)',border:'1px solid rgba(16,185,129,0.3)',color:'#10b981',cursor:'pointer',padding:'10px 14px',borderRadius:'5px',fontSize:'13px',fontWeight:'700'}}>🚄 Try Earth Demo again</button>}
+              {onSpace && <button onClick={onSpace} style={{flex:1,background:'rgba(141,247,255,0.08)',border:'1px solid rgba(141,247,255,0.2)',color:'#8df7ff',cursor:'pointer',padding:'10px 14px',borderRadius:'5px',fontSize:'13px',fontWeight:'700'}}>🌕 Try Space Demo again</button>}
+            </div>
+            {onShowcase && <button onClick={onShowcase} style={{width:'100%',background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.1)',color:'#94a3b8',cursor:'pointer',padding:'8px',borderRadius:'5px',fontSize:'12px'}}>Browse Showcase Library while waiting →</button>}
           </div>
-          <div style={{display:'flex',gap:'8px',flexWrap:'wrap',justifyContent:'center'}}>
-            <a href={"mailto:" + email} className="caseyGateBtn primary">✉ {email}</a>
-            <a href={linkedin} target="_blank" rel="noopener noreferrer" className="caseyGateBtn secondary">in Connect on LinkedIn</a>
+        ) : (
+          <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
+            {onShowcase && <button onClick={onShowcase} style={{width:'100%',background:'rgba(141,247,255,0.1)',border:'1px solid rgba(141,247,255,0.3)',color:'#8df7ff',cursor:'pointer',padding:'11px',borderRadius:'5px',fontSize:'13px',fontWeight:'700',textAlign:'left'}}>
+              Browse Showcase Library — 40 free reference cases →
+            </button>}
+            <div style={{display:'flex',gap:'8px',flexWrap:'wrap'}}>
+              {onEarth && <button onClick={onEarth} style={{flex:1,background:'rgba(16,185,129,0.08)',border:'1px solid rgba(16,185,129,0.2)',color:'#10b981',cursor:'pointer',padding:'9px',borderRadius:'5px',fontSize:'12px',fontWeight:'700'}}>🚄 Earth Demo</button>}
+              {onSpace && <button onClick={onSpace} style={{flex:1,background:'rgba(141,247,255,0.05)',border:'1px solid rgba(141,247,255,0.15)',color:'#8df7ff',cursor:'pointer',padding:'9px',borderRadius:'5px',fontSize:'12px',fontWeight:'700'}}>🌕 Space Demo</button>}
+            </div>
+            <div style={{borderTop:'1px solid rgba(255,255,255,0.07)',paddingTop:'12px',display:'flex',flexDirection:'column',gap:'6px'}}>
+              <a href={"mailto:" + email} style={{display:'block',background:'rgba(141,247,255,0.06)',border:'1px solid rgba(141,247,255,0.2)',color:'#8df7ff',padding:'10px 14px',borderRadius:'5px',fontSize:'12px',fontWeight:'700',textDecoration:'none',textAlign:'center'}}>✉ Email us for full access — {email}</a>
+              <a href={linkedin} target="_blank" rel="noopener noreferrer" style={{display:'block',background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.1)',color:'#94a3b8',padding:'9px 14px',borderRadius:'5px',fontSize:'12px',textDecoration:'none',textAlign:'center'}}>Connect on LinkedIn</a>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
@@ -2525,7 +2562,7 @@ function parseMoneyLocal(v) {
     const cfg = DEMO_CONFIGS[type] || DEMO_CONFIGS['earth'];
     setLoading(true); setError(''); setModel(null); setTab('overview');
     setShow(false); setShowShowcase(false);
-    setSimulationStage('Building reference case…');
+    setSimulationStage('Loading ' + (type === 'earth' ? 'HS2 Phase 2b Earth Demo' : type === 'space' ? 'Lunar Base Alpha Space Demo' : 'reference case') + '…');
     try {
       // Use /generate — the same endpoint showcase and free run use (always works)
       const payload = {
@@ -2552,10 +2589,9 @@ function parseMoneyLocal(v) {
       setTab('overview');
     } catch(e) {
       const msg = String(e.message || e);
-      const isNetworkError = msg.includes('fetch') || msg.includes('network') || msg.includes('500');
       setError(JSON.stringify({
-        message: isNetworkError ? 'Backend is starting up — please wait 20 seconds and try again.' : 'Reference case unavailable.',
-        sub: isNetworkError ? 'Render free-tier instances sleep after inactivity. The backend is waking up — click "Run Earth Demo" or "Run Space Demo" again in 20 seconds.' : msg + ' Browse the Showcase Library while waiting.',
+        message: 'Backend starting up — wait 20 seconds and try again.',
+        sub: 'The server is waking up (it sleeps after inactivity). Wait 20 seconds then click the demo button again. The Showcase Library works immediately.',
         email: 'deepa@caseai.co.uk',
         linkedin: 'https://www.linkedin.com/company/caseai'
       }));
@@ -3296,8 +3332,10 @@ function parseMoneyLocal(v) {
   {(loading || exportingLabel) && <div className="simOverlay">
       <div className="simCard">
         <div className="simSpinner" />
-        <h3>{exportingLabel || simulationStage || 'Recalculating confidence posture…'}</h3>
-        <p>Refreshing QCRA/QSRA curves, benchmark memory, delivery logic and board narrative.</p>
+        <h3 style={{textAlign:'center',lineHeight:'1.4',maxWidth:'360px'}}>{exportingLabel || simulationStage || 'Building intelligence pack…'}</h3>
+        {(simulationStage||'').toLowerCase().includes('demo') || (simulationStage||'').toLowerCase().includes('reference')
+          ? <p style={{textAlign:'center',color:'#64748b',fontSize:'12px',maxWidth:'320px',lineHeight:'1.5'}}>First load takes 20–30 seconds while the server starts. Subsequent loads are instant. Please wait.</p>
+          : <p style={{textAlign:'center',color:'#64748b',fontSize:'11px'}}>QCRA · QSRA · Risk register · Benchmarks · Board pack</p>}
       </div>
     </div>}
   </div>;
