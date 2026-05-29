@@ -1864,10 +1864,115 @@ def _v124_apply_sector_lock(model: Dict[str, Any]) -> Dict[str, Any]:
     return m
 
 
-# ── Placeholder build_model — immediately overridden by the version chain below ──
-def build_model(prompt:str='', client:str='', class_level:int=3, schedule_level:int=3, scenario:str='base'):
-    raise NotImplementedError("build_model not yet initialised")
 
+# ── V26 base build_model helper functions ─────────────────────────────────
+def risk_register(mode,subsector,cost,months,schedule,costs,rm,scenario):
+    """Premium quantified risk register with cause, event, impact and response logic."""
+    base=[
+      ("R-001","Scope growth","Scope","Ambiguous requirements, immature scope freeze and late stakeholder changes","Approved scope expands after estimate freeze","Additional quantities, redesign, rework, procurement churn and board contingency drawdown","Both",42,15,45,120,0.030,0.080,0.160,"Project Director","Freeze scope baseline, change board, value gates, client decision log","Scope change rate exceeds 2% of package value","Reduce","Open"),
+      ("R-002","Market escalation","Commercial","Supplier market tightness, inflation, FX and long procurement window","Rates exceed assumed escalation profile","P50 cost becomes understated; commercial approvals or procurement strategy may need reset","Cost",45,0,0,0,0.040,0.100,0.200,"Commercial Lead","Early procurement, index-linked allowances, market testing, FX strategy","Index exceeds allowance by 3%","Mitigate","Open"),
+      ("R-003","Permits / approvals delay","Regulatory","Authority process, stakeholder objections or incomplete submissions","Consent milestone slips beyond baseline","Critical path delay, extended preliminaries and potential redesign conditions","Schedule",35,20,70,180,0.010,0.040,0.080,"Consents Lead","Authority plan, consent tracker, early submissions, stakeholder map","Consent milestone slips by 30 days","Mitigate","Open"),
+      ("R-004","Design maturity gap","Technical","Estimate is based on immature design, incomplete surveys or unresolved interfaces","Design basis changes during detailed design","Cost growth, quantity movement, rework and schedule resequencing","Both",38,15,45,120,0.030,0.090,0.180,"Design Manager","Design maturity gates, independent review, assumption register","Design deliverables miss maturity gate","Reduce","Open"),
+      ("R-005","Supply chain delay","Procurement","Long-lead equipment, constrained suppliers or late procurement release","Supplier promise dates move right","Delayed installation, critical path movement and acceleration cost","Both",40,10,40,120,0.020,0.070,0.150,"Procurement Lead","Alternate suppliers, early orders, expediting, framework options","Supplier promise date slips","Transfer / Mitigate","Open"),
+      ("R-006","Productivity underperformance","Delivery","Access constraints, poor sequencing, labour scarcity or learning curve","Actual production rates underperform plan","Extended duration, increased preliminaries and loss of float","Both",35,15,50,130,0.030,0.080,0.160,"Delivery Lead","Package productivity controls, daily planning, earned value cadence","SPI/CPI deteriorates for two reporting periods","Mitigate","Open"),
+      ("R-007","Commissioning delay","Handover","Incomplete readiness, software integration issues or defects during testing","Systems fail tests or require repeated commissioning cycles","Delayed handover, operational readiness slippage and liquidated damages exposure","Both",32,10,35,100,0.020,0.060,0.120,"Commissioning Lead","Commissioning readiness plan, early test packs, digital systems integration","Test failures trend upward","Reduce","Open"),
+      ("R-008","Interface misalignment","Integration","Multiple contractors, unclear interface ownership or late design coordination","Package interfaces do not align during installation/integration","Rework, claims, delay and fragmented accountability","Both",34,10,35,100,0.020,0.070,0.140,"Integration Manager","Interface control documents, weekly interface board, accountable owners","Interface actions overdue","Mitigate","Open"),
+    ]
+    if mode=="Space":
+        base=[
+          ("R-S01","Launch manifest delay","Launch","Launch provider capacity, weather windows, manifest priority or vehicle readiness","Confirmed launch slot moves or payload misses manifest gate","Programme delay, storage cost, resequencing and mission-readiness risk","Both",52,20,60,180,0.035,0.110,0.240,"Launch Integration Lead","Reserve alternate launch slot, freeze payload interface, maintain launch-readiness checklist","Launch slot not confirmed at L-12 months","Mitigate","Open"),
+          ("R-S02","Mass growth","Technical","Design creep, shielding, redundancy or late payload additions increase mass","Payload mass exceeds launch and landing allowance","Launch cost, redesign, performance loss and mission safety exposure","Both",44,15,55,150,0.050,0.130,0.280,"Chief Engineer","Mass control board, margin policy, design-to-mass reviews","Mass margin below 8%","Reduce","Open"),
+          ("R-S03","Life-support reliability","Safety / Mission","ECLSS reliability, spares or redundancy evidence below target","Life-support system fails reliability growth or integrated test","Crew safety exposure, launch delay, redesign and mission abort risk","Both",38,25,80,220,0.060,0.150,0.320,"Life Support Lead","Prototype testing, redundancy, reliability growth, independent assurance","Reliability growth misses target","Avoid / Reduce","Open"),
+        ]+base
+    elif "data centre" in subsector.lower():
+        base=[
+          ("R-D01","Grid connection delay","Utilities","Utility agreement, substation scope or energisation pathway not secured","Power connection or energisation milestone slips","Critical path delay, temporary power cost, phased opening risk and revenue deferral","Both",52,25,90,240,0.040,0.120,0.260,"Utilities Lead","Secure grid agreement, temporary power strategy, early equipment orders","Grid agreement unsigned at gate","Mitigate","Open"),
+          ("R-D02","Cooling system capacity","Technical","Thermal basis, water availability or cooling vendor performance uncertain","Cooling design fails capacity, redundancy or commissioning test","Re-design, commissioning delay, lower IT load and resilience concern","Both",36,10,45,130,0.025,0.080,0.170,"MEP Lead","Thermal modelling, supplier validation, early performance test","Cooling performance test fails","Reduce","Open"),
+        ]+base
+    elif "airport" in subsector.lower():
+        base=[
+          ("R-A01","Operational phasing disruption","Operations","Works in or near live airport operations constrain access and sequencing","Operational restrictions reduce productive windows","Delay, night-work premiums, stakeholder disruption and ORAT pressure","Both",42,20,70,160,0.025,0.080,0.180,"ORAT Lead","Phasing simulation, possession plan, airport ops integration board","Possession windows rejected","Mitigate","Open"),
+          ("R-A02","Baggage / security systems integration","Systems","Complex passenger systems integration and vendor interfaces uncertain","Integrated airport systems do not pass readiness testing","Commissioning delay, passenger disruption and late operational readiness","Both",34,15,50,120,0.020,0.070,0.150,"Systems Lead","Factory acceptance testing, integration lab, ORAT dry-runs","FAT/SAT defect trend above threshold","Reduce","Open"),
+        ]+base
+    out=[]
+    for i,r in enumerate(base,1):
+        rid,title,cat,cause,event,impact,area,prob,so,sm,sp,co,cm,cp,owner,mit,trig,response,status=r
+        prob=int(clamp(prob*rm,5,92))
+        if scenario=="lower_risk": cm*=0.70; cp*=0.75; sm=round(sm*.72); sp=round(sp*.78)
+        if scenario=="faster": sm=round(sm*1.22); sp=round(sp*1.28); cm*=1.06; cp*=1.08
+        if scenario=="cheaper": cm*=1.16; cp*=1.22; prob=int(clamp(prob*1.08,5,95))
+        if scenario=="premium": cm*=0.82; cp*=0.88; prob=int(clamp(prob*0.9,5,95))
+        activity=schedule[min(i+3,len(schedule)-1)] if schedule else {"activity_id":"A1900","activity":"Delivery"}
+        costline=costs[min(i+2,len(costs)-1)] if costs else {"cbs":"01.01","description":"Cost"}
+        emv=cost*cm*prob/100; semv=sm*prob/100
+        rating=_risk_rating(prob,cost*cm,sm)
+        out.append({
+          "risk_id":rid,"title":title,"category":cat,"cause":cause,"risk_event":event,"impact_description":impact,
+          "description":event,"impact_area":area,"probability_pct":prob,"pre_mitigation_rating":rating,
+          "activity_id":activity["activity_id"],"activity_name":activity["activity"],"cbs":costline["cbs"],"cbs_name":costline["description"],
+          "schedule_o_days":so,"schedule_m_days":sm,"schedule_p_days":sp,"cost_o_bn":round(cost*co,3),"cost_m_bn":round(cost*cm,3),"cost_p_bn":round(cost*cp,3),
+          "cost_emv_bn":round(emv,3),"schedule_emv_days":round(semv,1),"owner":owner,"trigger":trig,"mitigation":mit,"response_strategy":response,
+          "residual_rating":"Medium" if rating in ["High","Extreme"] else "Low","status":status,"last_reviewed":datetime.utcnow().strftime("%Y-%m-%d"),
+          "board_visibility":"Yes" if i<=8 or rating in ["High","Extreme"] else "No",
+          "basis_of_cost_impact":f"O/M/P cost impact equals {money_bn(cost*co)} / {money_bn(cost*cm)} / {money_bn(cost*cp)} based on scenario-adjusted exposure to CBS {costline['cbs']} {costline['description']}.",
+          "basis_of_schedule_impact":f"O/M/P schedule impact equals {so}/{sm}/{sp} days mapped to activity {activity['activity_id']} {activity['activity']}.",
+          "driver_score":round(emv*100+semv/5,2)
+        })
+    return sorted(out,key=lambda x:x["driver_score"],reverse=True)
+
+
+def monte_carlo(cost,months,risks,seed=42,iterations=10000):
+    rng=np.random.default_rng(seed)
+    base_cost_unc=rng.triangular(cost*.90,cost,cost*1.16,iterations)
+    base_sched_unc=rng.triangular(months*.94,months,months*1.14,iterations)
+    risk_cost=np.zeros(iterations); risk_days=np.zeros(iterations)
+    contribution={r["risk_id"]:{"cost":0.0,"days":0.0,"title":r["title"],"activity_id":r["activity_id"],"cbs":r["cbs"],"category":r.get("category","Risk")} for r in risks}
+    for r in risks:
+        occurs=rng.random(iterations)<(r["probability_pct"]/100)
+        c=rng.triangular(r["cost_o_bn"],r["cost_m_bn"],r["cost_p_bn"],iterations)*occurs
+        left=min(r["schedule_o_days"],r["schedule_m_days"],r["schedule_p_days"]); mode=max(left,r["schedule_m_days"]); right=max(r["schedule_o_days"],r["schedule_m_days"],r["schedule_p_days"])
+        d=np.zeros(iterations) if left==right else rng.triangular(left,mode,right,iterations)*occurs
+        risk_cost+=c; risk_days+=d
+        contribution[r["risk_id"]]["cost"]=float(np.mean(c)); contribution[r["risk_id"]]["days"]=float(np.mean(d))
+    cost_samples=base_cost_unc+risk_cost
+    sched_samples=base_sched_unc+(risk_days/30.44)
+    def pct(arr,p): return float(np.percentile(arr,p))
+    curve=[{"percentile":p,"cost_bn":round(pct(cost_samples,p),3),"schedule_months":round(pct(sched_samples,p),2)} for p in [1,5,10,20,30,40,50,60,70,80,90,95,99]]
+    qcra_tornado=sorted([{"risk_id":k,"title":v["title"],"category":v["category"],"cbs":v["cbs"],"activity_id":v["activity_id"],"cost_mean_bn":round(v["cost"],3),"driver_score":round(v["cost"]*100,2)} for k,v in contribution.items()],key=lambda x:x["driver_score"],reverse=True)
+    qsra_tornado=sorted([{"risk_id":k,"title":v["title"],"category":v["category"],"cbs":v["cbs"],"activity_id":v["activity_id"],"schedule_mean_days":round(v["days"],1),"driver_score":round(v["days"]/2,2)} for k,v in contribution.items()],key=lambda x:x["driver_score"],reverse=True)
+    tornado=sorted([{"risk_id":k,"title":v["title"],"activity_id":v["activity_id"],"cbs":v["cbs"],"cost_mean_bn":round(v["cost"],3),"schedule_mean_days":round(v["days"],1),"driver_score":round(v["cost"]*100+v["days"]/10,2)} for k,v in contribution.items()],key=lambda x:x["driver_score"],reverse=True)
+    return {"iterations":iterations,"qcra":{"p10":round(pct(cost_samples,10),3),"p50":round(pct(cost_samples,50),3),"p80":round(pct(cost_samples,80),3),"p90":round(pct(cost_samples,90),3),"mean":round(float(np.mean(cost_samples)),3)},"qsra":{"p10":round(pct(sched_samples,10),2),"p50":round(pct(sched_samples,50),2),"p80":round(pct(sched_samples,80),2),"p90":round(pct(sched_samples,90),2),"mean":round(float(np.mean(sched_samples)),2)},"curve":curve,"tornado":tornado,"qcra_tornado":qcra_tornado,"qsra_tornado":qsra_tornado}
+
+
+def benchmarks_for(mode,subsector,location,cost,months):
+    s=subsector.lower()
+    if mode=="Space": return [{"metric":"Launch/logistics premium","value":"2.5x-4.3x Earth analogue","why":"Remote operations, mass constraints, launch windows and harsh environment."},{"metric":"Programme duration benchmark","value":f"{int(months*.85)}-{int(months*1.25)} months","why":"Qualification, launch integration and commissioning sequence."},{"metric":"Top benchmark gap","value":"TRL / reliability maturity","why":"Space confidence improves fastest through test evidence and heritage."}]
+    if "data centre" in s: return [{"metric":"Hyperscale delivery benchmark","value":"$8M-$18M per MW equivalent","why":"Varies by power density, grid scope, cooling, land and regional constraints."},{"metric":"Schedule benchmark","value":"30-60 months","why":"Driven by grid connection, long-lead electrical equipment and phased fit-out."},{"metric":"Top benchmark gap","value":"Power availability","why":"Grid connection is frequently the dominant schedule and risk driver."}]
+    if "airport" in s: return [{"metric":"Airport capacity benchmark","value":"$250-$750 per annual pax capacity","why":"Depends on runway, terminal, baggage, rail/road connections and land."},{"metric":"Schedule benchmark","value":"7-12 years","why":"Approvals, airside phasing and operational readiness dominate."}]
+    if "rail" in s: return [{"metric":"Rail corridor benchmark","value":"$80M-$500M per km","why":"Underground, stations, signalling and land interfaces drive variance."},{"metric":"Schedule benchmark","value":"6-15 years","why":"Consents, utilities, possessions and systems integration."}]
+    return [{"metric":"Capital project benchmark","value":"Sector-adjusted range","why":"Selected based on project type, location, maturity and scale."},{"metric":"Schedule benchmark","value":f"{int(months*.8)}-{int(months*1.3)} months","why":"Derived from maturity and delivery complexity."}]
+
+
+# ── Base build_model stub — immediately replaced by V124-V134 version chain ──
+def build_model(prompt:str='', client:str='', class_level:int=3, schedule_level:int=3, scenario:str='base'):
+    """Base stub — immediately enriched by version chain. Returns minimal valid dict."""
+    import re as _re
+    title = str(prompt)[:80] if prompt else 'Unnamed Programme'
+    return {
+        'prompt': str(prompt), 'client': str(client), 'title': title,
+        'mode': 'General Infrastructure', 'subsector': 'Capital Infrastructure',
+        'scenario': str(scenario), 'class_level': int(class_level), 'schedule_level': int(schedule_level),
+        'cost_p50': '$5.0B', 'cost_p10': '$3.5B', 'cost_p80': '$6.5B', 'cost_p90': '$8.0B',
+        'cost_range': '$3.5B-$8.0B', 'direct_cost': '$3.0B', 'indirect_cost': '$1.2B',
+        'risk_reserve': '$0.8B', 'contingency_basis': 'Sector reference class',
+        'schedule': '36 months', 'schedule_months': 36,
+        'confidence_pct': 60, 'risk': 'Medium', 'estimate_class': 'Class 3 - Concept',
+        'cost_breakdown': [], 'cost_lines': [], 'risks': [], 'monte_carlo': {},
+        'benchmark_comparison': [], 'location_context': {}, 'peer_competitors': [],
+        'next_best_actions': [], 'red_flags': [], 'board_briefing': '',
+        'sector_ontology_key': 'general_infrastructure',
+        'schedules_by_level': {str(l): [] for l in range(1, 6)},
+    }
 _CASEY_V124_PREV_BUILD_MODEL = build_model
 def build_model(prompt:str, client:str='', class_level:int=3, schedule_level:int=3, scenario:str='base'):
     return _v124_apply_sector_lock(_CASEY_V124_PREV_BUILD_MODEL(prompt, client, class_level, schedule_level, scenario))
@@ -4015,6 +4120,127 @@ def compare_programmes(req: CompareRequest):
     except Exception as e:
         raise HTTPException(500, "Comparison failed: "+str(e))
 
+
+
+# ── Additional helpers ─────────────────────────────────────────────────────
+def _v136_extract_project_identity(prompt: str) -> dict:
+    """Extract project-specific identity from user prompt for personalised output."""
+    t = str(prompt or '').strip()
+    tl = t.lower()
+    
+    # Extract location
+    locations = {
+        'south africa': 'South Africa', 'johannesburg': 'Johannesburg, South Africa',
+        'cape town': 'Cape Town, South Africa', 'nigeria': 'Nigeria', 'kenya': 'Kenya',
+        'ghana': 'Ghana', 'egypt': 'Egypt', 'morocco': 'Morocco', 'ethiopia': 'Ethiopia',
+        'uk': 'United Kingdom', 'united kingdom': 'United Kingdom', 'england': 'England',
+        'london': 'London, UK', 'manchester': 'Manchester, UK', 'birmingham': 'Birmingham, UK',
+        'scotland': 'Scotland, UK', 'wales': 'Wales, UK',
+        'usa': 'United States', 'united states': 'United States', 'america': 'United States',
+        'texas': 'Texas, USA', 'california': 'California, USA', 'arizona': 'Arizona, USA',
+        'north carolina': 'North Carolina, USA', 'ohio': 'Ohio, USA', 'virginia': 'Virginia, USA',
+        'florida': 'Florida, USA', 'washington': 'Washington, USA', 'georgia': 'Georgia, USA',
+        'west midlands': 'West Midlands, UK', 'yorkshire': 'Yorkshire, UK',
+        'france': 'France', 'paris': 'Paris, France', 'germany': 'Germany', 'berlin': 'Berlin, Germany',
+        'netherlands': 'Netherlands', 'sweden': 'Sweden', 'norway': 'Norway', 'denmark': 'Denmark',
+        'spain': 'Spain', 'italy': 'Italy', 'poland': 'Poland',
+        'saudi arabia': 'Saudi Arabia', 'riyadh': 'Riyadh, Saudi Arabia', 'dubai': 'Dubai, UAE',
+        'uae': 'UAE', 'qatar': 'Qatar', 'doha': 'Doha, Qatar', 'bahrain': 'Bahrain',
+        'oman': 'Oman', 'kuwait': 'Kuwait', 'jordan': 'Jordan',
+        'india': 'India', 'mumbai': 'Mumbai, India', 'delhi': 'Delhi, India',
+        'bangalore': 'Bangalore, India', 'chennai': 'Chennai, India',
+        'singapore': 'Singapore', 'malaysia': 'Malaysia', 'indonesia': 'Indonesia',
+        'australia': 'Australia', 'sydney': 'Sydney, Australia', 'melbourne': 'Melbourne, Australia',
+        'perth': 'Perth, Australia', 'queensland': 'Queensland, Australia',
+        'canada': 'Canada', 'toronto': 'Toronto, Canada', 'vancouver': 'Vancouver, Canada',
+        'brazil': 'Brazil', 'sao paulo': 'São Paulo, Brazil', 'chile': 'Chile', 'mexico': 'Mexico',
+        'china': 'China', 'beijing': 'Beijing, China', 'shanghai': 'Shanghai, China',
+        'japan': 'Japan', 'tokyo': 'Tokyo, Japan', 'south korea': 'South Korea', 'seoul': 'Seoul, Korea',
+        'taiwan': 'Taiwan', 'hong kong': 'Hong Kong',
+        'north sea': 'North Sea', 'gulf of mexico': 'Gulf of Mexico', 'offshore': 'Offshore',
+        'global': 'Global', 'international': 'International',
+        'lunar': 'Lunar Surface', 'moon': 'Lunar Surface', 'mars': 'Mars Surface',
+        'leo': 'Low Earth Orbit', 'orbit': 'Earth Orbit', 'cislunar': 'Cislunar Space',
+    }
+    location = ''
+    for key, val in sorted(locations.items(), key=lambda x: -len(x[0])):
+        if key in tl:
+            location = val
+            break
+    
+    # Extract scale/capacity signals
+    scale_sig = ''
+    for pat in [
+        r'(\d[\d,.]*)\s*(million|m)\s*(connection|meter|meter|home|household|unit|seat|bed)',
+        r'(\d[\d,.]*)\s*(gw|gwh|mw|mwh)',
+        r'(\d[\d,.]*)\s*(km|mile)',
+        r'(\d[\d,.]*)\s*(bed|ward|theatre)',
+        r'(\d[\d,.]*)\s*(satellite|launch|mission)',
+        r'(\d[\d,.]*)\s*(floor|storey)',
+    ]:
+        m = re.search(pat, tl)
+        if m:
+            scale_sig = m.group(0).strip()
+            break
+    
+    # Extract cost signal
+    cost_sig = ''
+    for pat in [
+        r'\$[\d,.]+\s*(?:billion|bn|b|million|mn|m|trillion|tn)',
+        r'£[\d,.]+\s*(?:billion|bn|b|million|mn|m)',
+        r'€[\d,.]+\s*(?:billion|bn|b|million|mn|m)',
+        r'[\d,.]+\s*(?:billion|bn)\s*(?:dollar|pound|euro|usd|gbp|eur)?',
+        r'[\d,.]+\s*(?:million)\s*(?:dollar|pound|usd|gbp)',
+    ]:
+        m = re.search(pat, tl)
+        if m:
+            cost_sig = m.group(0).strip()
+            break
+    
+    # Extract duration signal
+    dur_sig = ''
+    for pat in [
+        r'(\d+)\s*(?:month|months)',
+        r'(\d+)\s*(?:year|years)',
+        r'by\s+(20\d\d)',
+        r'(20\d\d)\s+(?:delivery|completion|open)',
+    ]:
+        m = re.search(pat, tl)
+        if m:
+            dur_sig = m.group(0).strip()
+            break
+    
+    # Build a project title from the prompt (first ~60 chars cleaned up)
+    # Remove filler words and capitalise key terms
+    title_words = []
+    skip = {'a','an','the','and','or','for','with','to','in','on','at','of','is','are','will','that',
+             'this','be','by','as','its','has','have','been','would','could','should','from','into',
+             'across','through','per','about','above','below','between','within','during','after'}
+    for word in t.split()[:12]:
+        clean = re.sub(r'[^a-zA-Z0-9£$€%]', '', word)
+        if clean and clean.lower() not in skip and len(clean) > 1:
+            title_words.append(clean)
+        if len(title_words) >= 7:
+            break
+    project_title = ' '.join(w.capitalize() if w[0].islower() else w for w in title_words[:6])
+    
+    return {
+        'location': location,
+        'scale_signal': scale_sig,
+        'cost_signal': cost_sig,
+        'duration_signal': dur_sig,
+        'project_title': project_title,
+        'prompt_short': t[:80],
+    }
+
+
+
+def _risk_rating(prob, cost_m, sched_m):
+    exposure = prob/100.0*(float(cost_m or 0)*100 + float(sched_m or 0)/4)
+    if exposure > 90: return "Extreme"
+    if exposure > 55: return "High"
+    if exposure > 25: return "Medium"
+    return "Low"
 
 
 # ══ ROUTES ══
