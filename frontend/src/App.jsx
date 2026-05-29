@@ -14,16 +14,19 @@ import './style.css';
 const PROD_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL || 'https://corbit-1.onrender.com';
 const API_CANDIDATES = [PROD_URL, 'http://127.0.0.1:8000', 'http://localhost:8000'].filter(Boolean);
 let API = API_CANDIDATES[0];
-async function apiFetch(path, options) {
+async function apiFetch(path, options, timeoutMs = 45000) {
   let lastError;
   for (const base of API_CANDIDATES) {
     try {
-      const r = await fetch(base + path, options);
+      const controller = new AbortController();
+      const tid = setTimeout(() => controller.abort(), timeoutMs);
+      const r = await fetch(base + path, { ...options, signal: controller.signal });
+      clearTimeout(tid);
       API = base;
       return r;
     } catch (e) { lastError = e; }
   }
-  throw lastError || new Error('CASEY backend unreachable');
+  throw lastError || new Error('CASEY backend unreachable — try again in 20 seconds');
 }
 function safeRender(value) {
   if (value === undefined || value === null) return '';
@@ -568,15 +571,8 @@ function AccountPanel({ email, setEmail, projects, loading, onLoad, onDelete, on
 function ComparePanel({ promptA, setPromptA, promptB, setPromptB, onRun, loading, result, error, onClose, currentModel }) {
   const [bmFilter, setBmFilter] = React.useState('All');
   const [bmSearch, setBmSearch] = React.useState('');
-  const [activeTab, setActiveTab] = React.useState('pick'); // 'pick' | 'results'
-
-  const sectors = ['All','Rail / Transit','Nuclear / Energy','Defence / Secure Infrastructure',
-    'Digital Infrastructure / Hyperscale Data Centre','Life Sciences / Biologics Manufacturing',
-    'Semiconductor / Advanced Manufacturing','Battery / Gigafactory','Energy / Utilities',
-    'Water / Environmental Infrastructure','Oil & Gas / Process Infrastructure',
-    'Mining / Metals Infrastructure','Airport / Aviation','Ports / Marine Infrastructure',
-    'Roads / Highways Infrastructure','Space / Mission Assurance','Healthcare / Hospital Infrastructure',
-    'Stadia / Events Infrastructure','Telecoms / Digital Infrastructure'];
+  const [activeTab, setActiveTab] = React.useState('pick');
+  const [inputMode, setInputMode] = React.useState('type'); // 'type' | 'file'
 
   const filtered = REAL_BENCHMARKS.filter(b => {
     const matchSector = bmFilter === 'All' || b.sector === bmFilter;
@@ -587,24 +583,51 @@ function ComparePanel({ promptA, setPromptA, promptB, setPromptB, onRun, loading
   const delta = result?.delta;
   const pa = result?.programme_a;
   const pb = result?.programme_b;
+  const rc = result?.risk_comparison;
+  const recs = result?.recommendations || [];
   const wc = { A: '#10b981', B: '#8df7ff', EQUAL: '#f59e0b' };
 
-  React.useEffect(() => {
-    if (result) setActiveTab('results');
-  }, [result]);
+  // Auto-detect if a loaded current project should pre-fill Option B
+  React.useEffect(() => { if (result) setActiveTab('results'); }, [result]);
+  React.useEffect(() => { if (currentModel?.prompt && !promptB) setPromptB(currentModel.prompt); }, [currentModel]);
 
-  return <section className="savedPanel" style={{width:'min(980px,100vw)'}}>
+  // Like-for-like suggestion based on Option B sector
+  const suggestLikeForLike = () => {
+    if (!promptB || !REAL_BENCHMARKS) return null;
+    const bl = promptB.toLowerCase();
+    const sectorHints = [
+      ['rail','metro','tram','signalling','hs2','crossrail','rail / transit'],
+      ['nuclear','reactor','smr','hinkley','sizewell','nuclear / energy'],
+      ['data centre','datacenter','gpu','hyperscale','digital infrastructure'],
+      ['pharma','gmp','biologics','vaccine','life sciences'],
+      ['defence','military','awre','aukus','defence / secure'],
+      ['space','lunar','mars','orbital','satellite','space / mission'],
+      ['airport','terminal','runway','baggage','airport / aviation'],
+      ['port','harbour','quay','berth','ports / marine'],
+      ['gigafactory','battery','ev manufactur','gigafactory'],
+      ['semiconductor','wafer','fab','cleanroom chip','semiconductor'],
+    ];
+    for (const [terms, sectorKey] of sectorHints) {
+      if (terms.slice(0,-1).some(t => bl.includes(t))) {
+        const matches = REAL_BENCHMARKS.filter(b => b.sector.toLowerCase().includes(sectorKey) || terms.slice(0,-1).some(t => b.sector.toLowerCase().includes(t)));
+        if (matches.length > 0) return { sector: sectorKey, count: matches.length };
+      }
+    }
+    return null;
+  };
+  const suggestion = suggestLikeForLike();
+
+  return <section className="savedPanel" style={{width:'min(1020px,100vw)'}}>
     <div className="savedHeader">
       <div>
         <h2 style={{fontSize:'14px'}}>Programme Comparison</h2>
-        <p style={{fontSize:'11px',color:'#475569',margin:'2px 0 0'}}>Compare any two programmes — your project vs a real benchmark, two delivery options, or two contractor bids.</p>
+        <p style={{fontSize:'11px',color:'#475569',margin:'2px 0 0'}}>Compare any two programmes anywhere in the world — your project vs a real benchmark, two delivery options, two contractor bids, or any historical programme.</p>
       </div>
       <button onClick={onClose}>✕</button>
     </div>
 
-    {/* Tab row */}
     <div style={{display:'flex',gap:'0',borderBottom:'1px solid rgba(255,255,255,0.07)'}}>
-      {[['pick','Set up comparison'],['results','Results']].map(([t,l]) =>
+      {[['pick','Set up comparison'],['results','Results & recommendations']].map(([t,l]) =>
         <button key={t} onClick={() => setActiveTab(t)}
           style={{padding:'8px 16px',fontSize:'11px',fontWeight:activeTab===t?'800':'400',
                   color:activeTab===t?'#8df7ff':'#475569',
@@ -612,268 +635,215 @@ function ComparePanel({ promptA, setPromptA, promptB, setPromptB, onRun, loading
                   background:'none',border:'none',cursor:'pointer',letterSpacing:'.06em'}}>{l}</button>)}
     </div>
 
-    {activeTab === 'pick' && <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0',height:'calc(100vh - 130px)',overflow:'hidden'}}>
-      {/* LEFT: Option A — Real benchmark or custom */}
+    {activeTab === 'pick' && <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0',height:'calc(100vh - 140px)',overflow:'hidden'}}>
+      {/* LEFT: Option A — benchmark library */}
       <div style={{borderRight:'1px solid rgba(255,255,255,0.07)',display:'flex',flexDirection:'column',overflow:'hidden'}}>
         <div style={{padding:'10px 14px',borderBottom:'1px solid rgba(255,255,255,0.05)',flexShrink:0}}>
-          <div style={{fontSize:'9px',fontWeight:'800',letterSpacing:'.12em',color:'#10b981',marginBottom:'6px'}}>OPTION A — REFERENCE CASE</div>
-          <p style={{fontSize:'10px',color:'#475569',margin:'0 0 6px'}}>Pick a real completed programme from the library below, or type your own.</p>
-          <textarea value={promptA} onChange={e => setPromptA(e.target.value)} rows={3}
-            placeholder="Select from library below or type your own programme description..."
-            style={{width:'100%',background:'rgba(16,185,129,0.05)',border:'1px solid rgba(16,185,129,0.2)',borderRadius:'3px',padding:'7px',color:'#e2e8f0',fontSize:'11px',resize:'vertical',boxSizing:'border-box'}}/>
-          {currentModel && <button onClick={() => setPromptA(currentModel.prompt || '')}
-            style={{marginTop:'4px',width:'100%',background:'rgba(16,185,129,0.08)',border:'1px solid rgba(16,185,129,0.2)',color:'#10b981',padding:'5px',borderRadius:'3px',cursor:'pointer',fontSize:'10px',fontWeight:'700'}}>
-            Use current project as Option A →
+          <div style={{fontSize:'9px',fontWeight:'800',letterSpacing:'.12em',color:'#10b981',marginBottom:'4px'}}>OPTION A — REFERENCE / BENCHMARK</div>
+          <p style={{fontSize:'10px',color:'#475569',margin:'0 0 5px',lineHeight:'1.4'}}>Pick a real completed programme from the library (any sector, any country, any size) — or type your own. This is what you are comparing <em>against</em>.</p>
+          <textarea value={promptA} onChange={e => setPromptA(e.target.value)} rows={2}
+            placeholder="Select from library below, or type any programme — e.g. Crossrail Elizabeth Line UK rail, or HS2 Phase 2b..."
+            style={{width:'100%',background:'rgba(16,185,129,0.05)',border:'1px solid rgba(16,185,129,0.2)',borderRadius:'3px',padding:'7px',color:'#e2e8f0',fontSize:'11px',resize:'none',boxSizing:'border-box'}}/>
+          {currentModel?.prompt && <button onClick={() => setPromptA(currentModel.prompt)}
+            style={{marginTop:'4px',width:'100%',background:'rgba(16,185,129,0.06)',border:'1px solid rgba(16,185,129,0.15)',color:'#10b981',padding:'4px',borderRadius:'3px',cursor:'pointer',fontSize:'10px',fontWeight:'700'}}>
+            ← Use current loaded project as Option A
           </button>}
         </div>
-        {/* Benchmark filter */}
-        <div style={{padding:'8px 10px',borderBottom:'1px solid rgba(255,255,255,0.05)',flexShrink:0,display:'flex',gap:'6px',alignItems:'center'}}>
-          <input value={bmSearch} onChange={e => setBmSearch(e.target.value)} placeholder="Search..."
+        <div style={{padding:'6px 10px',borderBottom:'1px solid rgba(255,255,255,0.05)',flexShrink:0,display:'flex',gap:'5px',alignItems:'center'}}>
+          <input value={bmSearch} onChange={e => setBmSearch(e.target.value)} placeholder="Search benchmarks..."
             style={{flex:1,background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'3px',padding:'4px 8px',color:'#e2e8f0',fontSize:'10px'}}/>
           <select value={bmFilter} onChange={e => setBmFilter(e.target.value)}
-            style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'3px',padding:'4px 6px',color:'#94a3b8',fontSize:'10px'}}>
+            style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'3px',padding:'4px 5px',color:'#94a3b8',fontSize:'10px',maxWidth:'160px'}}>
             {['All','Rail / Transit','Nuclear / Energy','Defence / Secure Infrastructure',
               'Digital Infrastructure / Hyperscale Data Centre','Life Sciences / Biologics Manufacturing',
               'Semiconductor / Advanced Manufacturing','Battery / Gigafactory','Energy / Utilities',
               'Water / Environmental Infrastructure','Oil & Gas / Process Infrastructure',
               'Mining / Metals Infrastructure','Airport / Aviation','Roads / Highways Infrastructure',
               'Space / Mission Assurance','Ports / Marine Infrastructure'].map(s =>
-              <option key={s} value={s}>{s === 'All' ? 'All sectors' : s}</option>)}
+              <option key={s} value={s}>{s==='All'?'All sectors ('+REAL_BENCHMARKS.length+')':s}</option>)}
           </select>
         </div>
-        {/* Benchmark list */}
         <div style={{flex:1,overflowY:'auto'}}>
           {filtered.map(b => <div key={b.name}
             onClick={() => setPromptA(b.prompt)}
-            style={{padding:'8px 12px',borderBottom:'1px solid rgba(255,255,255,0.04)',cursor:'pointer',
-                    background:promptA===b.prompt?'rgba(16,185,129,0.08)':'transparent',
-                    transition:'background 0.15s'}}
-            onMouseEnter={e => e.currentTarget.style.background='rgba(255,255,255,0.04)'}
-            onMouseLeave={e => e.currentTarget.style.background=promptA===b.prompt?'rgba(16,185,129,0.08)':'transparent'}>
-            <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:'2px'}}>
+            style={{padding:'7px 12px',borderBottom:'1px solid rgba(255,255,255,0.04)',cursor:'pointer',
+                    background:promptA===b.prompt?'rgba(16,185,129,0.08)':'transparent'}}
+            onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.04)'}
+            onMouseLeave={e=>e.currentTarget.style.background=promptA===b.prompt?'rgba(16,185,129,0.08)':'transparent'}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:'1px'}}>
               <span style={{fontSize:'11px',fontWeight:'700',color:'#e2e8f0'}}>{b.name}</span>
-              <div style={{display:'flex',gap:'4px',flexShrink:0,marginLeft:'6px'}}>
-                {b.mode==='Space' && <span style={{background:'rgba(141,247,255,0.1)',color:'#8df7ff',fontSize:'8px',padding:'1px 5px',borderRadius:'2px',fontWeight:'800'}}>SPACE</span>}
-                {b.cost_growth_pct > 50 && <span style={{background:'rgba(239,68,68,0.12)',color:'#fca5a5',fontSize:'8px',padding:'1px 5px',borderRadius:'2px',fontWeight:'800'}}>+{b.cost_growth_pct}%</span>}
+              <div style={{display:'flex',gap:'3px',flexShrink:0,marginLeft:'4px'}}>
+                {b.mode==='Space'&&<span style={{background:'rgba(141,247,255,0.1)',color:'#8df7ff',fontSize:'7px',padding:'1px 4px',borderRadius:'2px',fontWeight:'800'}}>SPACE</span>}
+                {b.cost_growth_pct>80&&<span style={{background:'rgba(239,68,68,0.12)',color:'#fca5a5',fontSize:'7px',padding:'1px 4px',borderRadius:'2px',fontWeight:'800'}}>+{b.cost_growth_pct}%</span>}
+                {b.cost_growth_pct>0&&b.cost_growth_pct<=80&&<span style={{background:'rgba(245,158,11,0.1)',color:'#fde68a',fontSize:'7px',padding:'1px 4px',borderRadius:'2px',fontWeight:'800'}}>+{b.cost_growth_pct}%</span>}
               </div>
             </div>
-            <div style={{fontSize:'9px',color:'#475569'}}>{b.sector}</div>
-            <div style={{display:'flex',gap:'8px',marginTop:'2px'}}>
+            <div style={{fontSize:'9px',color:'#475569',marginBottom:'1px'}}>{b.sector}</div>
+            <div style={{display:'flex',gap:'8px'}}>
               <span style={{fontSize:'9px',color:'#64748b'}}>Actual: ${b.cost_bn}B</span>
-              {b.schedule_slip_months > 0 && <span style={{fontSize:'9px',color:'#f59e0b'}}>+{b.schedule_slip_months}mo slip</span>}
-              {b.cost_growth_pct > 0 && <span style={{fontSize:'9px',color:'#ef4444'}}>+{b.cost_growth_pct}% cost</span>}
+              {b.schedule_slip_months>0&&<span style={{fontSize:'9px',color:'#f59e0b'}}>+{b.schedule_slip_months}mo slip</span>}
             </div>
-            {b.failure_mode && <div style={{fontSize:'9px',color:'#334155',marginTop:'1px',fontStyle:'italic'}}>{b.failure_mode.slice(0,70)}{b.failure_mode.length>70?'…':''}</div>}
+            {b.failure_mode&&<div style={{fontSize:'8px',color:'#334155',marginTop:'1px',fontStyle:'italic'}}>{b.failure_mode.slice(0,65)}{b.failure_mode.length>65?'…':''}</div>}
           </div>)}
         </div>
       </div>
 
-      {/* RIGHT: Option B — your project or custom */}
+      {/* RIGHT: Option B — your project */}
       <div style={{display:'flex',flexDirection:'column',overflow:'hidden'}}>
         <div style={{padding:'10px 14px',borderBottom:'1px solid rgba(255,255,255,0.05)',flexShrink:0}}>
-          <div style={{fontSize:'9px',fontWeight:'800',letterSpacing:'.12em',color:'#8df7ff',marginBottom:'6px'}}>OPTION B — YOUR PROJECT OR CUSTOM</div>
-          <p style={{fontSize:'10px',color:'#475569',margin:'0 0 6px'}}>Describe the programme you want to test against Option A. Can be your live project or a hypothetical.</p>
-          <textarea value={promptB} onChange={e => setPromptB(e.target.value)} rows={3}
-            placeholder="e.g. New metro line Lagos Nigeria 45km elevated urban rail 2031 delivery..."
-            style={{width:'100%',background:'rgba(141,247,255,0.05)',border:'1px solid rgba(141,247,255,0.2)',borderRadius:'3px',padding:'7px',color:'#e2e8f0',fontSize:'11px',resize:'vertical',boxSizing:'border-box'}}/>
-          {currentModel && <button onClick={() => setPromptB(currentModel.prompt || '')}
-            style={{marginTop:'4px',width:'100%',background:'rgba(141,247,255,0.06)',border:'1px solid rgba(141,247,255,0.15)',color:'#8df7ff',padding:'5px',borderRadius:'3px',cursor:'pointer',fontSize:'10px',fontWeight:'700'}}>
-            Use current project as Option B →
+          <div style={{fontSize:'9px',fontWeight:'800',letterSpacing:'.12em',color:'#8df7ff',marginBottom:'4px'}}>OPTION B — YOUR PROJECT</div>
+          <p style={{fontSize:'10px',color:'#475569',margin:'0 0 5px',lineHeight:'1.4'}}>Describe your programme. CASEY will run it through the full intelligence engine and compare it against Option A. Works for any country, sector, and size.</p>
+          <div style={{display:'flex',gap:'5px',marginBottom:'5px'}}>
+            {[['type','Type description'],['file','Upload file']].map(([m,l])=>
+              <button key={m} onClick={()=>setInputMode(m)}
+                style={{fontSize:'10px',fontWeight:inputMode===m?'800':'400',padding:'3px 10px',borderRadius:'3px',border:'1px solid rgba(255,255,255,0.1)',background:inputMode===m?'rgba(141,247,255,0.1)':'transparent',color:inputMode===m?'#8df7ff':'#475569',cursor:'pointer'}}>{l}</button>)}
+          </div>
+          {inputMode==='type' && <textarea value={promptB} onChange={e => setPromptB(e.target.value)} rows={3}
+            placeholder={'Describe your project — sector, country, scale, key constraints. Examples:
+• New metro line Lagos Nigeria 45km 2031 delivery
+• SMR fleet UK 10 reactors grid decarbonisation
+• Data centre campus Virginia 500MW hyperscale'}
+            style={{width:'100%',background:'rgba(141,247,255,0.04)',border:'1px solid rgba(141,247,255,0.2)',borderRadius:'3px',padding:'7px',color:'#e2e8f0',fontSize:'11px',resize:'vertical',boxSizing:'border-box'}}/>}
+          {inputMode==='file' && <div style={{background:'rgba(141,247,255,0.04)',border:'1px dashed rgba(141,247,255,0.2)',borderRadius:'3px',padding:'14px',textAlign:'center'}}>
+            <p style={{fontSize:'11px',color:'#64748b',marginBottom:'6px'}}>Upload a cost estimate, XER schedule or risk register — CASEY will extract the programme description and use it as Option B.</p>
+            <p style={{fontSize:'10px',color:'#475569',marginBottom:'8px'}}>Supported: .xlsx, .csv, .xer, .pdf, .txt — or paste a description above instead.</p>
+            <button onClick={()=>setInputMode('type')} style={{background:'rgba(141,247,255,0.1)',border:'1px solid rgba(141,247,255,0.2)',color:'#8df7ff',padding:'5px 14px',borderRadius:'3px',cursor:'pointer',fontSize:'10px',fontWeight:'700'}}>Type description instead →</button>
+          </div>}
+          {currentModel?.prompt && <button onClick={() => setPromptB(currentModel.prompt)}
+            style={{marginTop:'4px',width:'100%',background:'rgba(141,247,255,0.05)',border:'1px solid rgba(141,247,255,0.15)',color:'#8df7ff',padding:'4px',borderRadius:'3px',cursor:'pointer',fontSize:'10px',fontWeight:'700'}}>
+            ← Use current loaded project as Option B
           </button>}
         </div>
-        <div style={{padding:'14px',borderBottom:'1px solid rgba(255,255,255,0.05)',flex:1}}>
-          <div style={{fontSize:'9px',fontWeight:'800',letterSpacing:'.1em',color:'#64748b',marginBottom:'10px'}}>HOW COMPARISON WORKS</div>
-          {[
-            ['◆','CASEY runs both through the full intelligence engine'],
-            ['📊','Cost, schedule, confidence and risk are calculated independently'],
-            ['⚖️','A delta is generated: cost %, confidence gap, schedule variance'],
-            ['🎯','A board verdict names which option is more defensible and why'],
-            ['📋','Real benchmark data enriches both sides of the comparison'],
-            ['⏱','Takes 8–12 seconds — both models run simultaneously'],
-          ].map(([icon,text]) => <div key={text} style={{display:'flex',gap:'8px',marginBottom:'7px',fontSize:'11px',color:'#94a3b8',alignItems:'flex-start'}}>
-            <span style={{flexShrink:0,fontSize:'12px'}}>{icon}</span><span>{text}</span>
-          </div>)}
+        {suggestion && <div style={{padding:'7px 12px',background:'rgba(141,247,255,0.04)',borderBottom:'1px solid rgba(141,247,255,0.1)',flexShrink:0}}>
+          <div style={{fontSize:'10px',color:'#8df7ff',fontWeight:'700',marginBottom:'2px'}}>💡 Like-for-like suggestion</div>
+          <p style={{fontSize:'10px',color:'#64748b',margin:'0 0 4px',lineHeight:'1.4'}}>We detected your project may be in the {suggestion.sector} sector. Filter Option A to {suggestion.sector} ({suggestion.count} benchmarks) for a more meaningful comparison.</p>
+          <button onClick={()=>{setBmFilter(suggestion.sector);}} style={{fontSize:'10px',color:'#8df7ff',background:'rgba(141,247,255,0.08)',border:'1px solid rgba(141,247,255,0.2)',padding:'3px 10px',borderRadius:'3px',cursor:'pointer',fontWeight:'700'}}>Filter to {suggestion.sector} →</button>
+        </div>}
+        <div style={{padding:'10px 14px',borderBottom:'1px solid rgba(255,255,255,0.05)',flexShrink:0,flex:1}}>
+          <div style={{fontSize:'9px',fontWeight:'800',letterSpacing:'.1em',color:'#64748b',marginBottom:'8px'}}>WHAT THE COMPARISON PRODUCES</div>
+          {[['◆','Full intelligence pack for both programmes — P50, P80, confidence, gate readiness'],['⚖️','Side-by-side delta: cost, schedule, confidence, risk exposure, P80 gap'],['🎯','Sector match check — tells you if the comparison is like-for-like or cross-sector'],['⚠','Risk comparison — top risks, shared risk themes, EMV delta, P80 gap'],['📋','3–5 specific recommendations for your decision'],['🌍','Works for any country, sector, size — Earth or Space'],['⏱','Takes 10–15 seconds — both models run in parallel'],].map(([icon,text])=>
+            <div key={text} style={{display:'flex',gap:'8px',marginBottom:'6px',fontSize:'10px',color:'#94a3b8',alignItems:'flex-start'}}>
+              <span style={{flexShrink:0}}>{icon}</span><span style={{lineHeight:'1.4'}}>{text}</span>
+            </div>)}
         </div>
-        <div style={{padding:'12px 14px',flexShrink:0}}>
+        <div style={{padding:'10px 14px',flexShrink:0}}>
           <button onClick={onRun} disabled={loading||!promptA.trim()||!promptB.trim()}
-            style={{width:'100%',background:loading||!promptA.trim()||!promptB.trim()?'rgba(141,247,255,0.05)':'rgba(141,247,255,0.1)',border:'1px solid rgba(141,247,255,0.3)',color:'#8df7ff',padding:'10px',borderRadius:'4px',cursor:loading||!promptA.trim()||!promptB.trim()?'default':'pointer',fontSize:'13px',fontWeight:'800',letterSpacing:'.06em'}}>
-            {loading ? '◌ Building intelligence packs…' : '◆ Run comparison'}
+            style={{width:'100%',background:loading||!promptA.trim()||!promptB.trim()?'rgba(141,247,255,0.04)':'rgba(141,247,255,0.1)',border:'1px solid rgba(141,247,255,0.3)',color:'#8df7ff',padding:'10px',borderRadius:'4px',cursor:loading||!promptA.trim()||!promptB.trim()?'default':'pointer',fontSize:'12px',fontWeight:'800',letterSpacing:'.06em'}}>
+            {loading?'◌ Building intelligence packs…':'◆ Run comparison — any country, any sector'}
           </button>
-          {error && <div style={{marginTop:'8px',color:'#fca5a5',fontSize:'11px'}}>{error}</div>}
-          {loading && <p style={{textAlign:'center',color:'#475569',fontSize:'11px',marginTop:'8px'}}>Running both programmes through CASEY — this takes 8–12 seconds.</p>}
+          {!promptA.trim()&&<p style={{fontSize:'10px',color:'#f59e0b',textAlign:'center',marginTop:'5px'}}>← Select or type Option A first</p>}
+          {promptA.trim()&&!promptB.trim()&&<p style={{fontSize:'10px',color:'#8df7ff',textAlign:'center',marginTop:'5px'}}>← Describe your project as Option B to run</p>}
+          {error&&<div style={{marginTop:'6px',color:'#fca5a5',fontSize:'10px',padding:'5px',background:'rgba(239,68,68,0.06)',borderRadius:'3px'}}>{error}</div>}
+          {loading&&<p style={{textAlign:'center',color:'#475569',fontSize:'10px',marginTop:'6px'}}>Running both programmes through the CASEY intelligence engine — 10–15 seconds.</p>}
         </div>
       </div>
     </div>}
 
-    {activeTab === 'results' && <div style={{overflowY:'auto',height:'calc(100vh - 130px)',padding:'14px 16px'}}>
-      {!result && !loading && <div style={{textAlign:'center',padding:'40px',color:'#475569',fontSize:'12px'}}>
-        Set up and run a comparison to see results here.
-        <br/><button onClick={() => setActiveTab('pick')} style={{marginTop:'12px',background:'rgba(141,247,255,0.1)',border:'1px solid rgba(141,247,255,0.2)',color:'#8df7ff',padding:'7px 16px',borderRadius:'3px',cursor:'pointer',fontSize:'11px',fontWeight:'700'}}>← Back to set up</button>
+    {activeTab==='results' && <div style={{overflowY:'auto',height:'calc(100vh - 140px)',padding:'12px 16px'}}>
+      {!result&&!loading&&<div style={{textAlign:'center',padding:'40px',color:'#475569',fontSize:'12px'}}>
+        Set up a comparison and run it to see results here.
+        <br/><button onClick={()=>setActiveTab('pick')} style={{marginTop:'10px',background:'rgba(141,247,255,0.08)',border:'1px solid rgba(141,247,255,0.2)',color:'#8df7ff',padding:'6px 16px',borderRadius:'3px',cursor:'pointer',fontSize:'11px',fontWeight:'700'}}>← Set up comparison</button>
       </div>}
-      {loading && <div style={{textAlign:'center',padding:'40px',color:'#64748b',fontSize:'12px'}}>Building both intelligence packs…</div>}
-      {result && delta && !loading && <>
-        {/* Verdict */}
-        <div style={{background:'rgba(255,255,255,0.03)',border:`2px solid ${wc[delta.winner]||'#8df7ff'}`,borderRadius:'5px',padding:'12px 16px',marginBottom:'12px'}}>
-          <div style={{fontSize:'9px',fontWeight:'800',letterSpacing:'.12em',color:wc[delta.winner]||'#8df7ff',marginBottom:'4px'}}>
-            {delta.winner==='EQUAL' ? 'EQUAL — NO CLEAR PREFERENCE' : `OPTION ${delta.winner} PREFERRED`}
-          </div>
-          <p style={{fontSize:'12px',color:'#e2e8f0',lineHeight:'1.6',margin:0}}>{delta.winner_reason}</p>
+      {loading&&<div style={{textAlign:'center',padding:'40px',color:'#64748b',fontSize:'12px'}}>Building both intelligence packs — 10–15 seconds…</div>}
+      {result&&delta&&!loading&&<>
+        {/* Sector match badge */}
+        <div style={{marginBottom:'10px',display:'flex',gap:'8px',alignItems:'center',flexWrap:'wrap'}}>
+          <span style={{background:delta.sector_match==='Like-for-like'?'rgba(16,185,129,0.12)':'rgba(245,158,11,0.1)',border:delta.sector_match==='Like-for-like'?'1px solid rgba(16,185,129,0.3)':'1px solid rgba(245,158,11,0.3)',color:delta.sector_match==='Like-for-like'?'#10b981':'#f59e0b',padding:'3px 10px',borderRadius:'20px',fontSize:'10px',fontWeight:'800'}}>
+            {delta.sector_match==='Like-for-like'?'✓ Like-for-like comparison':'⚠ Cross-sector comparison'}
+          </span>
+          {pa?.country&&pb?.country&&pa.country!==pb.country&&<span style={{background:'rgba(141,247,255,0.06)',border:'1px solid rgba(141,247,255,0.15)',color:'#8df7ff',padding:'3px 8px',borderRadius:'20px',fontSize:'10px'}}>🌍 {pa.country} vs {pb.country}</span>}
+          <span style={{fontSize:'10px',color:'#475569'}}>{delta.sector_note?.slice?.(0,80)}</span>
         </div>
+
+        {/* Verdict */}
+        <div style={{background:'rgba(255,255,255,0.03)',border:`2px solid ${wc[delta.winner]||'#8df7ff'}`,borderRadius:'5px',padding:'10px 14px',marginBottom:'10px'}}>
+          <div style={{fontSize:'9px',fontWeight:'800',letterSpacing:'.12em',color:wc[delta.winner]||'#8df7ff',marginBottom:'3px'}}>
+            {delta.winner==='EQUAL'?'EQUAL — NO CLEAR PREFERENCE':`OPTION ${delta.winner} PREFERRED`}
+          </div>
+          <p style={{fontSize:'11px',color:'#e2e8f0',lineHeight:'1.6',margin:0}}>{delta.winner_reason}</p>
+        </div>
+
         {/* Delta strip */}
-        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'8px',marginBottom:'12px'}}>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'6px',marginBottom:'10px'}}>
           {[['Cost',delta.cost_verdict,delta.cost_delta_pct?(delta.cost_delta_pct>0?'+':'')+delta.cost_delta_pct+'%':'—'],
             ['Confidence',delta.confidence_verdict,delta.confidence_delta?(delta.confidence_delta>0?'+':'')+delta.confidence_delta+'pts':'—'],
-            ['Schedule',delta.schedule_verdict,delta.schedule_delta_months?(delta.schedule_delta_months>0?'+':'')+delta.schedule_delta_months+' mo':'—']
-          ].map(([label,verdict,diff])=><div key={label} style={{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:'4px',padding:'10px',textAlign:'center'}}>
-            <div style={{fontSize:'9px',color:'#475569',fontWeight:'800',letterSpacing:'.08em',marginBottom:'4px'}}>{label}</div>
-            <div style={{fontSize:'12px',color:'#e2e8f0',fontWeight:'700',marginBottom:'2px'}}>{verdict}</div>
-            <div style={{fontSize:'13px',color:'#8df7ff',fontWeight:'800'}}>{diff}</div>
+            ['Schedule',delta.schedule_verdict,delta.schedule_delta_months?(delta.schedule_delta_months>0?'+':'')+delta.schedule_delta_months+' mo':'—'],
+            ['P80 gap','Risk exposure',rc?.p80_gap?(rc.p80_gap>0?'+':'')+rc.p80_gap+'B':'—'],
+          ].map(([label,verdict,diff])=><div key={label} style={{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:'4px',padding:'8px',textAlign:'center'}}>
+            <div style={{fontSize:'9px',color:'#475569',fontWeight:'800',letterSpacing:'.08em',marginBottom:'2px'}}>{label}</div>
+            <div style={{fontSize:'10px',color:'#e2e8f0',fontWeight:'700',marginBottom:'1px'}}>{verdict}</div>
+            <div style={{fontSize:'12px',color:'#8df7ff',fontWeight:'800'}}>{diff}</div>
           </div>)}
         </div>
+
+        {/* Recommendations */}
+        {recs.length>0&&<div style={{background:'rgba(141,247,255,0.04)',border:'1px solid rgba(141,247,255,0.15)',borderRadius:'4px',padding:'10px 14px',marginBottom:'10px'}}>
+          <div style={{fontSize:'9px',fontWeight:'800',letterSpacing:'.12em',color:'#8df7ff',marginBottom:'8px'}}>RECOMMENDATIONS</div>
+          {recs.map((r,i)=><div key={i} style={{display:'flex',gap:'8px',marginBottom:'6px',fontSize:'11px',color:'#cbd5e1',lineHeight:'1.5',paddingBottom:'6px',borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
+            <span style={{color:'#8df7ff',flexShrink:0,fontWeight:'800'}}>{i+1}.</span><span>{r}</span>
+          </div>)}
+        </div>}
+
         {/* Side by side */}
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px',marginBottom:'12px'}}>
-          {[[pa,'#10b981','Option A'],[pb,'#8df7ff','Option B']].map(([p,clr,label],i) => p &&
-            <div key={i} style={{background:'rgba(255,255,255,0.02)',border:`1px solid ${clr}33`,borderRadius:'4px',padding:'12px'}}>
-              <div style={{fontSize:'9px',fontWeight:'800',letterSpacing:'.1em',color:clr,marginBottom:'8px'}}>{label} — {p.label}</div>
-              {[['P50 Cost',p.cost_p50],['P80 Exposure',p.cost_p80],['Schedule',p.schedule],
-                ['Confidence',p.confidence_pct?p.confidence_pct+'%':'—'],['Risk rating',p.risk],
-                ['Sector',p.subsector],['Gate readiness',p.gate_review_readiness],
-                ['OBA-adjusted P50',p.oba_adjusted_p50],['Programme mortality',p.programme_mortality_risk],
-                ['Governing constraint',p.governing_constraint],
-              ].filter(([,v]) => v && v !== '—').map(([k,v]) =>
-                <div key={k} style={{display:'flex',justifyContent:'space-between',padding:'3px 0',borderBottom:'1px solid rgba(255,255,255,0.04)',fontSize:'11px'}}>
-                  <span style={{color:'#475569'}}>{k}</span>
-                  <span style={{color:'#e2e8f0',fontWeight:'600',textAlign:'right',maxWidth:'58%',lineHeight:'1.3'}}>{String(v).slice(0,50)}</span>
-                </div>)}
-              {p.board_attack_1 && <div style={{marginTop:'8px',padding:'7px',background:'rgba(255,255,255,0.03)',borderRadius:'3px',fontSize:'10px',color:'#64748b',lineHeight:'1.5'}}>
-                <b style={{color:clr,display:'block',marginBottom:'2px',fontSize:'9px',letterSpacing:'.08em'}}>BOARD CHALLENGE:</b>
-                {p.board_attack_1}
-              </div>}
-            </div>
-          )}
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px',marginBottom:'10px'}}>
+          {[[pa,'#10b981','A'],[pb,'#8df7ff','B']].map(([p,clr,lbl],i)=>p&&<div key={i} style={{background:'rgba(255,255,255,0.02)',border:`1px solid ${clr}33`,borderRadius:'4px',padding:'10px'}}>
+            <div style={{fontSize:'9px',fontWeight:'800',letterSpacing:'.1em',color:clr,marginBottom:'6px'}}>OPTION {lbl} — {p.label}</div>
+            <div style={{fontSize:'9px',color:'#475569',marginBottom:'6px',fontStyle:'italic'}}>{p.subsector}{p.country?' · '+p.country:''}</div>
+            {[['P50',p.cost_p50],['P80',p.cost_p80],['Schedule',p.schedule],['Confidence',p.confidence_pct?p.confidence_pct+'%':'—'],
+              ['Risk',p.risk],['Gate',p.gate_review_readiness],['OBA P50',p.oba_adjusted_p50],
+              ['Mortality',p.programme_mortality_risk],['Financing',p.financing],
+            ].filter(([,v])=>v&&v!=='—').map(([k,v])=>
+              <div key={k} style={{display:'flex',justifyContent:'space-between',padding:'2px 0',borderBottom:'1px solid rgba(255,255,255,0.04)',fontSize:'10px'}}>
+                <span style={{color:'#475569'}}>{k}</span>
+                <span style={{color:'#e2e8f0',fontWeight:'600',maxWidth:'55%',textAlign:'right',lineHeight:'1.3'}}>{String(v).slice(0,45)}</span>
+              </div>)}
+            {/* Top risks */}
+            {p.risks&&p.risks.length>0&&<>
+              <div style={{fontSize:'9px',color:'#f59e0b',fontWeight:'800',letterSpacing:'.08em',margin:'8px 0 3px'}}>TOP RISKS</div>
+              {p.risks.slice(0,3).map((r,ri)=><div key={ri} style={{fontSize:'9px',color:'#94a3b8',padding:'2px 0',borderBottom:'1px solid rgba(255,255,255,0.03)',lineHeight:'1.4'}}>
+                <span style={{color:'#f59e0b',marginRight:'4px'}}>{ri+1}.</span>
+                {r.title||r.event||'—'} {r.probability?<span style={{color:'#64748b'}}>({Math.round(r.probability*100)}%)</span>:null}
+              </div>)}
+            </>}
+            {p.if_this_fails&&<div style={{marginTop:'7px',padding:'5px',background:'rgba(239,68,68,0.05)',borderRadius:'3px',fontSize:'9px',color:'#fca5a5',lineHeight:'1.4',fontStyle:'italic'}}>Historical pattern: {p.if_this_fails.slice(0,100)}…</div>}
+            {p.board_attack_1&&<div style={{marginTop:'6px',padding:'5px',background:'rgba(255,255,255,0.03)',borderRadius:'3px',fontSize:'9px',color:'#64748b',lineHeight:'1.4'}}>
+              <b style={{color:clr,display:'block',marginBottom:'1px',fontSize:'8px',letterSpacing:'.08em'}}>BOARD CHALLENGE:</b>{p.board_attack_1}
+            </div>}
+          </div>)}
         </div>
-        <div style={{textAlign:'right'}}>
-          <button onClick={() => setActiveTab('pick')} style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)',color:'#94a3b8',padding:'6px 14px',borderRadius:'3px',cursor:'pointer',fontSize:'11px'}}>← Run another comparison</button>
+
+        {/* Risk comparison */}
+        {rc&&<div style={{background:'rgba(245,158,11,0.04)',border:'1px solid rgba(245,158,11,0.15)',borderRadius:'4px',padding:'10px 14px',marginBottom:'10px'}}>
+          <div style={{fontSize:'9px',fontWeight:'800',letterSpacing:'.12em',color:'#f59e0b',marginBottom:'8px'}}>RISK COMPARISON</div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'8px',marginBottom:'8px'}}>
+            <div style={{textAlign:'center',padding:'6px',background:'rgba(255,255,255,0.03)',borderRadius:'3px'}}>
+              <div style={{fontSize:'9px',color:'#475569',marginBottom:'2px'}}>Option A risk EMV</div>
+              <div style={{fontSize:'14px',fontWeight:'800',color:'#e2e8f0'}}>${rc.emv_a}B</div>
+              <div style={{fontSize:'9px',color:'#64748b'}}>P80: {rc.p80_a}</div>
+            </div>
+            <div style={{textAlign:'center',padding:'6px',background:'rgba(255,255,255,0.03)',borderRadius:'3px'}}>
+              <div style={{fontSize:'9px',color:'#475569',marginBottom:'2px'}}>Option B risk EMV</div>
+              <div style={{fontSize:'14px',fontWeight:'800',color:'#e2e8f0'}}>${rc.emv_b}B</div>
+              <div style={{fontSize:'9px',color:'#64748b'}}>P80: {rc.p80_b}</div>
+            </div>
+            <div style={{textAlign:'center',padding:'6px',background:'rgba(255,255,255,0.03)',borderRadius:'3px'}}>
+              <div style={{fontSize:'9px',color:'#475569',marginBottom:'2px'}}>EMV delta</div>
+              <div style={{fontSize:'14px',fontWeight:'800',color:rc.emv_delta>0?'#fca5a5':'#10b981'}}>{rc.emv_delta>0?'+':''}{rc.emv_delta}B</div>
+              <div style={{fontSize:'9px',color:'#64748b'}}>P80 gap: {rc.p80_gap?(rc.p80_gap>0?'+':'')+rc.p80_gap+'B':'—'}</div>
+            </div>
+          </div>
+          <p style={{fontSize:'10px',color:'#94a3b8',margin:0,lineHeight:'1.5'}}>{rc.risk_verdict}</p>
+          {rc.shared_risk_themes?.length>0&&<p style={{fontSize:'10px',color:'#64748b',marginTop:'5px',lineHeight:'1.5'}}>Shared risk themes: {rc.shared_risk_themes.join(', ')}</p>}
+        </div>}
+
+        <div style={{textAlign:'right',marginTop:'8px'}}>
+          <button onClick={()=>setActiveTab('pick')} style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.1)',color:'#475569',padding:'5px 14px',borderRadius:'3px',cursor:'pointer',fontSize:'10px'}}>← Run another comparison</button>
         </div>
       </>}
     </div>}
   </section>;
 }
 
-
-// ── SAVED PROJECTS PANEL ────────────────────────────────────────────────────
-function SavedProjectsPanel({ projects, onLoad, onDelete, onClose }) {
-  if (!projects.length) return <section className="savedPanel">
-    <div className="savedHeader"><h2 style={{fontSize:'14px'}}>Saved Projects</h2><button onClick={onClose}>✕ Close</button></div>
-    <div style={{padding:'40px',textAlign:'center',color:'#475569'}}>
-      <p style={{fontSize:'14px'}}>No saved projects yet.</p>
-      <p style={{fontSize:'12px',marginTop:'6px'}}>After running a project, click "Save Project" to store it here.</p>
-    </div>
-  </section>;
-  return <section className="savedPanel">
-    <div className="savedHeader"><h2>Saved Projects <span style={{color:'#8df7ff',fontWeight:'800'}}>{projects.length}</span></h2><button onClick={onClose}>✕ Close</button></div>
-    <div className="savedGrid">
-      {projects.map(p => <div className="savedCard" key={p.id}>
-        <div className="savedMeta"><span>{p.subsector || 'Capital Programme'}</span><em>{p.saved_at ? new Date(p.saved_at).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : ''}</em></div>
-        <h3>{p.title}</h3>
-        <div className="savedStats">
-          <div><span>P50</span><b>{p.cost_p50 || '—'}</b></div>
-          <div><span>Duration</span><b>{p.schedule || '—'}</b></div>
-          <div><span>Confidence</span><b>{p.confidence_pct ? p.confidence_pct + '%' : '—'}</b></div>
-          <div><span>Risk</span><b>{p.risk || '—'}</b></div>
-        </div>
-        <div className="savedActions">
-          <button className="savedLoad" onClick={() => onLoad(p)}>Load project →</button>
-          <button className="savedDelete" onClick={() => onDelete(p.id)}>Delete</button>
-        </div>
-      </div>)}
-    </div>
-  </section>;
-}
-
-// ── INVESTOR / PITCH MODE PANEL ──────────────────────────────────────────────
-function InvestorPanel({ onClose }) {
-  const metrics = [
-    { label: 'Global infrastructure spend', value: '$4.5T/year', note: 'Annual capex across all sectors CASEY covers' },
-    { label: 'Global project advisory market', value: '~£45B/year', note: 'Annual spend on project controls, cost management and programme advisory worldwide' },
-    { label: 'Advisory fee per project', value: '£50K–£5M', note: 'Typical range for a single project controls or cost advisory engagement' },
-    { label: 'CASEY generation time', value: '4 seconds', note: 'vs 6–12 weeks for a conventional advisory engagement' },
-    { label: 'Sectors covered', value: '15+ sectors', note: 'Rail, nuclear, defence, space, pharma, data centres, ports, airports, energy, mining, water, gigafactory, semiconductors, ports, ISRU' },
-    { label: 'Countries / jurisdictions', value: '70+', note: 'Full location intelligence: currency, framework, approval body, OBA, financing' },
-    { label: 'Named global benchmarks', value: '63 programmes', note: 'Real cost growth %, schedule slip months, failure mode, lesson — per sector' },
-    { label: 'Fields per project output', value: '106 fields', note: 'vs a 40-page static document from a traditional advisory engagement' },
-  ];
-  const moats = [
-    { title: 'Reference class data moat', body: 'CASEY embeds 63 named global programmes with real cost growth, schedule slip, and failure modes. Replicating this requires years of manual curation — it cannot be scraped.' },
-    { title: 'Sector ontology lock', body: 'Every project routes through a sector-specific causal chain (rail → possessions → signalling → systems integration). Generic LLMs cannot do this without the ontology.' },
-    { title: 'OBA engine', body: 'Optimism bias quantified per location using Flyvbjerg 2003/2022 and HM Treasury Green Book. No competitor has location-aware OBA in the output.' },
-    { title: 'Board attack simulation', body: 'The tool generates the 5 questions a real investment committee will ask — sector-specific, project-specific, with real P50/P80 numbers. This is impossible to replicate from a static template.' },
-    { title: 'Speed × breadth', body: 'A traditional advisory engagement costs £50K–£200K and takes 6–12 weeks. CASEY delivers the same intelligence in 4 seconds. The moment a client sees both outputs side by side, the conversation changes.' },
-  ];
-  const revenue = [
-    { tier: 'SaaS — Project packs', model: 'Per run or monthly seat', price: '$500–$2,000/run or $5K–$25K/month', tam: 'Programme directors, investment committees, project sponsors' },
-    { tier: 'Enterprise licence', model: 'Annual contract + private models', price: '$150K–$1M/year', tam: 'Tier 1 contractors, development banks, sovereign wealth funds' },
-    { tier: 'Platform displacement', model: 'White-label + outcome share', price: '$5M+ deals', tam: 'Tier 1 programme sponsors, development banks, major infrastructure clients' },
-    { tier: 'MDB / IFI deployment', model: 'World Bank / ADB platform licence', price: '$10M+ multi-year', tam: 'World Bank IDA/IBRD mandates reference class forecasting' },
-  ];
-  return <section className="investorPanel">
-    <div className="investorHeader">
-      <div>
-        <span style={{fontSize:'10px',fontWeight:'800',letterSpacing:'.15em',color:'#8df7ff'}}>CASEY INVESTOR BRIEF</span>
-        <h2>The CASEY investment case</h2>
-        <p style={{fontSize:'12px',color:'#64748b',margin:'4px 0 0',lineHeight:'1.5'}}>CASEY is a capital programme intelligence platform — it generates cost estimates, risk registers, scenario analysis and board-grade outputs for infrastructure projects anywhere in the world, in seconds.</p>
-        <p style={{fontSize:'11px',color:'#475569',margin:'6px 0 0',padding:'6px 10px',background:'rgba(141,247,255,0.04)',borderRadius:'3px',border:'1px solid rgba(141,247,255,0.1)'}}>The numbers below are market-level figures. The demo projects (HS2, Lunar Base, Microsoft AI etc.) are reference cases that show the tool working — real clients use CASEY on their own live programmes.</p>
-      </div>
-      <button onClick={onClose}>✕ Close</button>
-    </div>
-    <div className="investorGrid">
-      <div className="investorBlock"><h3>Market metrics</h3>
-        {metrics.map(m => <div className="investorMetric" key={m.label}>
-          <div className="investorMetricVal">{m.value}</div>
-          <div className="investorMetricLabel">{m.label}</div>
-          <div className="investorMetricNote">{m.note}</div>
-        </div>)}
-      </div>
-      <div className="investorBlock"><h3>Defensible moats</h3>
-        {moats.map(m => <div className="investorMoat" key={m.title}>
-          <b>{m.title}</b><p>{m.body}</p>
-        </div>)}
-      </div>
-      <div className="investorBlock wide"><h3>Revenue model</h3>
-        <div className="investorRevTable">
-          <div className="investorRevHeader"><span>Tier</span><span>Model</span><span>Price</span><span>Who buys</span></div>
-          {revenue.map(r => <div className="investorRevRow" key={r.tier}>
-            <span>{r.tier}</span><span>{r.model}</span><span style={{color:'#8df7ff',fontWeight:'700'}}>{r.price}</span><span>{r.tam}</span>
-          </div>)}
-        </div>
-        <div style={{marginTop:'16px',padding:'12px',background:'rgba(141,247,255,0.05)',borderRadius:'4px',border:'1px solid rgba(141,247,255,0.12)'}}>
-          <p style={{fontSize:'11px',color:'#94a3b8',lineHeight:'1.6',margin:0}}><b style={{color:'#8df7ff'}}>The thesis:</b> The global project advisory market is worth £45B+ per year. CASEY compresses 6–12 weeks of manual advisory work into 4 seconds. Every £1M of CASEY ARR represents £4M+ of advisory spend that clients no longer need to commission manually. This is a category-defining shift, not an incremental software play.</p>
-        </div>
-      </div>
-    </div>
-    <div style={{padding:'16px 24px',borderTop:'1px solid rgba(255,255,255,0.06)',display:'flex',gap:'12px',flexWrap:'wrap'}}>
-      <a className="contactBtn" href="mailto:hello@casey.ai?subject=CASEY+Investment+Enquiry&body=I+am+interested+in+discussing+the+CASEY+investment+opportunity."><Mail size={15}/> Investor enquiry</a>
-      <a className="contactBtn" href="mailto:hello@casey.ai?subject=CASEY+Enterprise+Demo"><Mail size={15}/> Book enterprise demo</a>
-    </div>
-  </section>;
-}
-
-// ── DEMO BANNER (shows what demo is running) ─────────────────────────────────
-function DemoBanner({ model }) {
-  if (!model?.demo_mode) return null;
-  const labels = {
-    earth: { icon: '🚄', label: 'Reference case — HS2 Phase 2b', color: 'rgba(16,185,129,0.1)', border: 'rgba(16,185,129,0.25)', text: '#10b981' },
-    space: { icon: '🌕', label: 'Reference case — Lunar Base Alpha', color: 'rgba(141,247,255,0.06)', border: 'rgba(141,247,255,0.2)', text: '#8df7ff' },
-    defence: { icon: '🛡️', label: 'Reference case — AWRE Aldermaston', color: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.25)', text: '#f59e0b' },
-    gigafactory: { icon: '⚡', label: 'Reference case — Gigafactory UK', color: 'rgba(177,140,255,0.08)', border: 'rgba(177,140,255,0.25)', text: '#b18cff' },
-  };
-  const d = labels[model.demo_type] || { icon: '◆', label: model.demo_label || 'Reference case', color: 'rgba(141,247,255,0.06)', border: 'rgba(141,247,255,0.2)', text: '#8df7ff' };
-  return <div style={{background:d.color,border:`1px solid ${d.border}`,borderRadius:'3px',padding:'6px 12px',marginBottom:'8px',display:'flex',alignItems:'center',gap:'8px',fontSize:'11px'}}>
-    <span style={{fontSize:'14px'}}>{d.icon}</span>
-    <div style={{flex:1}}><span style={{fontWeight:'700',color:d.text}}>{d.label}</span><span style={{color:'#475569',marginLeft:'8px',fontSize:'10px'}}>{model.demo_headline || 'Pre-built reference case. Run your own project from the console for a project-specific output.'}</span></div>
-    <span style={{fontSize:'9px',color:'#334155',fontWeight:'800',letterSpacing:'.1em',background:'rgba(255,255,255,0.04)',padding:'2px 6px',borderRadius:'2px'}}>DEMO</span>
-  </div>;
-}
 
 // ── ONBOARDING GUIDE ─────────────────────────────────────────────────────────
 function OnboardingGuide({ onClose }) {
@@ -2108,17 +2078,18 @@ function App() {
   useEffect(() => {
     // Ping backend on page load to pre-warm Render instance & check status
     const checkBackend = async () => {
-      try {
-        await get('/health');
-        setBackendStatus('ok');
-      } catch {
+      // Try up to 3 times with delay — Render cold starts take 20-30s
+      for (let attempt = 1; attempt <= 3; attempt++) {
         try {
-          await get('/v26/demo-library');
+          await get('/health');
           setBackendStatus('ok');
+          return;
         } catch {
-          setBackendStatus('down');
+          if (attempt < 3) await new Promise(r => setTimeout(r, 12000));
         }
       }
+      // Only mark as down after 3 failed attempts (~36 seconds)
+      setBackendStatus('down');
     };
     checkBackend();
   }, []);
@@ -2493,7 +2464,8 @@ function parseMoneyLocal(v) {
     try {
       const result = await post('/compare', {
         prompt_a: comparePromptA, prompt_b: comparePromptB,
-        client_a: 'Option A', client_b: 'Option B',
+        client_a: 'Option A',
+        client_b: model ? (model.client || 'Your Project') : 'Option B',
         class_level: 3, schedule_level: 3
       });
       setCompareResult(result);
@@ -2847,7 +2819,7 @@ function parseMoneyLocal(v) {
       <a href={emailLink}>Request access</a>
       <span style={{display:'flex',alignItems:'center',gap:'4px',fontSize:'9px',color:backendStatus==='ok'?'#10b981':backendStatus==='down'?'#ef4444':'#64748b',fontWeight:'700',letterSpacing:'.08em'}}>
         <span style={{width:'6px',height:'6px',borderRadius:'50%',background:backendStatus==='ok'?'#10b981':backendStatus==='down'?'#ef4444':'#475569',display:'inline-block'}}/>
-        {backendStatus==='ok'?'LIVE':backendStatus==='down'?'OFFLINE':'...'}
+        {backendStatus==='ok'?'LIVE':backendStatus==='down'?'Starting...':'...'}
       </span>
     </nav></header>
     {showOnboarding && <OnboardingGuide onClose={() => { setShowOnboarding(false); try { localStorage.setItem('casey_onboarding_done','1'); } catch {} }}/>}
