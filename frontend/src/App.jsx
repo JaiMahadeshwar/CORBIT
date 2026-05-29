@@ -386,6 +386,29 @@ const showcaseProjects = [
   { sector:'Space / Orbital Infrastructure', region:'Lunar surface', client:'Lunar resources reference case', title:'Lunar Resource Extraction', icon:'Space', confidence:'ISRU maturity', prompt:'Lunar resource extraction programme with autonomous mining, regolith processing, in situ resource utilisation, surface power, habitat logistics, thermal survivability and launch logistics' },
 ];
 
+
+const TAB_GUIDE = {
+  overview: 'Your programme at a glance — P50 cost, schedule, confidence score and board verdict. This is your executive summary.',
+  compare: 'Run any scenario trade-off — Faster, Cheaper, Lower Risk or Premium. Each is a complete independent recalculation of cost, schedule, confidence and risks. Click any card to run.',
+  delta: 'What changed when you selected this scenario vs base — cost bridge, confidence breakdown, decisions required and scenario consequence.',
+  mortality: 'Probability your programme gets cancelled or fundamentally restructured, with named historical precedents from public record. No consultant produces this.',
+  market: 'Contractor market intelligence for this sector — who can deliver, order book depth, supply chain lead times, single-source risk and procurement recommendation.',
+  gaps: 'Named evidence gaps that will block this programme at any gate review, PAC inquiry or spending review. IPA, Green Book and Cabinet Office referenced. Severity rated.',
+  paths: 'Three delivery strategies for the same brief — conventional, ECI and a third sector-specific option — each with P50, schedule, confidence and the board question that path will receive.',
+  causal: 'Causal chain analysis — the structural drivers of cost overrun, schedule slip and confidence failure in this sector. Evidence scorecard.',
+  cost: 'Full cost estimate workbook by CBS line — P10/P50/P90 per item, unit rates, and a waterfall chart showing why cost moved from base in this scenario.',
+  schedule: 'Schedule logic by phase and level. Critical path narrative. QSRA finish-date probability curve showing P50/P80/P90 delivery dates.',
+  risk: 'Full risk register — cause, event, impact, probability, owner, trigger, mitigation and EMV for every risk. Top risks by expected monetary value.',
+  monte: 'QCRA cost P-curve and QSRA schedule P-curve from 18,000+ Monte Carlo simulations. Tornado chart showing which risks drive the most uncertainty.',
+  outputs: 'Download all deliverables — cost workbook (XLSX), risk register (CSV), XER schedule, board PDF, PPTX, Word narrative and JSON data pack.',
+  assurance: 'Board challenge weapons — how to use CASEY output in an investment committee. Incumbent pressure analysis and CASEY position vs conventional advisory.',
+  runtime: 'Live stress test — apply named real-world shocks (procurement gap, signalling slip, funding delay) and see P50/confidence recalculate immediately.',
+  advisor: 'Ask any question about this programme. What-if questions rerun the full model with your constraint applied and show a cost/confidence/schedule delta.',
+  method: 'How CASEY calculated every number — cost model methodology, schedule logic, QCRA/QSRA simulation method and confidence score formula.',
+  benchmark: '63 named real completed programmes used to calibrate this estimate. Their actual cost growth, schedule slip and primary failure mode.',
+  pricing: 'Enterprise access, white-label API and advisory services. Contact for investment committee support and programme assurance engagements.',
+};
+
 const REAL_BENCHMARKS = [
   { name:'Crossrail / Elizabeth Line', sector:'Rail / Transit', mode:'Earth', cost_bn:22.7, cost_growth_pct:88, schedule_slip_months:84, failure_mode:'Deferred systems integration — 900 open IEMs at planned opening', lesson:'Possessions and signalling must be on the critical path from day one, not treated as commissioning a', prompt:'Crossrail / Elizabeth Line real programme Rail / Transit actual outturn $22.7B +88% cost growth +84 months slip failure mode: Deferred systems integration — 900 open IEMs at planned opening' },
   { name:'HS2 Phase 1', sector:'Rail / Transit', mode:'Earth', cost_bn:44.6, cost_growth_pct:140, schedule_slip_months:36, failure_mode:'Scope growth, ground conditions, open corridor risk', lesson:'Cost-at-completion estimates grow during delivery — approving at P50 without P80 reserve is a govern', prompt:'HS2 Phase 1 real programme Rail / Transit actual outturn $44.6B +140% cost growth +36 months slip failure mode: Scope growth, ground conditions, open corridor risk' },
@@ -3021,7 +3044,12 @@ function parseMoneyLocal(v) {
           <span style={{fontSize:'11px',color:'#94a3b8'}}>Exports available below. Earth Demo, Space Demo and Showcase Library always free.</span>
           <a href="mailto:hello@controlorbit.com?subject=CASEY Full Access" style={{marginLeft:'auto',fontSize:'11px',color:'#8df7ff',fontWeight:'700',textDecoration:'none',background:'rgba(141,247,255,0.1)',padding:'4px 12px',borderRadius:'3px',border:'1px solid rgba(141,247,255,0.3)'}}>Request full access →</a>
         </div>}
-      <nav className="tabs">{[['overview','Overview'],['compare','Scenarios'],['delta','Intel'],['mortality','Mortality'],['market','Market'],['gaps','Evidence Gaps'],['paths','Delivery Paths'],['causal','Causal'],['cost','Cost'],['schedule','Schedule'],['risk','Risk'],['monte','QCRA/QSRA'],['outputs','Outputs'],['assurance','Assurance'],['runtime','Stress Test'],['advisor','Advisor'],['method','Method'],['benchmark','Benchmarks'],['pricing','Pricing']].map(x => <button key={x[0]} className={tab===x[0]?'active':''} onClick={() => setTab(x[0])}>{x[1]}</button>)}</nav>
+      <nav className="tabs" style={{position:'relative'}}>
+        {[['overview','Overview'],['compare','Scenarios'],['delta','Intel'],['mortality','Mortality'],['market','Market'],['gaps','Evidence Gaps'],['paths','Delivery Paths'],['causal','Causal'],['cost','Cost'],['schedule','Schedule'],['risk','Risk'],['monte','QCRA/QSRA'],['outputs','Outputs'],['assurance','Assurance'],['runtime','Stress Test'],['advisor','Advisor'],['method','Method'],['benchmark','Benchmarks'],['pricing','Pricing']].map(x => <button key={x[0]} className={tab===x[0]?'active':''} onClick={() => setTab(x[0])} title={TAB_GUIDE[x[0]]||''}>{x[1]}</button>)}
+      </nav>
+      {TAB_GUIDE[tab] && <div style={{background:'rgba(141,247,255,0.04)',borderBottom:'1px solid rgba(141,247,255,0.08)',padding:'5px 16px',fontSize:'10px',color:'#475569',lineHeight:'1.4'}}>
+        <span style={{color:'#8df7ff',fontWeight:'700',marginRight:'5px'}}>▸</span>{TAB_GUIDE[tab]}
+      </div>}
         {tab === 'overview' && <>
           {model.executive_shock_insight && <section className="layout one"><Card className="shockCard"><h2>⚡ Live model update</h2><p>{model.executive_shock_insight}</p></Card></section>}
           <section className="layout two">
@@ -3575,12 +3603,17 @@ function parseMoneyLocal(v) {
         {tab === 'runtime' && <HolyGrailRuntime model={model} scenario={scenario} generate={generate} runShock={runShock}/>}
         {tab === 'method' && <section className="layout two"><Card><h2>How CASEY calculated this</h2>{['Cost model: selected class estimate, sector template, location factor, complexity factor and scenario modifier.','Schedule model: level-based delivery logic, phase durations, critical path sensitivity and scenario acceleration/delay factors.','QCRA: cost exposure model using low / most likely / high impacts and risk-weighted contingency.','QSRA: schedule exposure model using activity-linked O/M/P delay ranges and critical path sensitivity.','Confidence score translated for executives: board-defensibility based on benchmark similarity, evidence maturity, procurement certainty, schedule logic, contingency adequacy and scenario posture.'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card><Card><h2>Commercial readiness</h2><p style={{fontSize:'12px',color:'#64748b'}}>First-pass intelligence for challenge, option testing and board preparation — before contractor tender or signed cost plan.</p><a className="contactBtn huge" href={emailLink}><Mail/> Send project for review</a></Card></section>}
         {tab === 'benchmark' && <section className="layout two">
-          <Card><h2>Named global benchmarks</h2>
-            <p style={{fontSize:'11px',color:'#64748b',marginBottom:'8px'}}>These are real programmes from public record — OECD, parliamentary accounts committees, company filings, academic literature (Flyvbjerg et al). Cost growth % and schedule slip are actuals, not estimates. CASEY routes every project through the closest matching comparables and applies their delivery behaviour to confidence, reserve and P80/P90 exposure.</p>
+          <Card><h2>Named global benchmarks
+            {model.live_data_enriched && <span style={{background:'rgba(16,185,129,0.15)',color:'#10b981',fontSize:'9px',fontWeight:'800',padding:'2px 8px',borderRadius:'20px',marginLeft:'8px',verticalAlign:'middle'}}>● LIVE DATA</span>}
+          </h2>
+            {model.live_data_enriched && <div style={{marginBottom:'8px',padding:'6px 10px',background:'rgba(16,185,129,0.06)',border:'1px solid rgba(16,185,129,0.15)',borderRadius:'3px',fontSize:'10px',color:'#10b981'}}>
+              Live data active — benchmarks enriched from: {(model.live_data_sources||[]).join(', ')}. These are real current programmes fetched in real time.
+            </div>}
+            <p style={{fontSize:'11px',color:'#64748b',marginBottom:'8px'}}>Real programmes from public record — OECD, World Bank, NASA, EU Cohesion Fund, parliamentary accounts committees, company filings and Flyvbjerg et al. Cost growth % and schedule slip are actuals. CASEY calibrates every estimate against the closest comparable programmes.</p>
             <div style={{overflowX:'auto'}}>
               <table style={{width:'100%',borderCollapse:'collapse',fontSize:'11px'}}>
                 <thead><tr style={{borderBottom:'1px solid rgba(255,255,255,0.1)'}}>
-                  {['Programme','Sector','P50 Anchor','Duration','Cost Growth','Slip (mo)','Primary Failure Mode'].map(h=><th key={h} style={{padding:'6px 8px',textAlign:'left',color:'#64748b',fontWeight:'800',letterSpacing:'.08em'}}>{h}</th>)}
+                  {['Programme','Sector','P50 Anchor','Duration','Cost Growth','Slip (mo)','Primary Failure Mode','Source'].map(h=><th key={h} style={{padding:'6px 8px',textAlign:'left',color:'#64748b',fontWeight:'800',letterSpacing:'.08em'}}>{h}</th>)}
                 </tr></thead>
                 <tbody>{(model?.benchmark_comparison||[]).map((b,i)=><tr key={i} style={{borderBottom:'1px solid rgba(255,255,255,0.04)',background:i%2===0?'rgba(255,255,255,0.01)':'transparent'}}>
                   <td style={{padding:'7px 8px',color:'#e2e8f0',fontWeight:'700'}}>{b.name||b.archetype}</td>
