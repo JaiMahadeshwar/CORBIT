@@ -1863,6 +1863,11 @@ def _v124_apply_sector_lock(model: Dict[str, Any]) -> Dict[str, Any]:
         m['sector_confidence_drivers'] = L['confidence']; m['sector_schedule_threats'] = L['schedule']; m['causal_graph_nodes'] = L['chain']; m['causal_chain'] = L['chain']
     return m
 
+
+# ── Placeholder build_model — immediately overridden by the version chain below ──
+def build_model(prompt:str='', client:str='', class_level:int=3, schedule_level:int=3, scenario:str='base'):
+    raise NotImplementedError("build_model not yet initialised")
+
 _CASEY_V124_PREV_BUILD_MODEL = build_model
 def build_model(prompt:str, client:str='', class_level:int=3, schedule_level:int=3, scenario:str='base'):
     return _v124_apply_sector_lock(_CASEY_V124_PREV_BUILD_MODEL(prompt, client, class_level, schedule_level, scenario))
