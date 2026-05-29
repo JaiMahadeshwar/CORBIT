@@ -3857,88 +3857,158 @@ class CompareRequest(BaseModel):
 
 @app.post("/compare")
 def compare_programmes(req: CompareRequest):
-    """Generate two programme intelligence packs and return a structured comparison delta."""
+    """Full intelligence comparison — sector match, risk delta, recommendations."""
     try:
         ma = build_model(req.prompt_a, req.client_a, req.class_level, req.schedule_level, "base")
         mb = build_model(req.prompt_b, req.client_b, req.class_level, req.schedule_level, "base")
 
-        def safe_float(v, fallback=0.0):
-            try: return float(str(v).replace("$","").replace("B","").replace(",","").strip())
-            except: return fallback
+        def sf(v):
+            try: return float(str(v).replace("$","").replace("B","").replace(",","").strip() or 0)
+            except: return 0.0
 
-        cost_a = safe_float(ma.get("cost_p50", 0))
-        cost_b = safe_float(mb.get("cost_p50", 0))
-        conf_a = int(ma.get("confidence_pct", 0))
-        conf_b = int(mb.get("confidence_pct", 0))
-        sched_a = safe_float(ma.get("schedule_months", 0))
-        sched_b = safe_float(mb.get("schedule_months", 0))
+        cost_a=sf(ma.get("cost_p50",0)); cost_b=sf(mb.get("cost_p50",0))
+        conf_a=int(ma.get("confidence_pct",0)); conf_b=int(mb.get("confidence_pct",0))
+        sched_a=sf(ma.get("schedule_months",0)); sched_b=sf(mb.get("schedule_months",0))
+        p80_a=sf(ma.get("cost_p80",0)); p80_b=sf(mb.get("cost_p80",0))
+        mode_a=ma.get("mode",""); mode_b=mb.get("mode","")
+        sub_a=ma.get("subsector",""); sub_b=mb.get("subsector","")
+        loc_a=ma.get("location_context",{}).get("country",""); loc_b=mb.get("location_context",{}).get("country","")
 
-        cost_delta_pct = round((cost_b - cost_a) / cost_a * 100, 1) if cost_a else 0
-        conf_delta = conf_b - conf_a
-        sched_delta = round(sched_b - sched_a, 1)
-
-        winner = "A" if conf_a > conf_b else ("B" if conf_b > conf_a else "EQUAL")
-        winner_reason = ""
-        if winner == "A":
-            winner_reason = f"{req.client_a} has higher board-defensibility ({conf_a}% vs {conf_b}%). At comparable cost, the higher-confidence option carries less approval risk."
-        elif winner == "B":
-            winner_reason = f"{req.client_b} has higher board-defensibility ({conf_b}% vs {conf_a}%). At comparable cost, the higher-confidence option carries less approval risk."
+        # Sector match assessment
+        same_sector = mode_a and mode_b and mode_a.lower()==mode_b.lower()
+        sector_match = "Like-for-like" if same_sector else "Cross-sector"
+        sector_note = ""
+        if same_sector:
+            sector_note = "Both programmes are in the same sector. Cost, schedule and risk comparisons are directly meaningful — the same sector ontology, contractor pool and delivery logic applies."
         else:
-            winner_reason = "Both options show equivalent confidence. Selection should turn on sector fit, procurement certainty and schedule risk tolerance."
+            sector_note = ("Cross-sector comparison: "+str(sub_a)+" vs "+str(sub_b)+". "
+                "Cost and schedule figures are not directly comparable — sector-specific cost bases, risk profiles and delivery logic differ. "
+                "Use this comparison to understand relative programme scale, confidence maturity and board-defensibility, not to benchmark unit costs directly.")
 
-        if abs(cost_delta_pct) > 20:
-            winner_reason += f" Note: {req.client_b} costs {'more' if cost_delta_pct > 0 else 'less'} ({abs(cost_delta_pct):.0f}%) — factor this into value-for-money assessment."
+        # Size comparison
+        size_ratio = round(cost_b/cost_a, 2) if cost_a > 0 else 1.0
+        size_note = ""
+        if size_ratio > 3.0:
+            size_note = "Scale mismatch: Programme B is "+str(round(size_ratio,1))+"x larger. Larger programmes face greater complexity, longer procurement cycles and higher OBA. Scale difference reduces direct comparability."
+        elif size_ratio < 0.33:
+            size_note = "Scale mismatch: Programme A is "+str(round(1/size_ratio,1))+"x larger. Interpret the delta with caution — scale drives cost base, risk profile and delivery complexity."
+        else:
+            size_note = "Programmes are broadly comparable in scale ("+str(round(min(size_ratio,1/size_ratio),2))+"x ratio)."
 
-        comparison = {
-            "programme_a": {
-                "label": req.client_a,
-                "prompt": req.prompt_a,
-                "cost_p50": ma.get("cost_p50"),
-                "cost_p80": ma.get("cost_p80"),
-                "schedule": ma.get("schedule"),
-                "confidence_pct": conf_a,
-                "risk": ma.get("risk"),
-                "subsector": ma.get("subsector"),
-                "governing_constraint": ma.get("governing_constraint"),
-                "programme_mortality_risk": ma.get("programme_mortality_risk"),
-                "gate_review_readiness": ma.get("gate_review_readiness", {}).get("overall_verdict"),
-                "oba_adjusted_p50": ma.get("optimism_bias_assessment", {}).get("oba_adjusted_p50"),
-                "top_risk": (ma.get("risks") or [{}])[0].get("title"),
-                "board_attack_1": (ma.get("board_attack_simulation") or [""])[0],
-            },
-            "programme_b": {
-                "label": req.client_b,
-                "prompt": req.prompt_b,
-                "cost_p50": mb.get("cost_p50"),
-                "cost_p80": mb.get("cost_p80"),
-                "schedule": mb.get("schedule"),
-                "confidence_pct": conf_b,
-                "risk": mb.get("risk"),
-                "subsector": mb.get("subsector"),
-                "governing_constraint": mb.get("governing_constraint"),
-                "programme_mortality_risk": mb.get("programme_mortality_risk"),
-                "gate_review_readiness": mb.get("gate_review_readiness", {}).get("overall_verdict"),
-                "oba_adjusted_p50": mb.get("optimism_bias_assessment", {}).get("oba_adjusted_p50"),
-                "top_risk": (mb.get("risks") or [{}])[0].get("title"),
-                "board_attack_1": (mb.get("board_attack_simulation") or [""])[0],
-            },
+        # Risk comparison
+        risks_a = ma.get("risks",[])[:5]; risks_b = mb.get("risks",[])[:5]
+        emv_a = sum(sf(r.get("emv_bn",0)) for r in risks_a)
+        emv_b = sum(sf(r.get("emv_bn",0)) for r in risks_b)
+        risk_titles_a = [r.get("title","") for r in risks_a]
+        risk_titles_b = [r.get("title","") for r in risks_b]
+        shared_risks = [t for t in risk_titles_a if any(t.lower()[:15] in t2.lower() for t2 in risk_titles_b)]
+        risk_comparison = {
+            "emv_a": round(emv_a,3), "emv_b": round(emv_b,3),
+            "emv_delta": round(emv_b-emv_a,3),
+            "top_risks_a": risk_titles_a,
+            "top_risks_b": risk_titles_b,
+            "shared_risk_themes": shared_risks,
+            "risk_verdict": ("Programme A carries lower expected risk exposure (EMV $"+str(round(emv_a,1))+"B vs $"+str(round(emv_b,1))+"B)."
+                if emv_a < emv_b else
+                "Programme B carries lower expected risk exposure (EMV $"+str(round(emv_b,1))+"B vs $"+str(round(emv_a,1))+"B)."),
+            "p80_gap": round(p80_b-p80_a,2),
+            "p80_a": ma.get("cost_p80"), "p80_b": mb.get("cost_p80"),
+        }
+
+        # Full recommendations
+        recs = []
+        if same_sector and abs(conf_b-conf_a) > 10:
+            stronger = req.client_a if conf_a > conf_b else req.client_b
+            weaker = req.client_b if conf_a > conf_b else req.client_a
+            recs.append("RECOMMENDATION: "+stronger+" has materially stronger board-defensibility. If both options are viable, "+stronger+" should proceed to gate review first. "+weaker+" requires evidence closure on its governing constraint before approval.")
+        if abs(sf(ma.get("cost_p50",0)) - sf(mb.get("cost_p50",0))) > 1.0:
+            cheaper = req.client_a if cost_a < cost_b else req.client_b
+            recs.append("COST: "+cheaper+" is the lower-cost option. Before selecting on cost alone, verify the scope boundary is equivalent — lower-cost options frequently exclude items that are in-scope for the higher-cost alternative.")
+        oba_a = ma.get("optimism_bias_assessment",{})
+        oba_b = mb.get("optimism_bias_assessment",{})
+        if oba_a.get("oba_adjusted_p50") and oba_b.get("oba_adjusted_p50"):
+            recs.append("OBA: Both programmes have been through reference-class OBA adjustment. The OBA-adjusted P50 is the number to use for budget setting — not the headline P50.")
+        gate_a = ma.get("gate_review_readiness",{}).get("overall_verdict","")
+        gate_b = mb.get("gate_review_readiness",{}).get("overall_verdict","")
+        if gate_a != gate_b:
+            better_gate = req.client_a if gate_a == "READY" else (req.client_b if gate_b == "READY" else None)
+            if better_gate:
+                recs.append("GATE READINESS: "+better_gate+" is closer to gate approval. This is a material advantage if the programme is on a time-critical path to capital commitment.")
+        if not same_sector:
+            recs.append("CROSS-SECTOR NOTE: For a like-for-like comparison, select Option A from the benchmark library in the same sector as your project. This ensures cost bases, OBA uplifts and risk profiles are comparable.")
+        if loc_a and loc_b and loc_a != loc_b:
+            recs.append("LOCATION: "+str(loc_a)+" vs "+str(loc_b)+" — different regulatory frameworks, currencies and OBA reference classes apply. Location-driven cost differences are not scope differences.")
+        if not recs:
+            recs.append("Both programmes show comparable profiles. The selection decision should turn on procurement certainty, evidence maturity and schedule risk tolerance.")
+
+        # Winner logic
+        winner = "A" if conf_a > conf_b else ("B" if conf_b > conf_a else "EQUAL")
+        if winner == "A":
+            winner_reason = req.client_a+" is more board-defensible ("+str(conf_a)+"% vs "+str(conf_b)+"% confidence). "+sector_note
+        elif winner == "B":
+            winner_reason = req.client_b+" is more board-defensible ("+str(conf_b)+"% vs "+str(conf_a)+"% confidence). "+sector_note
+        else:
+            winner_reason = "Both programmes show equivalent confidence. "+sector_note
+        if abs(cost_b-cost_a) > 1.0:
+            winner_reason += " "+size_note
+
+        cost_delta_pct = round((cost_b-cost_a)/cost_a*100,1) if cost_a else 0
+        conf_delta = conf_b-conf_a
+        sched_delta = round(sched_b-sched_a,1)
+
+        def prog_summary(m, label, prompt):
+            return {
+                "label": label, "prompt": prompt,
+                "cost_p50": m.get("cost_p50"), "cost_p80": m.get("cost_p80"),
+                "cost_p90": m.get("cost_p90"), "cost_p10": m.get("cost_p10"),
+                "schedule": m.get("schedule"),
+                "confidence_pct": int(m.get("confidence_pct",0)),
+                "risk": m.get("risk"),
+                "subsector": m.get("subsector"),
+                "mode": m.get("mode",""),
+                "country": m.get("location_context",{}).get("country",""),
+                "governing_constraint": m.get("governing_constraint"),
+                "programme_mortality_risk": m.get("programme_mortality_risk"),
+                "gate_review_readiness": m.get("gate_review_readiness",{}).get("overall_verdict"),
+                "oba_adjusted_p50": m.get("optimism_bias_assessment",{}).get("oba_adjusted_p50"),
+                "oba_source": m.get("optimism_bias_assessment",{}).get("oba_source",""),
+                "top_risk": (m.get("risks") or [{}])[0].get("title",""),
+                "top_risk_prob": (m.get("risks") or [{}])[0].get("probability",0),
+                "top_risk_impact": (m.get("risks") or [{}])[0].get("cost_impact_bn",""),
+                "risks": (m.get("risks") or [])[:5],
+                "board_attack_1": (m.get("board_attack_simulation") or [""])[0],
+                "board_attack_2": (m.get("board_attack_simulation") or ["",""])[1] if len(m.get("board_attack_simulation") or []) > 1 else "",
+                "institutional_authority": m.get("institutional_authority_line",""),
+                "if_this_fails": m.get("if_this_fails",""),
+                "financing": m.get("financing_context",{}).get("structure",""),
+                "procurement_flags": [(p.get("package",""),p.get("single_source_risk",False)) for p in (m.get("procurement_heatmap") or [])[:3]],
+                "benchmarks": [(b.get("name",b.get("archetype","")), b.get("cost_growth_pct",0)) for b in (m.get("benchmark_comparison") or [])[:3]],
+            }
+
+        return {
+            "programme_a": prog_summary(ma, req.client_a, req.prompt_a),
+            "programme_b": prog_summary(mb, req.client_b, req.prompt_b),
             "delta": {
                 "cost_delta_pct": cost_delta_pct,
-                "cost_delta_abs": f"{'+'if cost_delta_pct>0 else ''}{cost_b-cost_a:.1f}B",
+                "cost_delta_abs": ("+" if cost_delta_pct>0 else "")+str(round(cost_b-cost_a,1))+"B",
                 "confidence_delta": conf_delta,
                 "schedule_delta_months": sched_delta,
                 "winner": winner,
                 "winner_reason": winner_reason,
-                "cost_verdict": "A cheaper" if cost_a < cost_b else ("B cheaper" if cost_b < cost_a else "Equal cost"),
-                "confidence_verdict": "A more defensible" if conf_a > conf_b else ("B more defensible" if conf_b > conf_a else "Equal confidence"),
-                "schedule_verdict": "A faster" if sched_a < sched_b else ("B faster" if sched_b < sched_a else "Equal duration"),
+                "sector_match": sector_match,
+                "sector_note": sector_note,
+                "size_note": size_note,
+                "cost_verdict": "A cheaper" if cost_a<cost_b else ("B cheaper" if cost_b<cost_a else "Equal cost"),
+                "confidence_verdict": "A more defensible" if conf_a>conf_b else ("B more defensible" if conf_b>conf_a else "Equal confidence"),
+                "schedule_verdict": "A faster" if sched_a<sched_b else ("B faster" if sched_b<sched_a else "Equal duration"),
             },
+            "risk_comparison": risk_comparison,
+            "recommendations": recs,
             "model_a": ma,
             "model_b": mb,
         }
-        return comparison
     except Exception as e:
-        raise HTTPException(500, f"Comparison failed: {str(e)}")
+        raise HTTPException(500, "Comparison failed: "+str(e))
 
 
 
