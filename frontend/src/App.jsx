@@ -699,10 +699,7 @@ function ComparePanel({ promptA, setPromptA, promptB, setPromptB, onRun, loading
                 style={{fontSize:'10px',fontWeight:inputMode===m?'800':'400',padding:'3px 10px',borderRadius:'3px',border:'1px solid rgba(255,255,255,0.1)',background:inputMode===m?'rgba(141,247,255,0.1)':'transparent',color:inputMode===m?'#8df7ff':'#475569',cursor:'pointer'}}>{l}</button>)}
           </div>
           {inputMode==='type' && <textarea value={promptB} onChange={e => setPromptB(e.target.value)} rows={3}
-            placeholder={'Describe your project — sector, country, scale, key constraints. Examples:
-• New metro line Lagos Nigeria 45km 2031 delivery
-• SMR fleet UK 10 reactors grid decarbonisation
-• Data centre campus Virginia 500MW hyperscale'}
+            placeholder="Describe your project — sector, country, scale, key constraints. E.g. New metro line Lagos Nigeria 45km 2031 delivery / SMR fleet UK 10 reactors / Data centre Virginia 500MW hyperscale" 
             style={{width:'100%',background:'rgba(141,247,255,0.04)',border:'1px solid rgba(141,247,255,0.2)',borderRadius:'3px',padding:'7px',color:'#e2e8f0',fontSize:'11px',resize:'vertical',boxSizing:'border-box'}}/>}
           {inputMode==='file' && <div style={{background:'rgba(141,247,255,0.04)',border:'1px dashed rgba(141,247,255,0.2)',borderRadius:'3px',padding:'14px',textAlign:'center'}}>
             <p style={{fontSize:'11px',color:'#64748b',marginBottom:'6px'}}>Upload a cost estimate, XER schedule or risk register — CASEY will extract the programme description and use it as Option B.</p>
