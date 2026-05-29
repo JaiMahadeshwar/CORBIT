@@ -4243,6 +4243,276 @@ def _risk_rating(prob, cost_m, sched_m):
     return "Low"
 
 
+# ══════════════════════════════════════════════════════════════════════════════
+# KILLER INTELLIGENCE FUNCTIONS
+# ══════════════════════════════════════════════════════════════════════════════
+
+SECTOR_MORTALITY_MAP = {
+    'rail':         (22, 'HS2 Phase 2b scope reduction 2023; CalHSR funding crisis 2024; Riyadh Metro Phase 2 deferral'),
+    'nuclear':      (28, 'Horizon cancelled 2023; Wylfa cancelled twice; NuGen cancelled 2020'),
+    'data_centre':  (12, 'Lower mortality — demand driven. Primary risk is utility connection deferral, not cancellation.'),
+    'defence':      (18, 'Ajax delivery failure 2021-2024; Astute cost growth 150%; F-35 still delayed 20+ years'),
+    'space':        (35, 'Constellation cancelled; OneWeb Chapter 11 2020; Gateway funding uncertain; Artemis 4x cost'),
+    'life_sciences':(14, 'Britishvolt collapse 2023; BEIS Vaccine Manufacturing Centre cost growth'),
+    'semiconductor':(20, 'Intel Ohio fab delayed; TSMC Arizona delayed; STMicro Crolles delayed'),
+    'gigafactory':  (30, 'Britishvolt collapse Feb 2023; Northvolt restructuring 2024; AESC Sunderland delayed'),
+    'water':        (10, 'Lower mortality — regulated sector. Primary risk is AMP overspend.'),
+    'energy':       (15, 'Hinckley NS HVDC delayed; East Anglia ONE North delayed; CfD capacity risk 2024'),
+    'airport':      (25, 'Heathrow R3 delayed 15+ years; BER 10-year delay; Sydney West Airport +60%'),
+    'ports':        (10, 'Lower mortality — trade-driven. Primary risks are environmental consent and dredging cost.'),
+    'mining':       (22, 'Oyu Tolgoi 3-year delay; Jansen Phase 1 delayed; Quellaveco delayed 2 years'),
+}
+
+SECTOR_CONTRACTOR_MAP = {
+    'rail': {
+        'tier1': ['Skanska','Balfour Beatty','Morgan Sindall','Costain','Kier','HOCHTIEF','Vinci','Ferrovial'],
+        'specialists': ['Systra (systems)','WSP (assurance)','Atkins (design)','Siemens (signalling)','Alstom (rolling stock)'],
+        'order_book': 'UK rail tier 1 contractors are 70-85% booked through 2027. HS2 Phase 1 has absorbed significant capacity.',
+        'supply_chain': 'Signalling: 2 credible suppliers (Siemens, Alstom). Tunnelling: 4 TBM operators. Rail systems integration: limited capacity.',
+        'single_source_risk': 'HIGH for signalling. MEDIUM for civil works.',
+        'procurement_rec': 'ECI with two-stage competitive dialogue. Minimum 18 months procurement timeline at this scale.',
+        'labour': 'Skilled rail operatives in shortage nationally. Plan 10-15% labour cost premium vs 2022 rates.',
+    },
+    'nuclear': {
+        'tier1': ['Mace (Hinkley)','Jacobs (framework)','Altrad (maintenance)','EDF (technology)','Rolls-Royce SMR'],
+        'specialists': ['Assystem (nuclear assurance)','NNL (fuel cycle)','Cavendish Nuclear','Atkins Nuclear'],
+        'order_book': 'Nuclear supply chain is severely constrained. Hinkley C has absorbed UK nuclear capacity for the decade.',
+        'supply_chain': 'Reactor vessels: 3 global suppliers. Primary circuit components: 2 suppliers. Nuclear qualified welders: critically short.',
+        'single_source_risk': 'EXTREME — nuclear qualified supply chain is global and limited.',
+        'procurement_rec': 'Long-lead procurement must start now for reactor components. Do not wait for FBC approval.',
+        'labour': 'Nuclear qualified workforce is a national constraint. Factor 25-40% labour premium and 18-month mobilisation.',
+    },
+    'data_centre': {
+        'tier1': ['Turner Construction','AECOM','DPR Construction','Mace','ISG','McLaughlin & Harvey'],
+        'specialists': ['Arcadis (power)','Arup (M&E)','WSP (structure)','Jacobs (grid connection)'],
+        'order_book': 'Hyperscale data centre contractors are at near-full capacity globally. 18-24 month lead times on specialist M&E.',
+        'supply_chain': 'UPS/generators: 3-6 month lead. Transformers: 12-18 months. Bus duct: 6-9 months. Cooling: 3-6 months.',
+        'single_source_risk': 'MEDIUM — transformer supply is the critical path item. Order immediately before FBC.',
+        'procurement_rec': 'EPC or design-build for speed. Long-lead items procurement 12 months before main works start.',
+        'labour': 'Data centre specialist labour is in acute shortage in all major markets. Plan 20-30% premium.',
+    },
+    'defence': {
+        'tier1': ['BAE Systems','Babcock','Serco','Jacobs Defence','Amentum','KBR'],
+        'specialists': ['Dstl','AWE Management','Atkins (secure)','QinetiQ (T&E)'],
+        'order_book': 'Defence capital contractors have strong order books through 2030. AUKUS and nuclear weapons absorbing capacity.',
+        'supply_chain': 'Sovereign supply chain required. Commercial chain cannot be used for classified items. 24-36 month qualification.',
+        'single_source_risk': 'EXTREME for classified elements. Sole-source procurement is standard — drives 30-40% cost premium.',
+        'procurement_rec': 'Regulated defence procurement (MoD DEFCON framework). Sole source where sovereign capability dictates.',
+        'labour': 'SC/DV cleared workforce is critically short. Factor 2-3 year security vetting into all schedule logic.',
+    },
+    'space': {
+        'tier1': ['Airbus Defence & Space','Thales Alenia Space','OHB','MDA','L3Harris','Maxar'],
+        'specialists': ['SNC (systems)','GMV (GNC)','Terma (SW)','RUAG (structures)','Cobham (RF)'],
+        'order_book': 'Commercial space contractors are fully booked. Launch manifests are 18-24 months out on all major vehicles.',
+        'supply_chain': 'Components are ITAR controlled. US export licensing adds 6-12 months. Rad-hard components: 12-18 month lead.',
+        'single_source_risk': 'HIGH — mission-critical components often have 1-2 qualified suppliers globally.',
+        'procurement_rec': 'Fixed-price-incentive for well-defined payloads. Cost-plus for novel systems. Allow 36 months minimum for AIT.',
+        'labour': 'Mission assurance engineers are globally scarce. Recruit and qualify 2+ years before CDR.',
+    },
+    'gigafactory': {
+        'tier1': ['Samsung C&T','Hyundai E&C','POSCO','Exyte (M+W Group)','Mace','Laing ORourke'],
+        'specialists': ['Arup (process)','Exyte (cleanroom)','Jacobs (utilities)','WSP (grid)','TUV (BMS qualification)'],
+        'order_book': 'Gigafactory EPC market is thin outside Korea/China. European capacity is being built by Korean contractors.',
+        'supply_chain': 'Cell manufacturing equipment: 3 suppliers (Wuxi Lead, Hirano, Koem). Formation cycling: 12-18 month lead.',
+        'single_source_risk': 'EXTREME for cell assembly equipment. No Western supply chain exists.',
+        'procurement_rec': 'EPCM with Korean process licensor. Early equipment procurement (18+ months before build). Grid connection immediate.',
+        'labour': 'Battery cell manufacturing process engineers do not exist in UK/EU. Training pipeline must be 36 months ahead.',
+    },
+    'water': {
+        'tier1': ['Atkins','MWH (Stantec)','Jacobs','Black & Veatch','AECOM','Morrison Water Services'],
+        'specialists': ['CDM Smith (environmental)','Arup (hydraulics)','Royal HaskoningDHV'],
+        'order_book': 'Water sector AMP8 (2025-30) is driving high demand. Contractors are 60-70% booked through 2028.',
+        'supply_chain': 'Treatment plant equipment: moderate supply. Large pumps: 6-9 month lead. Membrane: 3-6 months.',
+        'single_source_risk': 'LOW for most civil works. MEDIUM for specialist treatment technology.',
+        'procurement_rec': 'NEC4 ECC or NEC4 alliance. Framework preferred for AMP programmes. TOTEX approach.',
+        'labour': 'Water sector workforce growing. Specialist ICA and SCADA engineers in moderate shortage.',
+    },
+    'semiconductor': {
+        'tier1': ['Exyte (M+W Group)','AECOM','Jacobs','DPR Construction','Samsung C&T'],
+        'specialists': ['Layton Technologies (cleanroom)','Arup (MEP)','Thornton Tomasetti (structure)'],
+        'order_book': 'Semiconductor fab EPC is dominated by 2-3 global specialists. Exyte/M+W fully committed through 2028.',
+        'supply_chain': 'Process tools: ASML (litho), Applied Materials, Lam Research — 18-24 month lead. UPW: 12-18 months.',
+        'single_source_risk': 'EXTREME — ASML EUV is sole source globally. Without it, sub-5nm fab cannot be built.',
+        'procurement_rec': 'Process tool orders must precede FAB approval by 18-24 months minimum. EPCM for fab shell.',
+        'labour': 'Cleanroom construction workers: 3-year qualification. Process integration engineers: global shortage.',
+    },
+    'mining': {
+        'tier1': ['Worley','Bechtel Mining','AtkinsRealis (SNC)','Fluor','Wood Group','DRA Global'],
+        'specialists': ['AMC Consultants (reserve)','SRK (geotechnical)','Ausenco (process)','Hatch (metallurgy)'],
+        'order_book': 'Critical minerals boom is straining mining EPC. Lithium, copper and nickel projects competing for same contractors.',
+        'supply_chain': 'SAG/ball mills: 18-24 months. Thickeners: 12-18 months. Flotation cells: 9-12 months.',
+        'single_source_risk': 'HIGH for large comminution equipment. MEDIUM for process plant.',
+        'procurement_rec': 'EPCM recommended for complex process plants. Long-lead procurement before FEL3.',
+        'labour': 'Remote site execution adds 25-35% to all-in labour cost. Camp and logistics costs are programme-critical.',
+    },
+    'airport': {
+        'tier1': ['Bechtel','AECOM','Turner Construction','Mace','Laing ORourke','Ferrovial'],
+        'specialists': ['Arup (airfield)','WSP (terminal)','Jacobs (baggage)','NACO (airside ops)','Parsons (ATC)'],
+        'order_book': 'Airport programme contractors have moderate availability post-COVID.',
+        'supply_chain': 'Baggage: Vanderlande, Siemens, BEUMER (3 global suppliers). Jetbridges: 2 suppliers. ATC: Thales or Indra.',
+        'single_source_risk': 'HIGH for airside systems. MEDIUM for civil works.',
+        'procurement_rec': 'EPCM or management contracting. Separate early works for utilities. Long-lead baggage procurement 24+ months.',
+        'labour': 'Airfield civil works require CAA-approved supervision. Specialist aviation M&E in shortage.',
+    },
+}
+
+def _casey_programme_mortality(mode, subsector, prompt, conf, p50, class_level, risks, gate, oba):
+    t = (prompt or '').lower()
+    mort_score = 0
+    drivers = []
+    precedents = []
+    if conf < 55:
+        mort_score += 25
+        drivers.append("Confidence at " + str(conf) + "% — below the 55% board approval threshold. No major programme at this confidence level has survived a PAC/NAO inquiry.")
+    elif conf < 70:
+        mort_score += 12
+        drivers.append("Confidence at " + str(conf) + "% — challengeable at investment committee. Evidence closure required before capital commitment.")
+    if class_level >= 4:
+        mort_score += 18
+        drivers.append("Class " + str(class_level) + " estimate — less than 15% scope definition. Reference: HM Treasury Green Book, Annex 5.")
+    gate_verdict = (gate or {}).get('overall_verdict', '')
+    if gate_verdict in ['NOT READY', 'BLOCKED']:
+        mort_score += 20
+        drivers.append("Gate review: " + gate_verdict + ". Programmes that proceed without gate readiness have a 3x higher cancellation rate (IPA Annual Report 2023).")
+    for key, (risk_add, ref) in SECTOR_MORTALITY_MAP.items():
+        if key in mode.lower() or key in subsector.lower():
+            mort_score += risk_add
+            drivers.append("Sector mortality signal (" + key + "): " + ref)
+            precedents.append(ref)
+            break
+    if any(x in t for x in ['government','political','election','mandate','sovereign','public funding']):
+        mort_score += 12
+        drivers.append("Political mandate dependency detected. Reference: HS2 Phase 2b, CalHSR, Northern Powerhouse Rail.")
+    if p50 > 20:
+        mort_score += 10
+        drivers.append("At " + money_bn(p50) + " P50, this is a megaprogramme. Programmes above $10B have a 40% probability of scope reduction before completion (Flyvbjerg 2022).")
+    elif p50 > 10:
+        mort_score += 5
+        drivers.append("At " + money_bn(p50) + " P50, scale increases governance and Treasury spending review exposure.")
+    mort_score = min(95, max(5, mort_score))
+    if mort_score >= 70:
+        verdict = "HIGH MORTALITY RISK — programme has material probability of cancellation or fundamental restructuring before completion"
+        colour = "critical"
+    elif mort_score >= 45:
+        verdict = "ELEVATED MORTALITY RISK — programme faces conditions that have historically preceded restructuring"
+        colour = "warning"
+    elif mort_score >= 25:
+        verdict = "MODERATE MORTALITY RISK — manageable if governing constraints are addressed before capital commitment"
+        colour = "caution"
+    else:
+        verdict = "LOW MORTALITY RISK — sector and delivery profile consistent with completion at declared scope"
+        colour = "positive"
+    mitigation = []
+    if conf < 70:
+        mitigation.append("Close the evidence gap on the governing constraint before any gate review. Board defensibility requires named owner, closure date and auditable progress.")
+    if class_level >= 4:
+        mitigation.append("Advance estimate class to Class 3 minimum before capital commitment. Current definition maturity does not support a bankable cost.")
+    if mort_score > 40:
+        mitigation.append("Commission an independent OBA workshop. Apply the uplift transparently to the board case.")
+    mitigation.append("Lock the scope boundary with signed client authority before procurement. Scope creep is the primary mortality driver in this sector.")
+    return {'score': mort_score, 'verdict': verdict, 'colour': colour, 'drivers': drivers, 'precedents': precedents, 'mitigation': mitigation, 'headline': str(mort_score) + "% programme mortality risk"}
+
+
+def _casey_contractor_market(mode, subsector, prompt, location, p50):
+    t = (subsector + ' ' + mode + ' ' + (prompt or '') + ' ' + (location or '')).lower()
+    market = None
+    for key, data in SECTOR_CONTRACTOR_MAP.items():
+        if key in mode.lower() or key in subsector.lower():
+            market = dict(data)
+            break
+    if not market:
+        market = {
+            'tier1': ['Mace','Laing ORourke','AECOM','Jacobs','Arup','WSP','Bechtel'],
+            'specialists': ['Sector-specific specialists to be confirmed at procurement stage'],
+            'order_book': 'Contractor market conditions should be assessed with a market engagement exercise before procurement strategy is finalised.',
+            'supply_chain': 'Long-lead items should be identified during RIBA Stage 2 / GRIP 4 and procurement initiated ahead of main contract award.',
+            'single_source_risk': 'MEDIUM — full market assessment recommended before procurement strategy is locked.',
+            'procurement_rec': 'NEC4 ECC or FIDIC recommended. Procurement timeline minimum 12 months for a programme of this scale.',
+            'labour': 'Labour market assessment required. Current construction sector has 4-6% vacancy rate across most disciplines.',
+        }
+    if p50 > 10:
+        market['capacity_note'] = "At " + money_bn(p50) + ", this programme will test the capacity of any single tier 1 contractor. Consider consortium procurement or parallel packages to maintain competition."
+    else:
+        market['capacity_note'] = "At " + money_bn(p50) + ", multiple tier 1 contractors can compete. Early market engagement (pre-OJEU) is strongly recommended."
+    loc_l = (location or '').lower()
+    if any(x in loc_l for x in ['nigeria','ghana','kenya','ethiopia','drc','tanzania','zambia']):
+        market['location_note'] = "In " + str(location) + ", tier 1 international contractors will require significant local partnering. Recommend minimum 30% local content. Factor 25-35% contractor premium vs UK/EU."
+    elif any(x in loc_l for x in ['uae','qatar','saudi','ksa']):
+        market['location_note'] = "In " + str(location) + ", Vision 2030 / national mega-programmes are absorbing regional contractor capacity. Pre-commit contractor capacity 18+ months ahead."
+    return market
+
+
+def _casey_evidence_gap_scanner(model, mode, subsector, class_level, gate):
+    gaps = []
+    conf = int(model.get('confidence_pct', 60) or 60)
+    risks = model.get('risks', [])
+    procs = model.get('procurement_heatmap', [])
+    t = (mode + ' ' + subsector).lower()
+    if class_level >= 4:
+        gaps.append({'gap': 'Estimate definition maturity', 'detail': 'Class ' + str(class_level) + ' estimate has less than 15% scope definition. IPA Gateway 1 requires minimum Class 3 (30-40% definition) for a credible cost. Not approvable at any spending review gate.', 'owner': 'Programme Director / Cost Manager', 'close_by': 'Before any board or investment committee presentation', 'severity': 'CRITICAL', 'reference': 'IPA Project Routemap; HM Treasury Green Book Annex 5'})
+    elif class_level == 3:
+        gaps.append({'gap': 'Estimate maturity for capital approval', 'detail': 'Class 3 estimate supports budget authorisation but not capital approval. Before a final investment decision (FID), a Class 1 or Class 2 estimate is required.', 'owner': 'Cost Manager', 'close_by': 'Before FID / OJEU publication', 'severity': 'HIGH', 'reference': 'AACE International Recommended Practice 18R-97'})
+    if conf < 55:
+        gaps.append({'gap': 'Board confidence below approval threshold', 'detail': 'Confidence at ' + str(conf) + '% is below the 55% minimum for investment committee approval. The governing constraint has not been evidenced. No board should approve capital commitment at this confidence level.', 'owner': 'SRO / Programme Director', 'close_by': 'Before Gate 1 or any capital approval', 'severity': 'CRITICAL', 'reference': 'IPA Governance for Major Projects; HM Treasury Supplementary Green Book Guidance'})
+    unowned = [r for r in risks if not r.get('owner') or r.get('owner') in ['TBC', 'TBD', '—', '']]
+    if unowned:
+        gaps.append({'gap': str(len(unowned)) + ' risks without named owners', 'detail': 'Risks without named owners cannot be managed. IPA Gate Review criteria require every material risk to have a named accountable owner and a documented mitigation plan.', 'owner': 'Risk Manager', 'close_by': 'Before Gate Review', 'severity': 'HIGH', 'reference': 'IPA Risk Management Supplementary Guidance 2020'})
+    single_source = [p for p in procs if p.get('single_source_risk')]
+    if single_source:
+        pkgs = ', '.join(p.get('package', '?') for p in single_source[:3])
+        gaps.append({'gap': 'Single-source procurement risk (' + pkgs + ')', 'detail': 'Single-source packages are not competitively tested. Cabinet Office guidance requires documented market justification and cost comparison evidence before single-source approval.', 'owner': 'Commercial Director', 'close_by': 'Before procurement strategy sign-off', 'severity': 'HIGH', 'reference': 'Cabinet Office Commercial Function Sourcing Playbook 2023'})
+    if 'nuclear' in t:
+        gaps.append({'gap': 'ONR Generic Design Assessment', 'detail': 'Nuclear new build requires ONR GDA completion or Step 4 exit before any significant procurement. GDA takes 4-5 years.', 'owner': 'Nuclear Safety Director', 'close_by': 'Before NSIP application', 'severity': 'CRITICAL', 'reference': 'ONR Safety Assessment Principles 2014; IAEA SSG-12'})
+    if 'defence' in t or 'classified' in t or 'sovereign' in t:
+        gaps.append({'gap': 'Security Cleared Workforce Plan', 'detail': 'DV/SC-cleared workforce is not available at short notice. Failure to begin security vetting 24-36 months ahead is a programme mortality driver.', 'owner': 'Security Manager / HR', 'close_by': 'Immediately — no later than 24 months before first classified activity', 'severity': 'CRITICAL', 'reference': 'DSTL Personnel Security Framework; BPSS/SC/DV National Standards'})
+    if 'space' in t or 'lunar' in t or 'orbital' in t:
+        gaps.append({'gap': 'Mission Assurance Authority', 'detail': 'Space programmes require a named Mission Assurance Authority with signed closure authority for all open items before launch.', 'owner': 'Mission Director', 'close_by': 'Before Phase C/D gate', 'severity': 'CRITICAL', 'reference': 'NASA NPR 7120.5E; ESA ECSS-M-ST-80C'})
+    if 'rail' in t:
+        gaps.append({'gap': 'Network Rail / ORR Approval', 'detail': 'Rail projects affecting the operational railway require ORR approval and Network Rail Asset Register sign-off. These are not deliverable inside a standard programme timeline without early application.', 'owner': 'Railway Interface Manager', 'close_by': 'Minimum 12 months before track possession', 'severity': 'HIGH', 'reference': 'Network Rail Investment Framework; ORR National Rail Conditions of Carriage'})
+    gate_v = (gate or {}).get('overall_verdict', '')
+    if gate_v not in ['READY', 'APPROVED'] and conf > 0:
+        gaps.append({'gap': 'Optimism bias not disclosed to board', 'detail': 'HM Treasury Green Book requires all public projects to disclose OBA uplifts in the business case. The OBA-adjusted outturn must appear in the executive summary.', 'owner': 'Finance Director / SRO', 'close_by': 'Before any public funding application or spending review submission', 'severity': 'HIGH', 'reference': 'HM Treasury Green Book 2022, Annex 4'})
+    return gaps
+
+
+def _casey_delivery_paths(mode, subsector, prompt, p50, months, conf):
+    paths = []
+    t = (mode + ' ' + subsector + ' ' + (prompt or '')).lower()
+    paths.append({
+        'path': 'Conventional Design-Bid-Build',
+        'description': 'Sequential design, full competitive tender, then construction. Maximum market testing, minimum commercial risk, longest timeline.',
+        'cost_p50': money_bn(p50), 'schedule': str(months) + ' months', 'confidence': str(conf) + '%',
+        'p80_premium': money_bn(p50 * 1.22),
+        'key_risk': 'Schedule slippage from sequential procurement and late design changes.',
+        'best_for': 'Programmes with strong public accountability, where audit trail and competition are paramount.',
+        'board_question': 'Why is the conventional route preferred over ECI or PPP? What is the value-for-money comparison?',
+    })
+    eci_cost = round(p50 * 1.06, 2)
+    eci_months = max(6, int(months * 0.82))
+    eci_conf = min(94, conf + 8)
+    paths.append({
+        'path': 'Early Contractor Involvement (ECI)',
+        'description': 'Contractor engaged at design stage. De-risks buildability, programme and supply chain. Higher initial cost, lower outturn risk, faster delivery.',
+        'cost_p50': money_bn(eci_cost), 'schedule': str(eci_months) + ' months', 'confidence': str(eci_conf) + '%',
+        'p80_premium': money_bn(eci_cost * 1.14),
+        'key_risk': 'Lock-in to sole contractor post-PCSA. Requires robust open-book commercial controls.',
+        'best_for': 'Programmes with high technical complexity, tight possessions/interfaces or supply chain constraints.',
+        'board_question': 'What is the PCSA exit strategy? How will you preserve competition on the main contract?',
+    })
+    if any(x in t for x in ['gigafactory', 'semiconductor', 'manufacturing', 'industrial', 'factory']):
+        pp_cost = round(p50 * 0.92, 2)
+        pp_months = max(6, int(months * 0.88))
+        pp_conf = min(94, conf + 3)
+        paths.append({'path': 'Anchor Tenant / Build-to-Suit', 'description': 'Developer-led with anchor tenant commitment. De-risks planning, finance and construction. Developer retains ownership; tenant signs long lease.', 'cost_p50': money_bn(pp_cost), 'schedule': str(pp_months) + ' months', 'confidence': str(pp_conf) + '%', 'p80_premium': money_bn(pp_cost * 1.16), 'key_risk': 'Loss of asset ownership. Lease terms may constrain future expansion.', 'best_for': 'Programmes where capital preservation is critical and operational control does not require asset ownership.', 'board_question': 'What is the NPV comparison between own-build and build-to-suit? What process-specific requirements would be compromised?'})
+    else:
+        pp_cost = round(p50 * 0.88, 2)
+        pp_months = max(6, int(months * 0.90))
+        pp_conf = max(10, conf - 5)
+        paths.append({'path': 'Public-Private Partnership / Concession', 'description': 'Private finance with long-term concession. Lower public capital requirement, but WLC premium and inflexibility in future scope changes.', 'cost_p50': money_bn(pp_cost), 'schedule': str(pp_months) + ' months', 'confidence': str(pp_conf) + '%', 'p80_premium': money_bn(pp_cost * 1.25), 'key_risk': 'Concession contract inflexibility. Private sector WLC is higher than public sector equivalent. HMT VFM test required.', 'best_for': 'Programmes where the private sector can genuinely absorb demand risk and where operational performance is contractually measurable.', 'board_question': 'Has HMT VFM testing been completed? What happens to the asset at end of concession?'})
+    return paths
+
+
+
 # ══ ROUTES ══
 
 @app.get("/health")
@@ -4432,6 +4702,73 @@ def generate(req: GenerateRequest, request: Request):
                        model.get("cost_p50",""),
                        int(model.get("confidence_pct",0) or 0),
                        req.prompt, "generate")
+    except Exception:
+        pass
+
+
+    # ══ KILLER INTELLIGENCE FIELDS ══════════════════════════════════════════════
+    # Programme Mortality Engine
+    try:
+        gate_d = model.get('gate_review_readiness') or {}
+        oba_d = model.get('optimism_bias_assessment') or {}
+        risks_list = model.get('risks') or []
+        p50_val = float(str(model.get('cost_p50','0')).replace('$','').replace('B','').replace(',','').strip() or 0)
+        mortality = _casey_programme_mortality(
+            model.get('mode',''), model.get('subsector',''), req.prompt,
+            int(model.get('confidence_pct',60) or 60), p50_val,
+            int(req.class_level or 3), risks_list, gate_d, oba_d)
+        model['programme_mortality_engine'] = mortality
+    except Exception:
+        pass
+
+    # Contractor Market Intelligence
+    try:
+        loc_name = (model.get('location_context') or {}).get('country', '') or model.get('location','')
+        p50_v = float(str(model.get('cost_p50','0')).replace('$','').replace('B','').replace(',','').strip() or 0)
+        model['contractor_market_intelligence'] = _casey_contractor_market(
+            model.get('mode',''), model.get('subsector',''), req.prompt, loc_name, p50_v)
+    except Exception:
+        pass
+
+    # Evidence Gap Scanner
+    try:
+        model['evidence_gaps'] = _casey_evidence_gap_scanner(
+            model, model.get('mode',''), model.get('subsector',''),
+            int(req.class_level or 3), model.get('gate_review_readiness') or {})
+    except Exception:
+        pass
+
+    # Three Delivery Paths
+    try:
+        p50_dp = float(str(model.get('cost_p50','0')).replace('$','').replace('B','').replace(',','').strip() or 0)
+        mo_dp = int(model.get('schedule_months', 36) or 36)
+        co_dp = int(model.get('confidence_pct', 60) or 60)
+        model['delivery_paths'] = _casey_delivery_paths(
+            model.get('mode',''), model.get('subsector',''), req.prompt, p50_dp, mo_dp, co_dp)
+    except Exception:
+        pass
+
+        # Build scenario_matrix — lightweight previews of all scenarios using multipliers
+    try:
+        base_p50_val = float(str(model.get('cost_p50','0')).replace('$','').replace('B','').replace(',','').strip() or 0)
+        base_months_val = int(model.get('schedule_months', model.get('months', 36)) or 36)
+        base_conf_val = int(model.get('confidence_pct', 60) or 60)
+        scenario_matrix = []
+        for _sc in ['base','faster','cheaper','lower_risk','premium']:
+            cm, sm, rm, cd, slabel, swhy = scenario_params(_sc)
+            sc_p50 = round(base_p50_val * cm, 2)
+            sc_months = max(1, int(base_months_val * sm))
+            sc_conf = max(10, min(96, base_conf_val + cd))
+            sc_risk = risk_label(30 + (rm - 1) * 40)
+            scenario_matrix.append({
+                'scenario': _sc, 'label': slabel, 'why': swhy,
+                'cost_p50': money_bn(sc_p50), 'cost': money_bn(sc_p50),
+                'schedule_months': sc_months, 'schedule': f'{sc_months} months',
+                'confidence_pct': sc_conf, 'risk': sc_risk,
+                'cost_mult': round(cm, 2), 'sched_mult': round(sm, 2),
+            })
+        model['scenario_matrix'] = scenario_matrix
+        model['scenario_comparison'] = scenario_matrix
     except Exception:
         pass
 
@@ -6027,6 +6364,27 @@ def _get_demo(key: str, prompt: str, demo_type: str, demo_label: str, demo_headl
             m["demo_label"] = demo_label
             m["demo_headline"] = demo_headline
             m["prompt"] = prompt
+            # Add scenario_matrix so demo cards show cost/schedule/confidence
+            try:
+                base_p50_val = float(str(m.get('cost_p50','0')).replace('$','').replace('B','').replace(',','').strip() or 0)
+                base_months_val = int(m.get('schedule_months', 36) or 36)
+                base_conf_val = int(m.get('confidence_pct', 60) or 60)
+                sm_list = []
+                for _sc in ['base','faster','cheaper','lower_risk','premium']:
+                    cm2, sm2, rm2, cd2, slabel2, swhy2 = scenario_params(_sc)
+                    sm_list.append({
+                        'scenario': _sc, 'label': slabel2, 'why': swhy2,
+                        'cost_p50': money_bn(round(base_p50_val * cm2, 2)),
+                        'cost': money_bn(round(base_p50_val * cm2, 2)),
+                        'schedule_months': max(1, int(base_months_val * sm2)),
+                        'schedule': f'{max(1, int(base_months_val * sm2))} months',
+                        'confidence_pct': max(10, min(96, base_conf_val + cd2)),
+                        'risk': risk_label(30 + (rm2 - 1) * 40),
+                    })
+                m['scenario_matrix'] = sm_list
+                m['scenario_comparison'] = sm_list
+            except Exception:
+                pass
             _DEMO_CACHE[key] = m
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Demo build failed: {str(e)}")
