@@ -12,6 +12,7 @@ import {
 import './style.css';
 
 const PROD_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL || 'https://corbit-1.onrender.com';
+if (typeof window !== 'undefined') window._CASEY_API = PROD_URL;
 const API_CANDIDATES = [PROD_URL, 'http://127.0.0.1:8000', 'http://localhost:8000'].filter(Boolean);
 let API = API_CANDIDATES[0];
 async function apiFetch(path, options, timeoutMs = 45000) {
@@ -486,33 +487,38 @@ async function get(path) {
   return r.json();
 }
 async function download(path, model, name, setExportingLabel) {
-    if (!isAdminUser && demoDownloads >= 1) {
-      alert('Demo export limit reached. Contact us for full access at controlorbit.com');
+  // Simple, self-contained download — no component state dependencies
+  try {
+    if (setExportingLabel) setExportingLabel('Generating…');
+    const resp = await fetch(
+      (window._CASEY_API || 'https://corbit-1.onrender.com') + path,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(model || {})
+      }
+    );
+    if (!resp.ok) {
+      const txt = await resp.text();
+      let msg = txt;
+      try { msg = JSON.parse(txt)?.detail?.message || JSON.parse(txt)?.message || txt; } catch (_) {}
+      alert('Export failed: ' + msg);
+      if (setExportingLabel) setExportingLabel('');
       return;
     }
-    if (!isAdminUser) {
-      const nd = demoDownloads + 1;
-      try { localStorage.setItem('casey_demo_downloads', String(nd)); } catch(ex) {}
-      setDemoDownloads(nd);
-    }
-  if (setExportingLabel) setExportingLabel('Generating executive export package…');
-  const r = await apiFetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(model) });
-  if (!r.ok) {
-    let message = await r.text();
-    try { const parsed = JSON.parse(message); message = parsed.detail?.message || parsed.message || message; } catch (_) {}
-    alert(message);
-    throw new Error(message);
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 2000);
+    if (setExportingLabel) setTimeout(() => setExportingLabel(''), 1500);
+  } catch (err) {
+    alert('Download error: ' + err.message + '. Check your connection and try again.');
+    if (setExportingLabel) setExportingLabel('');
   }
-  const blob = await r.blob();
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = name;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-  if (setExportingLabel) setTimeout(() => setExportingLabel(''), 1200);
 }
 function Card({ children, className = '' }) {
   return <motion.div className={`card ${className}`} initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>{children}</motion.div>;
