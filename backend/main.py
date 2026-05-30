@@ -5242,6 +5242,12 @@ def pptx_bytes(model):
 
 def pdf_bytes(model):
     """Board-grade PDF pack — investment committee ready."""
+    curr = model.get('currency_symbol', '$')
+    def _fc(v):
+        """Format currency in model's local currency."""
+        s = str(v or '—')
+        return (curr + s[1:]) if curr != '$' and s.startswith('$') else s
+    
     from reportlab.lib.units import mm
     from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
 
@@ -5821,46 +5827,48 @@ def export_all(model:Dict[str,Any]):
     bio.seek(0)
     return stream(bio.getvalue(), "application/zip", "CASEY_Board_Intelligence_Pack.zip")
 
+
+def qcra_qsra_bytes(model: dict) -> bytes:
+    """QCRA/QSRA Excel export."""
+    import openpyxl as _ox2
+    curr = model.get('currency_symbol','$')
+    def fc(v):
+        s = str(v or '—')
+        return (curr + s[1:]) if curr != '$' and s.startswith('$') else s
+    wb = _ox2.Workbook(); ws = wb.active; ws.title = "QCRA QSRA"
+    mc = model.get('monte_carlo',{})
+    qcra = mc.get('qcra',{}); qsra = mc.get('qsra',{})
+    ws.append(["CASEY QCRA/QSRA — " + model.get('subsector','Programme')])
+    ws.append(["P50 Cost", fc(model.get('cost_p50','—')), "P80 Cost", fc(model.get('cost_p80','—'))])
+    ws.append(["Confidence", str(model.get('confidence_pct','—'))+'%', "Schedule", model.get('schedule','—')])
+    ws.append([])
+    ws.append(["QCRA — COST RISK"])
+    for k,l in [('p10','P10'),('p50','P50'),('p80','P80 Board'),('p90','P90')]:
+        ws.append([l, fc(str(qcra.get(k,'—')))])
+    ws.append([])
+    ws.append(["QSRA — SCHEDULE RISK"])
+    for k,l in [('p10','P10'),('p50','P50'),('p80','P80 Board'),('p90','P90')]:
+        ws.append([l, str(qsra.get(k,'—')) + ' months'])
+    ws.append([])
+    ws.append(["TOP RISK DRIVERS (by EMV)"])
+    ws.append(["Risk","Probability %","Impact","EMV","Owner"])
+    risks = model.get('risks',[])
+    for r in sorted(risks, key=lambda x: float(x.get('cost_emv_bn',0) or 0), reverse=True)[:10]:
+        emv = float(r.get('cost_emv_bn',0) or 0)
+        imp = float(r.get('cost_m_bn',0) or 0)
+        ws.append([r.get('title',r.get('risk',''))[:50], r.get('probability_pct','—'),
+                   fc(f'${imp:.2f}B'), fc(f'${emv:.2f}B'), r.get('owner','—')])
+    ws.append([])
+    ws.append(["S-CURVE DATA POINTS"])
+    ws.append(["Percentile","Cost ($B)","Schedule (months)"])
+    for pt in mc.get('curve',[]):
+        ws.append([pt.get('percentile','—'), pt.get('cost_bn','—'), pt.get('schedule_months','—')])
+    bio = BytesIO(); wb.save(bio); bio.seek(0)
+    return bio.getvalue()
+
 @app.post("/export/qcra-qsra")
 def export_qcra_qsra(model:Dict[str,Any]):
-    """Export QCRA/QSRA combined workbook."""
-    try:
-        wb = openpyxl.Workbook()
-        ws = wb.active
-        ws.title = "QCRA QSRA Summary"
-        mc = model.get("monte_carlo", {})
-        qcra = mc.get("qcra", {})
-        qsra = mc.get("qsra", {})
-        ws.append(["CASEY QCRA/QSRA REPORT"])
-        ws.append(["Programme", model.get("title", "CASEY Programme")])
-        ws.append(["P50 Cost", model.get("cost_p50", "-")])
-        ws.append(["P80 Cost", model.get("cost_p80", "-")])
-        ws.append(["P90 Cost", model.get("cost_p90", "-")])
-        ws.append([])
-        ws.append(["QCRA COST"])
-        ws.append(["P10", qcra.get("p10", "-"), "P50", qcra.get("p50", "-"), "P80", qcra.get("p80", "-"), "P90", qcra.get("p90", "-")])
-        ws.append([])
-        ws.append(["QSRA SCHEDULE"])
-        ws.append(["P10", qsra.get("p10", "-"), "P50", qsra.get("p50", "-"), "P80", qsra.get("p80", "-"), "P90", qsra.get("p90", "-")])
-        ws.append([])
-        ws.append(["RISK DRIVERS (Top 10 by EMV)"])
-        ws.append(["Risk", "Category", "Probability %", "EMV ($B)"])
-        tornado = mc.get("tornado", mc.get("qcra_tornado", []))
-        for r in tornado[:10]:
-            ws.append([r.get("driver", r.get("title", "?")), r.get("category", "-"), r.get("probability_pct", "-"), r.get("contribution", "-")])
-        ws.append([])
-        ws.append(["QSRA PROBABILITY CURVE"])
-        ws.append(["Percentile", "Cost ($B)", "Schedule (months)"])
-        for pt in mc.get("curve", [])[:21]:
-            ws.append([pt.get("percentile", "-"), pt.get("cost_bn", "-"), pt.get("schedule_months", "-")])
-        bio2 = BytesIO()
-        wb.save(bio2)
-        bio2.seek(0)
-        return stream(bio2.getvalue(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "CASEY_QCRA_QSRA.xlsx")
-    except Exception as e:
-        return stream(json.dumps({"error": str(e)}).encode(), "application/json", "error.json")
-
-
+    return stream(qcra_qsra_bytes(model),"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","CASEY_QCRA_QSRA.xlsx")
 @app.get("/twin/inputs/{subsector}")
 def twin_get_inputs(subsector: str, mode: str = "Earth"):
     """Get the sector-specific twin input fields for a given programme."""
