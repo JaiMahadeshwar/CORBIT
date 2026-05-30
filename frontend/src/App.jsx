@@ -489,9 +489,6 @@ async function get(path) {
 async function download(path, model, name, setExportingLabel) {
   // Uses apiFetch which handles URL retry logic and CORS correctly
   try {
-    if (setExportingLabel) setExportingLabel('Waking backend (Render may be sleeping — takes up to 30s)…');
-    // Ping first to wake Render from sleep before the real export request
-    try { await apiFetch('/health', { method: 'GET' }); } catch(_) {}
     if (setExportingLabel) setExportingLabel('Generating export…');
     const resp = await apiFetch(path, {
       method: 'POST',
@@ -516,7 +513,7 @@ async function download(path, model, name, setExportingLabel) {
     setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 2000);
     if (setExportingLabel) setTimeout(() => setExportingLabel(''), 1500);
   } catch (err) {
-    alert('Export error: ' + (err.message || 'Network error') + '. The backend may be waking up — wait 20 seconds and try again.');
+    alert('Export failed. Please try again in a few seconds.');
     if (setExportingLabel) setExportingLabel('');
   }
 }
