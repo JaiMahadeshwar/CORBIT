@@ -21,7 +21,8 @@ async function apiFetch(path, options, timeoutMs = 90000) {
     try {
       const controller = new AbortController();
       const tid = setTimeout(() => controller.abort(), timeoutMs);
-      const r = await fetch(base + path, { ...options, signal: controller.signal });
+      // credentials:'omit' prevents browser enforcing the credentials+wildcard CORS restriction
+      const r = await fetch(base + path, { credentials: 'omit', ...options, signal: controller.signal });
       clearTimeout(tid);
       API = base;
       return r;
