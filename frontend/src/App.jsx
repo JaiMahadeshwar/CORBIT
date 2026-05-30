@@ -2927,7 +2927,7 @@ function parseMoneyLocal(v) {
           <span style={{fontSize:'11px',color:'#94a3b8'}}>Exports available below. Earth Demo, Space Demo and Showcase Library always free.</span>
           <a href="mailto:hello@controlorbit.com?subject=CASEY Full Access" style={{marginLeft:'auto',fontSize:'11px',color:'#8df7ff',fontWeight:'700',textDecoration:'none',background:'rgba(141,247,255,0.1)',padding:'4px 12px',borderRadius:'3px',border:'1px solid rgba(141,247,255,0.3)'}}>Request full access →</a>
         </div>}
-      <nav className="tabs">{[['overview','Overview'],['compare','Scenarios'],['delta','Intel'],['causal','Causal'],['cost','Cost'],['schedule','Schedule'],['risk','Risk'],['monte','QCRA/QSRA'],['outputs','Outputs'],['assurance','Assurance'],['runtime','Stress Test'],['advisor','Advisor'],['method','Method'],['benchmark','Benchmarks'],['pricing','Pricing']].map(x => <button key={x[0]} className={tab===x[0]?'active':''} onClick={() => setTab(x[0])}>{x[1]}</button>)}</nav>
+      <nav className="tabs">{[['overview','Overview'],['twin','⚡ Twin'],['compare','Scenarios'],['delta','Intel'],['causal','Causal'],['cost','Cost'],['schedule','Schedule'],['risk','Risk'],['monte','QCRA/QSRA'],['outputs','Outputs'],['assurance','Assurance'],['runtime','Stress Test'],['advisor','Advisor'],['method','Method'],['benchmark','Benchmarks'],['pricing','Pricing']].map(x => <button key={x[0]} className={tab===x[0]?'active':''} onClick={() => setTab(x[0])}>{x[1]}</button>)}</nav>
         {tab === 'overview' && <>
           {model.executive_shock_insight && <section className="layout one"><Card className="shockCard"><h2>⚡ Live model update</h2><p>{model.executive_shock_insight}</p></Card></section>}
           <section className="layout two">
@@ -3046,6 +3046,183 @@ function parseMoneyLocal(v) {
             {(model.top_decisions_required || []).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{x}</div>)}
           </Card>
         </section>}
+
+        {tab === 'twin' && (() => {
+          const SECTOR_INPUTS = {
+            'Rail': [{key:'civil_complete_pct',label:'Civil works % complete',type:'pct',help:'Physical completion vs programme plan.',benchmark:20},{key:'possessions_used_pct',label:'Possessions used vs granted %',type:'pct',help:'Track access possessions: used vs granted. Below 85% = schedule risk.',benchmark:85},{key:'signalling_milestones_met_pct',label:'Signalling milestones met %',type:'pct',help:'% of signalling integration milestones on time.',benchmark:70},{key:'systems_integration_open_items',label:'Open IEMs / interface items',type:'number',help:'>100 open items at planned opening = systemic failure risk.',benchmark:50},{key:'earned_value_pct',label:'Earned value % (EV/BAC)',type:'pct',help:'Below 90% = overrun trajectory.',benchmark:95}],
+            'Nuclear': [{key:'gda_status',label:'Regulatory hold-points cleared %',type:'pct',help:'% of ONR/NRC hold-points cleared on schedule.',benchmark:60},{key:'nuclear_workforce_pct',label:'Nuclear-qualified workforce secured %',type:'pct',help:'SC/DV cleared staff vs planned peak.',benchmark:50},{key:'design_freeze_achieved',label:'Design freeze achieved',type:'bool',help:'Design frozen with independent authority sign-off?'},{key:'supply_chain_qualified_pct',label:'Nuclear supply chain qualified %',type:'pct',help:'% of nuclear-grade suppliers contracted.',benchmark:40},{key:'earned_value_pct',label:'Earned value %',type:'pct',help:'EV/BAC × 100.',benchmark:95}],
+            'Defence': [{key:'requirements_frozen',label:'Requirements baseline frozen',type:'bool',help:'Requirements signed by SRO and frozen?'},{key:'sc_dv_clearances_pct',label:'SC/DV clearances granted %',type:'pct',help:'% of required clearances granted. Below 50% = risk.',benchmark:60},{key:'itar_licences_granted',label:'ITAR/export licences granted',type:'bool',help:'All ITAR licences granted?'},{key:'test_milestones_met_pct',label:'Test & evaluation milestones met %',type:'pct',help:'% of T&E milestones on plan.',benchmark:70},{key:'earned_value_pct',label:'Earned value %',type:'pct',help:'EV/BAC × 100.',benchmark:90}],
+            'Space': [{key:'trl_achieved',label:'Technology readiness level (TRL)',type:'number',help:'Highest TRL independently verified. Below planned = risk.',benchmark:6},{key:'open_anomalies',label:'Open qualification anomalies',type:'number',help:'Unresolved test anomalies delay launch authority.',benchmark:5},{key:'mission_assurance_items_closed_pct',label:'Mission assurance items closed %',type:'pct',help:'% of MA action items formally closed.',benchmark:60},{key:'launch_manifest_confirmed',label:'Launch slot confirmed',type:'bool',help:'Launch vehicle and slot confirmed with provider?'},{key:'mass_margin_pct',label:'Mass margin remaining %',type:'pct',help:'Below 10% = redesign risk.',benchmark:15}],
+            'Digital': [{key:'grid_connection_confirmed',label:'Grid connection agreement signed',type:'bool',help:'Firm grid connection agreement with DNO/TSO?'},{key:'transformer_delivery_confirmed',label:'Transformer delivery confirmed',type:'bool',help:'Transformers on order with confirmed delivery?'},{key:'planning_consent_granted',label:'Planning consent granted',type:'bool',help:'Full planning consent granted?'},{key:'it_load_spec_frozen',label:'IT load spec frozen',type:'bool',help:'Compute density frozen? Changes require cooling redesign.'},{key:'earned_value_pct',label:'Earned value %',type:'pct',help:'EV/BAC × 100.',benchmark:95}],
+            'Mining': [{key:'ore_grade_vs_feasibility_pct',label:'Ore grade vs feasibility %',type:'pct',help:'Below 90% = economics at risk.',benchmark:95},{key:'community_agreement_signed',label:'Community agreement signed',type:'bool',help:'Signed community benefit agreement in place?'},{key:'comminution_equipment_delivery_confirmed',label:'Processing equipment delivery confirmed',type:'bool',help:'SAG mill / ball mill delivery confirmed?'},{key:'power_supply_secured',label:'Power supply secured',type:'bool',help:'Power contracted for full production load?'},{key:'earned_value_pct',label:'Earned value %',type:'pct',help:'EV/BAC × 100.',benchmark:92}],
+            'Battery': [{key:'offtake_contracted_pct',label:'Offtake contracted % of capacity',type:'pct',help:'% of capacity under confirmed long-term supply agreement.',benchmark:40},{key:'cell_chemistry_qualified',label:'Cell chemistry qualified',type:'bool',help:'Chemistry qualified and meeting energy density target?'},{key:'formation_equipment_on_order',label:'Formation cycling equipment on order',type:'bool',help:'18-month lead time — must be ordered now.'},{key:'earned_value_pct',label:'Earned value %',type:'pct',help:'EV/BAC × 100.',benchmark:90}],
+            'Semiconductor': [{key:'tool_allocation_confirmed_pct',label:'Process tools allocated %',type:'pct',help:'% of critical tools incl. ASML EUV with confirmed allocation.',benchmark:50},{key:'cleanroom_handover_complete',label:'Cleanroom handover achieved',type:'bool',help:'Cleanroom handed over and began qualification?'},{key:'workforce_secured_pct',label:'Process integration workforce secured %',type:'pct',help:'% of process integration engineers engaged.',benchmark:40},{key:'earned_value_pct',label:'Earned value %',type:'pct',help:'EV/BAC × 100.',benchmark:92}],
+          };
+          const getSectorInputs = (sub='',mode='') => {
+            const s = (sub+' '+mode).toLowerCase();
+            if (s.includes('rail')||s.includes('transit')) return SECTOR_INPUTS.Rail;
+            if (s.includes('nuclear')) return SECTOR_INPUTS.Nuclear;
+            if (s.includes('defence')||s.includes('defense')||s.includes('secure')) return SECTOR_INPUTS.Defence;
+            if (s.includes('space')||s.includes('lunar')||s.includes('mars')||s.includes('orbital')||s.includes('satellite')) return SECTOR_INPUTS.Space;
+            if (s.includes('data')||s.includes('digital')||s.includes('hyperscale')) return SECTOR_INPUTS.Digital;
+            if (s.includes('mining')||s.includes('copper')||s.includes('mineral')) return SECTOR_INPUTS.Mining;
+            if (s.includes('battery')||s.includes('gigafactory')) return SECTOR_INPUTS.Battery;
+            if (s.includes('semi')||s.includes('fab')) return SECTOR_INPUTS.Semiconductor;
+            return [];
+          };
+          const sectorInputFields = getSectorInputs(model?.subsector||'', model?.mode||'');
+          const [twinInputs, setTwinInputs] = React.useState({});
+          const [twinResult, setTwinResult] = React.useState(null);
+          const [twinBusy, setTwinBusy] = React.useState(false);
+          const [twinHistory, setTwinHistory] = React.useState([]);
+          const setInput = (k,v) => setTwinInputs(prev => ({...prev, [k]: v}));
+          const runTwin = async () => {
+            setTwinBusy(true);
+            try {
+              const r = await apiFetch('/twin/update', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model,twin_inputs:twinInputs})});
+              if (r.ok) {
+                const data = await r.json();
+                if (data.twin) {
+                  setTwinResult(data.twin);
+                  setTwinHistory(prev => [{...data.twin, snapshot_at: new Date().toLocaleTimeString()},...prev].slice(0,10));
+                }
+              }
+            } catch(e) {} finally { setTwinBusy(false); }
+          };
+          const confCol = (c) => c >= 75 ? '#10b981' : c >= 60 ? '#f59e0b' : '#ef4444';
+          return <section className="layout two">
+            <div>
+              <div style={{background:'linear-gradient(135deg,rgba(141,247,255,0.08),rgba(141,247,255,0.02))',border:'1px solid rgba(141,247,255,0.2)',borderRadius:'6px',padding:'14px 16px',marginBottom:'14px'}}>
+                <div style={{fontSize:'12px',fontWeight:'800',color:'#8df7ff',marginBottom:'6px',display:'flex',alignItems:'center',gap:'8px'}}><span style={{fontSize:'16px'}}>⚡</span> CASEY DIGITAL TWIN</div>
+                <p style={{fontSize:'11px',color:'#94a3b8',margin:0,lineHeight:'1.6'}}>Feed in real programme progress data below. CASEY recalculates your forecast-at-completion, confidence score and alerts — instantly. No spreadsheet. No consultant. Just your numbers → CASEY intelligence.</p>
+                <div style={{display:'flex',gap:'20px',marginTop:'10px',flexWrap:'wrap'}}>
+                  {[['What goes in','Real data: earned value, % complete, milestones, sector-specific signals'],['What comes out','Updated P50 forecast, revised confidence, board alerts, delta explanation'],['How often','Any time there is a programme update — weekly, monthly, at each gate review']].map(([t,b])=>
+                    <div key={t} style={{flex:'1',minWidth:'150px',padding:'8px',background:'rgba(255,255,255,0.03)',borderRadius:'4px'}}>
+                      <div style={{fontSize:'9px',fontWeight:'800',color:'#8df7ff',marginBottom:'2px',letterSpacing:'.08em'}}>{t.toUpperCase()}</div>
+                      <div style={{fontSize:'10px',color:'#64748b',lineHeight:'1.4'}}>{b}</div>
+                    </div>)}
+                </div>
+              </div>
+
+              <Card>
+                <h2 style={{marginBottom:'4px'}}>Programme progress inputs</h2>
+                <p style={{fontSize:'10px',color:'#475569',marginBottom:'12px'}}>Enter the latest real data. Only fill what you have — CASEY handles partial data.</p>
+
+                <div style={{marginBottom:'12px',padding:'8px 10px',background:'rgba(255,255,255,0.03)',borderRadius:'4px',border:'1px solid rgba(255,255,255,0.07)'}}>
+                  <div style={{fontSize:'9px',fontWeight:'800',color:'#8df7ff',marginBottom:'8px',letterSpacing:'.08em'}}>CORE PROGRAMME PERFORMANCE</div>
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}>
+                    {[
+                      {key:'progress_pct',label:'Programme % complete',placeholder:'e.g. 25',help:'Physical completion of the overall programme scope.',unit:'%'},
+                      {key:'actual_cost_pct',label:'Actual spend vs plan at this stage',placeholder:'e.g. 108',help:'Actual spend as % of what was planned to be spent by now. 108 = 8% over.',unit:'%'},
+                      {key:'earned_value_pct',label:'Earned value % (EV/BAC)',placeholder:'e.g. 92',help:'Earned Value ÷ Budget At Completion × 100. Below 90% = overrun trajectory.',unit:'%'},
+                      {key:'schedule_slip_months',label:'Schedule slip to date',placeholder:'e.g. 3',help:'Months slipped from approved baseline schedule.',unit:'mo'},
+                      {key:'scope_changes_count',label:'Scope changes approved',placeholder:'e.g. 2',help:'Number of formal scope changes since baseline.',unit:'#'},
+                    ].map(f => <div key={f.key}>
+                      <label style={{fontSize:'9px',color:'#64748b',display:'block',marginBottom:'2px',fontWeight:'600'}}>{f.label} <span style={{color:'#475569',fontWeight:'400'}}>({f.unit})</span></label>
+                      <input type="number" placeholder={f.placeholder} value={twinInputs[f.key]||''} onChange={e=>setInput(f.key,parseFloat(e.target.value)||0)}
+                        style={{width:'100%',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'3px',padding:'5px 8px',color:'#e2e8f0',fontSize:'11px'}} title={f.help}/>
+                    </div>)}
+                  </div>
+                </div>
+
+                {sectorInputFields.length > 0 && <div style={{marginBottom:'12px',padding:'8px 10px',background:'rgba(141,247,255,0.03)',borderRadius:'4px',border:'1px solid rgba(141,247,255,0.1)'}}>
+                  <div style={{fontSize:'9px',fontWeight:'800',color:'#8df7ff',marginBottom:'8px',letterSpacing:'.08em'}}>
+                    {(model?.subsector||model?.mode||'SECTOR').toUpperCase()} — SPECIFIC SIGNALS
+                  </div>
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}>
+                    {sectorInputFields.map(f => <div key={f.key}>
+                      <label style={{fontSize:'9px',color:'#64748b',display:'block',marginBottom:'2px',fontWeight:'600'}} title={f.help}>{f.label} {f.benchmark ? <span style={{color:'#334155',fontWeight:'400'}}>(benchmark: {f.benchmark}{f.type==='pct'?'%':''})</span> : ''}</label>
+                      {f.type === 'bool'
+                        ? <select value={twinInputs[f.key]!==undefined?String(twinInputs[f.key]):''} onChange={e=>setInput(f.key,e.target.value===''?null:Number(e.target.value))}
+                            style={{width:'100%',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'3px',padding:'5px 8px',color:'#e2e8f0',fontSize:'11px'}}>
+                            <option value="">Not yet assessed</option>
+                            <option value="1">Yes — achieved</option>
+                            <option value="0">No — not achieved</option>
+                          </select>
+                        : <input type="number" placeholder={f.benchmark?`benchmark: ${f.benchmark}`:'enter value'} value={twinInputs[f.key]||''} onChange={e=>setInput(f.key,parseFloat(e.target.value)||0)}
+                            style={{width:'100%',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'3px',padding:'5px 8px',color:'#e2e8f0',fontSize:'11px'}} title={f.help}/>}
+                    </div>)}
+                  </div>
+                </div>}
+
+                <button onClick={runTwin} disabled={twinBusy} style={{width:'100%',padding:'12px',background:'linear-gradient(135deg,rgba(141,247,255,0.15),rgba(141,247,255,0.08))',border:'1px solid rgba(141,247,255,0.3)',borderRadius:'5px',color:'#8df7ff',fontSize:'13px',fontWeight:'800',cursor:'pointer',letterSpacing:'.05em',opacity:twinBusy?0.6:1}}>
+                  {twinBusy ? '⏳ Recalculating twin...' : '⚡ UPDATE LIVE TWIN'}
+                </button>
+              </Card>
+
+              {twinHistory.length > 0 && <Card style={{marginTop:'10px'}}>
+                <h3 style={{marginBottom:'8px'}}>Update history</h3>
+                {twinHistory.map((h,i) => <div key={i} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'5px 0',borderBottom:'1px solid rgba(255,255,255,0.04)',fontSize:'10px'}}>
+                  <span style={{color:'#475569'}}>{h.snapshot_at}</span>
+                  <span style={{color:'#e2e8f0',fontWeight:'700'}}>{h.new_p50}</span>
+                  <span style={{color:confCol(h.new_conf),fontWeight:'700'}}>{h.new_conf}%</span>
+                  <span style={{color:h.conf_change>=0?'#10b981':'#ef4444',fontSize:'9px'}}>{h.conf_change>=0?'+':''}{h.conf_change}pts</span>
+                </div>)}
+              </Card>}
+            </div>
+
+            <div>
+              {!twinResult && <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'300px',flexDirection:'column',gap:'12px',color:'#334155',border:'2px dashed rgba(141,247,255,0.1)',borderRadius:'6px'}}>
+                <span style={{fontSize:'32px'}}>⚡</span>
+                <div style={{fontSize:'12px',fontWeight:'700',color:'#475569'}}>Fill in real programme data and click Update</div>
+                <div style={{fontSize:'10px',color:'#334155',textAlign:'center',maxWidth:'250px',lineHeight:'1.5'}}>CASEY will recalculate your forecast-at-completion, confidence and board alerts from real progress data.</div>
+              </div>}
+
+              {twinResult && <><Card>
+                <h2 style={{marginBottom:'12px'}}>Live forecast update</h2>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px',marginBottom:'12px'}}>
+                  {[
+                    {label:'Baseline P50',val:twinResult.base_p50,sub:'Original approved estimate',col:'#64748b'},
+                    {label:'Forecast at Completion',val:twinResult.new_p50,sub:`${twinResult.cost_change_pct>=0?'+':''}${twinResult.cost_change_pct?.toFixed(1)}% vs baseline`,col:Math.abs(twinResult.cost_change_pct)>10?'#ef4444':Math.abs(twinResult.cost_change_pct)>5?'#f59e0b':'#10b981'},
+                    {label:'Baseline Confidence',val:twinResult.base_conf+'%',sub:'At programme baseline',col:'#64748b'},
+                    {label:'Live Confidence',val:twinResult.new_conf+'%',sub:`${twinResult.conf_change>=0?'+':''}${twinResult.conf_change} points`,col:confCol(twinResult.new_conf)},
+                    {label:'Baseline Schedule',val:twinResult.base_months+' mo',sub:'Approved baseline',col:'#64748b'},
+                    {label:'Revised Schedule',val:twinResult.new_months+' mo',sub:`${twinResult.new_months-twinResult.base_months>=0?'+':''}${twinResult.new_months-twinResult.base_months} mo slip`,col:twinResult.new_months>twinResult.base_months?'#f59e0b':'#10b981'},
+                  ].map(({label,val,sub,col}) => <div key={label} style={{padding:'10px',background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:'4px'}}>
+                    <div style={{fontSize:'9px',color:'#475569',marginBottom:'2px',fontWeight:'600'}}>{label}</div>
+                    <div style={{fontSize:'18px',fontWeight:'900',color:col,lineHeight:1.1}}>{val}</div>
+                    <div style={{fontSize:'9px',color:'#334155',marginTop:'1px'}}>{sub}</div>
+                  </div>)}
+                </div>
+
+                <div style={{marginBottom:'10px',padding:'8px 10px',background:'rgba(255,255,255,0.02)',borderRadius:'4px',border:'1px solid rgba(255,255,255,0.07)'}}>
+                  <div style={{fontSize:'9px',fontWeight:'800',color:'#8df7ff',marginBottom:'5px',letterSpacing:'.08em'}}>PERFORMANCE INDICES</div>
+                  <div style={{display:'flex',gap:'16px'}}>
+                    {[['CPI',twinResult.cpi,twinResult.cpi>=0.95?'#10b981':twinResult.cpi>=0.9?'#f59e0b':'#ef4444','Cost Perf Index. 1.0 = on budget. Below 0.9 = overrun.'],
+                      ['SPI',twinResult.spi,twinResult.spi>=0.95?'#10b981':twinResult.spi>=0.9?'#f59e0b':'#ef4444','Schedule Perf Index. 1.0 = on time. Below 0.9 = delayed.'],
+                    ].map(([k,v,c,h]) => <div key={k} title={h}>
+                      <div style={{fontSize:'9px',color:'#475569'}}>{k}</div>
+                      <div style={{fontSize:'20px',fontWeight:'900',color:c}}>{v}</div>
+                    </div>)}
+                    <div style={{flex:1,fontSize:'10px',color:'#64748b',lineHeight:'1.4',alignSelf:'center'}}>
+                      {twinResult.cpi < 0.9 ? 'Warning: CPI below 0.9. At this rate the programme will exceed P80.' :
+                       twinResult.cpi < 0.95 ? 'CPI below 1.0 — take corrective action before it worsens.' :
+                       'CPI is healthy. Programme is tracking on or below budget.'}
+                    </div>
+                  </div>
+                </div>
+              </Card>
+
+              {twinResult.alerts?.length > 0 && <Card style={{marginTop:'10px'}}>
+                <h2 style={{marginBottom:'10px'}}>Board alerts</h2>
+                {twinResult.alerts.map((a,i) => {
+                  const col = a.level==='CRITICAL'?'#ef4444':a.level==='HIGH'?'#f59e0b':a.level==='GREEN'?'#10b981':'#8df7ff';
+                  return <div key={i} style={{marginBottom:'8px',padding:'10px 12px',background:col+'10',border:`1px solid ${col}30`,borderLeft:`3px solid ${col}`,borderRadius:'4px',display:'flex',gap:'10px',alignItems:'flex-start'}}>
+                    <span style={{background:col+'20',color:col,fontSize:'8px',fontWeight:'800',padding:'2px 6px',borderRadius:'2px',flexShrink:0,marginTop:'1px'}}>{a.level}</span>
+                    <span style={{fontSize:'11px',color:'#e2e8f0',lineHeight:'1.5'}}>{a.msg}</span>
+                  </div>;
+                })}
+              </Card>}
+
+              {twinResult.changes?.length > 0 && <Card style={{marginTop:'10px'}}>
+                <h2 style={{marginBottom:'10px'}}>What changed and why</h2>
+                {twinResult.changes.map((c,i) => <div key={i} style={{marginBottom:'6px',padding:'8px 10px',background:'rgba(255,255,255,0.02)',borderRadius:'3px',border:'1px solid rgba(255,255,255,0.06)',fontSize:'11px',color:'#94a3b8',lineHeight:'1.5'}}>
+                  <span style={{color:'#8df7ff',marginRight:'6px',fontWeight:'700'}}>{i+1}.</span>{c}
+                </div>)}
+              </Card>}</>}
+            </div>
+          </section>;
+        })()}
 
         {tab === 'causal' && <section className="layout two"><CausalGraph model={model}/><BenchmarkIntelligence model={model}/><Card><h2>Evidence Mode: {viewMode}</h2>{evidenceScorecard(model).map((x,i)=><div className="reason" key={x.name}><span>{i+1}</span><b>{x.name}: {Math.round(x.score)}%</b><br/>{x.note}</div>)}</Card></section>}
 
