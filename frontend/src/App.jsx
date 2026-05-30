@@ -2463,6 +2463,7 @@ function parseMoneyLocal(v) {
   });
   const [showSaved, setShowSaved] = React.useState(false);
   const [showInvestor, setShowInvestor] = React.useState(false);
+  const [showHelp, setShowHelp] = React.useState(false);
   const [showOnboarding, setShowOnboarding] = React.useState(() => {
     try { return !localStorage.getItem('casey_onboarding_done'); } catch { return true; }
   });
@@ -2893,6 +2894,7 @@ function parseMoneyLocal(v) {
       <button onClick={runSpace}>Space demo</button>
       <button onClick={() => setShowInvestor(s => !s)} style={{color:'#b18cff',fontWeight:'700'}}>Investor brief</button>
       <button onClick={() => setShowOnboarding(true)} style={{color:'#64748b',fontSize:'10px',fontWeight:'700',letterSpacing:'.06em'}}>How to use</button>
+      <button onClick={() => setShowHelp(true)} style={{color:'#8df7ff',fontSize:'10px',fontWeight:'800',letterSpacing:'.06em',background:'rgba(141,247,255,0.08)',border:'1px solid rgba(141,247,255,0.2)',borderRadius:'4px',padding:'3px 10px',cursor:'pointer'}}>? HELP</button>
       <a href={emailLink}>Request access</a>
       <span style={{display:'flex',alignItems:'center',gap:'4px',fontSize:'9px',color:backendStatus==='ok'?'#10b981':backendStatus==='down'?'#ef4444':'#64748b',fontWeight:'700',letterSpacing:'.08em'}}>
         <span style={{width:'6px',height:'6px',borderRadius:'50%',background:backendStatus==='ok'?'#10b981':backendStatus==='down'?'#ef4444':'#475569',display:'inline-block'}}/>
@@ -2903,7 +2905,8 @@ function parseMoneyLocal(v) {
     {showSaved && <SavedProjectsPanel projects={savedProjects} onLoad={loadSaved} onDelete={deleteSaved} onClose={() => setShowSaved(false)}/>}
     {showAccount && <AccountPanel email={accountEmail} setEmail={setAccountEmail} projects={accountProjects} loading={accountLoading} onLoad={loadAccountProject} onDelete={deleteAccountProject} onSave={saveToAccount} onLoadProjects={loadAccountProjects} onClose={() => setShowAccount(false)} model={model}/>}
     {showCompare && <ComparePanel promptA={comparePromptA} setPromptA={setComparePromptA} promptB={comparePromptB} setPromptB={setComparePromptB} onRun={runComparison} loading={compareLoading} result={compareResult} error={compareError} onClose={() => setShowCompare(false)} currentModel={model}/>}
-    {showInvestor && <InvestorPanel onClose={() => setShowInvestor(false)}/>}
+    {showHelp && <HelpPanel onClose={() => setShowHelp(false)}/>}
+      {showInvestor && <InvestorPanel onClose={() => setShowInvestor(false)}/>}
     <main className={model ? 'v50Console' : 'v50Console emptyConsole'}>
       {error && !showShowcase && !show && <GatedMessage raw={error} onDismiss={() => setError('')} onShowcase={() => { setError(''); setShowShowcase(true); }} onEarth={() => { setError(''); runEarth(); }} onSpace={() => { setError(''); runSpace(); }}/>}
       {!model && showShowcase && <ShowcaseLibrary onRun={runShowcase} onBack={() => setShowShowcase(false)} />}
@@ -2921,7 +2924,7 @@ function parseMoneyLocal(v) {
         <PropagationPulse scenario={scenario} active={propagating}/>
         <ScenarioSelector scenario={scenario} generate={generate} matrix={scenarioMatrix} model={model} prompt={prompt} projectContext={projectContext}/>
         <ExportStrip model={model}
-          onBoardPack={() => download('/export/pdf', model, `${model.id || 'casey'}_CASEY_Board_Pack.pdf`)}
+          onBoardPack={() => download('/export/all', model, `${model.id || 'casey'}_DEMO_BOARD_PACK.zip`)}
           onExcel={() => download('/export/workbook', model, `${model.id || 'casey'}_DEMO_COST_WORKBOOK.xlsx`)}
           onRisk={() => download('/export/risk-register', model, `${model.id || 'casey'}_DEMO_RISK_REGISTER.xlsx`)}
           onXer={() => download('/export/xer', model, `${model.id || 'casey'}_DEMO_SCHEDULE.xer`)}
@@ -3071,7 +3074,7 @@ function parseMoneyLocal(v) {
           <button onClick={() => download('/export/xer', model, `${model.id || 'casey'}_PRA_SCHEDULE.xer`)}><Workflow/> Generate PRA Schedule XER</button>
           <button onClick={() => download('/export/qcra-qsra', model, `${model.id || 'casey'}_QCRA_QSRA.xlsx`)}><BarChart3/> Generate QCRA/QSRA Pack</button>
           <button onClick={() => download('/export/json', model, `${model.id || 'casey'}_AUDIT_MODEL.json`)}><Brain/> Generate Audit File JSON</button>
-          <button onClick={() => download('/export/pdf', model, `${model.id || 'casey'}_FULL_BOARD_PACK.zip`)}><Download/> Generate Full Pack ZIP</button>
+          <button onClick={() => download('/export/all', model, `${model.id || 'casey'}_FULL_BOARD_PACK.zip`)}><Download/> Generate Full Pack ZIP</button>
           <a className="contactBtn" href={emailLink}><Mail/> Request Enterprise Review</a></div></Card><Card><h2>What the pack delivers</h2>{['Executive control centre with project, scenario, class, level and confidence clearly identified','Scenario comparison covering Base, Faster, Cheaper, Lower Risk and Premium cases','Selected estimate class plus all class levels for audit and challenge','Direct, indirect and reserve cost views with QCRA cost curve and cost tornado','All schedule levels with QSRA schedule curve and schedule tornado','Risk register with cause, event, impact, owner, mitigation, trigger and quantified likelihood','Basis of Estimate, assumptions, exclusions and benchmark validation','Commercial next steps: buyer action, procurement challenge and board decision path'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card></section>}
 
         {tab === 'assurance' && <><IncumbentPressurePanel model={model} direct={direct} indirect={indirect} reserves={reserves} reconcileCheck={reconcileCheck}/><section className="layout two"><Card><h2>Assurance room weapons</h2>{['Open with the P80/P90 exposure, not the headline P50.','Ask which evidence package retires the governing constraint.','Force every mitigation to name owner, trigger, residual exposure and date.','Show scenario trade-offs live before anyone can defend a single-point estimate.','Export the audit model immediately so the conversation moves from opinion to traceability.'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card><Card><h2>Why CASEY changes the conversation</h2>{['CASEY recalculates cost, schedule, confidence and board posture from one source of truth in seconds.','Every scenario is a complete recalculation — not a slide edit.','The system surfaces contradictions rather than polishing the management narrative.','Static reports become live investment-committee intelligence.'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card></section><section className="layout one"><ProgrammeHealthSignal onRunHealthCheck={runHealthCheck}/></section></>}
@@ -3383,7 +3386,7 @@ function parseMoneyLocal(v) {
           <Card><h2>Send this project now</h2>
             <p style={{fontSize:'12px',color:'#64748b',marginBottom:'12px'}}>Send this output to your investment committee, board pack, or programme sponsor.</p>
             <a className="contactBtn huge" href={emailLink}><Mail size={16}/> Send project for review</a>
-            {model && <button className="primary" style={{marginTop:'12px',width:'100%'}} onClick={() => download('/export/pdf', model, 'CASEY_Output_Pack.zip')}><Download size={15}/> Download full intelligence pack</button>}
+            {model && <button className="primary" style={{marginTop:'12px',width:'100%'}} onClick={() => download('/export/all', model, 'CASEY_Output_Pack.zip')}><Download size={15}/> Download full intelligence pack</button>}
             <div style={{marginTop:'16px',borderTop:'1px solid rgba(255,255,255,0.06)',paddingTop:'14px'}}>
               <p style={{fontSize:'11px',color:'#475569',marginBottom:'10px',fontWeight:'700',letterSpacing:'.08em'}}>WHAT'S IN THE PACK</p>
               {['Cost model XLSX — P10/P50/P90 by CBS line, direct/indirect/reserve split','Risk register XLSX — cause, event, impact, owner, trigger, mitigation, residual','QCRA/QSRA Excel — cost and schedule probability curves and tornado chart','PRA schedule XER — Primavera-compatible with logic, phases and critical path','Audit model JSON — full traceability, benchmark provenance, evidence gaps','Board pack narrative — executive summary, board attack simulation, OBA assessment'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span><span style={{fontSize:'11px'}}>{x}</span></div>)}
@@ -3757,5 +3760,74 @@ function InvestorPanel({ onClose }) {
     </div>
   </div>;
 }
+
+// ── CASEY HELP PANEL ────────────────────────────────────────────────────────
+const HELP_ARTICLES = [
+  {id:'start',cat:'Getting started',icon:'🚀',title:'How to run your first project',body:'Type any capital programme in plain English in the FREE RUN box. Include sector, country, scale and key constraints. Example: "HS2 Phase 2b tunnelling UK rail 250km". Hit Run. Results in 4–12 seconds. Your first run is free. Earth Demo and Space Demo are always free.',tags:['run','start','free run','how to','project','first']},
+  {id:'overview',cat:'Getting started',icon:'📊',title:'What do the numbers mean?',body:'P50 = most likely outturn cost. P80 = the board conversation number — what you need in reserve. Confidence % = how board-defensible the estimate is at this definition maturity. 75%+ is required for investment committee approval. The 5 scenario cards (Base, Faster, Cheaper, Lower Risk, Premium) show cost/schedule/confidence for each trade-off — click any to recalculate everything.',tags:['p50','p80','confidence','numbers','mean','kpi','what']},
+  {id:'tabs',cat:'Getting started',icon:'📑',title:'What does each tab show?',body:'OVERVIEW: your baseline at a glance. TWIN: live digital twin — update with real progress data. COST: full CBS cost workbook with P10/P50/P90 and unit rates. SCHEDULE: programme logic and QSRA delivery date curve. RISK: full risk register with cause/event/impact/owner/EMV. QCRA/QSRA: Monte Carlo cost and schedule probability curves. SCENARIOS: five trade-off comparisons. INTEL: strategic intelligence and CASEY position. ASSURANCE: board challenge questions. ADVISOR: ask anything. BENCHMARKS: 63 named real programmes.',tags:['tabs','overview','cost','schedule','risk','qcra','scenarios','intel','advisor','benchmarks','what','tab']},
+  {id:'twin',cat:'Digital Twin',icon:'⚡',title:'How to use the Digital Twin',body:'Step 1: Run your project to establish the baseline (P50, schedule, confidence). Step 2: When your programme is live, go to the ⚡ Twin tab. Step 3: Enter real data — earned value %, actual spend vs plan, schedule slip, sector-specific signals. Step 4: Click UPDATE TWIN. CASEY recalculates your forecast-at-completion and gives board alerts if you are heading toward P80.',tags:['twin','digital twin','live','update','earned value','cpi','forecast','completion']},
+  {id:'twin-inputs',cat:'Digital Twin',icon:'⚡',title:'What data do I need for the twin?',body:'Core: Programme % complete, actual spend vs plan (100=on budget, 108=8% over), earned value % (EV/BAC×100), schedule slip in months, scope changes count. Sector signals (auto-detected): Rail = possessions used %, open IEMs, signalling milestones. Space = TRL achieved, open anomalies, launch manifest confirmed. Nuclear = regulatory hold-points cleared %, design freeze achieved. Defence = requirements frozen, SC/DV clearances %. You can load a pre-filled demo scenario with one click.',tags:['twin','inputs','data','earned value','ev','possessions','trl','anomalies','requirements']},
+  {id:'twin-alerts',cat:'Digital Twin',icon:'⚡',title:'What do twin alerts mean?',body:'CRITICAL = board notification required immediately. "Forecast P50 exceeds original P80" = reserve is exhausted, rebaselining required. "CPI below 0.9" = at this cost performance rate the programme will exceed P80. HIGH = requires action before next gate review. GREEN = programme tracking on or ahead of baseline. The CPI (Cost Performance Index) = Earned Value ÷ Actual Cost. Below 1.0 = over budget, above 1.0 = under budget.',tags:['twin','alerts','critical','cpi','p80','rebaseline','green']},
+  {id:'advisor',cat:'Advisor',icon:'💬',title:'How to use the Advisor',body:'The Advisor tab is a live what-if engine. Ask in plain English: "What if planning is delayed 18 months?" — CASEY reruns the model with that constraint and shows a cost/confidence/schedule delta. Try: "Is this programme gate-ready?", "What is the P80 exposure?", "Which risk will kill this programme?", "What is the OBA-adjusted outturn?", "What would an external reviewer challenge first?", "What does the benchmark data say?". The Advisor knows your current model — every answer is specific to your programme.',tags:['advisor','ask','what if','gate','p80','risk','benchmark','outturn','query']},
+  {id:'exports',cat:'Exports',icon:'📤',title:'How to export and download files',body:'Scroll down to the export buttons below the scenario cards. EXPORT BOARD PACK = PDF board pack (all sections). EXPORT COST WORKBOOK = Excel CBS with P10/P50/P90 and unit rates. EXPORT RISK REGISTER = full risk register Excel with EMV and owners. EXPORT XER = Primavera P6 schedule file. EXPORT QCRA/QSRA = Monte Carlo workbook. All exports are generated from your live model data — not templates. If export fails, wait 10 seconds and try again (backend may be processing).',tags:['export','download','pdf','xlsx','excel','xer','risk register','qcra','qsra','board pack']},
+  {id:'scenarios',cat:'Scenarios',icon:'🔀',title:'How to run scenario comparisons',body:'The 5 scenario cards (Base, Faster, Cheaper, Lower Risk, Premium) are visible below the main KPI bar. Click any card to recalculate everything with that trade-off applied — cost, schedule, confidence, risk register and all exports update. Faster = compressed schedule but higher cost and lower confidence. Cheaper = lower authorisation number but longer schedule and higher residual risk. Lower Risk = higher reserve, longer duration, stronger confidence. Premium = maximum resilience with visible capex premium.',tags:['scenario','faster','cheaper','lower risk','premium','compare','trade-off','recalculate']},
+  {id:'benchmarks',cat:'Intelligence',icon:'📚',title:'How benchmarks work',body:'63 named real programmes from public record calibrate every estimate. Each programme has its actual outturn cost growth %, schedule slip and primary failure mode. For HS2-type rail: Crossrail +88%, HS2 Phase 1 +140%, CalHSR +288%. CASEY routes your programme through the closest comparables and applies their delivery behaviour to confidence, reserve and P80/P90 exposure. These are NOT generic percentages — they are named programmes with cited sources.',tags:['benchmarks','comparables','crossrail','hs2','real programmes','calibrate','reference class']},
+  {id:'oba',cat:'Intelligence',icon:'📊',title:'What is OBA and why does it matter?',body:'OBA (Optimism Bias Adjustment) is the systematic tendency to underestimate cost and schedule. CASEY applies sector-specific OBA from Flyvbjerg 2022 and IPA Annual Reports. Rail = +44% mean cost growth, Nuclear = +55%, Space = +60%. The OBA-adjusted P50 is what the reference class says the outturn will be. HM Treasury Green Book requires OBA disclosure in all public programme board cases. If your board case does not show the OBA-adjusted number, it will be challenged.',tags:['oba','optimism bias','green book','ipa','flyvbjerg','reference class','treasury']},
+  {id:'confidence',cat:'Intelligence',icon:'🎯',title:'What does confidence % mean?',body:'Confidence is CASEY's board-defensibility score — not a probability of success. It measures how well the estimate, schedule and risk register would hold up under challenge. 75%+ = gate-ready for investment committee. 60-75% = conditional, evidence gaps must be closed. Below 60% = not gate-ready, material evidence closure required. It is derived from estimate class, sector benchmarks, risk register quality, procurement certainty and location factors.',tags:['confidence','board','defensibility','gate','75%','what','score','meaning']},
+  {id:'sector-failure',cat:'Intelligence',icon:'⚠',title:'What is the Sector Failure Pattern?',body:'Every sector has a primary failure mode that causes programmes to be cancelled, restructured or rebaselined. Rail = systems integration deferred (civil works complete but railway cannot run). Nuclear = first-of-kind design changes after FCD. Space = mission assurance burden underestimated. Defence = requirements instability after contract. Data centres = grid connection not on critical path. This is in the Mortality tab. No consultant names it because doing so reduces their fee scope.',tags:['sector failure','mortality','cancel','restructure','rebaseline','pattern','rail','nuclear','space','defence']},
+  {id:'gate-review',cat:'Intelligence',icon:'🚦',title:'What is the Gate Review assessment?',body:'CASEY maps your programme to IPA gateway readiness (G0-G4). G0 = strategic definition. G1 = business justification. G2 = delivery strategy. G3 = investment decision. G4 = readiness for service. The gate verdict (READY / CONDITIONAL / NOT READY / BLOCKED) comes from confidence level and estimate class. The Evidence Gaps tab names specifically what is missing before any gate can complete. IPA and Green Book references are cited.',tags:['gate','ipa','gateway','g2','g3','readiness','evidence','conditional','blocked']},
+  {id:'location',cat:'Intelligence',icon:'🌍',title:'How does location affect the model?',body:'CASEY has 70+ country profiles: cost multipliers, regulatory frameworks, approval bodies, financing context and OBA notes. UK programmes show £ currency, IPA/DLUHC/ORR/ONR as approval bodies, and 1.2× cost multiplier. Nigerian programmes show NGN currency, federal regulatory framework and higher governance risk note. Australian programmes show A$ currency and Infrastructure Australia context. Simply include the country in your description — CASEY detects it automatically.',tags:['location','country','currency','uk','australia','nigeria','nigeria','framework','regulatory']},
+];
+
+function HelpPanel({ onClose }) {
+  const [query, setQuery] = React.useState('');
+  const [openId, setOpenId] = React.useState(null);
+  const filtered = query.length < 2
+    ? HELP_ARTICLES
+    : HELP_ARTICLES.filter(a =>
+        (a.title+' '+a.body+' '+a.tags.join(' ')).toLowerCase().includes(query.toLowerCase())
+      );
+  const cats = [...new Set(filtered.map(a=>a.cat))];
+  return <div style={{position:'fixed',inset:0,background:'rgba(2,6,23,0.92)',zIndex:9999,display:'flex',alignItems:'flex-start',justifyContent:'center',paddingTop:'40px',overflowY:'auto'}} onClick={onClose}>
+    <div style={{background:'#0f172a',border:'1px solid rgba(141,247,255,0.2)',borderRadius:'8px',width:'min(720px,96vw)',maxHeight:'80vh',overflowY:'auto',padding:'24px'}} onClick={e=>e.stopPropagation()}>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'16px'}}>
+        <div>
+          <div style={{fontSize:'18px',fontWeight:'900',color:'#8df7ff',marginBottom:'2px'}}>CASEY HELP & FEATURE GUIDE</div>
+          <div style={{fontSize:'10px',color:'#475569'}}>Click any topic to expand. Press Escape or click outside to close.</div>
+        </div>
+        <button onClick={onClose} style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)',color:'#94a3b8',borderRadius:'4px',padding:'6px 12px',cursor:'pointer',fontSize:'12px'}}>✕ Close</button>
+      </div>
+      <input
+        type="text" placeholder="Search — try 'digital twin', 'export', 'P80', 'confidence', 'benchmark'..."
+        value={query} onChange={e=>setQuery(e.target.value)} autoFocus
+        style={{width:'100%',padding:'10px 14px',background:'rgba(255,255,255,0.06)',border:'1px solid rgba(141,247,255,0.2)',borderRadius:'5px',color:'#e2e8f0',fontSize:'12px',marginBottom:'16px',boxSizing:'border-box'}}
+      />
+      {filtered.length === 0 && <div style={{color:'#475569',fontSize:'12px',textAlign:'center',padding:'20px'}}>No articles match "{query}" — try a different search term.</div>}
+      {cats.map(cat => <div key={cat} style={{marginBottom:'12px'}}>
+        <div style={{fontSize:'9px',fontWeight:'800',color:'#475569',letterSpacing:'.1em',marginBottom:'6px'}}>{cat.toUpperCase()}</div>
+        {filtered.filter(a=>a.cat===cat).map(a => <div key={a.id} style={{marginBottom:'4px'}}>
+          <button onClick={()=>setOpenId(openId===a.id?null:a.id)} style={{
+            width:'100%',textAlign:'left',padding:'8px 12px',
+            background:openId===a.id?'rgba(141,247,255,0.08)':'rgba(255,255,255,0.03)',
+            border:`1px solid ${openId===a.id?'rgba(141,247,255,0.25)':'rgba(255,255,255,0.07)'}`,
+            borderRadius:'4px',cursor:'pointer',display:'flex',alignItems:'center',gap:'8px'
+          }}>
+            <span style={{fontSize:'14px'}}>{a.icon}</span>
+            <span style={{flex:1,fontSize:'11px',fontWeight:'700',color:'#e2e8f0'}}>{a.title}</span>
+            <span style={{color:'#475569',fontSize:'10px'}}>{openId===a.id?'▲':'▼'}</span>
+          </button>
+          {openId===a.id && <div style={{padding:'10px 14px 12px 34px',background:'rgba(141,247,255,0.04)',borderLeft:'2px solid rgba(141,247,255,0.15)',marginTop:'1px',borderRadius:'0 0 4px 4px'}}>
+            <p style={{fontSize:'11px',color:'#94a3b8',lineHeight:'1.7',margin:0}}>{a.body}</p>
+          </div>}
+        </div>)}
+      </div>)}
+      <div style={{borderTop:'1px solid rgba(255,255,255,0.06)',paddingTop:'10px',marginTop:'8px',fontSize:'9px',color:'#334155'}}>
+        Can not find your answer? Email deepa@caseai.co.uk — or use the Advisor tab to ask CASEY directly.
+      </div>
+    </div>
+  </div>;
+}
+
 
 createRoot(document.getElementById('root')).render(<CaseyErrorBoundary><App/></CaseyErrorBoundary>);
