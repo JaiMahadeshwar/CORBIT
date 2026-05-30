@@ -641,7 +641,7 @@ def location_factor(t: str):
         ("Japan", 1.45, ["japan","tokyo","osaka","kyoto","fukuoka"], "MLIT Japan", "Seismic design premium, ageing workforce, Monozukuri quality standard"),
         ("South Korea", 1.22, ["south korea","korea","seoul","busan","incheon"], "MOLIT Korea / KEPCO", "Strong delivery capability — chaebols dominate, consortium risk"),
         ("Singapore", 1.38, ["singapore"], "LTA / BCA / EDB Singapore", "Land constraint premium, very strong governance, foreign worker quota"),
-        ("Malaysia", 0.92, ["malaysia","kuala lumpur","kl","penang","johor"], "JKR / SPAD Malaysia", "Cost competitive, political procurement risk, Ringgit exposure"),
+        ("Malaysia", 0.92, ["malaysia","kuala lumpur","kuala","penang","johor","putrajaya"], "JKR / SPAD Malaysia", "Cost competitive, political procurement risk, Ringgit exposure"),
         ("Indonesia", 0.88, ["indonesia","jakarta","bali","surabaya","bandung"], "BAPPENAS / PUPR Indonesia", "Land acquisition 3-5x programmed, inter-island logistics premium"),
         ("Philippines", 0.90, ["philippines","manila","cebu","davao"], "DPWH / DOE Philippines", "Typhoon risk (12 per year), procurement delays, ODA-financed typical"),
         ("Thailand", 0.95, ["thailand","bangkok","chiang mai"], "EXAT / EGAT Thailand", "Political risk to mega-programmes — military government cycle"),
@@ -652,7 +652,7 @@ def location_factor(t: str):
         ("Australia", 1.22, ["australia","sydney","melbourne","brisbane","perth","adelaide","darwin","queensland"], "IPA Australia / AEMO", "Strong governance, high labour cost, skills shortage in WA/NT"),
         ("New Zealand", 1.18, ["new zealand","auckland","wellington","christchurch"], "NZTA / Transpower NZ", "Seismic risk premium, supply chain remoteness, small market"),
         # ── EUROPE ───────────────────────────────────────────────────
-        ("United Kingdom", 1.20, ["uk","united kingdom","england","scotland","wales","london","heathrow","manchester","birmingham","leeds","glasgow"], "IPA / HM Treasury Green Book / ORR / ONR", "Strong governance, high cost, IPA gateway mandatory for government programmes"),
+        ("United Kingdom", 1.20, ["uk","united kingdom","england","scotland","wales","london","heathrow","manchester","birmingham","leeds","glasgow","somerset","yorkshire","hinkley","aldermaston","berkshire","oxford","cambridge","bristol","kent","essex","norfolk","suffolk","sussex","hampshire","surrey","humberside","shetland","midlands","lancashire","merseyside","northumberland","edinburgh","cardiff"], "IPA / HM Treasury Green Book / ORR / ONR", "Strong governance, high cost, IPA gateway mandatory for government programmes"),
         ("Germany", 1.28, ["germany","berlin","munich","hamburg","frankfurt","cologne","stuttgart","dusseldorf"], "BMVI / BNetzA Germany", "DIN standards, Energiewende grid complexity, coalition procurement delays"),
         ("France", 1.22, ["france","paris","lyon","marseille","toulouse","bordeaux"], "CEREMA / CRE France", "EDF nuclear expertise, TGV benchmark, public sector strike risk"),
         ("Netherlands", 1.25, ["netherlands","amsterdam","rotterdam","the hague","eindhoven"], "Rijkswaterstaat / TenneT", "Water management world leader, nitrogen ruling causes project delays"),
@@ -6545,6 +6545,33 @@ def _casey_final_cost_rows(mode: str, subsector: str, p50: float, scenario: str)
         template = cost_lines(mode, subsector)
     rows = []
     total_weight = sum(float(x[4]) for x in template) or 1.0
+    # Unit rate labels by sector for each row
+    _unit_hints = {
+        'rail': ('km','track-km'),
+        'nuclear': ('GW','GW installed'),
+        'data': ('MW','MW IT load'),
+        'defence': ('unit','programme unit'),
+        'life': ('m²','m² GMP'),
+        'semi': ('WSPM','wafer starts/mo'),
+        'giga': ('GWh','GWh capacity'),
+        'water': ('Ml/d','Ml per day'),
+        'airport': ('mppa','mppa capacity'),
+        'mining': ('tpa','tpa capacity'),
+        'energy': ('MW','MW capacity'),
+        'port': ('TEU','TEU/year'),
+        'road': ('lane-km','lane-km'),
+        'health': ('m²','m² clinical'),
+        'space': ('kg','kg delivered'),
+        'lunar': ('crew','crew berths'),
+    }
+    _sub_l = (subsector or '').lower() + ' ' + (mode or '').lower()
+    _unit = 'unit'
+    _unit_label = 'programme unit'
+    for k, (u, ul) in _unit_hints.items():
+        if k in _sub_l:
+            _unit = u
+            _unit_label = ul
+            break
     for i, row in enumerate(template[:16], 1):
         cbs, desc, typ, basis, weight = row
         share = float(weight) / total_weight
@@ -6554,7 +6581,7 @@ def _casey_final_cost_rows(mode: str, subsector: str, p50: float, scenario: str)
             'description': desc,
             'type': typ,
             'basis': basis,
-            'unit_rate': 'Benchmark-derived',
+            'unit_rate': f'{money_bn(mid)}/{_unit_label}' if mid > 0 else 'Benchmark-derived',
             'p10_bn': round(mid * 0.82, 3),
             'p50_bn': round(mid, 3),
             'p90_bn': round(mid * 1.28, 3),
@@ -6570,23 +6597,141 @@ def _casey_final_cost_rows(mode: str, subsector: str, p50: float, scenario: str)
 
 
 def _casey_final_risks(mode: str, subsector: str, p50: float, months: int, sched: list, costs: list, scenario: str):
-    try:
-        risks = risk_register(mode, subsector, p50, months, sched, costs, 1.0, scenario)
-    except Exception:
-        L = _v124_library(_v125_sector_key_from_input(subsector)) if '_v125_sector_key_from_input' in globals() else {'schedule':['Critical path','Long-lead procurement','Commissioning readiness','Interface control','Approval gates']}
+    # Try sector-specific risks FIRST for key sectors
+    _sub_l2 = (subsector or '').lower()
+    _mode_l2 = (mode or '').lower()
+    _use_specialist = any(k in _sub_l2 or k in _mode_l2 for k in 
+        ['rail','nuclear','defence','secure','space','data centre','digital','mining','metal','copper',
+         'battery','gigafactory','semi','airport','water','life sciences','biologic','energy','gas'])
+    
+    if not _use_specialist:
+        try:
+            risks = risk_register(mode, subsector, p50, months, sched, costs, 1.0, scenario)
+        except Exception:
+            risks = []
+    else:
+        risks = []  # Will use sector-specific below
+    
+    if not risks:
+        # Sector-specific fallback risks
+        _SECTOR_RISKS = {
+            'Rail': [
+                ('Systems integration failure','Signalling, rolling stock and civil works integration is not on the critical path','Railway cannot open — all civil works complete but railway not operational',65,'Systems Integration Director','Open IEM backlog exceeds 100 items at planned opening date','Dedicated systems integration director with direct access to board. IEM register as a board KPI from month 6.'),
+                ('Possessions availability','Network Rail or infrastructure owner grants fewer possessions than planned','Programme extends at fixed cost — each possession shortfall adds 2-4 weeks to overall programme',55,'Railway Interface Manager','Track access agreement revision required','Lock access window requirements into track access agreement with liquidated damages clause.'),
+                ('Scope growth — stations/service changes','Client or sponsor adds station scope or changes service pattern post FBC','Each additional station adds £200-500M and 6-12 months. Service change requires signalling redesign.',48,'SRO','Scope change request received','Signed scope freeze authority required before procurement. Change board with SRO sign-off.'),
+                ('Market escalation','Supply chain tightness, inflation and long procurement window','P50 cost becomes understated; commercial approvals or procurement strategy require reset',45,'Commercial Lead','Index exceeds allowance by 3%','Early procurement, index-linked allowances, market testing, FX strategy.'),
+                ('Ground conditions','Geotechnical investigation is incomplete or ground conditions exceed BIM assumptions','Direct cost impact £50-200M per unforeseen condition. Critical path extension 3-9 months.',42,'Geotechnical Lead','Probe hole or monitoring data deviates from model','Advance supplementary ground investigation before FBC. Risk-share ground conditions clause in contract.'),
+                ('Signalling technology risk','Signalling system (ETCS/ERTMS) is first deployment in this market or at this speed profile','Signalling homologation takes 18-36 months and cannot be compressed. Opens cannot be achieved without it.',40,'Signalling Lead','ETCS/ERTMS approval from ORR/national safety authority','Name signalling homologation as a critical path predecessor in master programme from day one.'),
+                ('Commissioning and ORAT','Operational Readiness and Airport/Railway Transfer not resourced or started too late','Railway opens but cannot operate — operational readiness failure. Reference: T5 Heathrow baggage 2008, Crossrail 2022.',38,'Operations Director','Operational readiness milestones not met at 18 months before opening','Dedicate ORAT director 18 months before opening. Operational readiness as a board KPI.'),
+                ('Utility diversions','Statutory undertaker works not completed by required date','Critical path delay 3-12 months. Additional cost £20-100M per utility. LOR cannot be granted without completion.',35,'Utilities Lead','Utility walkover or trial hole reveals uncharted service','Survey all utilities to PAS 128 standard. Enter diversion agreements with statutory undertakers as early work.'),
+            ],
+            'Nuclear': [
+                ('Generic Design Assessment delay','ONR regulatory hold-points not cleared on schedule','GDA delay of 6 months costs £1B+ in financing and programme extension. No procurement can proceed without GDA exit.',65,'Nuclear Safety Director','ONR issues regulatory query or hold-point','Dedicated ONR liaison team. GDA as critical path item in master programme. Monthly board reporting.'),
+                ('Nuclear-qualified supply chain','Nuclear-grade welding, components and inspection resource not available','Programme cannot proceed without qualified supply chain. Lead time 18-36 months for nuclear-grade components.',58,'Supply Chain Director','Pre-qualification exercise reveals fewer than 3 qualified suppliers','Long-lead procurement programme started immediately. Nuclear supply chain development programme.'),
+                ('First-of-kind design changes','EPR, AP1000 or SMR design requires modification post-FCD','Design change at construction stage costs 3-5x the change cost at design stage. Reference: Hinkley C, Olkiluoto 3.',55,'Design Director','Engineering change request raised post-FCD','Design freeze with independent design authority sign-off. No construction to start without frozen design package.'),
+                ('Qualified workforce','Nuclear-qualified welders, radiation workers and commissioning engineers not available','Programme delay 12-24 months. Alternative: premium rates and international labour mobilisation.',45,'HR Director','Pre-employment vetting and qualification pipeline review','Nuclear skills academy programme started 3+ years before peak construction. International labour agreements.'),
+                ('OPB regulatory change','Operating Procedure Basis or safety case requires rewrite during build','Rewrite costs £50-200M and adds 12-24 months. Reference: Bruce Power refurbishment Canada.',35,'Regulatory Affairs Director','Regulatory change notice from ONR or NRC','Regulatory change management process with pre-agreed ONR consultation period built into schedule.'),
+            ],
+            'Defence': [
+                ('Requirements instability','Requirements baseline not frozen before contract award','Each requirements change costs 10-30x more at delivery stage than at design stage. Reference: Ajax 2014-2023.',68,'SRO','Change request raised after contract award','Requirements freeze authority signed by SRO before any procurement. No contract award without frozen baseline.'),
+                ('SC/DV cleared workforce','Security-cleared (SC and DV) workforce not available in time','Programme delay 12-36 months. No classified activity can proceed without cleared workforce.',60,'Security Manager','Personnel security vetting backlog identified','Begin DV/SC vetting 24-36 months before required. Named individuals on vetting register with start dates.'),
+                ('Sovereign supply chain','Military-specification components require MoD-qualified suppliers not available at scale','Sole-source procurement drives 30-50% cost premium. International alternatives may require ITAR licensing.',55,'Commercial Director','Pre-qualification identifies fewer than 2 qualified suppliers','Sole-source justification signed by Commercial Director. Contractor development programme to qualify additional sources.'),
+                ('ITAR/export licensing','US-origin technology or components require ITAR licence before export or transfer','Licence processing takes 6-12 months. Programme cannot proceed without licence. International programmes are systematically exposed.',45,'Export Control Officer','Technology transfer request submitted','ITAR review at programme inception. US DoS TAA or MLA application submitted 12 months before required.'),
+                ('Operational acceptance','Platform delivered but not operationally accepted due to safety, performance or training','Zero deliveries against programme despite technical completion. Reference: Ajax — platform built but not deployable.',48,'Test and Evaluation Director','Initial Operational Capability date approaches without cleared system','Operational acceptance authority named and criteria defined at programme start. Not a post-delivery activity.'),
+                ('Classified supply chain','Programme requires classified components or systems not available on commercial market','Procurement process is longer, more expensive and less competitive for classified requirements.',35,'Commercial Director','Classified requirement identified at design stage','Classified procurement plan agreed with MoD contracting authority. DEFCON framework agreement in place.'),
+            ],
+            'Space': [
+                ('Mission assurance qualification','Qualification testing programme takes longer than planned — environmental, EMC, thermal-vac','Mission cannot launch without close-out of all qualification test anomalies. Reference: JWST mirror deployment testing.',62,'Mission Assurance Director','Test anomaly raised — root cause not immediately identified','Mission assurance director with direct launch authority. All open anomalies on board dashboard 12 months before launch.'),
+                ('Launch manifest delay','Launch provider manifest, weather windows or vehicle readiness causes delay','Launch delay of 6 months costs $200-500M in programme carrying cost and orbital mechanics replanning.',55,'Launch Integration Lead','Launch provider issues manifest conflict or vehicle readiness concern','Reserve alternate launch slot 12 months ahead. Maintain launch readiness checklist with weekly provider updates.'),
+                ('Technology readiness overstatement','TRL presented as higher than independently assessed — typically TRL 4 presented as TRL 6','Programme baselined on immature technology. Discovery at CDR requires redesign and schedule reset.',58,'Chief Engineer','Independent TRL assessment at SRR or PDR gives lower rating','Independent TRL assessment at every major review. No CDR without TRL 6 evidence for all critical systems.'),
+                ('Mass growth','Design creep, shielding requirements or late payload additions increase spacecraft mass','Mass growth restricts launch vehicle options or reduces propellant margin. Performance degraded or redesign required.',45,'Chief Engineer','Mass margin falls below 10% at preliminary design stage','Mass control board with margin policy. Design-to-mass reviews at every milestone.'),
+                ('Political funding discontinuity','Government funding does not continue beyond current appropriation year','Programme cancelled or descoped mid-development. Reference: Constellation 2010. All large space programmes are exposed.',40,'Programme Director','Budget submission does not include programme in outyears','Board-level political risk register. International partnership to distribute funding and reduce single-sponsor risk.'),
+                ('ECLSS performance','Life support system performance (water recovery, oxygen generation, CO2 removal) does not meet design requirement','Crew cannot be supported at programme scale. No launch without ECLSS certification.',35,'Systems Engineer ECLSS','Test campaign results show performance shortfall against requirement','ECLSS qualification programme started 36 months before crew operations. NASA heritage systems preferred over novel approaches.'),
+            ],
+            'Data': [
+                ('Grid connection delay','DNO or transmission owner connection agreement not in place or delayed','Critical path delay 12-24 months. No grid connection = no operation. Cost: additional £20-100M per year of delay.',65,'Utilities Lead','Connection offer received but timescales longer than programme needs','Grid connection application submitted as day-one activity. Early engagement with DNO and NGET before planning consent.'),
+                ('Transformer supply','Power transformers have 12-18 month lead time and limited global supply','Critical path delay if not ordered early. Transformer specification changes if power density increases.',55,'M&E Lead','Vendor confirms delivery date is after programme need date','Order transformers as soon as power infrastructure scheme is agreed. Do not wait for main contract award.'),
+                ('Power density increase','Client increases compute density during design — cooling system redesign required','Redesign cost £5-20M. Programme delay 3-9 months. Reference: multiple hyperscale programmes 2021-2024.',45,'Design Manager','Client issues revised power density requirement','Lock compute density in design brief before M&E detailed design starts. Change board for any upward revision.'),
+                ('Planning consent delay','Substation proximity, visual impact or water usage consent delayed','Critical path delay 6-18 months. Water-scarce regions have novel consent constraints. Reference: AWS Dublin.',42,'Planning Lead','Local authority request for additional environmental information','Pre-application consultation with planning authority. Water usage plan agreed with environment agency before application.'),
+                ('Cooling commissioning','Cooling system does not achieve design IT inlet temperature at full load','Compute equipment cannot be energised safely. Delay to revenue-generating operations.',35,'Commissioning Manager','Commissioning tests show temperature exceedance at high load','Integrated systems commissioning test plan. Stepped load testing before full IT load energisation.'),
+            ],
+            'Mining': [
+                ('Ground conditions','Block cave geology, geotechnical conditions or seismicity worse than feasibility assumptions','Direct cost impact $200-500M. Critical path extension 12-36 months. Reference: Oyu Tolgoi +39%, $2B overrun.',60,'Geotechnical Director','Monitoring data deviates from geotechnical model','Dense instrumentation programme from first blast. Real-time seismicity monitoring. Contingency for draw point rehabilitation.'),
+                ('Social licence failure','Community opposition, government relations breakdown or benefit agreement dispute','Programme suspension or cancellation. Reference: Cobre Panama suspended 2023 after $10B invested.',58,'Community Relations Director','Community protest, government communication or NGO campaign','Signed community benefit agreement with named community representatives before any construction. Social performance management system.'),
+                ('Ore grade variability','Run-of-mine ore grade lower than feasibility resource model','Revenue shortfall makes programme uneconomic. Cannot be mitigated after capital commitment.',45,'Chief Geologist','Resource model update or first blast reconciliation shows grade below feasibility','Infill drilling to upgrade confidence from Indicated to Measured before FID. Independent resource audit.'),
+                ('Comminution equipment','SAG mill, ball mill or HPGR delivery delayed or performance below specification','Ore processing throughput target not achieved. Revenue delay. Equipment lead time 18-24 months.',40,'Process Plant Manager','Equipment vendor confirms delivery delay','Order comminution equipment before FEL3 approval. Performance guarantee with LDs in supply contract.'),
+                ('Power supply','Grid connection or diesel power supply not available at required capacity','All mine surface and underground operations require power. Delay to full production.',38,'Infrastructure Manager','Power supply scheme approval delayed or grid capacity restricted','Power supply as critical path item. Engagement with national utility at programme inception.'),
+            ],
+        }
+        sub_key = None
+        sub_l = (subsector or '').lower()
+        for k in _SECTOR_RISKS:
+            if k.lower() in sub_l or sub_l in k.lower():
+                sub_key = k
+                break
+        if not sub_key:
+            if mode == 'Space' or 'space' in sub_l:
+                sub_key = 'Space'
+            elif 'rail' in sub_l or 'transit' in sub_l:
+                sub_key = 'Rail'
+            elif 'nuclear' in sub_l:
+                sub_key = 'Nuclear'
+            elif 'defence' in sub_l or 'defense' in sub_l:
+                sub_key = 'Defence'
+            elif 'data' in sub_l or 'digital' in sub_l:
+                sub_key = 'Data'
+            elif 'mining' in sub_l or 'mineral' in sub_l:
+                sub_key = 'Mining'
+        
+        if sub_key and sub_key in _SECTOR_RISKS:
+            template_risks = _SECTOR_RISKS[sub_key]
+        else:
+            template_risks = [
+                ('Market escalation','Supplier market tightness, inflation, FX and long procurement window','P50 cost becomes understated; procurement strategy may need reset',45,'Commercial Lead','Index exceeds allowance by 3%','Early procurement, index-linked allowances, market testing.'),
+                ('Scope growth','Immature scope definition allows scope additions post-approval','Each uncontrolled scope addition costs 5-10x more than at design stage',42,'Project Director','Change request raised post-contract','Change board with SRO sign-off. Scope freeze authority signed before procurement.'),
+                ('Design maturity gap','Incomplete design, unresolved surveys or interface gaps','Cost, schedule and confidence tail increases as design issues are discovered post-commitment',38,'Design Manager','Design freeze date approaches with open issues','Design maturity gates at each RIBA stage. Open issues register as board KPI.'),
+                ('Ground conditions','Geotechnical investigation is incomplete','Cost and schedule impact from unforeseen ground conditions',35,'Geotechnical Lead','Ground investigation results reveal anomaly','Advance supplementary ground investigation before commitment.'),
+                ('Procurement market','Insufficient contractors willing to tender at required price','Programme delay 6-18 months to re-tender. Cost increase 10-25%.',32,'Commercial Director','Market engagement shows limited interest','Pre-market engagement 18 months ahead. Consider ECI or two-stage approach.'),
+                ('Regulatory approval','Environmental, planning or sector-specific regulatory approval delayed','Critical path delay 6-24 months depending on jurisdiction',30,'Planning Lead','Approval timescale revised by regulator','Pre-application consultation with regulator. Dedicated consent team from programme start.'),
+                ('Commissioning','Commissioning sequence takes longer than planned','Delayed handover to operations. Revenue delay. Additional cost.',28,'Commissioning Manager','Integrated systems test identifies interface issue','Commissioning as a programme workstream from month 6. Dedicated commissioning director.'),
+                ('Supply chain',f'Critical components for {subsector} have long lead times or single-source suppliers','Critical path delay if not ordered early. Cost premium for expediting.',25,'Procurement Manager','Supplier confirms delivery date after programme need','Long-lead procurement programme started immediately. Alternative supplier qualification.'),
+            ]
+        
         risks = []
-        for i, name in enumerate((L.get('schedule') or [])[:8], 1):
+        act_ids = [s.get('activity_id','A1000') for s in (sched or [])]
+        cbs_ids = [c.get('cbs','01.01') for c in (costs or [])]
+        
+        for i, (title, cause, event, prob, owner, trigger, mitigation) in enumerate(template_risks[:10], 1):
+            cost_impact = p50 * (prob/100) * 0.12  # rough EMV
             risks.append({
-                'risk_id': f'R-{i:03d}', 'id': f'R-{i:03d}', 'title': name, 'risk': name,
-                'category': 'Sector delivery', 'cause': 'Evidence gap or uncontrolled interface',
-                'risk_event': f'{name} slips or underperforms', 'event': f'{name} slips or underperforms',
-                'impact_description': 'Cost, schedule and confidence tail increases',
-                'probability_pct': max(18, 52 - i*3), 'owner': 'Programme Director',
-                'mitigation': 'Named owner, evidence date, fallback path and board gate closure.',
-                'activity_id': sched[min(i-1, len(sched)-1)]['activity_id'] if sched else 'A1000',
-                'cbs': costs[min(i-1, len(costs)-1)]['cbs'] if costs else '01.01',
-                'cost_emv_bn': round(p50 * 0.02, 3), 'schedule_emv_days': 20 + i*5,
-                'pre_mitigation_rating': 'High' if i < 4 else 'Medium', 'status': 'Open'
+                'risk_id': f'R-{i:03d}', 'id': f'R-{i:03d}',
+                'title': title, 'risk': title,
+                'category': 'Sector-specific delivery risk',
+                'cause': cause,
+                'risk_event': event, 'event': event,
+                'impact_description': event,
+                'impact': f'Cost/schedule: {event}',
+                'probability_pct': prob,
+                'probability': prob/100,
+                'owner': owner,
+                'trigger': trigger,
+                'mitigation': mitigation,
+                'activity_id': act_ids[min(i-1, len(act_ids)-1)] if act_ids else 'A1000',
+                'cbs': cbs_ids[min(i-1, len(cbs_ids)-1)] if cbs_ids else '01.01',
+                'cost_o_bn': round(cost_impact * 0.4, 3),
+                'cost_m_bn': round(cost_impact, 3),
+                'cost_p_bn': round(cost_impact * 2.0, 3),
+                'cost_emv_bn': round(cost_impact * (prob/100), 3),
+                'schedule_emv_days': int(prob * 0.8 + i * 5),
+                'driver_score': round(cost_impact * prob * 100, 1),
+                'driver': title[:28],
+                'contribution': round(cost_impact, 2),
+                'pre_mitigation_rating': 'Critical' if prob >= 58 else ('High' if prob >= 42 else 'Medium'),
+                'residual_rating': 'Medium' if prob >= 45 else 'Low',
+                'response_strategy': 'Mitigate',
+                'status': 'Open',
+                'board_visibility': 'Yes' if i <= 5 else 'Conditional',
+                'last_reviewed': '2026-05-29',
             })
     for r in risks:
         if 'risk' not in r: r['risk'] = r.get('title') or r.get('risk_event') or r.get('id')
@@ -6774,6 +6919,29 @@ def build_model(prompt: str='', client: str='', class_level: int=3, schedule_lev
         'generated_at': datetime.utcnow().isoformat(),
     }
 
+    # Apply currency symbol to all cost display fields
+    try:
+        _curr = model.get('currency_symbol', '$')
+        if _curr and _curr != '$':
+            for _field in ['cost_p50','cost_p80','cost_p90','cost_p10','cost_range',
+                          'direct_cost','indirect_cost','risk_reserve']:
+                v = model.get(_field, '')
+                if isinstance(v, str) and v.startswith('$'):
+                    model[_field] = _curr + v[1:]
+            # Fix OBA
+            _oba = model.get('optimism_bias_assessment')
+            if isinstance(_oba, dict):
+                for k in ['oba_adjusted_p50']:
+                    if _oba.get(k,'').startswith('$'):
+                        _oba[k] = _curr + _oba[k][1:]
+            # Fix scenario matrix
+            for _sm_item in model.get('scenario_matrix', []) + model.get('scenario_comparison', []):
+                for _k in ['cost_p50','cost']:
+                    if isinstance(_sm_item.get(_k,''), str) and _sm_item[_k].startswith('$'):
+                        _sm_item[_k] = _curr + _sm_item[_k][1:]
+    except Exception:
+        pass
+
     # Normalize risk field names for frontend compatibility
     for r in model.get('risks', []):
         if 'risk_event' in r and 'event' not in r:
@@ -6800,24 +6968,24 @@ def build_model(prompt: str='', client: str='', class_level: int=3, schedule_lev
             if 'cost_mean_bn' in t and 'contribution' not in t:
                 t['contribution'] = round(float(t.get('cost_mean_bn', 0) or 0), 2)
 
-    # Scenario matrix
+    # Scenario matrix — build from raw p50 float BEFORE currency conversion
     try:
-        base_p50v = float(str(model.get('cost_p50','0')).replace('$','').replace('B','').replace(',','').strip() or 0)
-        base_mo = int(model.get('schedule_months', 36) or 36)
-        base_cv = int(model.get('confidence_pct', 60) or 60)
+        _sm_base_p50 = float(p50 or 0)  # Use the raw float p50, not the formatted string
+        _sm_base_mo = int(model.get('schedule_months', 36) or 36)
+        _sm_base_cv = int(model.get('confidence_pct', 60) or 60)
         sm_list = []
         for _sc2 in ['base','faster','cheaper','lower_risk','premium']:
             _cm2,_sm2,_rm2,_cd2,_sl2,_sw2 = scenario_params(_sc2)
-            _sc_p50 = round(base_p50v * float(_cm2), 2)
-            _sc_mo = max(1, int(base_mo * float(_sm2)))
-            _sc_cv = max(10, min(96, base_cv + int(_cd2 or 0)))
+            _sc_p50 = round(_sm_base_p50 * float(_cm2), 2)
+            _sc_mo = max(1, int(_sm_base_mo * float(_sm2)))
+            _sc_cv = max(10, min(96, _sm_base_cv + int(_cd2 or 0)))
             sm_list.append({'scenario':_sc2,'label':_sl2,'why':_sw2,
                 'cost_p50':money_bn(_sc_p50),'cost':money_bn(_sc_p50),
                 'schedule_months':_sc_mo,'schedule':f'{_sc_mo} months',
                 'confidence_pct':_sc_cv,'risk':risk_label(30+(_rm2-1)*40)})
         model['scenario_matrix'] = sm_list
         model['scenario_comparison'] = sm_list
-    except Exception:
+    except Exception as _sm_err:
         pass
 
     return model
