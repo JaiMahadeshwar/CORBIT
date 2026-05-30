@@ -33,7 +33,7 @@ PUBLIC_DEMO_LIMIT = int(os.environ.get("CASEY_PUBLIC_DEMO_LIMIT", "1"))
 ADMIN_TOKEN = os.environ.get("CASEY_ADMIN_TOKEN", "")
 
 app = FastAPI(title=APP_VERSION, version="26.0-revenue-machine")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=False, allow_methods=["*"], allow_headers=["*"], expose_headers=["Content-Disposition", "Content-Type"])
 
 class GenerateRequest(BaseModel):
     prompt: str
@@ -5577,7 +5577,18 @@ def pdf_bytes(model):
     bio.seek(0)
     return bio.getvalue()
 
-def stream(data:bytes, media:str, filename:str): return StreamingResponse(BytesIO(data), media_type=media, headers={"Content-Disposition":f"attachment; filename={filename}"})
+def stream(data:bytes, media:str, filename:str): 
+    return StreamingResponse(
+        BytesIO(data), 
+        media_type=media, 
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization",
+            "Access-Control-Expose-Headers": "Content-Disposition, Content-Type",
+        }
+    )
 
 
 
