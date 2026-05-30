@@ -5734,6 +5734,63 @@ def export_pptx(model:Dict[str,Any]): return stream(pptx_bytes(model),"applicati
 @app.post("/export/json")
 def export_json(model:Dict[str,Any]): return stream(json.dumps(model,indent=2).encode(),"application/json","CASEY_TITAN_X_v26_Model.json")
 @app.post("/export/all")
+def export_all(model:Dict[str,Any]):
+    bio=BytesIO()
+    with zipfile.ZipFile(bio,"w",zipfile.ZIP_DEFLATED) as z:
+        try: z.writestr("01_CASEY_Cost_Model.xlsx", workbook_bytes(model))
+        except Exception as e: z.writestr("01_CASEY_Cost_Model_error.txt", str(e))
+        try: z.writestr("02_CASEY_Risk_Register.xlsx", risk_register_workbook_bytes(model))
+        except Exception as e: z.writestr("02_CASEY_Risk_Register_error.txt", str(e))
+        try: z.writestr("03_CASEY_Schedule.xer", xer_bytes(model))
+        except Exception as e: z.writestr("03_CASEY_Schedule_error.txt", str(e))
+        try: z.writestr("04_CASEY_Executive_Report.docx", word_bytes(model))
+        except Exception as e: z.writestr("04_CASEY_Report_error.txt", str(e))
+        try: z.writestr("05_CASEY_Board_Pack.pdf", pdf_bytes(model))
+        except Exception as e: z.writestr("05_CASEY_PDF_error.txt", str(e))
+        try: z.writestr("06_CASEY_Board_Deck.pptx", pptx_bytes(model))
+        except Exception as e: z.writestr("06_CASEY_PPTX_error.txt", str(e))
+        z.writestr("07_CASEY_Model_Data.json", json.dumps(model, indent=2))
+    bio.seek(0)
+    return stream(bio.getvalue(), "application/zip", "CASEY_Board_Intelligence_Pack.zip")
+
+@app.post("/export/qcra-qsra")
+def export_qcra_qsra(model:Dict[str,Any]):
+    """Export QCRA/QSRA combined workbook."""
+    try:
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "QCRA QSRA Summary"
+        mc = model.get("monte_carlo", {})
+        qcra = mc.get("qcra", {})
+        qsra = mc.get("qsra", {})
+        ws.append(["CASEY QCRA/QSRA REPORT"])
+        ws.append(["Programme", model.get("title", "CASEY Programme")])
+        ws.append(["P50 Cost", model.get("cost_p50", "-")])
+        ws.append(["P80 Cost", model.get("cost_p80", "-")])
+        ws.append(["P90 Cost", model.get("cost_p90", "-")])
+        ws.append([])
+        ws.append(["QCRA COST"])
+        ws.append(["P10", qcra.get("p10", "-"), "P50", qcra.get("p50", "-"), "P80", qcra.get("p80", "-"), "P90", qcra.get("p90", "-")])
+        ws.append([])
+        ws.append(["QSRA SCHEDULE"])
+        ws.append(["P10", qsra.get("p10", "-"), "P50", qsra.get("p50", "-"), "P80", qsra.get("p80", "-"), "P90", qsra.get("p90", "-")])
+        ws.append([])
+        ws.append(["RISK DRIVERS (Top 10 by EMV)"])
+        ws.append(["Risk", "Category", "Probability %", "EMV ($B)"])
+        tornado = mc.get("tornado", mc.get("qcra_tornado", []))
+        for r in tornado[:10]:
+            ws.append([r.get("driver", r.get("title", "?")), r.get("category", "-"), r.get("probability_pct", "-"), r.get("contribution", "-")])
+        ws.append([])
+        ws.append(["QSRA PROBABILITY CURVE"])
+        ws.append(["Percentile", "Cost ($B)", "Schedule (months)"])
+        for pt in mc.get("curve", [])[:21]:
+            ws.append([pt.get("percentile", "-"), pt.get("cost_bn", "-"), pt.get("schedule_months", "-")])
+        bio2 = BytesIO()
+        wb.save(bio2)
+        bio2.seek(0)
+        return stream(bio2.getvalue(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "CASEY_QCRA_QSRA.xlsx")
+    except Exception as e:
+        return stream(json.dumps({"error": str(e)}).encode(), "application/json", "error.json")
 
 @app.post("/upload")
 async def upload_alias(file: UploadFile = File(...)):
@@ -6282,23 +6339,43 @@ UNIT_RATE_LABELS = {
 }
 
 def get_named_benchmarks(subsector, mode=''):
-    """Get named benchmarks for a subsector, with fallback."""
+    """Get named benchmarks — returns enriched dicts with all frontend-expected fields."""
+    def _enrich(raw_list):
+        out = []
+        for d in raw_list:
+            enriched = dict(d)
+            # Add frontend-expected field aliases
+            if 'cost_bn' in d and 'anchor_cost' not in d:
+                enriched['anchor_cost'] = f'${d["cost_bn"]:.1f}B'
+            if 'growth' in d and 'cost_growth_pct' not in d:
+                enriched['cost_growth_pct'] = d['growth']
+            if 'slip' in d and 'schedule_slip_months' not in d:
+                enriched['schedule_slip_months'] = d['slip']
+            if 'failure' in d and 'failure_mode' not in d:
+                enriched['failure_mode'] = d['failure']
+            if 'anchor_duration_months' not in d:
+                enriched['anchor_duration_months'] = 216  # typical 18yr mega programme
+            if 'sector' not in d:
+                enriched['sector'] = subsector
+            out.append(enriched)
+        return out
+
     # Try exact match
     if subsector in NAMED_BENCHMARKS:
-        return NAMED_BENCHMARKS[subsector]
+        return _enrich(NAMED_BENCHMARKS[subsector])
     # Try partial match
     sub_l = (subsector or '').lower()
     for k, v in NAMED_BENCHMARKS.items():
         if k.lower() in sub_l or sub_l in k.lower():
-            return v
+            return _enrich(v)
         k_words = set(k.lower().split())
         s_words = set(sub_l.split('/')[:1][0].strip().split())
         if len(k_words & s_words) >= 2:
-            return v
+            return _enrich(v)
     # Mode-based fallback
     if mode == 'Space':
-        return NAMED_BENCHMARKS.get('General Space Infrastructure', [])
-    return NAMED_BENCHMARKS.get('General Infrastructure', [])
+        return _enrich(NAMED_BENCHMARKS.get('General Space Infrastructure', []))
+    return _enrich(NAMED_BENCHMARKS.get('General Infrastructure', []))
 
 def get_currency_symbol(location):
     """Get currency symbol for a location."""
@@ -6835,6 +6912,14 @@ def build_model(prompt: str='', client: str='', class_level: int=3, schedule_lev
         cal_cost, cal_months, envelope_notes = sector_envelope(subsector, cal_cost, cal_months, scale_name)
     except Exception:
         envelope_notes = []
+
+    # SCENARIO MULTIPLIER: re-apply AFTER envelope so scenarios always change cost
+    # The envelope clamps to sector max (e.g. $95B for Lunar Surface)
+    # Without this, ALL scenarios return the same clamped value
+    _raw_pre_envelope = float(base_cost) * float(loc_factor) * float(comp_mult)
+    _was_clamped = _raw_pre_envelope > float(cal_cost) * 1.05  # envelope reduced cost
+    if scenario != 'base' and abs(float(cost_mult) - 1.0) > 0.005:
+        cal_cost = float(cal_cost) * float(cost_mult)
 
     p50 = max(0.05, float(cal_cost))
     p10 = p50 * float(lo)
