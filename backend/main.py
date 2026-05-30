@@ -5849,6 +5849,40 @@ def export_qcra_qsra(model:Dict[str,Any]):
     except Exception as e:
         return stream(json.dumps({"error": str(e)}).encode(), "application/json", "error.json")
 
+
+@app.get("/twin/inputs/{subsector}")
+def twin_get_inputs(subsector: str, mode: str = "Earth"):
+    """Get the sector-specific twin input fields for a given programme."""
+    inputs = get_twin_inputs_for_sector(subsector, mode)
+    generic = TWIN_GENERIC_INPUTS
+    return {"sector_inputs": inputs, "generic_inputs": generic, "subsector": subsector, "mode": mode}
+
+@app.post("/twin/update")
+def twin_update(payload: Dict[str, Any]):
+    """
+    Core digital twin update.
+    Accepts base model + real progress data.
+    Returns updated forecast, delta explanation, alerts and confidence trajectory.
+    """
+    base_model = payload.get("model", {})
+    twin_inputs = payload.get("twin_inputs", {})
+    if not base_model:
+        raise HTTPException(status_code=400, detail={"message": "Base model required. Run a project first, then feed in real progress data."})
+    try:
+        result = compute_twin_update(base_model, twin_inputs)
+        return {"success": True, "twin": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail={"message": f"Twin calculation error: {str(e)}"})
+
+@app.get("/twin/sectors")
+def twin_sectors():
+    """List all sectors with their specific twin input fields."""
+    return {
+        "sectors": {k: v for k, v in TWIN_SECTOR_INPUTS.items()},
+        "generic": TWIN_GENERIC_INPUTS,
+        "description": "Feed real programme progress into any of these fields to get a live updated forecast.",
+    }
+
 @app.post("/upload")
 async def upload_alias(file: UploadFile = File(...)):
     return await analyse_upload(file)
@@ -6652,6 +6686,317 @@ def _get_casey_position(subsector, mode, p50_s, p80_s, conf, cl):
         if k.lower() in sub.lower():
             return v.replace('{p50_s}', p50_s).replace('{p80_s}', p80_s)
     return f'CASEY position on this {subsector} programme: P50 is {p50_s} at Class {cl} definition maturity with {conf}% confidence. The P80 ({p80_s}) is the board approval number and must appear in the executive summary. The primary mortality risk is scope instability after capital commitment.'
+
+
+# ── DIGITAL TWIN ENGINE ────────────────────────────────────────────────────
+# Every sector, every scale. Feed real progress data → get live updated forecast.
+
+TWIN_SECTOR_INPUTS = {
+    'Rail': [
+        {'key':'civil_complete_pct','label':'Civil works % complete','type':'pct','benchmark':20,'help':'What % of civil construction is physically complete vs programme plan?'},
+        {'key':'possessions_used_pct','label':'Possessions used vs granted %','type':'pct','benchmark':85,'help':'Track access possessions: used vs what was granted. Below 85% signals schedule risk.'},
+        {'key':'signalling_milestones_met_pct','label':'Signalling milestones met %','type':'pct','benchmark':70,'help':'% of signalling integration milestones achieved on time.'},
+        {'key':'systems_integration_open_items','label':'Open IEMs / interface items','type':'number','benchmark':50,'help':'Open Interface Exception Memoranda. >100 at planned opening = systemic risk.'},
+        {'key':'earned_value_pct','label':'Earned value % (EV/BAC)','type':'pct','benchmark':95,'help':'Earned Value / Budget At Completion × 100. Below 90% indicates overrun trajectory.'},
+    ],
+    'Nuclear': [
+        {'key':'gda_status','label':'GDA / regulatory hold-points cleared %','type':'pct','benchmark':60,'help':'% of ONR/NRC regulatory hold-points cleared on schedule.'},
+        {'key':'nuclear_workforce_pct','label':'Nuclear-qualified workforce secured %','type':'pct','benchmark':50,'help':'SC/DV cleared and nuclear-qualified staff engaged vs planned peak.'},
+        {'key':'design_freeze_achieved','label':'Design freeze achieved','type':'bool','benchmark':1,'help':'Has the design been frozen with independent authority sign-off?'},
+        {'key':'supply_chain_qualified_pct','label':'Nuclear supply chain qualified %','type':'pct','benchmark':40,'help':'% of nuclear-grade suppliers pre-qualified and contracted.'},
+        {'key':'earned_value_pct','label':'Earned value %','type':'pct','benchmark':95,'help':'EV/BAC × 100.'},
+    ],
+    'Defence': [
+        {'key':'requirements_frozen','label':'Requirements baseline frozen','type':'bool','benchmark':1,'help':'Has the requirements baseline been signed by SRO and frozen?'},
+        {'key':'sc_dv_clearances_pct','label':'SC/DV clearances granted vs needed %','type':'pct','benchmark':60,'help':'% of required SC/DV clearances granted. Below 50% = workforce availability risk.'},
+        {'key':'itar_licences_granted','label':'ITAR/export licences granted','type':'bool','benchmark':1,'help':'Have all required ITAR licences been granted for cross-border technology?'},
+        {'key':'test_milestones_met_pct','label':'Test & evaluation milestones met %','type':'pct','benchmark':70,'help':'% of T&E milestones achieved on plan.'},
+        {'key':'earned_value_pct','label':'Earned value %','type':'pct','benchmark':90,'help':'EV/BAC × 100.'},
+    ],
+    'Space': [
+        {'key':'trl_achieved','label':'Technology readiness level achieved','type':'number','benchmark':6,'help':'Highest TRL independently verified. Below planned TRL = cost/schedule risk.'},
+        {'key':'open_anomalies','label':'Open qualification anomalies','type':'number','benchmark':5,'help':'Unresolved test anomalies. Each unresolved anomaly delays launch authority.'},
+        {'key':'mission_assurance_items_closed_pct','label':'Mission assurance items closed %','type':'pct','benchmark':60,'help':'% of mission assurance action items formally closed.'},
+        {'key':'launch_manifest_confirmed','label':'Launch slot confirmed','type':'bool','benchmark':1,'help':'Is a specific launch vehicle and slot confirmed with the provider?'},
+        {'key':'mass_margin_pct','label':'Mass margin remaining %','type':'pct','benchmark':15,'help':'Spacecraft mass margin as % of launch vehicle capability. Below 10% = redesign risk.'},
+    ],
+    'Digital Infrastructure': [
+        {'key':'grid_connection_confirmed','label':'Grid connection agreement signed','type':'bool','benchmark':1,'help':'Is a firm grid connection agreement signed with the DNO/TSO?'},
+        {'key':'transformer_delivery_confirmed','label':'Transformer delivery date confirmed','type':'bool','benchmark':1,'help':'Are power transformers on order with confirmed delivery date?'},
+        {'key':'planning_consent_granted','label':'Planning consent granted','type':'bool','benchmark':1,'help':'Has full planning consent been granted including substation?'},
+        {'key':'it_load_spec_frozen','label':'IT load specification frozen','type':'bool','benchmark':1,'help':'Has the compute power density spec been frozen? Changes require cooling redesign.'},
+        {'key':'earned_value_pct','label':'Earned value %','type':'pct','benchmark':95,'help':'EV/BAC × 100.'},
+    ],
+    'Mining': [
+        {'key':'ore_grade_vs_feasibility_pct','label':'Ore grade vs feasibility model %','type':'pct','benchmark':95,'help':'Actual ore grade as % of feasibility model. Below 90% = economics at risk.'},
+        {'key':'community_agreement_signed','label':'Community benefit agreement signed','type':'bool','benchmark':1,'help':'Is a signed community benefit agreement in place with affected communities?'},
+        {'key':'comminution_equipment_delivery_confirmed','label':'Processing equipment delivery confirmed','type':'bool','benchmark':1,'help':'SAG mill, ball mill delivery confirmed with manufacturer?'},
+        {'key':'power_supply_secured','label':'Power supply secured','type':'bool','benchmark':1,'help':'Grid connection or diesel power supply contracted for full production load?'},
+        {'key':'earned_value_pct','label':'Earned value %','type':'pct','benchmark':92,'help':'EV/BAC × 100.'},
+    ],
+    'Semiconductor': [
+        {'key':'tool_allocation_confirmed_pct','label':'Process tools allocated %','type':'pct','benchmark':50,'help':'% of critical process tools (incl. ASML EUV) with confirmed allocation.'},
+        {'key':'cleanroom_handover_complete','label':'Cleanroom handover achieved','type':'bool','benchmark':0,'help':'Has cleanroom been handed over and begun qualification? Takes 18 months.'},
+        {'key':'workforce_secured_pct','label':'Process integration workforce secured %','type':'pct','benchmark':40,'help':'% of required process integration engineers engaged or contracted.'},
+        {'key':'upw_systems_commissioned','label':'Ultra-pure water systems commissioned','type':'bool','benchmark':0,'help':'UPW qualification is a critical path item before any process tools can run.'},
+        {'key':'earned_value_pct','label':'Earned value %','type':'pct','benchmark':92,'help':'EV/BAC × 100.'},
+    ],
+    'Battery': [
+        {'key':'offtake_contracted_pct','label':'Offtake contracted % of capacity','type':'pct','benchmark':40,'help':'% of gigafactory annual capacity under confirmed long-term supply agreement.'},
+        {'key':'cell_chemistry_qualified','label':'Cell chemistry qualified','type':'bool','benchmark':0,'help':'Has the cell chemistry been qualified and does it meet target energy density?'},
+        {'key':'formation_equipment_on_order','label':'Formation cycling equipment on order','type':'bool','benchmark':0,'help':'18-month lead time item. Must be ordered now to avoid critical path delay.'},
+        {'key':'yield_target_achieved_pct','label':'Yield target achieved % (if in production)','type':'pct','benchmark':0,'help':'Actual cell yield vs design target. <80% = revenue plan at risk.'},
+        {'key':'earned_value_pct','label':'Earned value %','type':'pct','benchmark':90,'help':'EV/BAC × 100.'},
+    ],
+    'Life Sciences': [
+        {'key':'gmp_design_frozen','label':'GMP design frozen','type':'bool','benchmark':1,'help':'Has the GMP manufacturing process design been frozen and approved by QA?'},
+        {'key':'cqv_plan_agreed','label':'CQV plan agreed with regulatory','type':'bool','benchmark':0,'help':'Has the commissioning, qualification and validation plan been agreed with regulator?'},
+        {'key':'regulatory_inspection_ready','label':'Pre-inspection readiness achieved','type':'bool','benchmark':0,'help':'Has a pre-inspection mock audit been completed with acceptable outcome?'},
+        {'key':'earned_value_pct','label':'Earned value %','type':'pct','benchmark':95,'help':'EV/BAC × 100.'},
+        {'key':'validated_systems_pct','label':'Validated systems % complete','type':'pct','benchmark':0,'help':'% of critical systems fully validated to regulatory standard.'},
+    ],
+    'Airport': [
+        {'key':'baggage_system_milestones_met_pct','label':'Baggage system milestones met %','type':'pct','benchmark':70,'help':'Baggage system is the most common failure point. % of milestones on plan.'},
+        {'key':'orat_director_appointed','label':'ORAT director appointed','type':'bool','benchmark':0,'help':'Has an ORAT (Operational Readiness) director been named with full authority?'},
+        {'key':'fire_safety_approval_granted','label':'Fire safety approval granted','type':'bool','benchmark':0,'help':'CAA/fire authority approval is a prerequisite for opening. Is it confirmed?'},
+        {'key':'earned_value_pct','label':'Earned value %','type':'pct','benchmark':93,'help':'EV/BAC × 100.'},
+        {'key':'systems_integration_complete_pct','label':'Systems integration complete %','type':'pct','benchmark':50,'help':'% of airfield/terminal systems integrations tested and signed off.'},
+    ],
+}
+
+# Generic inputs for any sector not in the list above
+TWIN_GENERIC_INPUTS = [
+    {'key':'earned_value_pct','label':'Earned value % (EV/BAC)','type':'pct','benchmark':95,'help':'Earned Value / Budget At Completion × 100. Below 90% signals overrun trajectory.'},
+    {'key':'schedule_milestone_achievement_pct','label':'Schedule milestones achieved %','type':'pct','benchmark':85,'help':'% of planned milestones achieved on time to date.'},
+    {'key':'scope_changes_count','label':'Scope changes approved','type':'number','benchmark':3,'help':'Number of formal scope changes approved since baseline. Each adds risk.'},
+    {'key':'risk_closures_pct','label':'Risks formally closed %','type':'pct','benchmark':20,'help':'% of original risk register items formally closed with evidence.'},
+    {'key':'procurement_contracts_let_pct','label':'Procurement contracts let %','type':'pct','benchmark':50,'help':'% of planned procurement packages contracted.'},
+]
+
+def get_twin_inputs_for_sector(subsector, mode=''):
+    """Return the sector-specific twin input fields."""
+    sub_l = (subsector or '').lower()
+    mode_l = (mode or '').lower()
+    for k, v in TWIN_SECTOR_INPUTS.items():
+        if k.lower() in sub_l or sub_l in k.lower() or k.lower() in mode_l:
+            return v
+    if 'space' in mode_l or 'lunar' in sub_l or 'mars' in sub_l or 'orbital' in sub_l or 'satellite' in sub_l:
+        return TWIN_SECTOR_INPUTS['Space']
+    if 'rail' in sub_l or 'transit' in sub_l:
+        return TWIN_SECTOR_INPUTS['Rail']
+    if 'nuclear' in sub_l:
+        return TWIN_SECTOR_INPUTS['Nuclear']
+    if 'defence' in sub_l or 'defense' in sub_l or 'secure' in sub_l:
+        return TWIN_SECTOR_INPUTS['Defence']
+    if 'data' in sub_l or 'digital' in sub_l or 'hyperscale' in sub_l:
+        return TWIN_SECTOR_INPUTS['Digital Infrastructure']
+    if 'mining' in sub_l or 'copper' in sub_l or 'mineral' in sub_l:
+        return TWIN_SECTOR_INPUTS['Mining']
+    if 'semi' in sub_l or 'fab' in sub_l:
+        return TWIN_SECTOR_INPUTS['Semiconductor']
+    if 'battery' in sub_l or 'gigafactory' in sub_l:
+        return TWIN_SECTOR_INPUTS['Battery']
+    if 'life' in sub_l or 'biolog' in sub_l or 'pharma' in sub_l:
+        return TWIN_SECTOR_INPUTS['Life Sciences']
+    if 'airport' in sub_l or 'aviation' in sub_l:
+        return TWIN_SECTOR_INPUTS['Airport']
+    return TWIN_GENERIC_INPUTS
+
+def compute_twin_update(base_model: dict, twin_inputs: dict) -> dict:
+    """
+    Core digital twin recalculation.
+    Takes base model + real progress data → returns updated forecast + delta explanation.
+    """
+    import math, datetime
+
+    sub = base_model.get('subsector', 'programme')
+    mode = base_model.get('mode', 'Earth')
+    curr = base_model.get('currency_symbol', '$')
+
+    # Parse base values safely
+    def parse_bn(v):
+        try: return float(''.join(c for c in str(v) if c.isdigit() or c=='.') or 0)
+        except: return 0.0
+
+    base_p50 = parse_bn(base_model.get('cost_p50', 0))
+    base_p80 = parse_bn(base_model.get('cost_p80', 0))
+    base_months = int(base_model.get('schedule_months', 36) or 36)
+    base_conf = int(base_model.get('confidence_pct', 60) or 60)
+
+    # Extract key twin inputs
+    progress_pct = float(twin_inputs.get('progress_pct', 0) or 0)
+    actual_cost_pct = float(twin_inputs.get('actual_cost_pct', 100) or 100)  # actual spend as % of planned at this stage
+    ev_pct = float(twin_inputs.get('earned_value_pct', 100) or 100)
+    schedule_slip = float(twin_inputs.get('schedule_slip_months', 0) or 0)
+    scope_changes = int(twin_inputs.get('scope_changes_count', 0) or 0)
+
+    # ── Cost Performance Index (CPI) calculation ─────────────────────────
+    # If we've spent actual_cost_pct% of (progress_pct/100 × P50) budget
+    # CPI = EV / AC
+    if progress_pct > 0 and actual_cost_pct > 0:
+        planned_spend_to_date = base_p50 * (progress_pct / 100)
+        ev = planned_spend_to_date * (ev_pct / 100)
+        actual_cost_to_date = planned_spend_to_date * (actual_cost_pct / 100)
+        cpi = ev / actual_cost_to_date if actual_cost_to_date > 0 else 1.0
+    else:
+        cpi = 1.0
+        actual_cost_to_date = 0
+        ev = 0
+
+    # ── Schedule Performance Index (SPI) ─────────────────────────────────
+    spi = max(0.4, 1.0 - (schedule_slip / max(1, base_months)) * 2)
+
+    # ── Forecast At Completion (FAC) ─────────────────────────────────────
+    # Industry standard: FAC = BAC / CPI (when CPI is expected to remain constant)
+    if cpi > 0 and progress_pct > 5:
+        fac_p50 = base_p50 / cpi
+    else:
+        fac_p50 = base_p50
+
+    # Add scope change premium
+    fac_p50 *= (1 + scope_changes * 0.02)
+
+    # ── Confidence recalculation ──────────────────────────────────────────
+    conf_delta = 0
+
+    # EV performance impact
+    if ev_pct < 80: conf_delta -= 12
+    elif ev_pct < 90: conf_delta -= 6
+    elif ev_pct < 95: conf_delta -= 2
+    elif ev_pct > 100: conf_delta += 3
+
+    # Cost overrun impact
+    if actual_cost_pct > 120: conf_delta -= 15
+    elif actual_cost_pct > 110: conf_delta -= 8
+    elif actual_cost_pct > 105: conf_delta -= 4
+    elif actual_cost_pct < 95: conf_delta += 3
+
+    # Schedule slip impact
+    if schedule_slip > base_months * 0.2: conf_delta -= 12
+    elif schedule_slip > base_months * 0.1: conf_delta -= 6
+    elif schedule_slip > 0: conf_delta -= 3
+
+    # Scope change impact
+    conf_delta -= scope_changes * 2
+
+    # Sector-specific input impacts
+    for key, val in twin_inputs.items():
+        if key in ('progress_pct','actual_cost_pct','earned_value_pct','schedule_slip_months','scope_changes_count'):
+            continue
+        # Boolean "required" items
+        if val == 0 and key in ('grid_connection_confirmed','transformer_delivery_confirmed',
+                                 'requirements_frozen','launch_manifest_confirmed',
+                                 'design_freeze_achieved','community_agreement_signed',
+                                 'gmp_design_frozen','orat_director_appointed',
+                                 'offtake_contracted_pct'):
+            conf_delta -= 5
+        elif val == 1 and key in ('grid_connection_confirmed','transformer_delivery_confirmed',
+                                   'requirements_frozen','launch_manifest_confirmed',
+                                   'design_freeze_achieved','community_agreement_signed'):
+            conf_delta += 4
+        # Pct inputs vs benchmark
+        field_defs = get_twin_inputs_for_sector(sub, mode)
+        for fd in field_defs:
+            if fd['key'] == key and fd['type'] == 'pct':
+                benchmark = fd.get('benchmark', 80)
+                if benchmark > 0:
+                    ratio = float(val or 0) / benchmark
+                    if ratio < 0.6: conf_delta -= 5
+                    elif ratio < 0.8: conf_delta -= 2
+                    elif ratio > 1.1: conf_delta += 2
+
+    # Open anomalies / items penalty
+    open_anomalies = int(twin_inputs.get('open_anomalies', 0) or 0)
+    if open_anomalies > 20: conf_delta -= 10
+    elif open_anomalies > 10: conf_delta -= 5
+    elif open_anomalies > 5: conf_delta -= 2
+
+    # TRL check for space
+    trl_achieved = int(twin_inputs.get('trl_achieved', 0) or 0)
+    if trl_achieved > 0:
+        if trl_achieved < 5: conf_delta -= 12
+        elif trl_achieved < 6: conf_delta -= 6
+        elif trl_achieved >= 7: conf_delta += 4
+
+    new_conf = max(15, min(92, base_conf + conf_delta))
+    new_p50 = round(fac_p50, 2)
+    new_p80 = round(fac_p50 * (base_p80 / base_p50) if base_p50 > 0 else fac_p50 * 1.2, 2)
+    new_months = base_months + int(schedule_slip)
+
+    # Currency formatting
+    def fmt_c(v):
+        s = money_bn(v)
+        if curr and curr != '$' and s.startswith('$'):
+            return curr + s[1:]
+        return s
+
+    # ── Delta narrative ───────────────────────────────────────────────────
+    cost_change_pct = round((new_p50 - base_p50) / base_p50 * 100, 1) if base_p50 > 0 else 0
+    conf_label = ('improving' if conf_delta > 2 else 'declining' if conf_delta < -2 else 'stable')
+
+    changes = []
+    if abs(cost_change_pct) > 1:
+        direction = 'increased' if cost_change_pct > 0 else 'decreased'
+        changes.append(f'Forecast-at-completion has {direction} by {abs(cost_change_pct):.1f}% (CPI={cpi:.2f}). New P50 outturn: {fmt_c(new_p50)}.')
+    if schedule_slip > 0:
+        changes.append(f'Schedule has slipped {int(schedule_slip)} months from baseline. New forecast completion: {new_months} months.')
+    if ev_pct < 90:
+        changes.append(f'Earned value is {ev_pct:.0f}% of plan — below the 90% threshold. Industry data shows programmes below 90% EV at this stage have a 65% probability of final outturn exceeding P80.')
+    if actual_cost_pct > 105:
+        changes.append(f'Actual spend is {actual_cost_pct:.0f}% of planned rate — {actual_cost_pct-100:.0f}% above plan. Continued at this rate gives FAC of {fmt_c(new_p50)}.')
+    if conf_delta < -5:
+        changes.append(f'Confidence has declined {abs(conf_delta)} points to {new_conf}%. Primary driver: {_get_conf_decline_reason(twin_inputs, sub, mode)}.')
+    if not changes:
+        changes.append(f'Programme is tracking close to baseline. P50 forecast is {fmt_c(new_p50)} ({("+" if cost_change_pct >= 0 else "")}{cost_change_pct:.1f}% vs baseline).')
+
+    # ── Alert generation ──────────────────────────────────────────────────
+    alerts = []
+    if cpi < 0.9: alerts.append({'level':'CRITICAL','msg':f'CPI is {cpi:.2f} — forecast-at-completion will exceed P80 if performance does not recover.'})
+    if new_conf < base_conf - 10: alerts.append({'level':'CRITICAL','msg':f'Confidence has dropped {abs(conf_delta)} points since baseline. Board notification required.'})
+    if schedule_slip > base_months * 0.15: alerts.append({'level':'HIGH','msg':f'Schedule slip of {int(schedule_slip)} months exceeds 15% of baseline programme. Business case revalidation required.'})
+    if new_p50 > base_p80: alerts.append({'level':'CRITICAL','msg':f'Forecast P50 ({fmt_c(new_p50)}) now exceeds original P80 ({fmt_c(base_p80)}). Reserve is exhausted. Rebaselining required.'})
+    if scope_changes > 5: alerts.append({'level':'HIGH','msg':f'{scope_changes} scope changes approved since baseline — each adds cost and schedule risk. Scope freeze authority required.'})
+    if not alerts and new_conf >= base_conf:
+        alerts.append({'level':'GREEN','msg':f'Programme is tracking on or ahead of baseline. Continue current controls.'})
+
+    return {
+        'base_p50': fmt_c(base_p50),
+        'base_p80': fmt_c(base_p80),
+        'base_months': base_months,
+        'base_conf': base_conf,
+        'new_p50': fmt_c(new_p50),
+        'new_p80': fmt_c(new_p80),
+        'new_months': new_months,
+        'new_conf': new_conf,
+        'cpi': round(cpi, 3),
+        'spi': round(spi, 3),
+        'cost_change_pct': cost_change_pct,
+        'conf_change': conf_delta,
+        'conf_label': conf_label,
+        'forecast_at_completion': fmt_c(new_p50),
+        'changes': changes,
+        'alerts': alerts,
+        'progress_pct': progress_pct,
+        'updated_at': datetime.datetime.utcnow().isoformat(),
+        'narrative': f'Twin updated at {progress_pct:.0f}% programme completion. '
+                     + (changes[0] if changes else 'On baseline.'),
+    }
+
+def _get_conf_decline_reason(inputs, sub, mode):
+    sub_l = sub.lower()
+    if float(inputs.get('earned_value_pct', 100) or 100) < 85:
+        return 'earned value below 85% of plan'
+    if float(inputs.get('actual_cost_pct', 100) or 100) > 110:
+        return f'actual spend {inputs.get("actual_cost_pct")}% of planned rate'
+    if inputs.get('requirements_frozen') == 0:
+        return 'requirements not yet frozen'
+    if inputs.get('grid_connection_confirmed') == 0:
+        return 'grid connection not yet confirmed'
+    if inputs.get('launch_manifest_confirmed') == 0:
+        return 'launch slot not confirmed'
+    if int(inputs.get('open_anomalies', 0) or 0) > 10:
+        return f'{inputs.get("open_anomalies")} open qualification anomalies'
+    return 'multiple programme risk indicators below benchmark'
 
 # CASEY FINAL PRODUCTION MODEL OVERRIDE
 # Purpose: restore real backend-derived numbers. Earlier stacked hotfix wrappers were
