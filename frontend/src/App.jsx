@@ -15,7 +15,7 @@ const PROD_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_UR
 if (typeof window !== 'undefined') window._CASEY_API = PROD_URL;
 const API_CANDIDATES = [PROD_URL, 'http://127.0.0.1:8000', 'http://localhost:8000'].filter(Boolean);
 let API = API_CANDIDATES[0];
-async function apiFetch(path, options, timeoutMs = 45000) {
+async function apiFetch(path, options, timeoutMs = 90000) {
   let lastError;
   for (const base of API_CANDIDATES) {
     try {
@@ -489,7 +489,10 @@ async function get(path) {
 async function download(path, model, name, setExportingLabel) {
   // Uses apiFetch which handles URL retry logic and CORS correctly
   try {
-    if (setExportingLabel) setExportingLabel('Generating…');
+    if (setExportingLabel) setExportingLabel('Waking backend (Render may be sleeping — takes up to 30s)…');
+    // Ping first to wake Render from sleep before the real export request
+    try { await apiFetch('/health', { method: 'GET' }); } catch(_) {}
+    if (setExportingLabel) setExportingLabel('Generating export…');
     const resp = await apiFetch(path, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
