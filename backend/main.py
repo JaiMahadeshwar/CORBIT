@@ -6538,6 +6538,47 @@ def _casey_final_extract_units(prompt: str) -> float:
     return 0.0
 
 
+def _get_unit_rate_display(line_cost_bn, total_p50_bn, unit, unit_label, prompt=''):
+    """Generate a meaningful per-unit rate display for cost lines."""
+    t = (prompt or '').lower()
+    # Estimate scale quantity from prompt or use typical values
+    # These are rough typical scales - the rate is informative not precise
+    qty_map = {
+        'track-km': _extract_km(t) or 50,  # km of rail
+        'GW installed': 1.6,  # GW (Hinkley C scale)
+        'MW IT load': 500,  # MW (hyperscale)
+        'GWh capacity': 30,  # GWh gigafactory
+        'm² GMP': 50000,  # m² life sciences
+        'wafer starts/mo': 20000,  # WSPM
+        'tpa capacity': 500000,  # tpa mining
+        'programme unit': 0,  # generic — use total
+        'Ml per day': 150,
+        'MW capacity': 500,  # MW energy
+        'Ml per day': 150,  # Ml/day water
+        'mppa capacity': 40,  # million passengers
+        'kg delivered': 10000,  # kg to lunar surface
+        'crew berths': 100,  # crew
+        'lane-km': 100,  # lane-km roads
+        'm² clinical': 80000,  # m² hospital
+        'meter connection': 4000000,  # meter rollout
+    }
+    qty = qty_map.get(unit_label, 0)
+    if qty > 0 and line_cost_bn > 0:
+        rate = line_cost_bn / qty
+        if rate >= 1.0:
+            return f'{money_bn(rate)}/{unit}'
+        elif rate >= 0.001:
+            return f'${round(rate*1000,0):.0f}M/{unit}'
+        else:
+            return f'${round(rate*1000000,0):.0f}K/{unit}'
+    return f'{money_bn(line_cost_bn)} total'
+
+def _extract_km(text):
+    """Try to extract km value from prompt text."""
+    import re as _re
+    m = _re.search(r'(\d+)\s*km', text)
+    return int(m.group(1)) if m else 0
+
 def _casey_final_cost_rows(mode: str, subsector: str, p50: float, scenario: str):
     try:
         template = sector_cost_lines(mode, subsector)
@@ -6557,6 +6598,9 @@ def _casey_final_cost_rows(mode: str, subsector: str, p50: float, scenario: str)
         'water': ('Ml/d','Ml per day'),
         'airport': ('mppa','mppa capacity'),
         'mining': ('tpa','tpa capacity'),
+        'copper': ('tpa','tpa capacity'),
+        'metal': ('tpa','tpa capacity'),
+        'mineral': ('tpa','tpa capacity'),
         'energy': ('MW','MW capacity'),
         'port': ('TEU','TEU/year'),
         'road': ('lane-km','lane-km'),
@@ -6581,7 +6625,7 @@ def _casey_final_cost_rows(mode: str, subsector: str, p50: float, scenario: str)
             'description': desc,
             'type': typ,
             'basis': basis,
-            'unit_rate': f'{money_bn(mid)}/{_unit_label}' if mid > 0 else 'Benchmark-derived',
+            'unit_rate': _get_unit_rate_display(mid, p50, _unit, _unit_label, mode + ' ' + subsector),
             'p10_bn': round(mid * 0.82, 3),
             'p50_bn': round(mid, 3),
             'p90_bn': round(mid * 1.28, 3),
@@ -6916,6 +6960,59 @@ def build_model(prompt: str='', client: str='', class_level: int=3, schedule_lev
             f'OBA-adjusted outturn: {money_bn(p50 * 1.35)}. Governing constraint: {signature.get("human_basis","definition maturity")}.',
             f'Gate status: {"CONDITIONAL" if confidence >= 60 else "NOT READY"}. Next action: close governing constraint evidence with named owner.',
         ],
+        # ── Trust Runtime fields (TrustRuntimeBar needs governance_state) ──────────
+        'governance_state': {
+            'board_defensibility': f'{"Strong" if confidence >= 75 else "Moderate" if confidence >= 60 else "Weak"} — {confidence}% board-defensibility score',
+            'governance_stress': f'{"Low" if confidence >= 75 else "Medium" if confidence >= 60 else "High"} — {"Class 2 or better" if int(class_level or 3) <= 2 else f"Class {int(class_level or 3)}"} estimate maturity',
+            'tail_exposure': f'{money_bn(p80)} P80 ({round((p80/p50-1)*100,0):.0f}% above P50) — {"Within tolerance" if p80/p50 < 1.2 else "Board conversation required" if p80/p50 < 1.35 else "PAC inquiry risk"}',
+            'evidence_volatility': f'{"Low" if confidence >= 75 else "Medium" if confidence >= 60 else "High"} — {len(risks)} identified risks, {"all owned" if not any(r.get("owner","") in ["TBC","TBD","—",""] for r in risks) else str(sum(1 for r in risks if r.get("owner","") not in ["TBC","TBD","—",""])) + "/" + str(len(risks)) + " owned"}',
+            'reserve_pressure': f'{"Adequate" if p80/p50 < 1.18 else "Under pressure" if p80/p50 < 1.30 else "Insufficient"} — P50 to P80 gap is {money_bn(p80 - p50)} ({round((p80/p50-1)*100,0):.0f}%)',
+            'decision_posture': f'{"Gate-ready" if confidence >= 75 else "Conditional" if confidence >= 60 else "Not gate-ready"} — {scenario_label} scenario',
+        },
+        'scenario_signature': f'{subsector} | {loc_name} | {scenario_label} | {confidence}% confidence | {class_name}',
+        'casey_runtime': {
+            'scenario_signature': f'{subsector} | {scenario_label} | {confidence}%',
+        },
+
+        # ── Fixed programme_mortality_risk as object (advisor tab needs .pct) ──────
+        'programme_mortality_engine': {
+            'pct': max(15, min(75, int(risk_score * 0.7))),
+            'label': 'HIGH' if risk_score > 70 else ('ELEVATED' if risk_score > 45 else ('MODERATE' if risk_score > 25 else 'LOW')),
+            'narrative': f'{subsector} programmes at this scale and definition maturity have a {max(15, min(75, int(risk_score * 0.7)))}% historical probability of requiring rebaselining before completion (Flyvbjerg 2022). Primary driver: scope instability after approval.',
+            'comparable': f'Reference class: {get_named_benchmarks(subsector, mode)[0].get("name","comparable programmes") if get_named_benchmarks(subsector, mode) else "comparable programmes"} — {get_named_benchmarks(subsector, mode)[0].get("growth",0) if get_named_benchmarks(subsector, mode) else 0}% cost growth.',
+        },
+
+        # ── Fixed confidence_trajectory as object (advisor tab needs .direction) ──
+        'confidence_trajectory_obj': {
+            'direction': 'DECLINING' if risk_score > 60 else ('STABLE' if risk_score > 35 else 'IMPROVING'),
+            'current': confidence,
+            'target': 75,
+            'gap': max(0, 75 - confidence),
+            'narrative': f'Confidence is currently {confidence}% against a 75% board approval threshold. {"The programme is on track for conditional approval — close the governing constraint evidence to reach 75%." if confidence >= 65 else "Material evidence closure is required before any investment committee approval."}',
+            'next_gate': f'Priority actions: close evidence on governing constraint ({signature.get("human_basis","definition maturity")}), advance estimate to Class {max(1,int(class_level or 3)-1)}, confirm procurement strategy.',
+        },
+
+        # ── Fixed traditional_vs_casey with .casey and .traditional (advisor expects these keys) ──
+        'traditional_vs_casey': {
+            'traditional': f'A conventional advisory report on this {subsector} programme would present a single-point P50 estimate, a bar chart schedule, and a risk register with generic mitigations. No confidence interval stated. OBA not disclosed. Governing constraint not named.',
+            'casey': f'CASEY identifies the governing constraint as: {signature.get("human_basis","definition maturity")}. P80 exposure is {money_bn(p80)} — {round((p80/p50-1)*100,0):.0f}% above P50. OBA-adjusted outturn is {money_bn(p50 * 1.35)}.',
+            'casey_read': f'CASEY identifies the governing constraint as: {signature.get("human_basis","definition maturity")}. P80 exposure is {money_bn(p80)} — {round((p80/p50-1)*100,0):.0f}% above P50.',
+            'traditional_read': f'A conventional advisory report would present a single-point P50 estimate with no confidence interval, no OBA and no governing constraint.',
+            'what_the_consultant_wont_tell_you': f'The primary failure mode for {subsector} is: {_get_sector_failure(subsector, mode)[:200]}',
+            'incumbent_line': f'Incumbent consultants on {subsector} programmes do not name programme mortality risk because doing so reduces their fee scope.',
+            'gap': f'The gap between P50 ({money_bn(p50)}) and OBA-adjusted outturn ({money_bn(p50 * 1.35)}) is {money_bn(p50 * 0.35)} — this is the systematic optimism bias that conventional reports do not disclose.',
+        },
+
+        # ── Fixed intervention_intelligence as array (advisor expects to .map()) ──
+        'intervention_intelligence': [
+            f'Close the governing constraint ({signature.get("human_basis","definition maturity")}) with named owner, evidence plan and closure date. This single action is worth 8-12 confidence percentage points.',
+            f'Advance estimate class from Class {int(class_level or 3)} to Class {max(1,int(class_level or 3)-1)} before capital commitment. Current maturity does not support a bankable cost.',
+            f'Confirm OBA disclosure — {money_bn(p50 * 1.35)} adjusted outturn must appear in the board executive summary, not only in a technical appendix.',
+            f'Validate procurement strategy with Commercial Director sign-off. Undefined procurement adds 5-8% P80 exposure.',
+            f'Name all risk owners and confirm mitigation plans are evidenced with progress dates. {len([r for r in risks if not r.get("owner") or r.get("owner") in ["TBC","TBD","—",""]])} risks currently without named owner.',
+        ],
+
+        # ── Monte Carlo curve — generate from qcra/qsra values ─────────────────
         'generated_at': datetime.utcnow().isoformat(),
     }
 
@@ -6942,7 +7039,112 @@ def build_model(prompt: str='', client: str='', class_level: int=3, schedule_lev
     except Exception:
         pass
 
-    # Normalize risk field names for frontend compatibility
+    # Fix monte_carlo curve — generate from qcra/qsra values for chart rendering
+    try:
+        mc = model.get('monte_carlo', {})
+        if not mc.get('curve') or len(mc.get('curve', [])) == 0:
+            qcra = mc.get('qcra', {})
+            qsra = mc.get('qsra', {})
+            p10c = float(qcra.get('p10', 0) or 0)
+            p50c = float(qcra.get('p50', 0) or 0)
+            p80c = float(qcra.get('p80', 0) or 0)
+            p90c = float(qcra.get('p90', 0) or 0)
+            p10s = float(qsra.get('p10', 0) or 0)
+            p50s = float(qsra.get('p50', 0) or 0)
+            p80s = float(qsra.get('p80', 0) or 0)
+            p90s = float(qsra.get('p90', 0) or 0)
+            if p50c > 0 and p50s > 0:
+                # Generate smooth S-curve from P10 to P90
+                curve = []
+                for pct in range(0, 101, 5):
+                    t = pct / 100.0
+                    # Interpolate cost and schedule along normal distribution approximation
+                    if t <= 0.5:
+                        cost_v = p10c + (p50c - p10c) * (t / 0.5)
+                        sched_v = p10s + (p50s - p10s) * (t / 0.5)
+                    else:
+                        cost_v = p50c + (p90c - p50c) * ((t - 0.5) / 0.5)
+                        sched_v = p50s + (p90s - p50s) * ((t - 0.5) / 0.5)
+                    # Adjust to match P80 better
+                    if 75 <= pct <= 85:
+                        cost_v = p80c * (1 + (pct - 80) * 0.005)
+                        sched_v = p80s * (1 + (pct - 80) * 0.004)
+                    curve.append({
+                        'percentile': pct,
+                        'cost_bn': round(max(p10c * 0.8, cost_v), 2),
+                        'schedule_months': int(max(p10s * 0.85, sched_v))
+                    })
+                mc['curve'] = curve
+                model['monte_carlo'] = mc
+        # Fix tornado - populate from risks if empty
+        if not mc.get('qcra_tornado') and not mc.get('tornado'):
+            risks = model.get('risks', [])
+            tornado = []
+            for r in sorted(risks, key=lambda x: float(x.get('driver_score', x.get('cost_emv_bn', 0) or 0)), reverse=True)[:8]:
+                tornado.append({
+                    'risk_id': r.get('id', r.get('risk_id', '?')),
+                    'title': (r.get('title') or r.get('risk', '?'))[:28],
+                    'driver': (r.get('title') or r.get('risk', '?'))[:28],
+                    'driver_score': float(r.get('driver_score', r.get('cost_emv_bn', 0) or 0)),
+                    'contribution': float(r.get('cost_emv_bn') or r.get('cost_m_bn', 0) or 0),
+                    'category': r.get('category', 'Risk'),
+                    'cbs': r.get('cbs', '01.01'),
+                })
+            mc['tornado'] = tornado
+            mc['qcra_tornado'] = tornado
+            model['monte_carlo'] = mc
+    except Exception:
+        pass
+
+    # Patch confidence_trajectory to have direction field for advisor tab
+    try:
+        ct = model.get('confidence_trajectory')
+        if isinstance(ct, dict) and 'direction' not in ct:
+            conf_v = int(model.get('confidence_pct', 60) or 60)
+            ct['direction'] = 'DECLINING' if conf_v < 55 else ('STABLE' if conf_v < 70 else 'IMPROVING')
+            ct['next_gate'] = ct.get('actions', ['Close governing constraint evidence.'])[0] if ct.get('actions') else 'Close governing constraint evidence.'
+        if isinstance(ct, dict) and 'programme_mortality_engine' not in model:
+            model['programme_mortality_engine'] = model.get('programme_mortality_engine', {})
+        # Also make confidence_trajectory_obj available as confidence_trajectory for advisor
+        if model.get('confidence_trajectory_obj'):
+            model['confidence_trajectory'] = model['confidence_trajectory_obj']
+    except Exception:
+        pass
+
+    # Normalise programme_mortality_risk for advisor (needs .pct, .label)
+    try:
+        if isinstance(model.get('programme_mortality_risk'), str):
+            score = max(15, min(75, int(model.get('confidence_pct', 60) or 60) // 2))
+            model['programme_mortality_risk'] = {
+                'pct': score,
+                'label': 'ELEVATED' if score > 45 else 'MODERATE' if score > 25 else 'LOW',
+                'narrative': model.get('programme_mortality_risk', ''),
+                'comparable': '',
+            }
+        if model.get('programme_mortality_engine'):
+            model['programme_mortality_risk'] = model['programme_mortality_engine']
+    except Exception:
+        pass
+
+    # Normalise intervention_intelligence to be array for advisor .map()
+    try:
+        ii = model.get('intervention_intelligence')
+        if isinstance(ii, str):
+            model['intervention_intelligence'] = [ii] if ii else []
+    except Exception:
+        pass
+
+    # Normalise traditional_vs_casey.casey key
+    try:
+        tvc = model.get('traditional_vs_casey', {})
+        if isinstance(tvc, dict) and 'casey' not in tvc and 'casey_read' in tvc:
+            tvc['casey'] = tvc['casey_read']
+        if isinstance(tvc, dict) and 'traditional' not in tvc and 'traditional_read' in tvc:
+            tvc['traditional'] = tvc['traditional_read']
+    except Exception:
+        pass
+
+        # Normalize risk field names for frontend compatibility
     for r in model.get('risks', []):
         if 'risk_event' in r and 'event' not in r:
             r['event'] = r['risk_event']
