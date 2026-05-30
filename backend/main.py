@@ -2110,7 +2110,16 @@ def _v125_apply_full_sector_lock(model: Dict[str, Any], prompt: str='', client: 
     m['schedule_rows']=schedule_rows
     m['risk_register']=risks
     m['risks']=risks
-    m['procurement_heatmap']=[{'package':x,'status':'Active' if i<3 else 'Watch','risk':'Sector-native procurement exposure','owner':'Commercial Lead'} for i,x in enumerate(L['cost'][:5])]
+    m['procurement_heatmap']=[{
+            'package':x,
+            'status':'Active' if i<3 else 'Watch',
+            'exposure':'High' if i<2 else 'Medium-High' if i<4 else 'Medium',
+            'value_est': money_bn(p50 * [0.35,0.22,0.18,0.12,0.08][i] if i < 5 else 0.05),
+            'lead_time': ['18-24 months','12-18 months','24-36 months','9-12 months','6-9 months'][i] if i < 5 else '12 months',
+            'single_source': i < 2,
+            'risk':'Critical' if i < 2 else 'High',
+            'owner':'Commercial Lead',
+        } for i,x in enumerate(L['cost'][:5])]
     m['critical_path_narrative']=[f"{x} is part of the locked {L['label']} critical-path narrative." for x in L['schedule'][:4]]
     m['red_flags']=[f"Evidence gap around {L['constraints']}.",f"Benchmark challenge remains unless {L['chain'][-2].lower()} is proven."]
     forbidden=_v125_forbidden_terms(key)
@@ -2345,7 +2354,16 @@ def _v130_apply(model, prompt='', client=''):
     m['uncertainty_narrative']={'estimate_maturity':'Class 3 is usable for budget authorisation only if the evidence gaps are explicit.','schedule_maturity':'Schedule Level 4 improves logic, but board confidence is still governed by near-critical density and owner evidence.','interpretation':f"Live calibration is weighting {L['constraints']} into the QSRA/QCRA tail."}
     cost,sched,risks=_v130_rows(L,m); m['cost_lines']=cost; m['schedule_rows']=sched; m['risk_register']=risks; m['risks']=risks
     m['cost_breakdown']=cost; m['estimates_by_class']={str(i):cost for i in range(1,6)}; m['schedules_by_level']={str(i):sched for i in range(1,6)}
-    m['procurement_heatmap']=[{'package':x,'status':'Active' if i<3 else 'Watch','risk':'Sector-native procurement exposure','owner':'Commercial Lead'} for i,x in enumerate(L['cost'][:5])]
+    m['procurement_heatmap']=[{
+            'package':x,
+            'status':'Active' if i<3 else 'Watch',
+            'exposure':'High' if i<2 else 'Medium-High' if i<4 else 'Medium',
+            'value_est': money_bn(p50 * [0.35,0.22,0.18,0.12,0.08][i] if i < 5 else 0.05),
+            'lead_time': ['18-24 months','12-18 months','24-36 months','9-12 months','6-9 months'][i] if i < 5 else '12 months',
+            'single_source': i < 2,
+            'risk':'Critical' if i < 2 else 'High',
+            'owner':'Commercial Lead',
+        } for i,x in enumerate(L['cost'][:5])]
     m['critical_path_narrative']=[f"{x} is near-critical in the {L['label']} sector graph and must be evidenced before approval." for x in L['schedule'][:5]]
     m['red_flags']=[f"Unevidenced confidence around {L['constraints']}.", "Scenario benefit may be risk transfer rather than risk reduction.", "Board pack should name owner, evidence source and date for each governing constraint."]
     forbidden=_v130_forbidden(key)
@@ -5120,22 +5138,61 @@ def add_sheet(wb,name,rows):
 
 def workbook_bytes(model):
     wb=Workbook(); wb.remove(wb.active)
-    add_sheet(wb,"Board Summary",[["Field","Value"],["Generated",datetime.utcnow().isoformat()],["Version",model.get("version")],["Title",model.get("title")],["Client",model.get("client")],["Executive Summary",model.get("executive_summary")],["Mode",model.get("mode")],["Subsector",model.get("subsector")],["Location",model.get("location")],["Scenario",model.get("scenario_label")],["Cost P10",model.get("cost_p10")],["Cost P50",model.get("cost_p50")],["Cost P90",model.get("cost_p90")],["Schedule",model.get("schedule")],["QCRA P80",money_bn(model["monte_carlo"]["qcra"]["p80"])],["QSRA P80",model["monte_carlo"]["qsra"]["p80"]],["Risk",model.get("risk")],["Confidence",f"{model.get('confidence_pct')}%"]])
-    add_sheet(wb,"Primary Cost Estimate",[["CBS","Description","Type","Basis","P10 BN","P50 BN","P90 BN","Impact Basis"]]+[[x["cbs"],x["description"],x["type"],x["basis"],x["p10_bn"],x["p50_bn"],x["p90_bn"],x["impact_basis"]] for x in model["cost_lines"]])
-    for c,rows in model["estimates_by_class"].items(): add_sheet(wb,f"Class {c} Estimate",[["Class","CBS","Description","P10","P50","P90","Maturity"]]+[[c,x["cbs"],x["description"],x["p10_bn"],x["p50_bn"],x["p90_bn"],x["maturity"]] for x in rows])
-    for l,rows in model["schedules_by_level"].items(): add_sheet(wb,f"Level {l} Schedule",[["Activity ID","Phase","Activity","Predecessor","Duration Months","Critical","Basis"]]+[[x["activity_id"],x["phase"],x["activity"],x["predecessor"],x["duration_months"],x["critical"],x["basis"]] for x in rows])
-    add_sheet(wb,"Risk Register",[["ID","Risk","Category","Probability","Activity","CBS","Sched O","Sched M","Sched P","Cost O","Cost M","Cost P","Owner","Trigger","Mitigation","Cost Basis","Schedule Basis"]]+[[r["risk_id"],r["title"],r["category"],r["probability_pct"],r["activity_id"],r["cbs"],r["schedule_o_days"],r["schedule_m_days"],r["schedule_p_days"],r["cost_o_bn"],r["cost_m_bn"],r["cost_p_bn"],r["owner"],r["trigger"],r["mitigation"],r["basis_of_cost_impact"],r["basis_of_schedule_impact"]] for r in model["risks"]])
-    add_sheet(wb,"Monte Carlo P-Curve",[["Percentile","QCRA Cost BN","QSRA Months"]]+[[x["percentile"],x["cost_bn"],x["schedule_months"]] for x in model["monte_carlo"]["curve"]])
-    add_sheet(wb,"Tornado Drivers",[["Risk","Title","Activity","CBS","Cost Mean BN","Schedule Mean Days","Driver Score"]]+[[x["risk_id"],x["title"],x["activity_id"],x["cbs"],x["cost_mean_bn"],x["schedule_mean_days"],x["driver_score"]] for x in model["monte_carlo"]["tornado"]])
-    add_sheet(wb,"Scenarios",[["Scenario","Cost","Schedule Months","Risk","Confidence","Why"]]+[[x["label"],x["cost"],x["schedule_months"],x["risk"],x["confidence"],x["why"]] for x in model["scenario_comparison"]])
-    add_sheet(wb,"Benchmarks",[["Metric","Value","Why"]]+[[x["metric"],x["value"],x["why"]] for x in model["benchmarks"]])
-    add_sheet(wb,"Demo Script",[["Step"]]+[[x] for x in model["launch_demo_script"]])
+    add_sheet(wb,"Board Summary",[["Field","Value"],["Generated",datetime.utcnow().isoformat()],["Version",model.get("version")],["Title",model.get("title")],["Client",model.get("client")],["Executive Summary",model.get("executive_summary")],["Mode",model.get("mode")],["Subsector",model.get("subsector")],["Location",model.get("location")],["Scenario",model.get("scenario_label")],["Cost P10",model.get("cost_p10")],["Cost P50",model.get("cost_p50")],["Cost P90",model.get("cost_p90")],["Schedule",model.get("schedule")],["QCRA P80",money_bn(model.get("monte_carlo","—")["qcra"]["p80"])],["QSRA P80",model.get("monte_carlo","—")["qsra"]["p80"]],["Risk",model.get("risk")],["Confidence",f"{model.get('confidence_pct')}%"]])
+    _cls = model.get("cost_lines") or model.get("cost_breakdown") or []
+    add_sheet(wb,"Primary Cost Estimate",[["CBS","Description","Type","Basis","P10 ($B)","P50 ($B)","P90 ($B)","Impact Basis"]]+[[x.get("cbs","?"),x.get("description","?"),x.get("type","Direct"),x.get("basis",x.get("basis_of_cost_impact","?")),x.get("p10_bn",x.get("p10",0)),x.get("p50_bn",x.get("p50",0)),x.get("p90_bn",x.get("p90",0)),x.get("impact_basis",x.get("basis","?"))] for x in _cls])
+    for c,rows in model.get("estimates_by_class","—").items(): add_sheet(wb,f"Class {c} Estimate",[["Class","CBS","Description","P10","P50","P90","Maturity"]]+[[c,x.get("cbs","?"),x.get("description","?"),x.get("p10_bn",x.get("p50",0)*0.75),x.get("p50_bn",x.get("p50",0)),x.get("p90_bn",x.get("p50",0)*1.35),x.get("maturity","Class")] for x in rows])
+    for l,rows in model.get("schedules_by_level","—").items(): add_sheet(wb,f"Level {l} Schedule",[["Activity ID","Phase","Activity","Predecessor","Duration Months","Critical","Basis"]]+[[x.get("activity_id",0),x.get("phase",0),x.get("activity",0),x.get("predecessor",0),x.get("duration_months",0),x.get("critical",0),x.get("basis",0)] for x in rows])
+    add_sheet(wb,"Risk Register",[["ID","Risk","Category","Probability","Activity","CBS","Sched O","Sched M","Sched P","Cost O","Cost M","Cost P","Owner","Trigger","Mitigation","Cost Basis","Schedule Basis"]]+[[r.get("risk_id",""),r.get("title",""),r.get("category",""),r.get("probability_pct",""),r.get("activity_id",""),r.get("cbs",""),r.get("schedule_o_days",""),r.get("schedule_m_days",""),r.get("schedule_p_days",""),r.get("cost_o_bn",""),r.get("cost_m_bn",""),r.get("cost_p_bn",""),r.get("owner",""),r.get("trigger",""),r.get("mitigation",""),r.get("basis_of_cost_impact",""),r.get("basis_of_schedule_impact","")] for r in model.get("risks","—")])
+    add_sheet(wb,"Monte Carlo P-Curve",[["Percentile","QCRA Cost BN","QSRA Months"]]+[[x.get("percentile",0),x.get("cost_bn",0),x.get("schedule_months",0)] for x in model.get("monte_carlo","—")["curve"]])
+    add_sheet(wb,"Tornado Drivers",[["Risk","Title","Activity","CBS","Cost Mean BN","Schedule Mean Days","Driver Score"]]+[[x.get("risk_id",0),x.get("title",0),x.get("activity_id",0),x.get("cbs",0),x.get("cost_mean_bn",0),x.get("schedule_mean_days",0),x.get("driver_score",0)] for x in model.get("monte_carlo","—")["tornado"]])
+    add_sheet(wb,"Scenarios",[["Scenario","Cost","Schedule Months","Risk","Confidence","Why"]]+[[x.get("label",0),x.get("cost",0),x.get("schedule_months",0),x.get("risk",0),x.get("confidence",0),x.get("why",0)] for x in model.get("scenario_comparison","—")])
+    add_sheet(wb,"Benchmarks",[["Metric","Value","Why"]]+[[x.get("metric",0),x.get("value",0),x.get("why",0)] for x in model.get("benchmarks","—")])
+    add_sheet(wb,"Demo Script",[["Step"]]+[[x] for x in model.get("launch_demo_script","—")])
     # charts
     try:
         ws=wb["Monte Carlo P-Curve"]; chart=LineChart(); chart.title="QCRA/QSRA P-Curve"; data=Reference(ws,min_col=2,max_col=3,min_row=1,max_row=ws.max_row); cats=Reference(ws,min_col=1,min_row=2,max_row=ws.max_row); chart.add_data(data,titles_from_data=True); chart.set_categories(cats); ws.add_chart(chart,"E2")
         ws2=wb["Tornado Drivers"]; b=BarChart(); b.title="Tornado Drivers"; data=Reference(ws2,min_col=7,min_row=1,max_row=min(ws2.max_row,12)); cats=Reference(ws2,min_col=2,min_row=2,max_row=min(ws2.max_row,12)); b.add_data(data,titles_from_data=True); b.set_categories(cats); ws2.add_chart(b,"I2")
     except Exception: pass
     bio=BytesIO(); wb.save(bio); bio.seek(0); return bio.getvalue()
+
+def risk_register_workbook_bytes(model):
+    """Full risk register as XLSX workbook with EMV and board fields."""
+    try:
+        from openpyxl import Workbook as OpWB
+        from openpyxl.styles import PatternFill, Font, Alignment
+        wb2 = OpWB()
+        ws = wb2.active
+        ws.title = "Risk Register Pro"
+        headers = ['ID','Risk','Category','Cause','Event','Impact','Probability %','Owner','CBS','Mitigation','Trigger','EMV ($M)','Status','Pre-mitigation','Board Visible']
+        for col, h in enumerate(headers, 1):
+            ws.cell(row=1, column=col, value=h)
+        for i, r in enumerate(model.get('risks', []), 2):
+            emv = float(r.get('cost_emv_bn', r.get('cost_m_bn', 0)) or 0) * 1000
+            ws.append([
+                r.get('id', r.get('risk_id', f'R-{i:03d}')),
+                r.get('risk', r.get('title', '?')),
+                r.get('category', 'Delivery risk'),
+                r.get('cause', '—'),
+                r.get('event', r.get('risk_event', '—')),
+                r.get('impact', r.get('impact_description', '—'))[:100],
+                r.get('probability_pct', '—'),
+                r.get('owner', 'TBC'),
+                r.get('cbs', '01.01'),
+                r.get('mitigation', '—')[:120],
+                r.get('trigger', '—')[:80],
+                round(emv, 1),
+                r.get('status', 'Open'),
+                r.get('pre_mitigation_rating', '—'),
+                r.get('board_visibility', 'Yes'),
+            ])
+        bio3 = BytesIO()
+        wb2.save(bio3)
+        bio3.seek(0)
+        return bio3.getvalue()
+    except Exception as e:
+        # Fallback to CSV bytes
+        return risk_csv_bytes(model)
 
 def risk_csv_bytes(model):
     out=StringIO(); w=csv.writer(out); w.writerow(["Risk ID","Title","Category","Probability %","Activity ID","Activity Name","CBS","CBS Name","Schedule O","Schedule M","Schedule P","Cost O BN","Cost M BN","Cost P BN","Owner","Trigger","Mitigation","Basis Cost","Basis Schedule"])
@@ -5164,7 +5221,7 @@ def word_bytes(model):
         doc.add_heading(title,1)
         for x in items: doc.add_paragraph(x,style="List Bullet")
     doc.add_heading("Top Risk Drivers",1)
-    for r in model["risks"][:8]: doc.add_paragraph(f"{r['risk_id']} {r['title']} — {r['activity_id']} / {r['cbs']}: {r['basis_of_schedule_impact']}",style="List Bullet")
+    for r in model.get("risks",[])[:8]: doc.add_paragraph(f"{r.get('risk_id',r.get('id',' '))} {r.get('title',r.get('risk',' '))} — {r.get('cbs',' ')}",style="List Bullet")
     bio=BytesIO(); doc.save(bio); bio.seek(0); return bio.getvalue()
 
 def pptx_bytes(model):
@@ -7266,8 +7323,12 @@ def build_model(prompt: str='', client: str='', class_level: int=3, schedule_lev
             _sc_p50 = round(_sm_base_p50 * float(_cm2), 2)
             _sc_mo = max(1, int(_sm_base_mo * float(_sm2)))
             _sc_cv = max(10, min(96, _sm_base_cv + int(_cd2 or 0)))
+            _sm_curr = model.get('currency_symbol','$')
+            _sm_p50_str = money_bn(_sc_p50)
+            if _sm_curr and _sm_curr != '$' and _sm_p50_str.startswith('$'):
+                _sm_p50_str = _sm_curr + _sm_p50_str[1:]
             sm_list.append({'scenario':_sc2,'label':_sl2,'why':_sw2,
-                'cost_p50':money_bn(_sc_p50),'cost':money_bn(_sc_p50),
+                'cost_p50':_sm_p50_str,'cost':_sm_p50_str,
                 'schedule_months':_sc_mo,'schedule':f'{_sc_mo} months',
                 'confidence_pct':_sc_cv,'risk':risk_label(30+(_rm2-1)*40)})
         model['scenario_matrix'] = sm_list
@@ -7275,6 +7336,109 @@ def build_model(prompt: str='', client: str='', class_level: int=3, schedule_lev
     except Exception as _sm_err:
         pass
 
+    # ── Export compatibility aliases ─────────────────────────────────────────
+    try:
+        import re as _re_exp
+        costs_raw = model.get('cost_breakdown', [])
+        # Safe p50 numeric parse (handles £88.4B, €15B, NGN 12.4B, $95B etc)
+        _p50_raw = ''.join(c for c in str(model.get('cost_p50','0')) if c.isdigit() or c=='.')
+        p50_v = float(_p50_raw) if _p50_raw else float(model.get('cost_p50_raw', 0) or 0)
+        _p80_raw = ''.join(c for c in str(model.get('cost_p80','0')) if c.isdigit() or c=='.')
+        p80_v = float(_p80_raw) if _p80_raw else 0
+        conf_v = int(model.get('confidence_pct', 60) or 60)
+        cl_v = int(model.get('class_level', 3) or 3)
+        sub_v = model.get('subsector', 'programme')
+
+        # cost_lines for workbook_bytes
+        cl_items = []
+        for c in costs_raw:
+            try:
+                p10f = float(c.get('p10_bn') or c.get('p10') or 0)
+                p50f = float(c.get('p50_bn') or c.get('p50') or 0)
+                p90f = float(c.get('p90_bn') or c.get('p90') or 0)
+                if p50f > 0 and p10f == 0: p10f = round(p50f * 0.75, 3)
+                if p50f > 0 and p90f == 0: p90f = round(p50f * 1.35, 3)
+                basis_str = c.get('basis_of_cost_impact') or c.get('basis', 'Benchmark-derived')
+                cl_items.append({
+                    'cbs': c.get('cbs','01.01'),
+                    'description': c.get('description','—'),
+                    'type': c.get('type','Direct'),
+                    'basis': basis_str, 'basis_of_cost_impact': basis_str,
+                    'p10_bn': p10f, 'p50_bn': p50f, 'p90_bn': p90f,
+                    'impact_basis': basis_str[:60],
+                    'cost_m_bn': p50f, 'cost_o_bn': p10f, 'cost_p_bn': p90f,
+                    'cost_mean_bn': p50f, 'cost_bn': p50f,
+                    'unit_rate': c.get('unit_rate','—'),
+                    'basis_of_schedule_impact': 'Sector schedule model.',
+                })
+            except Exception:
+                pass
+        if cl_items:
+            model['cost_lines'] = cl_items
+
+        # estimates_by_class
+        model['estimates_by_class'] = {
+            str(cl_v): [{'class':str(cl_v),'cbs':c.get('cbs','?'),
+                'description':c.get('description','?'),'p50':float(c.get('p50_bn',0) or 0),
+                'type':c.get('type','Direct')} for c in costs_raw]
+        }
+
+        # word_bytes: board_challenge_questions, next_best_actions, red_flags, confidence_explanation
+        ba_raw = model.get('board_attack_simulation',[])
+        model.setdefault('board_challenge_questions', 
+            (ba_raw if isinstance(ba_raw,list) else [str(ba_raw)])[:6] or [
+            f'What is the P80 exposure and why is it not in the executive summary?',
+            f'What is your reference class OBA uplift for {sub_v}?',
+            f'Which risk will require rebaselining if not closed before capital commitment?',
+            f'Why is your P50 credible at Class {cl_v} definition maturity?',
+            f'What is your procurement strategy and when does it lock?',
+        ])
+        model.setdefault('next_best_actions', model.get('top_decisions_required') or [
+            'Close governing constraint evidence with named owner and closure date.',
+            f'Advance estimate class from Class {cl_v} to Class {max(1,cl_v-1)} before capital approval.',
+            'Confirm OBA disclosure in board executive summary.',
+        ])
+        _p80_pct = round((p80_v / max(0.01, p50_v) - 1) * 100) if p50_v > 0 else 0
+        model.setdefault('red_flags', [
+            f'P80 exposure is {model.get("cost_p80","?")} — {_p80_pct}% above P50.',
+            f'Class {cl_v} definition maturity — insufficient for capital approval without further evidence.',
+        ])
+        model.setdefault('confidence_explanation', [
+            f'Confidence {conf_v}% = sector benchmarks, Class {cl_v} estimate, risk profile, location.',
+            f'75%+ required for investment committee approval. Gap: {max(0,75-conf_v)} points.',
+        ])
+
+        # Risk register compatibility
+        for r in model.get('risks',[]):
+            r.setdefault('activity_name', r.get('risk', r.get('title','?'))[:40])
+            r.setdefault('cbs_name', r.get('description', r.get('cbs','?')))
+            r.setdefault('impact_basis', r.get('impact', r.get('event','?'))[:60])
+
+        # Schedule compatibility
+        for s in (model.get('schedule_activities') or model.get('schedules') or []):
+            s.setdefault('activity_name', s.get('name', s.get('activity_id','?')))
+            s.setdefault('basis_of_schedule_impact', 'Sector schedule model, selected schedule level.')
+
+        # Procurement heatmap enrichment with value/lead_time
+        _lead = ['18-24 months','12-18 months','24-36 months','9-12 months','6-9 months','12 months']
+        _vshare = [0.35, 0.22, 0.18, 0.12, 0.08, 0.05]
+        ph2 = model.get('procurement_heatmap',[])
+        if ph2:
+            model['procurement_heatmap'] = [
+                dict(p, **{
+                    'value_est': p.get('value_est') or money_bn(p50_v * _vshare[min(i,5)]),
+                    'lead_time': p.get('lead_time') or _lead[min(i,5)],
+                    'single_source': p.get('single_source', i<2),
+                    'exposure': p.get('exposure','High' if i<2 else 'Medium-High' if i<3 else 'Medium'),
+                    'risk_rating': 'Critical' if i<2 else 'High' if i<4 else 'Medium',
+                    'owner': p.get('owner','Commercial Lead'),
+                    'status_flag': 'RED' if i<2 else 'AMBER' if i<4 else 'GREEN',
+                }) for i,p in enumerate(ph2)
+            ]
+    except Exception as _ce:
+        pass
+
+    
     return model
 
 APP_VERSION = 'CASEY FINAL Backend-Derived Model Restored'
