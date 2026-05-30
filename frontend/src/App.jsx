@@ -487,17 +487,14 @@ async function get(path) {
   return r.json();
 }
 async function download(path, model, name, setExportingLabel) {
-  // Simple, self-contained download — no component state dependencies
+  // Uses apiFetch which handles URL retry logic and CORS correctly
   try {
     if (setExportingLabel) setExportingLabel('Generating…');
-    const resp = await fetch(
-      (window._CASEY_API || 'https://corbit-1.onrender.com') + path,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(model || {})
-      }
-    );
+    const resp = await apiFetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(model || {})
+    });
     if (!resp.ok) {
       const txt = await resp.text();
       let msg = txt;
@@ -516,7 +513,7 @@ async function download(path, model, name, setExportingLabel) {
     setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 2000);
     if (setExportingLabel) setTimeout(() => setExportingLabel(''), 1500);
   } catch (err) {
-    alert('Download error: ' + err.message + '. Check your connection and try again.');
+    alert('Export error: ' + (err.message || 'Network error') + '. The backend may be waking up — wait 20 seconds and try again.');
     if (setExportingLabel) setExportingLabel('');
   }
 }
@@ -3063,238 +3060,7 @@ function parseMoneyLocal(v) {
           </Card>
         </section>}
 
-        {tab === 'twin' && (() => {
-          // ── SECTOR INPUT DEFINITIONS ───────────────────────────────
-          const SECTOR_FIELDS = {
-            Rail:[{k:'civil_complete_pct',l:'Civil works % complete',t:'pct',bm:20,h:'Physical completion of civil construction vs programme plan. Expect 20% at programme month 6.'},
-                  {k:'possessions_used_pct',l:'Track possessions used vs granted %',t:'pct',bm:85,h:'Possessions used as % of what was granted. Below 80% = programme extension risk.'},
-                  {k:'systems_integration_open_items',l:'Open IEMs (interface items)',t:'num',bm:50,h:'Open Interface Exception Memoranda. >100 at planned opening = systemic failure risk. Reference: Crossrail had 900+.'},
-                  {k:'signalling_milestones_met_pct',l:'Signalling milestones on time %',t:'pct',bm:70,h:'% of signalling integration milestones achieved on plan.'},
-                  {k:'earned_value_pct',l:'Earned value % (EV/BAC)',t:'pct',bm:95,h:'Earned Value ÷ Budget at Completion × 100. Below 90% = overrun trajectory.'}],
-            Nuclear:[{k:'gda_status',l:'ONR/NRC regulatory hold-points cleared %',t:'pct',bm:60,h:'% of regulatory hold-points cleared on schedule. None can be skipped.'},
-                     {k:'nuclear_workforce_pct',l:'Nuclear-qualified workforce secured %',t:'pct',bm:50,h:'SC/DV cleared and nuclear-qualified staff vs planned peak.'},
-                     {k:'design_freeze_achieved',l:'Design frozen (independent authority sign-off)',t:'bool',h:'Has the design been frozen? No construction should start without it.'},
-                     {k:'supply_chain_qualified_pct',l:'Nuclear supply chain qualified %',t:'pct',bm:40,h:'% of nuclear-grade suppliers pre-qualified and contracted.'},
-                     {k:'earned_value_pct',l:'Earned value %',t:'pct',bm:95,h:'EV/BAC × 100.'}],
-            Defence:[{k:'requirements_frozen',l:'Requirements baseline frozen (SRO signed)',t:'bool',h:'Has SRO signed a frozen requirements baseline? Without this, every change costs 10-30× more.'},
-                     {k:'sc_dv_clearances_pct',l:'SC/DV clearances granted %',t:'pct',bm:60,h:'% of required SC/DV clearances granted. Below 50% = programme delay risk.'},
-                     {k:'itar_licences_granted',l:'All ITAR/export licences granted',t:'bool',h:'All US-origin technology licences granted? Missing licence = 6-12 month stop.'},
-                     {k:'test_milestones_met_pct',l:'Test & evaluation milestones on time %',t:'pct',bm:70,h:'% of T&E programme milestones on plan.'},
-                     {k:'earned_value_pct',l:'Earned value %',t:'pct',bm:90,h:'EV/BAC × 100.'}],
-            Space:[{k:'trl_achieved',l:'Technology Readiness Level (TRL) achieved',t:'num',bm:6,h:'Highest TRL independently verified. Below planned TRL = cost and schedule risk. TRL 6 = minimum before PDR.'},
-                   {k:'open_anomalies',l:'Open qualification anomalies (unresolved)',t:'num',bm:5,h:'Unresolved test anomalies. Each delays launch authority. JWST had 300+ at one point.'},
-                   {k:'mission_assurance_items_closed_pct',l:'Mission assurance items closed %',t:'pct',bm:60,h:'% of mission assurance action items formally closed with evidence.'},
-                   {k:'launch_manifest_confirmed',l:'Launch slot confirmed with provider',t:'bool',h:'Is a specific launch vehicle and launch date confirmed? Without this, schedule is notional.'},
-                   {k:'mass_margin_pct',l:'Mass margin remaining %',t:'pct',bm:15,h:'Spacecraft mass margin as % of launch capacity. Below 10% = redesign required.'}],
-            Digital:[{k:'grid_connection_confirmed',l:'Grid connection agreement signed',t:'bool',h:'Firm connection agreement with DNO/TSO signed? This is the critical path for every data centre programme.'},
-                     {k:'transformer_delivery_confirmed',l:'Power transformer delivery confirmed',t:'bool',h:'Transformers on order with firm delivery date? 18-month lead time — must be ordered before planning consent.'},
-                     {k:'planning_consent_granted',l:'Full planning consent granted',t:'bool',h:'Has consent been granted including substation and cooling infrastructure?'},
-                     {k:'it_load_spec_frozen',l:'IT load specification frozen',t:'bool',h:'Has the compute power density spec been frozen? Any increase requires cooling redesign.'},
-                     {k:'earned_value_pct',l:'Earned value %',t:'pct',bm:95,h:'EV/BAC × 100.'}],
-            Mining:[{k:'ore_grade_vs_feasibility_pct',l:'Ore grade vs feasibility model %',t:'pct',bm:95,h:'Actual ore grade as % of feasibility assumption. Below 90% = business case at risk.'},
-                    {k:'community_agreement_signed',l:'Community benefit agreement signed',t:'bool',h:'Signed agreement with affected communities? Without it: suspension risk. Reference: Cobre Panama.'},
-                    {k:'comminution_equipment_delivery_confirmed',l:'Processing equipment delivery confirmed',t:'bool',h:'SAG mill / ball mill delivery confirmed with manufacturer?'},
-                    {k:'power_supply_secured',l:'Power supply contracted for full load',t:'bool',h:'Power contracted for full production load? Without it mine cannot operate at design capacity.'},
-                    {k:'earned_value_pct',l:'Earned value %',t:'pct',bm:92,h:'EV/BAC × 100.'}],
-            Battery:[{k:'offtake_contracted_pct',l:'Offtake contracted % of annual capacity',t:'pct',bm:40,h:'% of gigafactory capacity under confirmed long-term supply agreement. No offtake = Britishvolt risk.'},
-                     {k:'cell_chemistry_qualified',l:'Cell chemistry qualified (meets target)',t:'bool',h:'Has the cell chemistry been qualified and does it meet energy density target?'},
-                     {k:'formation_equipment_on_order',l:'Formation cycling equipment on order',t:'bool',h:'18-month lead time item. Must be ordered now — it is always on the critical path.'},
-                     {k:'earned_value_pct',l:'Earned value %',t:'pct',bm:90,h:'EV/BAC × 100.'}],
-            Semiconductor:[{k:'tool_allocation_confirmed_pct',l:'Process tools allocated % (incl. EUV)',t:'pct',bm:50,h:'% of critical process tools with confirmed allocation. ASML EUV = 3-year lead time.'},
-                           {k:'cleanroom_handover_complete',l:'Cleanroom handed over and qualifying',t:'bool',h:'Has cleanroom been handed over? Qualification takes 18 months — must start now.'},
-                           {k:'workforce_secured_pct',l:'Process integration engineers secured %',t:'pct',bm:40,h:'% of required process integration engineers on contract.'},
-                           {k:'earned_value_pct',l:'Earned value %',t:'pct',bm:92,h:'EV/BAC × 100.'}],
-          };
-          const sectorKey = (sub,mode) => {
-            const s = ((sub||'')+(mode||'')).toLowerCase();
-            if(s.includes('rail')||s.includes('transit')) return 'Rail';
-            if(s.includes('nuclear')) return 'Nuclear';
-            if(s.includes('defence')||s.includes('defense')||s.includes('secure')) return 'Defence';
-            if(s.includes('space')||s.includes('lunar')||s.includes('mars')||s.includes('orbital')||s.includes('satellite')) return 'Space';
-            if(s.includes('data')||s.includes('digital')||s.includes('hyperscale')) return 'Digital';
-            if(s.includes('mining')||s.includes('copper')||s.includes('mineral')) return 'Mining';
-            if(s.includes('battery')||s.includes('gigafactory')) return 'Battery';
-            if(s.includes('semi')||s.includes('fab')) return 'Semiconductor';
-            return null;
-          };
-          const sk = sectorKey(model?.subsector||'', model?.mode||'');
-          const sectorFields = sk ? SECTOR_FIELDS[sk] : [];
-
-          // Pre-filled demo scenarios
-          const DEMO_SCENARIOS = {
-            earth_on_track: {label:'🟢 Earth demo — on track (month 18)',desc:'HS2-style programme, 18 months in, tracking close to plan.',inputs:{progress_pct:15,actual_cost_pct:102,earned_value_pct:98,schedule_slip_months:1,scope_changes_count:2,civil_complete_pct:14,possessions_used_pct:88,systems_integration_open_items:35,signalling_milestones_met_pct:82,earned_value_pct:98}},
-            earth_overrun: {label:'🔴 Earth demo — cost overrun (month 36)',desc:'HS2-style programme, 3 years in, 12% over budget and 6-month slip. Board intervention required.',inputs:{progress_pct:28,actual_cost_pct:115,earned_value_pct:86,schedule_slip_months:6,scope_changes_count:9,civil_complete_pct:26,possessions_used_pct:71,systems_integration_open_items:148,signalling_milestones_met_pct:54,earned_value_pct:86}},
-            space_on_track: {label:'🟢 Space demo — on track (Phase B)',desc:'Lunar programme at Phase B/CDR, TRL progressing well, launch manifest confirmed.',inputs:{progress_pct:40,actual_cost_pct:101,earned_value_pct:99,schedule_slip_months:0,scope_changes_count:1,trl_achieved:6,open_anomalies:7,mission_assurance_items_closed_pct:74,launch_manifest_confirmed:1,mass_margin_pct:18}},
-            space_at_risk: {label:'🟡 Space demo — mission at risk (Phase C)',desc:'Lunar programme at Phase C, TRL lower than expected, 28 open anomalies, launch slot not confirmed.',inputs:{progress_pct:60,actual_cost_pct:118,earned_value_pct:82,schedule_slip_months:14,scope_changes_count:6,trl_achieved:5,open_anomalies:28,mission_assurance_items_closed_pct:41,launch_manifest_confirmed:0,mass_margin_pct:8}},
-          };
-
-          const [twinInputs, setTwinInputs] = React.useState({});
-          const [twinResult, setTwinResult] = React.useState(null);
-          const [twinBusy, setTwinBusy] = React.useState(false);
-          const [twinHistory, setTwinHistory] = React.useState([]);
-          const [activeDemo, setActiveDemo] = React.useState(null);
-          const setInput = (k,v) => setTwinInputs(prev=>({...prev,[k]:v}));
-          const loadDemo = (key) => {
-            setActiveDemo(key);
-            setTwinInputs(DEMO_SCENARIOS[key].inputs);
-            setTwinResult(null);
-          };
-          const runTwin = async () => {
-            setTwinBusy(true);
-            try {
-              const resp = await fetch((window._CASEY_API||'https://corbit-1.onrender.com')+'/twin/update',
-                {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model,twin_inputs:twinInputs})});
-              if(resp.ok){const d=await resp.json();if(d.twin){setTwinResult(d.twin);setTwinHistory(h=>[{...d.twin,t:new Date().toLocaleTimeString()},...h].slice(0,8));}}
-              else {const t=await resp.text();alert('Twin error: '+t);}
-            } catch(e){alert('Twin error: '+e.message);} finally {setTwinBusy(false);}
-          };
-          const colFor = (c) => c>=75?'#10b981':c>=60?'#f59e0b':'#ef4444';
-          const pct = model?.cost_p50||''; const curr = model?.currency_symbol||'$';
-
-          return <section className="layout two">
-            <div style={{display:'flex',flexDirection:'column',gap:'10px'}}>
-
-              {/* HOW IT WORKS — always visible */}
-              <div style={{background:'linear-gradient(135deg,rgba(141,247,255,0.07),rgba(141,247,255,0.02))',border:'1px solid rgba(141,247,255,0.2)',borderRadius:'6px',padding:'14px 16px'}}>
-                <div style={{fontSize:'13px',fontWeight:'900',color:'#8df7ff',marginBottom:'8px',display:'flex',alignItems:'center',gap:'8px'}}><span>⚡</span> CASEY DIGITAL TWIN — How it works</div>
-                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'8px',marginBottom:'10px'}}>
-                  {[['Step 1 — Run your project','Use Free Run or pick from the Showcase Library to generate your baseline model. The baseline is your approved P50, schedule and confidence.','#8df7ff'],
-                    ['Step 2 — Feed in real data','When the programme is live, enter what is actually happening: how much has been spent vs plan, which milestones were hit, any slippage. Each field has a tooltip explaining what to enter.','#10b981'],
-                    ['Step 3 — Get live intelligence','CASEY recalculates your forecast-at-completion (FAC), revised confidence and board alerts — instantly. If you are heading toward P80, it tells you now, not at the next gate review.','#f59e0b'],
-                  ].map(([t,b,c])=><div key={t} style={{padding:'8px 10px',background:'rgba(255,255,255,0.03)',borderRadius:'4px',border:`1px solid ${c}20`}}>
-                    <div style={{fontSize:'9px',fontWeight:'800',color:c,marginBottom:'3px',letterSpacing:'.06em'}}>{t}</div>
-                    <div style={{fontSize:'9px',color:'#64748b',lineHeight:'1.5'}}>{b}</div>
-                  </div>)}
-                </div>
-                <div style={{fontSize:'9px',color:'#475569',borderTop:'1px solid rgba(255,255,255,0.06)',paddingTop:'8px'}}>
-                  <b style={{color:'#8df7ff'}}>Try it now:</b> Load a pre-filled demo scenario below to see what the twin produces — no real data needed.
-                </div>
-              </div>
-
-              {/* DEMO SCENARIOS — quick load */}
-              <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'5px',padding:'10px 12px'}}>
-                <div style={{fontSize:'9px',fontWeight:'800',color:'#64748b',marginBottom:'8px',letterSpacing:'.08em'}}>TRY A DEMO SCENARIO — click any to load pre-filled data</div>
-                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'6px'}}>
-                  {Object.entries(DEMO_SCENARIOS).map(([k,v])=><button key={k} onClick={()=>loadDemo(k)} style={{
-                    padding:'8px 10px',background:activeDemo===k?'rgba(141,247,255,0.1)':'rgba(255,255,255,0.03)',
-                    border:`1px solid ${activeDemo===k?'rgba(141,247,255,0.3)':'rgba(255,255,255,0.08)'}`,
-                    borderRadius:'4px',cursor:'pointer',textAlign:'left'
-                  }}>
-                    <div style={{fontSize:'10px',fontWeight:'700',color:'#e2e8f0',marginBottom:'1px'}}>{v.label}</div>
-                    <div style={{fontSize:'9px',color:'#475569',lineHeight:'1.3'}}>{v.desc}</div>
-                  </button>)}
-                </div>
-              </div>
-
-              {/* CORE INPUTS */}
-              <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'5px',padding:'10px 12px'}}>
-                <div style={{fontSize:'9px',fontWeight:'800',color:'#64748b',marginBottom:'8px',letterSpacing:'.08em'}}>CORE PERFORMANCE — applies to every programme, every sector</div>
-                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}>
-                  {[{k:'progress_pct',l:'Programme % complete',p:'e.g. 25',h:'What % of the programme scope is physically complete? Not spend — physical completion.',u:'%'},
-                    {k:'actual_cost_pct',l:'Actual spend vs plan (100 = on budget)',p:'e.g. 108',h:'Actual spend as % of planned spend at this stage. 108 means 8% above plan. 100 = exactly on plan.',u:'%'},
-                    {k:'earned_value_pct',l:'Earned value % (EV ÷ BAC × 100)',p:'e.g. 92',h:'Earned Value divided by Budget at Completion, multiplied by 100. This is the most important single number. Below 90% = overrun trajectory.',u:'%'},
-                    {k:'schedule_slip_months',l:'Schedule slip from baseline',p:'e.g. 3',h:'How many months has the programme slipped from the approved baseline schedule? Enter 0 if on time.',u:'mo'},
-                    {k:'scope_changes_count',l:'Scope changes approved since baseline',p:'e.g. 2',h:'Number of formally approved scope changes since the baseline was set. Each one adds cost and schedule risk.',u:'#'},
-                  ].map(f=><div key={f.k}>
-                    <label style={{fontSize:'9px',fontWeight:'700',color:'#64748b',display:'block',marginBottom:'3px'}} title={f.h}>{f.l} <span style={{color:'#334155'}}>({f.u})</span></label>
-                    <input type="number" placeholder={f.p} value={twinInputs[f.k]!==undefined?twinInputs[f.k]:''} onChange={e=>setInput(f.k,parseFloat(e.target.value)||0)}
-                      title={f.h}
-                      style={{width:'100%',background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'3px',padding:'6px 8px',color:'#e2e8f0',fontSize:'11px'}}/>
-                    <div style={{fontSize:'8px',color:'#334155',marginTop:'1px'}}>{f.h}</div>
-                  </div>)}
-                </div>
-              </div>
-
-              {/* SECTOR-SPECIFIC INPUTS */}
-              {sectorFields.length>0 && <div style={{background:'rgba(141,247,255,0.03)',border:'1px solid rgba(141,247,255,0.12)',borderRadius:'5px',padding:'10px 12px'}}>
-                <div style={{fontSize:'9px',fontWeight:'800',color:'#8df7ff',marginBottom:'8px',letterSpacing:'.08em'}}>{(sk||'SECTOR').toUpperCase()} SECTOR SIGNALS — the specific warning signs for this programme type</div>
-                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}>
-                  {sectorFields.map(f=><div key={f.k}>
-                    <label style={{fontSize:'9px',fontWeight:'700',color:'#64748b',display:'block',marginBottom:'3px'}} title={f.h}>{f.l}{f.bm?<span style={{color:'#334155',fontWeight:'400'}}> (sector benchmark: {f.bm}{f.t==='pct'?'%':''})</span>:''}</label>
-                    {f.t==='bool'
-                      ?<select value={twinInputs[f.k]!==undefined?String(twinInputs[f.k]):''} onChange={e=>setInput(f.k,e.target.value===''?null:Number(e.target.value))}
-                          title={f.h} style={{width:'100%',background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'3px',padding:'6px 8px',color:'#e2e8f0',fontSize:'11px'}}>
-                          <option value="">Not yet assessed</option>
-                          <option value="1">✓ Yes — achieved / confirmed</option>
-                          <option value="0">✗ No — not yet achieved</option>
-                        </select>
-                      :<input type="number" placeholder={f.bm?`sector benchmark: ${f.bm}`:'enter value'} value={twinInputs[f.k]!==undefined?twinInputs[f.k]:''} onChange={e=>setInput(f.k,parseFloat(e.target.value)||0)}
-                          title={f.h} style={{width:'100%',background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'3px',padding:'6px 8px',color:'#e2e8f0',fontSize:'11px'}}/>}
-                    <div style={{fontSize:'8px',color:'#334155',marginTop:'1px',lineHeight:'1.3'}}>{f.h}</div>
-                  </div>)}
-                </div>
-              </div>}
-
-              <button onClick={runTwin} disabled={twinBusy} style={{
-                width:'100%',padding:'13px',
-                background:twinBusy?'rgba(141,247,255,0.04)':'linear-gradient(135deg,rgba(141,247,255,0.15),rgba(141,247,255,0.06))',
-                border:'1px solid rgba(141,247,255,0.3)',borderRadius:'5px',
-                color:'#8df7ff',fontSize:'13px',fontWeight:'900',cursor:twinBusy?'not-allowed':'pointer',
-                letterSpacing:'.05em'
-              }}>
-                {twinBusy?'⏳ Recalculating live twin...':'⚡ UPDATE TWIN — Recalculate forecast from real data'}
-              </button>
-
-              {twinHistory.length>0 && <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:'4px',padding:'8px 10px'}}>
-                <div style={{fontSize:'9px',fontWeight:'800',color:'#475569',marginBottom:'5px',letterSpacing:'.08em'}}>UPDATE HISTORY</div>
-                {twinHistory.map((h,i)=><div key={i} style={{display:'flex',justifyContent:'space-between',padding:'4px 0',borderBottom:'1px solid rgba(255,255,255,0.04)',fontSize:'10px'}}>
-                  <span style={{color:'#334155'}}>{h.t}</span>
-                  <span style={{color:'#e2e8f0',fontWeight:'700'}}>{h.new_p50}</span>
-                  <span style={{color:colFor(h.new_conf),fontWeight:'700'}}>{h.new_conf}%</span>
-                  <span style={{color:h.conf_change>=0?'#10b981':'#ef4444',fontSize:'9px'}}>{h.conf_change>=0?'+':''}{h.conf_change}pts conf</span>
-                </div>)}
-              </div>}
-            </div>
-
-            {/* RESULTS PANEL */}
-            <div>
-              {!twinResult && <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'400px',gap:'14px',border:'2px dashed rgba(141,247,255,0.1)',borderRadius:'6px',color:'#334155',textAlign:'center',padding:'20px'}}>
-                <span style={{fontSize:'40px',opacity:.4}}>⚡</span>
-                <div style={{fontSize:'13px',fontWeight:'800',color:'#475569'}}>Fill in the inputs and click Update Twin</div>
-                <div style={{fontSize:'10px',color:'#334155',maxWidth:'260px',lineHeight:'1.6'}}>Or load a demo scenario above (e.g. "Earth demo — cost overrun") to see what the twin produces instantly.</div>
-                <div style={{marginTop:'4px',fontSize:'10px',color:'#334155'}}>The twin takes your real programme data → gives you a live forecast-at-completion, updated confidence score, CPI, and board alerts before anyone else knows there is a problem.</div>
-              </div>}
-
-              {twinResult && <>
-                <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'5px',padding:'10px 12px',marginBottom:'10px'}}>
-                  <div style={{fontSize:'10px',fontWeight:'800',color:'#8df7ff',marginBottom:'8px'}}>LIVE FORECAST — updated from real data at {twinResult.progress_pct?.toFixed(0)}% programme completion</div>
-                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'6px'}}>
-                    {[
-                      {l:'Baseline P50',v:twinResult.base_p50,sub:'Original approved estimate',c:'#475569'},
-                      {l:'Forecast at Completion',v:twinResult.new_p50,sub:`${twinResult.cost_change_pct>=0?'+':''}${twinResult.cost_change_pct?.toFixed(1)}% vs baseline`,c:Math.abs(twinResult.cost_change_pct||0)>15?'#ef4444':Math.abs(twinResult.cost_change_pct||0)>5?'#f59e0b':'#10b981'},
-                      {l:'Baseline Confidence',v:twinResult.base_conf+'%',sub:'Programme baseline',c:'#475569'},
-                      {l:'Live Confidence',v:twinResult.new_conf+'%',sub:`${twinResult.conf_change>=0?'+':''}${twinResult.conf_change} points from baseline`,c:colFor(twinResult.new_conf)},
-                      {l:'CPI (Cost Performance)',v:twinResult.cpi,sub:'Below 1.0 = overrun. Below 0.9 = critical.',c:twinResult.cpi>=0.95?'#10b981':twinResult.cpi>=0.9?'#f59e0b':'#ef4444'},
-                      {l:'Revised Schedule',v:twinResult.new_months+' mo',sub:`${twinResult.new_months-twinResult.base_months>=0?'+':''}${twinResult.new_months-twinResult.base_months} months`,c:twinResult.new_months>twinResult.base_months?'#f59e0b':'#10b981'},
-                    ].map(({l,v,sub,c})=><div key={l} style={{padding:'8px',background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:'4px'}}>
-                      <div style={{fontSize:'8px',color:'#334155',marginBottom:'2px',fontWeight:'600'}}>{l}</div>
-                      <div style={{fontSize:'18px',fontWeight:'900',color:c,lineHeight:1.1}}>{v}</div>
-                      <div style={{fontSize:'8px',color:'#334155',marginTop:'1px'}}>{sub}</div>
-                    </div>)}
-                  </div>
-                </div>
-
-                {(twinResult.alerts||[]).length>0 && <div style={{marginBottom:'10px'}}>
-                  <div style={{fontSize:'9px',fontWeight:'800',color:'#64748b',marginBottom:'6px',letterSpacing:'.08em'}}>BOARD ALERTS — generated from real programme data</div>
-                  {twinResult.alerts.map((a,i)=>{
-                    const c=a.level==='CRITICAL'?'#ef4444':a.level==='HIGH'?'#f59e0b':a.level==='GREEN'?'#10b981':'#8df7ff';
-                    return <div key={i} style={{marginBottom:'6px',padding:'9px 12px',background:c+'0d',border:`1px solid ${c}25`,borderLeft:`3px solid ${c}`,borderRadius:'4px',display:'flex',gap:'8px',alignItems:'flex-start'}}>
-                      <span style={{background:c+'20',color:c,fontSize:'7px',fontWeight:'900',padding:'2px 5px',borderRadius:'2px',flexShrink:0,marginTop:'1px',letterSpacing:'.05em'}}>{a.level}</span>
-                      <span style={{fontSize:'11px',color:'#e2e8f0',lineHeight:'1.5'}}>{a.msg}</span>
-                    </div>;
-                  })}
-                </div>}
-
-                {(twinResult.changes||[]).length>0 && <div>
-                  <div style={{fontSize:'9px',fontWeight:'800',color:'#64748b',marginBottom:'6px',letterSpacing:'.08em'}}>WHAT CHANGED AND WHY — plain language explanation</div>
-                  {twinResult.changes.map((c,i)=><div key={i} style={{marginBottom:'5px',padding:'8px 10px',background:'rgba(255,255,255,0.02)',borderRadius:'3px',border:'1px solid rgba(255,255,255,0.05)',fontSize:'10px',color:'#94a3b8',lineHeight:'1.6'}}>
-                    <span style={{color:'#8df7ff',marginRight:'6px',fontWeight:'800'}}>{i+1}.</span>{c}
-                  </div>)}
-                </div>}
-              </>}
-            </div>
-          </section>;
-        })()}
+        {tab === 'twin' && <TwinTab model={model} setTab={setTab}/>}
 
         {tab === 'causal' && <section className="layout two"><CausalGraph model={model}/><BenchmarkIntelligence model={model}/><Card><h2>Evidence Mode: {viewMode}</h2>{evidenceScorecard(model).map((x,i)=><div className="reason" key={x.name}><span>{i+1}</span><b>{x.name}: {Math.round(x.score)}%</b><br/>{x.note}</div>)}</Card></section>}
 
@@ -3729,6 +3495,244 @@ if (!document.querySelector('#casey-saved-investor-css')) {
   s.textContent = savedInvestorCSS;
   document.head.appendChild(s);
 }
+
+// ── DIGITAL TWIN TAB ─────────────────────────────────────────────────────────
+// Extracted as proper component to avoid React hooks-in-IIFE violation (#310)
+function TwinTab({ model, setTab }) {
+
+          // ── SECTOR INPUT DEFINITIONS ───────────────────────────────
+          const SECTOR_FIELDS = {
+            Rail:[{k:'civil_complete_pct',l:'Civil works % complete',t:'pct',bm:20,h:'Physical completion of civil construction vs programme plan. Expect 20% at programme month 6.'},
+                  {k:'possessions_used_pct',l:'Track possessions used vs granted %',t:'pct',bm:85,h:'Possessions used as % of what was granted. Below 80% = programme extension risk.'},
+                  {k:'systems_integration_open_items',l:'Open IEMs (interface items)',t:'num',bm:50,h:'Open Interface Exception Memoranda. >100 at planned opening = systemic failure risk. Reference: Crossrail had 900+.'},
+                  {k:'signalling_milestones_met_pct',l:'Signalling milestones on time %',t:'pct',bm:70,h:'% of signalling integration milestones achieved on plan.'},
+                  {k:'earned_value_pct',l:'Earned value % (EV/BAC)',t:'pct',bm:95,h:'Earned Value ÷ Budget at Completion × 100. Below 90% = overrun trajectory.'}],
+            Nuclear:[{k:'gda_status',l:'ONR/NRC regulatory hold-points cleared %',t:'pct',bm:60,h:'% of regulatory hold-points cleared on schedule. None can be skipped.'},
+                     {k:'nuclear_workforce_pct',l:'Nuclear-qualified workforce secured %',t:'pct',bm:50,h:'SC/DV cleared and nuclear-qualified staff vs planned peak.'},
+                     {k:'design_freeze_achieved',l:'Design frozen (independent authority sign-off)',t:'bool',h:'Has the design been frozen? No construction should start without it.'},
+                     {k:'supply_chain_qualified_pct',l:'Nuclear supply chain qualified %',t:'pct',bm:40,h:'% of nuclear-grade suppliers pre-qualified and contracted.'},
+                     {k:'earned_value_pct',l:'Earned value %',t:'pct',bm:95,h:'EV/BAC × 100.'}],
+            Defence:[{k:'requirements_frozen',l:'Requirements baseline frozen (SRO signed)',t:'bool',h:'Has SRO signed a frozen requirements baseline? Without this, every change costs 10-30× more.'},
+                     {k:'sc_dv_clearances_pct',l:'SC/DV clearances granted %',t:'pct',bm:60,h:'% of required SC/DV clearances granted. Below 50% = programme delay risk.'},
+                     {k:'itar_licences_granted',l:'All ITAR/export licences granted',t:'bool',h:'All US-origin technology licences granted? Missing licence = 6-12 month stop.'},
+                     {k:'test_milestones_met_pct',l:'Test & evaluation milestones on time %',t:'pct',bm:70,h:'% of T&E programme milestones on plan.'},
+                     {k:'earned_value_pct',l:'Earned value %',t:'pct',bm:90,h:'EV/BAC × 100.'}],
+            Space:[{k:'trl_achieved',l:'Technology Readiness Level (TRL) achieved',t:'num',bm:6,h:'Highest TRL independently verified. Below planned TRL = cost and schedule risk. TRL 6 = minimum before PDR.'},
+                   {k:'open_anomalies',l:'Open qualification anomalies (unresolved)',t:'num',bm:5,h:'Unresolved test anomalies. Each delays launch authority. JWST had 300+ at one point.'},
+                   {k:'mission_assurance_items_closed_pct',l:'Mission assurance items closed %',t:'pct',bm:60,h:'% of mission assurance action items formally closed with evidence.'},
+                   {k:'launch_manifest_confirmed',l:'Launch slot confirmed with provider',t:'bool',h:'Is a specific launch vehicle and launch date confirmed? Without this, schedule is notional.'},
+                   {k:'mass_margin_pct',l:'Mass margin remaining %',t:'pct',bm:15,h:'Spacecraft mass margin as % of launch capacity. Below 10% = redesign required.'}],
+            Digital:[{k:'grid_connection_confirmed',l:'Grid connection agreement signed',t:'bool',h:'Firm connection agreement with DNO/TSO signed? This is the critical path for every data centre programme.'},
+                     {k:'transformer_delivery_confirmed',l:'Power transformer delivery confirmed',t:'bool',h:'Transformers on order with firm delivery date? 18-month lead time — must be ordered before planning consent.'},
+                     {k:'planning_consent_granted',l:'Full planning consent granted',t:'bool',h:'Has consent been granted including substation and cooling infrastructure?'},
+                     {k:'it_load_spec_frozen',l:'IT load specification frozen',t:'bool',h:'Has the compute power density spec been frozen? Any increase requires cooling redesign.'},
+                     {k:'earned_value_pct',l:'Earned value %',t:'pct',bm:95,h:'EV/BAC × 100.'}],
+            Mining:[{k:'ore_grade_vs_feasibility_pct',l:'Ore grade vs feasibility model %',t:'pct',bm:95,h:'Actual ore grade as % of feasibility assumption. Below 90% = business case at risk.'},
+                    {k:'community_agreement_signed',l:'Community benefit agreement signed',t:'bool',h:'Signed agreement with affected communities? Without it: suspension risk. Reference: Cobre Panama.'},
+                    {k:'comminution_equipment_delivery_confirmed',l:'Processing equipment delivery confirmed',t:'bool',h:'SAG mill / ball mill delivery confirmed with manufacturer?'},
+                    {k:'power_supply_secured',l:'Power supply contracted for full load',t:'bool',h:'Power contracted for full production load? Without it mine cannot operate at design capacity.'},
+                    {k:'earned_value_pct',l:'Earned value %',t:'pct',bm:92,h:'EV/BAC × 100.'}],
+            Battery:[{k:'offtake_contracted_pct',l:'Offtake contracted % of annual capacity',t:'pct',bm:40,h:'% of gigafactory capacity under confirmed long-term supply agreement. No offtake = Britishvolt risk.'},
+                     {k:'cell_chemistry_qualified',l:'Cell chemistry qualified (meets target)',t:'bool',h:'Has the cell chemistry been qualified and does it meet energy density target?'},
+                     {k:'formation_equipment_on_order',l:'Formation cycling equipment on order',t:'bool',h:'18-month lead time item. Must be ordered now — it is always on the critical path.'},
+                     {k:'earned_value_pct',l:'Earned value %',t:'pct',bm:90,h:'EV/BAC × 100.'}],
+            Semiconductor:[{k:'tool_allocation_confirmed_pct',l:'Process tools allocated % (incl. EUV)',t:'pct',bm:50,h:'% of critical process tools with confirmed allocation. ASML EUV = 3-year lead time.'},
+                           {k:'cleanroom_handover_complete',l:'Cleanroom handed over and qualifying',t:'bool',h:'Has cleanroom been handed over? Qualification takes 18 months — must start now.'},
+                           {k:'workforce_secured_pct',l:'Process integration engineers secured %',t:'pct',bm:40,h:'% of required process integration engineers on contract.'},
+                           {k:'earned_value_pct',l:'Earned value %',t:'pct',bm:92,h:'EV/BAC × 100.'}],
+          };
+          const sectorKey = (sub,mode) => {
+            const s = ((sub||'')+(mode||'')).toLowerCase();
+            if(s.includes('rail')||s.includes('transit')) return 'Rail';
+            if(s.includes('nuclear')) return 'Nuclear';
+            if(s.includes('defence')||s.includes('defense')||s.includes('secure')) return 'Defence';
+            if(s.includes('space')||s.includes('lunar')||s.includes('mars')||s.includes('orbital')||s.includes('satellite')) return 'Space';
+            if(s.includes('data')||s.includes('digital')||s.includes('hyperscale')) return 'Digital';
+            if(s.includes('mining')||s.includes('copper')||s.includes('mineral')) return 'Mining';
+            if(s.includes('battery')||s.includes('gigafactory')) return 'Battery';
+            if(s.includes('semi')||s.includes('fab')) return 'Semiconductor';
+            return null;
+          };
+          const sk = sectorKey(model?.subsector||'', model?.mode||'');
+          const sectorFields = sk ? SECTOR_FIELDS[sk] : [];
+
+          // Pre-filled demo scenarios
+          const DEMO_SCENARIOS = {
+            earth_on_track: {label:'🟢 Earth demo — on track (month 18)',desc:'HS2-style programme, 18 months in, tracking close to plan.',inputs:{progress_pct:15,actual_cost_pct:102,earned_value_pct:98,schedule_slip_months:1,scope_changes_count:2,civil_complete_pct:14,possessions_used_pct:88,systems_integration_open_items:35,signalling_milestones_met_pct:82,earned_value_pct:98}},
+            earth_overrun: {label:'🔴 Earth demo — cost overrun (month 36)',desc:'HS2-style programme, 3 years in, 12% over budget and 6-month slip. Board intervention required.',inputs:{progress_pct:28,actual_cost_pct:115,earned_value_pct:86,schedule_slip_months:6,scope_changes_count:9,civil_complete_pct:26,possessions_used_pct:71,systems_integration_open_items:148,signalling_milestones_met_pct:54,earned_value_pct:86}},
+            space_on_track: {label:'🟢 Space demo — on track (Phase B)',desc:'Lunar programme at Phase B/CDR, TRL progressing well, launch manifest confirmed.',inputs:{progress_pct:40,actual_cost_pct:101,earned_value_pct:99,schedule_slip_months:0,scope_changes_count:1,trl_achieved:6,open_anomalies:7,mission_assurance_items_closed_pct:74,launch_manifest_confirmed:1,mass_margin_pct:18}},
+            space_at_risk: {label:'🟡 Space demo — mission at risk (Phase C)',desc:'Lunar programme at Phase C, TRL lower than expected, 28 open anomalies, launch slot not confirmed.',inputs:{progress_pct:60,actual_cost_pct:118,earned_value_pct:82,schedule_slip_months:14,scope_changes_count:6,trl_achieved:5,open_anomalies:28,mission_assurance_items_closed_pct:41,launch_manifest_confirmed:0,mass_margin_pct:8}},
+          };
+
+          const [twinInputs, setTwinInputs] = React.useState({});
+          const [twinResult, setTwinResult] = React.useState(null);
+          const [twinBusy, setTwinBusy] = React.useState(false);
+          const [twinHistory, setTwinHistory] = React.useState([]);
+          const [activeDemo, setActiveDemo] = React.useState(null);
+          const setInput = (k,v) => setTwinInputs(prev=>({...prev,[k]:v}));
+          const loadDemo = (key) => {
+            setActiveDemo(key);
+            setTwinInputs(DEMO_SCENARIOS[key].inputs);
+            setTwinResult(null);
+          };
+          const runTwin = async () => {
+            setTwinBusy(true);
+            try {
+              const resp = await apiFetch('/twin/update',
+                {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model,twin_inputs:twinInputs})});
+              if(resp.ok){const d=await resp.json();if(d.twin){setTwinResult(d.twin);setTwinHistory(h=>[{...d.twin,t:new Date().toLocaleTimeString()},...h].slice(0,8));}}
+              else {const t=await resp.text();alert('Twin error: '+t);}
+            } catch(e){alert('Twin error: '+e.message);} finally {setTwinBusy(false);}
+          };
+          const colFor = (c) => c>=75?'#10b981':c>=60?'#f59e0b':'#ef4444';
+          const pct = model?.cost_p50||''; const curr = model?.currency_symbol||'$';
+
+          return <section className="layout two">
+            <div style={{display:'flex',flexDirection:'column',gap:'10px'}}>
+
+              {/* HOW IT WORKS — always visible */}
+              <div style={{background:'linear-gradient(135deg,rgba(141,247,255,0.07),rgba(141,247,255,0.02))',border:'1px solid rgba(141,247,255,0.2)',borderRadius:'6px',padding:'14px 16px'}}>
+                <div style={{fontSize:'13px',fontWeight:'900',color:'#8df7ff',marginBottom:'8px',display:'flex',alignItems:'center',gap:'8px'}}><span>⚡</span> CASEY DIGITAL TWIN — How it works</div>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'8px',marginBottom:'10px'}}>
+                  {[['Step 1 — Run your project','Use Free Run or pick from the Showcase Library to generate your baseline model. The baseline is your approved P50, schedule and confidence.','#8df7ff'],
+                    ['Step 2 — Feed in real data','When the programme is live, enter what is actually happening: how much has been spent vs plan, which milestones were hit, any slippage. Each field has a tooltip explaining what to enter.','#10b981'],
+                    ['Step 3 — Get live intelligence','CASEY recalculates your forecast-at-completion (FAC), revised confidence and board alerts — instantly. If you are heading toward P80, it tells you now, not at the next gate review.','#f59e0b'],
+                  ].map(([t,b,c])=><div key={t} style={{padding:'8px 10px',background:'rgba(255,255,255,0.03)',borderRadius:'4px',border:`1px solid ${c}20`}}>
+                    <div style={{fontSize:'9px',fontWeight:'800',color:c,marginBottom:'3px',letterSpacing:'.06em'}}>{t}</div>
+                    <div style={{fontSize:'9px',color:'#64748b',lineHeight:'1.5'}}>{b}</div>
+                  </div>)}
+                </div>
+                <div style={{fontSize:'9px',color:'#475569',borderTop:'1px solid rgba(255,255,255,0.06)',paddingTop:'8px'}}>
+                  <b style={{color:'#8df7ff'}}>Try it now:</b> Load a pre-filled demo scenario below to see what the twin produces — no real data needed.
+                </div>
+              </div>
+
+              {/* DEMO SCENARIOS — quick load */}
+              <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'5px',padding:'10px 12px'}}>
+                <div style={{fontSize:'9px',fontWeight:'800',color:'#64748b',marginBottom:'8px',letterSpacing:'.08em'}}>TRY A DEMO SCENARIO — click any to load pre-filled data</div>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'6px'}}>
+                  {Object.entries(DEMO_SCENARIOS).map(([k,v])=><button key={k} onClick={()=>loadDemo(k)} style={{
+                    padding:'8px 10px',background:activeDemo===k?'rgba(141,247,255,0.1)':'rgba(255,255,255,0.03)',
+                    border:`1px solid ${activeDemo===k?'rgba(141,247,255,0.3)':'rgba(255,255,255,0.08)'}`,
+                    borderRadius:'4px',cursor:'pointer',textAlign:'left'
+                  }}>
+                    <div style={{fontSize:'10px',fontWeight:'700',color:'#e2e8f0',marginBottom:'1px'}}>{v.label}</div>
+                    <div style={{fontSize:'9px',color:'#475569',lineHeight:'1.3'}}>{v.desc}</div>
+                  </button>)}
+                </div>
+              </div>
+
+              {/* CORE INPUTS */}
+              <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'5px',padding:'10px 12px'}}>
+                <div style={{fontSize:'9px',fontWeight:'800',color:'#64748b',marginBottom:'8px',letterSpacing:'.08em'}}>CORE PERFORMANCE — applies to every programme, every sector</div>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}>
+                  {[{k:'progress_pct',l:'Programme % complete',p:'e.g. 25',h:'What % of the programme scope is physically complete? Not spend — physical completion.',u:'%'},
+                    {k:'actual_cost_pct',l:'Actual spend vs plan (100 = on budget)',p:'e.g. 108',h:'Actual spend as % of planned spend at this stage. 108 means 8% above plan. 100 = exactly on plan.',u:'%'},
+                    {k:'earned_value_pct',l:'Earned value % (EV ÷ BAC × 100)',p:'e.g. 92',h:'Earned Value divided by Budget at Completion, multiplied by 100. This is the most important single number. Below 90% = overrun trajectory.',u:'%'},
+                    {k:'schedule_slip_months',l:'Schedule slip from baseline',p:'e.g. 3',h:'How many months has the programme slipped from the approved baseline schedule? Enter 0 if on time.',u:'mo'},
+                    {k:'scope_changes_count',l:'Scope changes approved since baseline',p:'e.g. 2',h:'Number of formally approved scope changes since the baseline was set. Each one adds cost and schedule risk.',u:'#'},
+                  ].map(f=><div key={f.k}>
+                    <label style={{fontSize:'9px',fontWeight:'700',color:'#64748b',display:'block',marginBottom:'3px'}} title={f.h}>{f.l} <span style={{color:'#334155'}}>({f.u})</span></label>
+                    <input type="number" placeholder={f.p} value={twinInputs[f.k]!==undefined?twinInputs[f.k]:''} onChange={e=>setInput(f.k,parseFloat(e.target.value)||0)}
+                      title={f.h}
+                      style={{width:'100%',background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'3px',padding:'6px 8px',color:'#e2e8f0',fontSize:'11px'}}/>
+                    <div style={{fontSize:'8px',color:'#334155',marginTop:'1px'}}>{f.h}</div>
+                  </div>)}
+                </div>
+              </div>
+
+              {/* SECTOR-SPECIFIC INPUTS */}
+              {sectorFields.length>0 && <div style={{background:'rgba(141,247,255,0.03)',border:'1px solid rgba(141,247,255,0.12)',borderRadius:'5px',padding:'10px 12px'}}>
+                <div style={{fontSize:'9px',fontWeight:'800',color:'#8df7ff',marginBottom:'8px',letterSpacing:'.08em'}}>{(sk||'SECTOR').toUpperCase()} SECTOR SIGNALS — the specific warning signs for this programme type</div>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}>
+                  {sectorFields.map(f=><div key={f.k}>
+                    <label style={{fontSize:'9px',fontWeight:'700',color:'#64748b',display:'block',marginBottom:'3px'}} title={f.h}>{f.l}{f.bm?<span style={{color:'#334155',fontWeight:'400'}}> (sector benchmark: {f.bm}{f.t==='pct'?'%':''})</span>:''}</label>
+                    {f.t==='bool'
+                      ?<select value={twinInputs[f.k]!==undefined?String(twinInputs[f.k]):''} onChange={e=>setInput(f.k,e.target.value===''?null:Number(e.target.value))}
+                          title={f.h} style={{width:'100%',background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'3px',padding:'6px 8px',color:'#e2e8f0',fontSize:'11px'}}>
+                          <option value="">Not yet assessed</option>
+                          <option value="1">✓ Yes — achieved / confirmed</option>
+                          <option value="0">✗ No — not yet achieved</option>
+                        </select>
+                      :<input type="number" placeholder={f.bm?`sector benchmark: ${f.bm}`:'enter value'} value={twinInputs[f.k]!==undefined?twinInputs[f.k]:''} onChange={e=>setInput(f.k,parseFloat(e.target.value)||0)}
+                          title={f.h} style={{width:'100%',background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'3px',padding:'6px 8px',color:'#e2e8f0',fontSize:'11px'}}/>}
+                    <div style={{fontSize:'8px',color:'#334155',marginTop:'1px',lineHeight:'1.3'}}>{f.h}</div>
+                  </div>)}
+                </div>
+              </div>}
+
+              <button onClick={runTwin} disabled={twinBusy} style={{
+                width:'100%',padding:'13px',
+                background:twinBusy?'rgba(141,247,255,0.04)':'linear-gradient(135deg,rgba(141,247,255,0.15),rgba(141,247,255,0.06))',
+                border:'1px solid rgba(141,247,255,0.3)',borderRadius:'5px',
+                color:'#8df7ff',fontSize:'13px',fontWeight:'900',cursor:twinBusy?'not-allowed':'pointer',
+                letterSpacing:'.05em'
+              }}>
+                {twinBusy?'⏳ Recalculating live twin...':'⚡ UPDATE TWIN — Recalculate forecast from real data'}
+              </button>
+
+              {twinHistory.length>0 && <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:'4px',padding:'8px 10px'}}>
+                <div style={{fontSize:'9px',fontWeight:'800',color:'#475569',marginBottom:'5px',letterSpacing:'.08em'}}>UPDATE HISTORY</div>
+                {twinHistory.map((h,i)=><div key={i} style={{display:'flex',justifyContent:'space-between',padding:'4px 0',borderBottom:'1px solid rgba(255,255,255,0.04)',fontSize:'10px'}}>
+                  <span style={{color:'#334155'}}>{h.t}</span>
+                  <span style={{color:'#e2e8f0',fontWeight:'700'}}>{h.new_p50}</span>
+                  <span style={{color:colFor(h.new_conf),fontWeight:'700'}}>{h.new_conf}%</span>
+                  <span style={{color:h.conf_change>=0?'#10b981':'#ef4444',fontSize:'9px'}}>{h.conf_change>=0?'+':''}{h.conf_change}pts conf</span>
+                </div>)}
+              </div>}
+            </div>
+
+            {/* RESULTS PANEL */}
+            <div>
+              {!twinResult && <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'400px',gap:'14px',border:'2px dashed rgba(141,247,255,0.1)',borderRadius:'6px',color:'#334155',textAlign:'center',padding:'20px'}}>
+                <span style={{fontSize:'40px',opacity:.4}}>⚡</span>
+                <div style={{fontSize:'13px',fontWeight:'800',color:'#475569'}}>Fill in the inputs and click Update Twin</div>
+                <div style={{fontSize:'10px',color:'#334155',maxWidth:'260px',lineHeight:'1.6'}}>Or load a demo scenario above (e.g. "Earth demo — cost overrun") to see what the twin produces instantly.</div>
+                <div style={{marginTop:'4px',fontSize:'10px',color:'#334155'}}>The twin takes your real programme data → gives you a live forecast-at-completion, updated confidence score, CPI, and board alerts before anyone else knows there is a problem.</div>
+              </div>}
+
+              {twinResult && <>
+                <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'5px',padding:'10px 12px',marginBottom:'10px'}}>
+                  <div style={{fontSize:'10px',fontWeight:'800',color:'#8df7ff',marginBottom:'8px'}}>LIVE FORECAST — updated from real data at {twinResult.progress_pct?.toFixed(0)}% programme completion</div>
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'6px'}}>
+                    {[
+                      {l:'Baseline P50',v:twinResult.base_p50,sub:'Original approved estimate',c:'#475569'},
+                      {l:'Forecast at Completion',v:twinResult.new_p50,sub:`${twinResult.cost_change_pct>=0?'+':''}${twinResult.cost_change_pct?.toFixed(1)}% vs baseline`,c:Math.abs(twinResult.cost_change_pct||0)>15?'#ef4444':Math.abs(twinResult.cost_change_pct||0)>5?'#f59e0b':'#10b981'},
+                      {l:'Baseline Confidence',v:twinResult.base_conf+'%',sub:'Programme baseline',c:'#475569'},
+                      {l:'Live Confidence',v:twinResult.new_conf+'%',sub:`${twinResult.conf_change>=0?'+':''}${twinResult.conf_change} points from baseline`,c:colFor(twinResult.new_conf)},
+                      {l:'CPI (Cost Performance)',v:twinResult.cpi,sub:'Below 1.0 = overrun. Below 0.9 = critical.',c:twinResult.cpi>=0.95?'#10b981':twinResult.cpi>=0.9?'#f59e0b':'#ef4444'},
+                      {l:'Revised Schedule',v:twinResult.new_months+' mo',sub:`${twinResult.new_months-twinResult.base_months>=0?'+':''}${twinResult.new_months-twinResult.base_months} months`,c:twinResult.new_months>twinResult.base_months?'#f59e0b':'#10b981'},
+                    ].map(({l,v,sub,c})=><div key={l} style={{padding:'8px',background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:'4px'}}>
+                      <div style={{fontSize:'8px',color:'#334155',marginBottom:'2px',fontWeight:'600'}}>{l}</div>
+                      <div style={{fontSize:'18px',fontWeight:'900',color:c,lineHeight:1.1}}>{v}</div>
+                      <div style={{fontSize:'8px',color:'#334155',marginTop:'1px'}}>{sub}</div>
+                    </div>)}
+                  </div>
+                </div>
+
+                {(twinResult.alerts||[]).length>0 && <div style={{marginBottom:'10px'}}>
+                  <div style={{fontSize:'9px',fontWeight:'800',color:'#64748b',marginBottom:'6px',letterSpacing:'.08em'}}>BOARD ALERTS — generated from real programme data</div>
+                  {twinResult.alerts.map((a,i)=>{
+                    const c=a.level==='CRITICAL'?'#ef4444':a.level==='HIGH'?'#f59e0b':a.level==='GREEN'?'#10b981':'#8df7ff';
+                    return <div key={i} style={{marginBottom:'6px',padding:'9px 12px',background:c+'0d',border:`1px solid ${c}25`,borderLeft:`3px solid ${c}`,borderRadius:'4px',display:'flex',gap:'8px',alignItems:'flex-start'}}>
+                      <span style={{background:c+'20',color:c,fontSize:'7px',fontWeight:'900',padding:'2px 5px',borderRadius:'2px',flexShrink:0,marginTop:'1px',letterSpacing:'.05em'}}>{a.level}</span>
+                      <span style={{fontSize:'11px',color:'#e2e8f0',lineHeight:'1.5'}}>{a.msg}</span>
+                    </div>;
+                  })}
+                </div>}
+
+                {(twinResult.changes||[]).length>0 && <div>
+                  <div style={{fontSize:'9px',fontWeight:'800',color:'#64748b',marginBottom:'6px',letterSpacing:'.08em'}}>WHAT CHANGED AND WHY — plain language explanation</div>
+                  {twinResult.changes.map((c,i)=><div key={i} style={{marginBottom:'5px',padding:'8px 10px',background:'rgba(255,255,255,0.02)',borderRadius:'3px',border:'1px solid rgba(255,255,255,0.05)',fontSize:'10px',color:'#94a3b8',lineHeight:'1.6'}}>
+                    <span style={{color:'#8df7ff',marginRight:'6px',fontWeight:'800'}}>{i+1}.</span>{c}
+                  </div>)}
+                </div>}
+              </>}
+            </div>
+          </section>;
+        
+}
+
 
 function InvestorPanel({ onClose }) {
   return <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,0.85)',zIndex:9999,display:'flex',alignItems:'center',justifyContent:'center'}} onClick={onClose}>
