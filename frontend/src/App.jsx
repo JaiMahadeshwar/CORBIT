@@ -3481,4 +3481,27 @@ if (!document.querySelector('#casey-saved-investor-css')) {
   document.head.appendChild(s);
 }
 
+function InvestorPanel({ onClose }) {
+  return <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,0.85)',zIndex:9999,display:'flex',alignItems:'center',justifyContent:'center'}} onClick={onClose}>
+    <div style={{background:'#0f172a',border:'1px solid rgba(141,247,255,0.2)',borderRadius:'8px',padding:'32px',maxWidth:'600px',width:'90%'}} onClick={e=>e.stopPropagation()}>
+      <h2 style={{color:'#8df7ff',marginBottom:'16px'}}>CASEY — Investor Brief</h2>
+      <p style={{color:'#94a3b8',lineHeight:'1.7',marginBottom:'16px'}}>CASEY is a capital programme intelligence platform that compresses 8 weeks of advisory work into 12 seconds. It generates board-defensible cost estimates, risk registers, schedule analysis, OBA, gate readiness and board attack simulation for any infrastructure, defence or space programme.</p>
+      <div style={{marginBottom:'16px',padding:'12px',background:'rgba(141,247,255,0.05)',borderRadius:'4px',border:'1px solid rgba(141,247,255,0.1)'}}>
+        <div style={{fontSize:'10px',fontWeight:'800',color:'#8df7ff',marginBottom:'8px',letterSpacing:'.1em'}}>WHY CASEY WINS</div>
+        {['T&T, Jacobs, Atkins charge £50-150K and take 8 weeks for what CASEY generates in 12 seconds.',
+          '63 named real programmes with actual outturn data calibrate every estimate.',
+          'OBA from Flyvbjerg 2022 reference class — not generic percentage uplift.',
+          'Programme Mortality Engine generates cancellation probability with named precedents.',
+          '42-country intelligence: regulatory framework, financing context, location risk.',
+          'Board attack simulation generated from live model data — not generic frameworks.',
+        ].map((x,i)=><div key={i} style={{display:'flex',gap:'8px',marginBottom:'6px',fontSize:'11px',color:'#94a3b8'}}><span style={{color:'#8df7ff',flexShrink:0}}>✓</span>{x}</div>)}
+      </div>
+      <div style={{display:'flex',gap:'8px'}}>
+        <a href="mailto:deepa@caseai.co.uk?subject=CASEY Investor Brief" style={{flex:1,textAlign:'center',padding:'10px',background:'rgba(141,247,255,0.1)',border:'1px solid rgba(141,247,255,0.3)',borderRadius:'4px',color:'#8df7ff',textDecoration:'none',fontSize:'12px',fontWeight:'700'}}>Get in touch →</a>
+        <button onClick={onClose} style={{padding:'10px 20px',background:'transparent',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'4px',color:'#64748b',cursor:'pointer',fontSize:'12px'}}>Close</button>
+      </div>
+    </div>
+  </div>;
+}
+
 createRoot(document.getElementById('root')).render(<CaseyErrorBoundary><App/></CaseyErrorBoundary>);
