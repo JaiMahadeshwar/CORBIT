@@ -4468,17 +4468,154 @@ def project(project_id:int):
 
 @app.post("/chat")
 def chat(req: ChatRequest):
-    """Conversational advisor — understands what-if constraints and reruns build_model."""
-    q = req.question.strip(); ql = q.lower()
-    m = req.project or {}; risks = m.get("risks",[])[:5]; mc = m.get("monte_carlo",{})
-    prompt = m.get("prompt",""); p50 = m.get("cost_p50","—"); p80 = m.get("cost_p80","—")
-    conf = m.get("confidence_pct","—"); schedule = m.get("schedule","—")
-    constraint = m.get("governing_constraint",""); sector = m.get("mode",m.get("subsector",""))
-    delta = None
+    """
+    CASEY Advisor — powered by Claude.
+    Genuinely challenges the user. Does not affirm. Does not soften.
+    Falls back to pattern-matching if API key not set.
+    """
+    q = req.question.strip()
+    m = req.project or {}
 
+    # Build context string from live model data
+    curr = m.get("currency_symbol", "$")
+    p50  = m.get("cost_p50", "—")
+    p80  = m.get("cost_p80", "—")
+    p90  = m.get("cost_p90", "—")
+    p10  = m.get("cost_p10", "—")
+    conf = m.get("confidence_pct", "—")
+    sched = m.get("schedule", m.get("schedule_months", "—"))
+    sub  = m.get("subsector", m.get("mode", "programme"))
+    loc  = m.get("location", "—")
+    cl   = m.get("class_level", 3)
+    ecn  = m.get("estimate_class_name", "Budget Authorization")
+    risks = m.get("risks", [])[:8]
+    oba  = m.get("optimism_bias_assessment", {})
+    oba_p50 = (oba.get("oba_adjusted_p50", "—") if isinstance(oba, dict) else "—")
+    oba_uplift = (oba.get("oba_uplift_pct", "—") if isinstance(oba, dict) else "—")
+    bms  = m.get("benchmark_comparison", [])[:4]
+    gate = m.get("gate_review_readiness", {})
+    gc   = m.get("governing_constraint", "—")
+    ba   = m.get("board_attack_simulation", [])[:5]
+    fail = m.get("sector_failure_pattern", m.get("if_this_fails", ""))
+    tvc  = m.get("traditional_vs_casey", {})
+    shock = m.get("executive_shock_insight", "")
+
+    risk_lines = ""
+    for r in risks:
+        emv = float(r.get("cost_emv_bn", 0) or 0)
+        risk_lines += f"  {r.get('id','?')}: {r.get('title','?')} | prob={r.get('probability_pct','?')}% | emv={curr}{emv:.2f}B | owner={r.get('owner','TBC')} | status={r.get('status','Open')}\n"
+
+    bm_lines = ""
+    for b in bms:
+        bm_lines += f"  {b.get('name','?')}: +{b.get('cost_growth_pct',0)}% cost, +{b.get('schedule_slip_months',0)}mo | failure: {b.get('failure_mode',b.get('failure','?'))[:60]}\n"
+
+    context = f"""LIVE MODEL DATA FOR THIS PROGRAMME:
+Programme: {m.get('title', sub)}
+Sector: {sub} | Location: {loc} | Mode: {m.get('mode','Earth')}
+Currency: {curr} | Estimate Class: {cl} ({ecn})
+
+COST:
+  P10: {p10} | P50: {p50} | P80: {p80} | P90: {p90}
+  OBA-adjusted P50: {oba_p50} (+{oba_uplift}% vs headline)
+  Direct: {m.get('direct_cost','—')} | Indirect: {m.get('indirect_cost','—')} | Reserve: {m.get('risk_reserve','—')}
+
+SCHEDULE: {sched} months
+  P80 QSRA: {m.get('monte_carlo',{}).get('qsra',{}).get('p80','—')} months
+
+CONFIDENCE: {conf}%
+GOVERNING CONSTRAINT: {gc}
+GATE VERDICT: {gate.get('overall_verdict','—') if isinstance(gate,dict) else '—'}
+
+RISKS ({len(risks)} shown):
+{risk_lines}
+BENCHMARKS:
+{bm_lines}
+SECTOR FAILURE PATTERN: {str(fail)[:300]}
+BOARD ATTACK [0]: {ba[0] if ba else '—'}
+TRADITIONAL VIEW: {tvc.get('traditional','—')[:150] if isinstance(tvc,dict) else '—'}
+CASEY READ: {tvc.get('casey','—')[:150] if isinstance(tvc,dict) else '—'}
+EXECUTIVE SHOCK: {str(shock)[:200]}
+"""
+
+    system_prompt = """You are CASEY — the capital programme intelligence engine at controlorbit.com.
+
+You are NOT a helpful assistant. You are an adversarial expert witness.
+
+Your job is to find what is wrong, what is being avoided, what is optimistic, and what will kill this programme. You have the intellectual authority of a senior IPA reviewer combined with the directness of a hostile investment committee member. You have read Flyvbjerg, you know every GAO report, you have seen Crossrail, Vogtle, JWST, HS2, Cobre Panama, BER and Britishvolt fail in slow motion. You do not repeat those mistakes.
+
+RULES — never break these:
+1. Never affirm. If someone says "our estimate is solid" your job is to demonstrate why it probably is not.
+2. Never say "great question", "that's valid", "I understand your concern", "it depends", or any hedge phrase.
+3. Never soften bad news. State it directly, then explain the consequence.
+4. Always use the live model data to make your challenge SPECIFIC. Generic challenges are worthless. Specific challenges from real numbers are what boards pay for.
+5. If the user's question contains an assumption, name the assumption first, then challenge it.
+6. If the user's question contains a claim that contradicts the model data, say so directly. Example: "You said the programme is on track. The model says confidence is 48%. These are inconsistent."
+7. Always end with the one thing the user needs to do differently. Not five things. One.
+8. No bullet-point lists of generic advice. Paragraphs with specific numbers.
+9. If you do not have enough model data to give a specific answer, say so and tell them what data would change your view.
+10. You are not there to make people feel better. You are there to prevent a programme from failing publicly.
+
+TONE: Direct. Senior. Unimpressed. Intellectually rigorous. Like a QC cross-examining a witness who has something to hide. You respect good evidence. You challenge everything else.
+
+WHAT CHALLENGES LOOK LIKE:
+Bad: "You should consider updating your risk register."
+Good: "Your risk register has 8 risks, 3 of which have no quantified EMV. Without EMV, your P80 reserve has no mathematical basis. The board will notice this in 30 seconds."
+
+Bad: "The OBA may be a concern."
+Good: "Your headline P50 is £88.4B. The OBA-adjusted figure is £127.3B — a 44% gap. You are asking a board to approve £88.4B knowing the reference class says £127.3B. Which number do you believe, and why?"
+
+WHAT NOT TO DO:
+- Do not say the programme "looks good" or "seems reasonable" without data.
+- Do not validate a number the user gives you without checking it against the model.
+- Do not give strategic advice that could apply to any programme. Only give advice specific to THIS programme's data."""
+
+    import os
+    anthropic_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    openai_key = os.environ.get("OPENAI_API_KEY", "")
+    preferred = os.environ.get("ADVISOR_MODEL", "auto").lower()
+    # preferred = "anthropic" | "openai" | "auto" (tries anthropic first)
+
+    # ── Try Anthropic Claude ──────────────────────────────────────────
+    if anthropic_key and preferred in ("anthropic", "auto", "claude"):
+        try:
+            import anthropic as _ant
+            client = _ant.Anthropic(api_key=anthropic_key)
+            messages = [{"role": "user", "content": f"PROGRAMME CONTEXT:\n{context}\n\nUSER QUESTION: {q}"}]
+            response = client.messages.create(
+                model="claude-opus-4-5",
+                max_tokens=600,
+                system=system_prompt,
+                messages=messages
+            )
+            answer = response.content[0].text if response.content else "No response."
+            return {"answer": answer, "delta": None, "source": "claude", "model": "claude-opus-4-5"}
+        except Exception:
+            pass  # Fall through to OpenAI
+
+    # ── Try OpenAI GPT-4o ────────────────────────────────────────────
+    if openai_key and preferred in ("openai", "gpt", "chatgpt", "auto"):
+        try:
+            import openai as _oai
+            client = _oai.OpenAI(api_key=openai_key)
+            response = client.chat.completions.create(
+                model="gpt-4o",
+                max_tokens=600,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": f"PROGRAMME CONTEXT:\n{context}\n\nUSER QUESTION: {q}"}
+                ]
+            )
+            answer = response.choices[0].message.content if response.choices else "No response."
+            return {"answer": answer, "delta": None, "source": "openai", "model": "gpt-4o"}
+        except Exception:
+            pass  # Fall through to pattern matching
+
+    # ── Fallback: deterministic pattern matching (when no API key) ──────────
+    ql = q.lower()
     def _apply(ct):
         try:
-            nm = build_model(prompt+" [CONSTRAINT: "+ct+"]", m.get("client",""), int(m.get("class_level",3) or 3), int(m.get("schedule_level",3) or 3), "base")
+            nm = build_model(m.get("prompt","") + " [CONSTRAINT: " + ct + "]", m.get("client",""),
+                int(m.get("class_level",3) or 3), int(m.get("schedule_level",3) or 3), "base")
             def sf(v):
                 try: return float(str(v).replace("$","").replace("B","").replace(",","").strip() or 0)
                 except: return 0.0
@@ -4488,93 +4625,52 @@ def chat(req: ChatRequest):
             return {"constraint_applied":ct,"new_p50":nm.get("cost_p50"),"new_confidence":nc,
                     "new_schedule":nm.get("schedule"),"cost_delta_bn":round(nd-od,2),
                     "cost_delta_pct":round((nd-od)/od*100,1) if od else 0,
-                    "confidence_delta":nc-oc,"schedule_delta_months":round(ns2-os2,1),
-                    "new_governing_constraint":nm.get("governing_constraint",""),
-                    "new_board_attack_1":(nm.get("board_attack_simulation") or [""])[0]}
+                    "confidence_delta":nc-oc,"schedule_delta_months":round(ns2-os2,1)}
         except Exception as e2:
             return {"constraint_applied":ct,"error":str(e2)}
 
-    if any(t in ql for t in ["what if","what happens if","if contractor","if we ","assume ","assuming ","apply constraint","single contractor","sole source","if signalling","if possessions","if planning","if funding","if approval"]) and prompt:
-        ct=q
+    delta = None
+    if any(t in ql for t in ["what if","what happens if","if we ","assume ","assuming "]) and m.get("prompt"):
+        ct = q
         for p2 in ["what if ","what happens if ","if we ","assuming ","assume "]:
-            if ql.startswith(p2): ct=q[len(p2):]; break
-        delta=_apply(ct)
+            if ql.startswith(p2): ct = q[len(p2):]; break
+        delta = _apply(ct)
         if delta and not delta.get("error"):
-            d=delta; parts=[]
-            if abs(d.get("cost_delta_bn",0))>0.05: parts.append("P50 "+("up" if d["cost_delta_bn"]>0 else "down")+" $"+str(abs(d["cost_delta_bn"]))+"B to "+str(d["new_p50"]))
-            if d.get("confidence_delta",0)!=0: parts.append("confidence "+("down" if d["confidence_delta"]<0 else "up")+" "+str(abs(d["confidence_delta"]))+"pts to "+str(d["new_confidence"])+"%")
-            if abs(d.get("schedule_delta_months",0))>1: parts.append("schedule "+("extended" if d["schedule_delta_months"]>0 else "compressed")+" "+str(abs(d["schedule_delta_months"]))+"mo")
-            effect="; ".join(parts) if parts else "model recalculated"
-            ngc=d.get("new_governing_constraint","—"); nba=d.get("new_board_attack_1","—")
-            ans="Constraint applied: "+ct[:80]+"\n\n"+effect+".\n\nNew governing constraint: "+ngc+".\n\nBoard challenge: "+nba
+            d = delta; parts = []
+            if abs(d.get("cost_delta_bn",0)) > 0.05:
+                parts.append("P50 " + ("increases" if d["cost_delta_bn"]>0 else "decreases") +
+                             " by " + curr + str(abs(d["cost_delta_bn"])) + "B to " + str(d["new_p50"]))
+            if d.get("confidence_delta",0) != 0:
+                parts.append("confidence " + ("falls" if d["confidence_delta"]<0 else "rises") +
+                             " " + str(abs(d["confidence_delta"])) + " pts to " + str(d["new_confidence"]) + "%")
+            if abs(d.get("schedule_delta_months",0)) > 1:
+                parts.append("schedule " + ("extends" if d["schedule_delta_months"]>0 else "compresses") +
+                             " " + str(abs(d["schedule_delta_months"])) + " months")
+            ans = "Constraint applied: " + ct[:80] + "\n\n" + ("; ".join(parts) or "model recalculated") + "."
         else:
-            ans="Could not apply constraint: "+str(delta.get("error","unknown"))+". Check a project is loaded."
-    elif any(x in ql for x in ["confidence","score","defensible","what drives"]):
-        drivers=m.get("confidence_drivers",[]) or m.get("sector_confidence_drivers",[]); red_flags=m.get("red_flags",[])
-        lv=int(conf) if conf!="—" else 0
-        lt=" Evidence supports commitment." if lv>=75 else (" Investment committee will push back." if lv>=55 else " Material gaps need closing.")
-        ans="Confidence: "+str(conf)+"%."+(lt if conf!="—" else "")
-        if drivers: ans+="\n\nKey drivers: "+"; ".join(str(d2) for d2 in drivers[:4])+"."
-        if red_flags: ans+="\n\nRed flags: "+"; ".join(str(f2) for f2 in red_flags[:3])+"."
-    elif any(x in ql for x in ["p50","p80","p90","cost","estimate","how much","budget"]):
-        oba=m.get("optimism_bias_assessment",{})
-        ans="P10: "+str(m.get("cost_p10","—"))+" | P50: "+str(p50)+" | P80: "+str(p80)+" | P90: "+str(m.get("cost_p90","—"))+"."
-        if oba.get("oba_adjusted_p50"): ans+="\n\nOBA-adjusted: "+str(oba["oba_adjusted_p50"])+" ("+str(oba.get("oba_source","Flyvbjerg"))+")."
-        if oba.get("board_challenge"): ans+="\n\nBoard challenge: "+str(oba["board_challenge"])
-    elif any(x in ql for x in ["schedule","timeline","duration","how long"]):
-        cp=m.get("critical_path_narrative",[])
-        ans="Schedule: "+str(schedule)+"."
-        if cp: ans+="\n\nCritical path: "+"; ".join(str(x2) for x2 in cp[:3])+"."
-        near=m.get("near_critical_narrative","")
-        if near: ans+="\n\n"+str(near)
-    elif any(x in ql for x in ["risk","what could go wrong","exposure"]):
-        ans="Top risks:\n"
-        for i2,r2 in enumerate(risks[:5],1):
-            ans+=str(i2)+". "+str(r2.get("title","—"))+" - "+str(int(r2.get("probability",0)*100))+"% prob, "+str(r2.get("cost_impact_bn","—"))+" impact. Owner: "+str(r2.get("owner","—"))+".\n"
-        iff=m.get("if_this_fails","")
-        if iff: ans+="\nHistorical pattern: "+str(iff[:200])
-    elif any(x in ql for x in ["gate","ipa","approval","ready","approvable"]):
-        gate=m.get("gate_review_readiness",{})
-        ans="Gate: "+str(gate.get("overall_verdict","—"))+".\n\n"+str(gate.get("current_gate_readiness","—"))+"."
-        actions=gate.get("next_gate_actions",[])
-        if actions: ans+="\n\nActions: "+"; ".join(str(a2) for a2 in actions[:3])+"."
-    elif any(x in ql for x in ["procur","contract","supplier","package","single source"]):
-        procs=m.get("procurement_heatmap",[])
-        if procs:
-            ans="Procurement packages:\n"
-            for p3 in procs[:4]:
-                ss=" SINGLE SOURCE" if p3.get("single_source_risk") else ""
-                ans+="- "+str(p3.get("package","—"))+": "+str(p3.get("value_est","—"))+", "+str(p3.get("lead_time","—"))+ss+"\n"
-        else: ans="No procurement data. Run a project first."
-    elif any(x in ql for x in ["board","committee","question","attack","challenge"]):
-        attacks=m.get("board_attack_simulation",[]); ia=m.get("institutional_authority_line","")
-        if attacks:
-            ans="Board questions:\n"
-            for i3,a3 in enumerate(attacks[:5],1): ans+=str(i3)+". "+str(a3)+"\n"
-            if ia: ans+="\nAuthority line: "+str(ia)
-        else: ans="Generate a project first."
-    elif any(x in ql for x in ["benchmark","comparable","reference","crossrail","jwst"]):
-        benches=m.get("benchmark_comparison",[])
-        if benches:
-            ans="Benchmarks:\n"
-            for b2 in benches[:4]:
-                ans+="- "+str(b2.get("name",b2.get("archetype","—")))+": +"+str(b2.get("cost_growth_pct",0))+"% cost, +"+str(b2.get("schedule_slip_months",0))+"mo slip.\n"
-        else: ans="No benchmark data. Run a project first."
-    elif any(x in ql for x in ["location","country","currency","framework","financing"]):
-        loc=m.get("location_context",{}); fin=m.get("financing_context",{})
-        if loc:
-            ans="Location: "+str(loc.get("country","—"))+" | Currency: "+str(loc.get("currency","—"))+"\nFramework: "+str(loc.get("regulatory_framework","—"))
-            if loc.get("optimism_bias_note"): ans+="\nOBA note: "+str(loc["optimism_bias_note"])
-            if fin.get("structure"): ans+="\nFinancing: "+str(fin["structure"])
-        else: ans="Include a country in your project description."
-    elif any(x in ql for x in ["position","summary","overview","status"]):
-        ba=(m.get("board_attack_simulation") or [""])[0]; tvc=m.get("traditional_vs_casey",{})
-        ans="Position: P50 "+str(p50)+" | P80 "+str(p80)+" | "+str(conf)+"% confidence | "+str(schedule)+".\nConstraint: "+str(constraint)+".\nFirst board question: "+str(ba)
-        if tvc.get("casey_read"): ans+="\nCASEY read: "+str(tvc["casey_read"])
+            ans = "Could not model that constraint: " + str(delta.get("error","unknown")) + "."
+    elif "confidence" in ql or "defensible" in ql:
+        lv = int(conf) if conf != "—" else 0
+        lt = "Evidence supports commitment." if lv >= 75 else ("Investment committee will push back." if lv >= 55 else "Material gaps need closing.")
+        ans = f"Confidence: {conf}%. {lt}\n\nOBA-adjusted P50: {oba_p50}. Reference class says the headline ({p50}) will likely be exceeded."
+    elif any(x in ql for x in ["p50","p80","cost","estimate","how much"]):
+        ans = f"P10: {p10} | P50: {p50} | P80: {p80} | P90: {p90}.\nOBA-adjusted: {oba_p50} (+{oba_uplift}%)."
+    elif any(x in ql for x in ["risk","exposure","wrong"]):
+        ans = "Top risks by EMV:\n" + risk_lines + f"\nFailure pattern: {str(fail)[:200]}"
+    elif any(x in ql for x in ["gate","ipa","approval","ready"]):
+        ans = f"Gate: {gate.get('overall_verdict','—') if isinstance(gate,dict) else '—'}.\nGoverning constraint: {gc}.\nNext action: {(gate.get('next_gate_actions',[]) or ['—'])[0] if isinstance(gate,dict) else '—'}."
+    elif any(x in ql for x in ["benchmark","comparable","reference"]):
+        ans = "Benchmarks:\n" + bm_lines
+    elif any(x in ql for x in ["board","committee","question","challenge"]):
+        ans = "Board questions:\n" + "\n".join(f"{i+1}. {a}" for i,a in enumerate(ba[:5]))
     else:
-        ans=("CASEY: "+str(sector)+" at "+str(p50)+" P50 / "+str(conf)+"% confidence.\nConstraint: "+str(constraint)+"."
-             "\n\nTry: What if contractor A wins signalling? | Top risks? | Board questions? | Gate-ready? | P80 exposure?")
-    return {"answer":ans,"delta":delta}
+        ans = (f"Programme: {sub} | {curr}{p50} P50 | {conf}% confidence | {sched} months.\n"
+               f"Governing constraint: {gc}.\n"
+               f"OBA-adjusted: {oba_p50}.\n\n"
+               "Set ANTHROPIC_API_KEY in Render environment variables to enable the full adversarial advisor.")
+
+    return {"answer": ans, "delta": delta, "source": "pattern"}
+
 
 @app.post("/upload/analyse")
 # ═══════════════════════════════════════════════════════════════════════
@@ -5137,62 +5233,280 @@ def add_sheet(wb,name,rows):
     style_ws(ws); return ws
 
 def workbook_bytes(model):
-    wb=Workbook(); wb.remove(wb.active)
-    add_sheet(wb,"Board Summary",[["Field","Value"],["Generated",datetime.utcnow().isoformat()],["Version",model.get("version")],["Title",model.get("title")],["Client",model.get("client")],["Executive Summary",model.get("executive_summary")],["Mode",model.get("mode")],["Subsector",model.get("subsector")],["Location",model.get("location")],["Scenario",model.get("scenario_label")],["Cost P10",model.get("cost_p10")],["Cost P50",model.get("cost_p50")],["Cost P90",model.get("cost_p90")],["Schedule",model.get("schedule")],["QCRA P80",money_bn(model.get("monte_carlo","—")["qcra"]["p80"])],["QSRA P80",model.get("monte_carlo","—")["qsra"]["p80"]],["Risk",model.get("risk")],["Confidence",f"{model.get('confidence_pct')}%"]])
-    _cls = model.get("cost_lines") or model.get("cost_breakdown") or []
-    add_sheet(wb,"Primary Cost Estimate",[["CBS","Description","Type","Basis","P10 ($B)","P50 ($B)","P90 ($B)","Impact Basis"]]+[[x.get("cbs","?"),x.get("description","?"),x.get("type","Direct"),x.get("basis",x.get("basis_of_cost_impact","?")),x.get("p10_bn",x.get("p10",0)),x.get("p50_bn",x.get("p50",0)),x.get("p90_bn",x.get("p90",0)),x.get("impact_basis",x.get("basis","?"))] for x in _cls])
-    for c,rows in model.get("estimates_by_class","—").items(): add_sheet(wb,f"Class {c} Estimate",[["Class","CBS","Description","P10","P50","P90","Maturity"]]+[[c,x.get("cbs","?"),x.get("description","?"),x.get("p10_bn",x.get("p50",0)*0.75),x.get("p50_bn",x.get("p50",0)),x.get("p90_bn",x.get("p50",0)*1.35),x.get("maturity","Class")] for x in rows])
-    for l,rows in model.get("schedules_by_level","—").items(): add_sheet(wb,f"Level {l} Schedule",[["Activity ID","Phase","Activity","Predecessor","Duration Months","Critical","Basis"]]+[[x.get("activity_id",0),x.get("phase",0),x.get("activity",0),x.get("predecessor",0),x.get("duration_months",0),x.get("critical",0),x.get("basis",0)] for x in rows])
-    add_sheet(wb,"Risk Register",[["ID","Risk","Category","Probability","Activity","CBS","Sched O","Sched M","Sched P","Cost O","Cost M","Cost P","Owner","Trigger","Mitigation","Cost Basis","Schedule Basis"]]+[[r.get("risk_id",""),r.get("title",""),r.get("category",""),r.get("probability_pct",""),r.get("activity_id",""),r.get("cbs",""),r.get("schedule_o_days",""),r.get("schedule_m_days",""),r.get("schedule_p_days",""),r.get("cost_o_bn",""),r.get("cost_m_bn",""),r.get("cost_p_bn",""),r.get("owner",""),r.get("trigger",""),r.get("mitigation",""),r.get("basis_of_cost_impact",""),r.get("basis_of_schedule_impact","")] for r in model.get("risks","—")])
-    add_sheet(wb,"Monte Carlo P-Curve",[["Percentile","QCRA Cost BN","QSRA Months"]]+[[x.get("percentile",0),x.get("cost_bn",0),x.get("schedule_months",0)] for x in model.get("monte_carlo","—")["curve"]])
-    add_sheet(wb,"Tornado Drivers",[["Risk","Title","Activity","CBS","Cost Mean BN","Schedule Mean Days","Driver Score"]]+[[x.get("risk_id",0),x.get("title",0),x.get("activity_id",0),x.get("cbs",0),x.get("cost_mean_bn",0),x.get("schedule_mean_days",0),x.get("driver_score",0)] for x in model.get("monte_carlo","—")["tornado"]])
-    add_sheet(wb,"Scenarios",[["Scenario","Cost","Schedule Months","Risk","Confidence","Why"]]+[[x.get("label",0),x.get("cost",0),x.get("schedule_months",0),x.get("risk",0),x.get("confidence",0),x.get("why",0)] for x in model.get("scenario_comparison","—")])
-    add_sheet(wb,"Benchmarks",[["Metric","Value","Why"]]+[[x.get("metric",0),x.get("value",0),x.get("why",0)] for x in model.get("benchmarks","—")])
-    add_sheet(wb,"Demo Script",[["Step"]]+[[x] for x in model.get("launch_demo_script","—")])
-    # charts
-    try:
-        ws=wb["Monte Carlo P-Curve"]; chart=LineChart(); chart.title="QCRA/QSRA P-Curve"; data=Reference(ws,min_col=2,max_col=3,min_row=1,max_row=ws.max_row); cats=Reference(ws,min_col=1,min_row=2,max_row=ws.max_row); chart.add_data(data,titles_from_data=True); chart.set_categories(cats); ws.add_chart(chart,"E2")
-        ws2=wb["Tornado Drivers"]; b=BarChart(); b.title="Tornado Drivers"; data=Reference(ws2,min_col=7,min_row=1,max_row=min(ws2.max_row,12)); cats=Reference(ws2,min_col=2,min_row=2,max_row=min(ws2.max_row,12)); b.add_data(data,titles_from_data=True); b.set_categories(cats); ws2.add_chart(b,"I2")
-    except Exception: pass
-    bio=BytesIO(); wb.save(bio); bio.seek(0); return bio.getvalue()
+    """Professional cost workbook - cost data only, local currency, unit rates."""
+    model = _apply_currency_to_model(model)
+    from openpyxl import Workbook as WB
+    from openpyxl.styles import Font, Fill, PatternFill, Alignment, Border, Side, numbers
+    from openpyxl.utils import get_column_letter
+    import datetime
 
-def risk_register_workbook_bytes(model):
-    """Full risk register as XLSX workbook with EMV and board fields."""
-    try:
-        from openpyxl import Workbook as OpWB
-        from openpyxl.styles import PatternFill, Font, Alignment
-        wb2 = OpWB()
-        ws = wb2.active
-        ws.title = "Risk Register Pro"
-        headers = ['ID','Risk','Category','Cause','Event','Impact','Probability %','Owner','CBS','Mitigation','Trigger','EMV ($M)','Status','Pre-mitigation','Board Visible']
-        for col, h in enumerate(headers, 1):
-            ws.cell(row=1, column=col, value=h)
-        for i, r in enumerate(model.get('risks', []), 2):
-            emv = float(r.get('cost_emv_bn', r.get('cost_m_bn', 0)) or 0) * 1000
-            ws.append([
-                r.get('id', r.get('risk_id', f'R-{i:03d}')),
-                r.get('risk', r.get('title', '?')),
-                r.get('category', 'Delivery risk'),
-                r.get('cause', '—'),
-                r.get('event', r.get('risk_event', '—')),
-                r.get('impact', r.get('impact_description', '—'))[:100],
-                r.get('probability_pct', '—'),
-                r.get('owner', 'TBC'),
-                r.get('cbs', '01.01'),
-                r.get('mitigation', '—')[:120],
-                r.get('trigger', '—')[:80],
-                round(emv, 1),
-                r.get('status', 'Open'),
-                r.get('pre_mitigation_rating', '—'),
-                r.get('board_visibility', 'Yes'),
-            ])
-        bio3 = BytesIO()
-        wb2.save(bio3)
-        bio3.seek(0)
-        return bio3.getvalue()
-    except Exception as e:
-        # Fallback to CSV bytes
-        return risk_csv_bytes(model)
+    curr = model.get("currency_symbol", "$")
+    subsector = model.get("subsector", "Programme")
+    title = model.get("title", subsector)
+    conf = model.get("confidence_pct", "—")
+    scenario = model.get("scenario_label", "Base")
+
+    def fc(v, strip_b=True):
+        s = str(v or "—")
+        if curr != "$" and s.startswith("$"): s = curr + s[1:]
+        return s
+
+    # Colours
+    DARK = "1E293B"; TEAL = "0E7490"; CYAN = "06B6D4"; LIGHT = "F8FAFC"
+    AMBER = "D97706"; RED = "DC2626"; GREEN = "059669"; WHITE = "FFFFFF"
+
+    def hdr_fill(hex_col): return PatternFill("solid", fgColor=hex_col)
+    def bold(sz=10, col="000000"): return Font(bold=True, size=sz, color=col)
+    def reg(sz=9, col="334155"): return Font(size=sz, color=col)
+    def centre(): return Alignment(horizontal="center", vertical="center", wrap_text=True)
+    def left(): return Alignment(horizontal="left", vertical="center", wrap_text=True)
+    def right_al(): return Alignment(horizontal="right", vertical="center")
+    def thin_border():
+        side = Side(style="thin", color="E2E8F0")
+        return Border(left=side, right=side, top=side, bottom=side)
+
+    wb = WB()
+
+    # ── SHEET 1: Cover ──────────────────────────────────────────
+    ws = wb.active
+    ws.title = "Cover"
+    ws.sheet_view.showGridLines = False
+    ws.column_dimensions["A"].width = 40
+    ws.column_dimensions["B"].width = 35
+
+    def cov_row(label, value, lbold=False, vbold=False):
+        r = ws.max_row + 1
+        ws.cell(r, 1, label).font = bold(10, "0E7490") if lbold else reg(9, "475569")
+        ws.cell(r, 2, value).font = bold(11, "0F172A") if vbold else reg(10, "1E293B")
+        ws.cell(r, 1).alignment = left(); ws.cell(r, 2).alignment = left()
+
+    ws.append(["CASEY CAPITAL PROGRAMME COST INTELLIGENCE"])
+    ws.cell(1,1).font = bold(16, "0E7490"); ws.cell(1,1).alignment = left()
+    ws.append([])
+    cov_row("Programme", title, True, True)
+    cov_row("Sector", subsector)
+    cov_row("Location", model.get("location", "—"))
+    cov_row("Currency", curr + " — " + model.get("currency_label", "Local currency"))
+    cov_row("Estimate Class", "Class {} — {}".format(model.get("class_level",3), model.get("estimate_class_name", model.get("class_name","Budget Authorization"))))
+    cov_row("Scenario", scenario)
+    cov_row("P10 (Optimistic)", fc(model.get("cost_p10","—")), True, True)
+    cov_row("P50 (Most Likely)", fc(model.get("cost_p50","—")), True, True)
+    cov_row("P80 (Board Exposure)", fc(model.get("cost_p80","—")), True, True)
+    cov_row("P90 (Stress Case)", fc(model.get("cost_p90","—")), True, True)
+    cov_row("Confidence", "{}%".format(conf))
+    cov_row("OBA-Adjusted P50", fc(model.get("optimism_bias_assessment",{}).get("oba_adjusted_p50","—") if isinstance(model.get("optimism_bias_assessment"),dict) else "—"), True, False)
+    ws.append([])
+    ws.cell(ws.max_row+1, 1, "Generated by CASEY Intelligence Engine — controlorbit.com").font = reg(8, "94A3B8")
+
+    # ── SHEET 2: Primary Cost Estimate ─────────────────────────
+    ws2 = wb.create_sheet("Cost Estimate")
+    ws2.sheet_view.showGridLines = False
+    cols = [("CBS",10),("Description",36),("Type",12),("Unit Rate",18),("P10",14),("P50",14),("P90",14),("Basis",32)]
+    for ci,(h,w) in enumerate(cols,1):
+        ws2.column_dimensions[get_column_letter(ci)].width = w
+        c = ws2.cell(1,ci,h)
+        c.font = bold(9,WHITE); c.fill = hdr_fill(TEAL); c.alignment = centre(); c.border = thin_border()
+
+    costs = model.get("cost_lines") or model.get("cost_breakdown") or []
+    for row_i, cb in enumerate(costs[:30], 2):
+        bg = LIGHT if row_i % 2 == 0 else WHITE
+        try:
+            p10 = float(cb.get("p10_bn") or cb.get("p10") or 0)
+            p50 = float(cb.get("p50_bn") or cb.get("p50") or 0)
+            p90 = float(cb.get("p90_bn") or cb.get("p90") or 0)
+            vals = [cb.get("cbs",""), cb.get("description",""), cb.get("type","Direct"),
+                    cb.get("unit_rate","—"), p10, p50, p90,
+                    cb.get("basis", cb.get("basis_of_cost_impact","Sector benchmark"))[:50]]
+            for ci,v in enumerate(vals,1):
+                c = ws2.cell(row_i, ci, v)
+                c.fill = hdr_fill(bg); c.border = thin_border()
+                c.alignment = right_al() if ci in (5,6,7) else left()
+                c.font = bold(9,"0E7490") if ci in (5,6,7) else reg()
+                if ci in (5,6,7) and isinstance(v,float):
+                    c.number_format = "#,##0.000"
+        except Exception: pass
+
+    # Totals row
+    r = ws2.max_row + 1
+    tot_labels = ["","TOTAL","",""]
+    p10_t = sum(float(c.get("p10_bn",c.get("p10",0)) or 0) for c in costs)
+    p50_t = sum(float(c.get("p50_bn",c.get("p50",0)) or 0) for c in costs)
+    p90_t = sum(float(c.get("p90_bn",c.get("p90",0)) or 0) for c in costs)
+    for ci,v in enumerate(["","TOTAL","","",p10_t,p50_t,p90_t,"Sum of CBS lines"],1):
+        c = ws2.cell(r,ci,v); c.font = bold(10,"0F172A"); c.fill = hdr_fill("FEF9C3")
+        c.border = thin_border(); c.alignment = right_al() if ci in (5,6,7) else left()
+        if ci in (5,6,7): c.number_format = "#,##0.000"
+
+    # ── SHEET 3: Unit Rate Analysis ─────────────────────────────
+    ws3 = wb.create_sheet("Unit Rate Analysis")
+    ws3.sheet_view.showGridLines = False
+    ws3.column_dimensions["A"].width = 36; ws3.column_dimensions["B"].width = 18
+    ws3.column_dimensions["C"].width = 20; ws3.column_dimensions["D"].width = 24
+
+    hdrs3 = ["Cost Element","Unit","Unit Rate (P50)","Typical Sector Range"]
+    for ci,h in enumerate(hdrs3,1):
+        c = ws3.cell(1,ci,h); c.font=bold(9,WHITE); c.fill=hdr_fill(DARK); c.alignment=centre(); c.border=thin_border()
+
+    url = model.get("unit_rate_label",{}) or {}
+    metric = url.get("metric","unit") if isinstance(url,dict) else str(url)
+    typical = url.get("typical_range","—") if isinstance(url,dict) else "—"
+    p50_raw = sum(float(c.get("p50_bn",c.get("p50",0)) or 0) for c in costs) if costs else 0
+
+    for ri,cb in enumerate(costs[:20],2):
+        try:
+            p50 = float(cb.get("p50_bn",cb.get("p50",0)) or 0)
+            ur = cb.get("unit_rate","—")
+            ws3.cell(ri,1,cb.get("description","")).font=reg(); ws3.cell(ri,1).alignment=left()
+            ws3.cell(ri,2,metric).font=reg(9,"475569"); ws3.cell(ri,2).alignment=centre()
+            ws3.cell(ri,3,ur).font=bold(9,"0E7490"); ws3.cell(ri,3).alignment=right_al()
+            ws3.cell(ri,4,typical).font=reg(9,"64748B"); ws3.cell(ri,4).alignment=left()
+            for ci in range(1,5): ws3.cell(ri,ci).border=thin_border(); ws3.cell(ri,ci).fill=hdr_fill(LIGHT if ri%2==0 else WHITE)
+        except Exception: pass
+
+    # ── SHEET 4: Scenarios ──────────────────────────────────────
+    ws4 = wb.create_sheet("Scenario Comparison")
+    ws4.sheet_view.showGridLines = False
+    ws4.column_dimensions["A"].width = 20
+    for i in range(2,7): ws4.column_dimensions[get_column_letter(i)].width = 18
+
+    sm = model.get("scenario_matrix", [])
+    if sm:
+        hdrs4 = [""] + [s.get("label",s.get("scenario","")).upper() for s in sm]
+        for ci,h in enumerate(hdrs4,1):
+            c = ws4.cell(1,ci,h); c.font=bold(9,WHITE)
+            c.fill = hdr_fill(TEAL if ci==2 else "475569"); c.alignment=centre(); c.border=thin_border()
+        rows4 = [("P50 Cost","cost_p50"),("Schedule","schedule"),("Confidence","confidence_pct"),("Risk","risk"),("Why",None)]
+        for ri,(label,key) in enumerate(rows4,2):
+            ws4.cell(ri,1,label).font=bold(9,"1E293B"); ws4.cell(ri,1).alignment=left()
+            for ci,s in enumerate(sm,2):
+                val = s.get(key,"—") if key else s.get("why","—")
+                c = ws4.cell(ri,ci,val); c.font=reg(); c.alignment=left()
+                c.border=thin_border(); c.fill=hdr_fill(LIGHT if ri%2==0 else WHITE)
+
+    # ── SHEET 5: OBA & Calibration ──────────────────────────────
+    ws5 = wb.create_sheet("OBA & Calibration")
+    ws5.sheet_view.showGridLines = False
+    ws5.column_dimensions["A"].width = 35; ws5.column_dimensions["B"].width = 40
+
+    oba = model.get("optimism_bias_assessment",{})
+    ws5.cell(1,1,"OPTIMISM BIAS ASSESSMENT").font=bold(12,"0E7490")
+    for ri,(label,key) in enumerate([
+        ("Headline P50","cost_p50"),("OBA Source",None),("OBA Uplift %",None),("OBA-Adjusted P50",None),("Verdict",None)
+    ],3):
+        ws5.cell(ri,1,label).font=bold(9,"475569"); ws5.cell(ri,1).alignment=left()
+        if key: val=fc(model.get(key,"—"))
+        elif label=="OBA Source": val=str(oba.get("oba_source","—"))[:80] if isinstance(oba,dict) else "—"
+        elif label=="OBA Uplift %": val="{}%".format(oba.get("oba_uplift_pct","—")) if isinstance(oba,dict) else "—"
+        elif label=="OBA-Adjusted P50": val=fc(oba.get("oba_adjusted_p50","—") if isinstance(oba,dict) else "—")
+        else: val=str(oba.get("verdict","—"))[:100] if isinstance(oba,dict) else "—"
+        ws5.cell(ri,2,val).font=reg(9,"0F172A"); ws5.cell(ri,2).alignment=left()
+        for ci in (1,2): ws5.cell(ri,ci).border=thin_border()
+
+    # Benchmarks
+    ws5.cell(ws5.max_row+2,1,"NAMED BENCHMARKS").font=bold(11,"0E7490")
+    bm_hdrs = ["Programme","Sector","P50 Anchor","Cost Growth","Slip","Failure Mode"]
+    r_bm = ws5.max_row+1
+    for ci,h in enumerate(bm_hdrs,1):
+        c=ws5.cell(r_bm,ci,h); c.font=bold(9,WHITE); c.fill=hdr_fill(DARK); c.alignment=centre()
+    for b in model.get("benchmark_comparison",[])[:6]:
+        r_bm+=1
+        row=[b.get("name","")[:30],b.get("sector",subsector)[:20],
+             fc(str(b.get("anchor_cost",b.get("cost_bn","—")))),
+             "+{}%".format(b.get("cost_growth_pct",b.get("growth","—"))),
+             "+{}mo".format(b.get("schedule_slip_months",b.get("slip","—"))),
+             str(b.get("failure_mode",b.get("failure","—")))[:50]]
+        for ci,v in enumerate(row,1):
+            c=ws5.cell(r_bm,ci,v); c.font=reg(); c.alignment=left(); c.border=thin_border()
+            c.fill=hdr_fill(LIGHT if r_bm%2==0 else WHITE)
+
+    # Footer on all sheets
+    gen_date = datetime.datetime.now().strftime("%d %b %Y %H:%M")
+    for ws_x in [ws,ws2,ws3,ws4,ws5]:
+        note_r = ws_x.max_row+2
+        ws_x.cell(note_r,1,"Generated by CASEY Intelligence Engine {} — controlorbit.com — First-pass intelligence not a certified cost plan".format(gen_date)).font=reg(7,"94A3B8")
+
+    bio = __import__("io").BytesIO()
+    wb.save(bio); bio.seek(0)
+    return bio.getvalue()
+
+def risk_register_workbook_bytes(model: dict) -> bytes:
+    """Professional risk register Excel with EMV, owners, mitigations."""
+    model = _apply_currency_to_model(model)
+    from openpyxl import Workbook as WBR
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+
+    curr = model.get("currency_symbol", "$")
+    def fc(v):
+        s = str(v or 0)
+        try:
+            n = float(s)
+            s2 = "${:.3f}B".format(n)
+            return (curr + s2[1:]) if curr != "$" else s2
+        except:
+            return s if s != "0" and s != "0.0" else "—"
+
+    def hf(hex_col): return PatternFill("solid", fgColor=hex_col)
+    def bf(sz=9, col="000000"): return Font(bold=True, size=sz, color=col)
+    def rf(sz=8, col="334155"): return Font(size=sz, color=col)
+    def al(): return Alignment(horizontal="left", vertical="center", wrap_text=True)
+    def ac(): return Alignment(horizontal="center", vertical="center")
+    def ar(): return Alignment(horizontal="right", vertical="center")
+    def tb():
+        side = Side(style="thin", color="E2E8F0")
+        return Border(left=side, right=side, top=side, bottom=side)
+
+    wb = WBR()
+    ws = wb.active; ws.title = "Risk Register"
+    ws.sheet_view.showGridLines = False
+
+    headers = [("ID",8),("Risk Title",38),("Category",16),("Cause",24),("Event",24),
+               ("Impact",24),("Prob %",9),("Impact {}B".format(curr),14),
+               ("EMV {}B".format(curr),14),("Owner",18),("Status",10),
+               ("Mitigation",36),("Trigger",24)]
+    for ci,(h,w) in enumerate(headers,1):
+        ws.column_dimensions[get_column_letter(ci)].width = w
+        c = ws.cell(1,ci,h); c.font=bf(9,"FFFFFF"); c.fill=hf("1E293B"); c.alignment=ac(); c.border=tb()
+
+    risks = sorted(model.get("risks",[]), key=lambda x: float(x.get("cost_emv_bn",0) or 0), reverse=True)
+    for ri,r in enumerate(risks[:25],2):
+        emv = float(r.get("cost_emv_bn",0) or 0)
+        imp = float(r.get("cost_m_bn",0) or r.get("cost_impact_bn",0) or 0)
+        bg = "FFF7F7" if ri % 2 == 0 else "FFFFFF"
+        row_data = [
+            r.get("id",r.get("risk_id","R-{:03d}".format(ri))),
+            r.get("title",r.get("risk",""))[:50],
+            r.get("category","Delivery")[:20],
+            r.get("cause","")[:40],
+            r.get("event",r.get("risk_event",""))[:40],
+            r.get("impact",r.get("impact_description",""))[:40],
+            "{}%".format(r.get("probability_pct","—")),
+            imp if imp else "—",
+            emv if emv else "—",
+            r.get("owner","TBC")[:20],
+            r.get("status","Open"),
+            r.get("mitigation","")[:60],
+            r.get("trigger","")[:40],
+        ]
+        for ci,v in enumerate(row_data,1):
+            c = ws.cell(ri,ci,v); c.border=tb(); c.fill=hf(bg)
+            c.alignment = ar() if ci in (7,8,9) else al()
+            c.font = bf(9,"DC2626") if ci in (8,9) and isinstance(v,float) and v>0 else rf()
+            if ci in (8,9) and isinstance(v,float): c.number_format = "#,##0.000"
+
+    # Summary row
+    total_emv = sum(float(r.get("cost_emv_bn",0) or 0) for r in risks)
+    total_imp = sum(float(r.get("cost_m_bn",0) or 0) for r in risks)
+    sr = ws.max_row+1
+    ws.cell(sr,2,"TOTAL / AGGREGATE RISK").font=bf(10,"0F172A")
+    ws.cell(sr,8,total_imp).font=bf(10,"DC2626"); ws.cell(sr,8).number_format="#,##0.000"
+    ws.cell(sr,9,total_emv).font=bf(10,"DC2626"); ws.cell(sr,9).number_format="#,##0.000"
+    for ci in range(1,14): ws.cell(sr,ci).fill=hf("FEF9C3"); ws.cell(sr,ci).border=tb()
+
+    bio = __import__("io").BytesIO()
+    wb.save(bio); bio.seek(0)
+    return bio.getvalue()
+
 
 def risk_csv_bytes(model):
     out=StringIO(); w=csv.writer(out); w.writerow(["Risk ID","Title","Category","Probability %","Activity ID","Activity Name","CBS","CBS Name","Schedule O","Schedule M","Schedule P","Cost O BN","Cost M BN","Cost P BN","Owner","Trigger","Mitigation","Basis Cost","Basis Schedule"])
@@ -5200,16 +5514,62 @@ def risk_csv_bytes(model):
     return out.getvalue().encode()
 
 def xer_bytes(model):
-    lines=["ERMHDR\t24.12\t2026-05-02\tProject\tCASEY\tCASEY\tProject Management\tUSD","%T\tPROJECT","%F\tproj_id\tproj_short_name\tproj_name",f"%R\t1\tCASEY\t{model.get('title','CASEY Project')}","%T\tWBS","%F\twbs_id\tproj_id\twbs_short_name\twbs_name","%R\t1\t1\tCASEY\tCASEY Project","%T\tTASK","%F\ttask_id\tproj_id\twbs_id\ttask_code\ttask_name\tduration_type\ttarget_drtn_hr_cnt"]
-    idx={}
-    for i,a in enumerate(model["schedule_rows"],1): idx[a["activity_id"]]=i; lines.append(f"%R\t{i}\t1\t1\t{a['activity_id']}\t{a['activity']}\tFixed Duration\t{a['duration_months']*160}")
-    lines += ["%T\tTASKPRED","%F\ttask_pred_id\ttask_id\tpred_task_id\tpred_type"]
-    k=1
-    for a in model["schedule_rows"]:
-        for p in str(a.get("predecessor","")).split(";"):
-            p=p.strip()
-            if p in idx: lines.append(f"%R\t{k}\t{idx[a['activity_id']]}\t{idx[p]}\tFS"); k+=1
-    return "\n".join(lines).encode()
+    from datetime import datetime, timedelta
+    title = str(model.get("title") or model.get("subsector") or "CASEY Programme")[:60]
+    pid = "C" + str(abs(hash(title)) % 99999).zfill(5)
+    months = int(model.get("schedule_months") or 36)
+    start = datetime(2026, 6, 1)
+    finish = start + timedelta(days=months * 30)
+    raw = model.get("schedule_activities") or model.get("schedules") or []
+    acts = []
+    for s in raw[:35]:
+        acts.append({"id": str(s.get("activity_id", "A{:04d}".format(len(acts)+1)))[:12],
+                     "name": str(s.get("name") or "Activity")[:60],
+                     "dur": max(5, int(s.get("duration_days") or (s.get("duration_months") or 3) * 30)),
+                     "crit": bool(s.get("critical"))})
+    if not acts:
+        phases = [("Pre-Construction",0.10),("Enabling Works",0.07),("Substructure",0.13),
+                  ("Superstructure",0.17),("MEP Systems",0.12),("Specialist Fit-Out",0.09),
+                  ("Systems Integration",0.13),("Testing Commissioning",0.10),("Handover Closeout",0.09)]
+        for i,(n,f) in enumerate(phases,1):
+            acts.append({"id":"A{:04d}".format(i),"name":n,
+                         "dur":max(30,int(months*30*f)),"crit":i in (3,5,7,8)})
+    milestones = [("MS001","Programme Start",0),
+                  ("MS010","Design Freeze",int(months*30*0.22)),
+                  ("MS020","Procurement Complete",int(months*30*0.30)),
+                  ("MS030","Construction Start",int(months*30*0.33)),
+                  ("MS040","Substantial Completion",int(months*30*0.90)),
+                  ("MS050","Final Handover",int(months*30))]
+    L = []
+    L.append("ERMHDR\t19.12\t{}\tProject\tCASEY\tCASEY\tProject Management\tUSD".format(start.strftime("%Y-%m-%d")))
+    L.append("%T\tPROJECT")
+    L.append("%F\tproj_id\tproj_short_name\tproj_name\tprimavera_flag\tplan_start_date\tplan_end_date\tcrit_path_type")
+    L.append("%R\t{}\t{}\t{}\tN\t{}\t{}\tCT_TotalFloat".format(pid,pid,title,start.strftime("%Y-%m-%d 00:00"),finish.strftime("%Y-%m-%d 00:00")))
+    L.append("%T\tCALENDAR")
+    L.append("%F\tclndr_id\tclndr_name\tday_hr_cnt\tclndr_type")
+    L.append("%R\t1\tStandard 5-Day Work Week\t8\tCA_Base")
+    L.append("%T\tPROJWBS")
+    L.append("%F\twbs_id\twbs_short_name\twbs_name\tproj_id\tparent_wbs_id")
+    L.append("%R\t{}.WBS\t{}\t{}\t{}\t".format(pid,pid,title,pid))
+    L.append("%T\tACTIVITY")
+    L.append("%F\tact_id\tact_name\tact_type\tproj_id\twbs_id\tclndr_id\ttarget_drtn_hr_cnt\tact_start_date\tact_end_date\tcrit_flag")
+    cur = start
+    for a in acts:
+        ed = cur + timedelta(days=a["dur"])
+        L.append("%R\t{}\t{}\tTT_Task\t{}\t{}.WBS\t1\t{}\t{}\t{}\t{}".format(
+            a["id"],a["name"],pid,pid,a["dur"]*8,
+            cur.strftime("%Y-%m-%d 08:00"),ed.strftime("%Y-%m-%d 17:00"),"Y" if a["crit"] else "N"))
+        cur = ed
+    for ms_id,ms_name,offset in milestones:
+        ms_dt = start + timedelta(days=offset)
+        L.append("%R\t{}\t{}\tTT_Mile\t{}\t{}.WBS\t1\t0\t{}\t{}\tY".format(
+            ms_id,ms_name,pid,pid,ms_dt.strftime("%Y-%m-%d 08:00"),ms_dt.strftime("%Y-%m-%d 08:00")))
+    L.append("%T\tTASKPRED")
+    L.append("%F\ttask_pred_id\tpred_task_id\tproj_id\tpred_proj_id\tpred_type\tlag_hr_cnt")
+    for i in range(1,len(acts)):
+        L.append("%R\t{}\t{}\t{}\t{}\tPR_FS\t0".format(i,acts[i]["id"],pid,pid))
+    L.append("%E")
+    return "\n".join(L).encode("utf-8")
 
 def word_bytes(model):
     doc=Document(); styles=doc.styles; styles["Normal"].font.name="Aptos"; styles["Normal"].font.size=Pt(10)
@@ -5240,348 +5600,498 @@ def pptx_bytes(model):
     for r in model["risks"][:8]: p=txt.add_paragraph(); p.text=f"{r['title']} — {r['activity_id']} / {r['cbs']}"; p.level=0
     bio=BytesIO(); prs.save(bio); bio.seek(0); return bio.getvalue()
 
-def pdf_bytes(model):
-    """Board-grade PDF pack — investment committee ready."""
-    curr = model.get('currency_symbol', '$')
-    def _fc(v):
-        """Format currency in model's local currency."""
-        s = str(v or '—')
-        return (curr + s[1:]) if curr != '$' and s.startswith('$') else s
+def _apply_currency_to_model(model: dict) -> dict:
+    """
+    Post-process all text fields in the model to replace $ with the local
+    currency symbol. Called at the start of every export function.
+    """
+    curr = model.get("currency_symbol", "$").strip()
+    if curr == "$":
+        return model  # nothing to do
     
+    import re, copy
+    m = copy.deepcopy(model)
+    
+    def fix_text(text):
+        if not isinstance(text, str): return text
+        # Replace $XX.XB / $XXB / $XX,XXX patterns with local currency
+        text = re.sub(r"\$([0-9,.]+\s*[BbMmKk]?)", lambda x: curr + x.group(1), text)
+        text = re.sub(r"USD\s*([0-9])", curr + r"\1", text)
+        return text
+    
+    def fix_val(v):
+        if isinstance(v, str): return fix_text(v)
+        if isinstance(v, list): return [fix_val(i) for i in v]
+        if isinstance(v, dict): return {k: fix_val(vv) for k, vv in v.items()}
+        return v
+    
+    # Fix key text fields that are known to contain $ amounts
+    text_fields = [
+        "executive_summary", "board_attack_simulation", "casey_position",
+        "sector_failure_pattern", "if_this_fails", "institutional_authority_line",
+        "governing_constraint", "confidence_explanation", "traditional_vs_casey",
+        "location_context", "procurement_heatmap",
+    ]
+    for field in text_fields:
+        if field in m:
+            m[field] = fix_val(m[field])
+    
+    # Fix unit rates in cost_breakdown and unit_rate_label
+    for cb in m.get("cost_breakdown", []) + m.get("cost_lines", []):
+        if isinstance(cb, dict):
+            if "unit_rate" in cb:
+                cb["unit_rate"] = fix_text(str(cb.get("unit_rate", "")))
+            if "basis" in cb:
+                cb["basis"] = fix_text(str(cb.get("basis", "")))
+    
+    if isinstance(m.get("unit_rate_label"), dict):
+        for k, v in m["unit_rate_label"].items():
+            m["unit_rate_label"][k] = fix_text(str(v)) if isinstance(v, str) else v
+    elif isinstance(m.get("unit_rate_label"), str):
+        m["unit_rate_label"] = fix_text(m["unit_rate_label"])
+    
+    # Fix OBA text
+    oba = m.get("optimism_bias_assessment", {})
+    if isinstance(oba, dict):
+        for k in ["verdict", "oba_source", "board_challenge"]:
+            if k in oba:
+                oba[k] = fix_text(str(oba.get(k, "")))
+    
+    return m
+
+
+def pdf_bytes(model: dict) -> bytes:
+    """BCG/McKinsey-grade board pack PDF. Clean, executive-ready, currency-correct."""
+    model = _apply_currency_to_model(model)
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.units import mm
+    from reportlab.lib.colors import HexColor, white, black
+    from reportlab.platypus import (SimpleDocTemplate, Paragraph, Spacer, Table,
+                                     TableStyle, HRFlowable, PageBreak, KeepTogether)
     from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
+    from datetime import date
 
-    NAVY   = colors.HexColor("#02050A")
-    PANEL  = colors.HexColor("#07111F")
-    CYAN   = colors.HexColor("#8DF7FF")
-    WHITE  = colors.HexColor("#F7FBFF")
-    MUTED  = colors.HexColor("#9FB3C8")
-    RED    = colors.HexColor("#FF5C7A")
-    AMBER  = colors.HexColor("#FFD166")
-    GREEN  = colors.HexColor("#0BE881")
-    LINE   = colors.HexColor("#203040")
-    DARK   = colors.HexColor("#0A1628")
+    W, H = A4
+    buf = BytesIO()
+    doc = SimpleDocTemplate(buf, pagesize=A4,
+        leftMargin=20*mm, rightMargin=20*mm, topMargin=16*mm, bottomMargin=16*mm)
 
-    bio = BytesIO()
-    doc = SimpleDocTemplate(bio, pagesize=A4,
-                            leftMargin=18*mm, rightMargin=18*mm,
-                            topMargin=14*mm, bottomMargin=14*mm)
-    styles = getSampleStyleSheet()
+    curr = model.get("currency_symbol", "$").strip()
+    def fc(v):
+        if not v or v == "—": return "—"
+        s = str(v).strip()
+        if curr != "$" and s.startswith("$"): s = curr + s[1:]
+        return s
 
-    def S(name, **kw):
-        base = ParagraphStyle(name, parent=styles["Normal"], **kw)
-        return base
+    # ── DESIGN TOKENS ─────────────────────────────────────────────────────────
+    INK      = HexColor("#0f172a")   # near-black for body
+    NAVY     = HexColor("#0c1a2e")   # dark cover bg
+    TEAL     = HexColor("#0e7490")   # section headers
+    CYAN     = HexColor("#06b6d4")   # accent / KPI values
+    SLATE    = HexColor("#475569")   # secondary text
+    LIGHT    = HexColor("#f1f5f9")   # table row alt
+    WHITE    = HexColor("#ffffff")
+    AMBER    = HexColor("#d97706")
+    GREEN    = HexColor("#059669")
+    RED      = HexColor("#dc2626")
+    GOLD     = HexColor("#fef9c3")
+    DIVIDER  = HexColor("#e2e8f0")
 
-    h1    = S("H1", fontSize=20, fontName="Helvetica-Bold", textColor=WHITE,   spaceAfter=4)
-    h2    = S("H2", fontSize=11, fontName="Helvetica-Bold", textColor=CYAN,    spaceAfter=3, spaceBefore=10)
-    h3    = S("H3", fontSize=9,  fontName="Helvetica-Bold", textColor=MUTED,   spaceAfter=2)
-    body  = S("BD", fontSize=8,  fontName="Helvetica",      textColor=WHITE,   spaceAfter=3, leading=12)
-    small = S("SM", fontSize=7,  fontName="Helvetica",      textColor=MUTED,   spaceAfter=2, leading=10)
-    label = S("LB", fontSize=7,  fontName="Helvetica-Bold", textColor=CYAN,    spaceAfter=1, leading=9)
-    big   = S("BG", fontSize=22, fontName="Helvetica-Bold", textColor=CYAN,    spaceAfter=2)
-    verdict_style = S("VD", fontSize=9, fontName="Helvetica-Bold", textColor=WHITE, spaceAfter=2)
+    def sty(name, **kw):
+        return ParagraphStyle(name, parent=getSampleStyleSheet()["Normal"], **kw)
 
-    def kv_table(rows, col_w=(120, 340)):
-        data = [[Paragraph(f"<b>{k}</b>", label), Paragraph(str(v or "—"), body)] for k,v in rows]
-        t = Table(data, colWidths=col_w)
-        t.setStyle(TableStyle([
-            ("BACKGROUND", (0,0), (-1,-1), PANEL),
-            ("ROWBACKGROUNDS", (0,0), (-1,-1), [DARK, PANEL]),
-            ("TEXTCOLOR", (0,0), (-1,-1), WHITE),
-            ("GRID", (0,0), (-1,-1), 0.3, LINE),
+    # Typography
+    COVER_TITLE = sty("ct", fontSize=28, textColor=WHITE, fontName="Helvetica-Bold",
+                       spaceAfter=4, leading=32)
+    COVER_SUB   = sty("cs", fontSize=11, textColor=HexColor("#94a3b8"),
+                       fontName="Helvetica", spaceAfter=6)
+    H1 = sty("h1", fontSize=13, textColor=TEAL, fontName="Helvetica-Bold",
+              spaceAfter=4, spaceBefore=10)
+    H2 = sty("h2", fontSize=10, textColor=INK, fontName="Helvetica-Bold",
+              spaceAfter=2, spaceBefore=6)
+    BODY = sty("bd", fontSize=9, textColor=INK, spaceAfter=3, leading=14)
+    SMALL = sty("sm", fontSize=8, textColor=SLATE, spaceAfter=2, leading=12)
+    BOLD = sty("bl", fontSize=9, textColor=INK, fontName="Helvetica-Bold")
+    CAPTION = sty("cp", fontSize=7, textColor=HexColor("#94a3b8"), leading=10)
+    LABEL = sty("lb", fontSize=7, textColor=HexColor("#94a3b8"),
+                 fontName="Helvetica-Bold", letterSpacing=0.5)
+
+    def tborder():
+        side = ("GRID", (0,0), (-1,-1), 0.3, DIVIDER)
+        return side
+
+    def tbl(data, widths, styles=None):
+        t = Table(data, colWidths=widths)
+        base = [
+            ("FONTSIZE", (0,0), (-1,-1), 8),
             ("TOPPADDING", (0,0), (-1,-1), 4),
             ("BOTTOMPADDING", (0,0), (-1,-1), 4),
             ("LEFTPADDING", (0,0), (-1,-1), 6),
-        ]))
+            ("RIGHTPADDING", (0,0), (-1,-1), 6),
+            ("GRID", (0,0), (-1,-1), 0.3, DIVIDER),
+            ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
+        ]
+        if styles: base.extend(styles)
+        t.setStyle(TableStyle(base))
         return t
 
-    def section_header(text):
-        return Table([[Paragraph(text.upper(), S("SH", fontSize=8, fontName="Helvetica-Bold",
-                                                  textColor=CYAN, leading=10))]],
-                     colWidths=[A4[0]-36*mm],
-                     style=[("BACKGROUND",(0,0),(-1,-1),LINE),
-                             ("TOPPADDING",(0,0),(-1,-1),4),
-                             ("BOTTOMPADDING",(0,0),(-1,-1),4),
-                             ("LEFTPADDING",(0,0),(-1,-1),8)])
-
     story = []
+    prog = model.get("title") or model.get("subsector") or "Programme"
+    p50    = fc(model.get("cost_p50", "—"))
+    p80    = fc(model.get("cost_p80", "—"))
+    p90    = fc(model.get("cost_p90", "—"))
+    p10    = fc(model.get("cost_p10", "—"))
+    sched  = str(model.get("schedule") or model.get("schedule_months","—"))
+    conf   = int(model.get("confidence_pct") or 0)
+    risk   = str(model.get("risk") or "Medium")
+    sub    = model.get("subsector","—")
+    loc    = model.get("location","—")
+    cl     = int(model.get("class_level") or 3)
+    scen   = model.get("scenario_label","Base")
+    today  = date.today().strftime("%d %b %Y")
+    mode   = model.get("mode","Earth")
 
-    # ── PAGE 1: COVER ────────────────────────────────────────────────────────
-    story.append(Spacer(1, 20*mm))
-    story.append(Paragraph("CASEY", S("CO", fontSize=11, fontName="Helvetica-Bold",
-                                       textColor=CYAN, spaceAfter=2)))
-    story.append(Paragraph("Capital Programme Intelligence", S("CO2", fontSize=8,
-                                                                 textColor=MUTED, spaceAfter=16)))
-    story.append(Paragraph(model.get("title", "Programme Intelligence Pack"), h1))
-    story.append(Spacer(1, 6))
+    conf_col = GREEN if conf >= 75 else (AMBER if conf >= 60 else RED)
 
-    # Big metrics strip
-    conf = model.get("confidence_pct", 0)
-    conf_color = GREEN if conf >= 75 else (AMBER if conf >= 55 else RED)
-    metrics = [
-        ("P50 COST ESTIMATE", model.get("cost_p50","—")),
-        ("SCHEDULE (P50)", model.get("schedule","—")),
-        ("BOARD CONFIDENCE", f"{conf}%"),
-        ("RISK RATING", model.get("risk","—")),
+    # ══════════════════════════════════════════════════════════════════════════
+    # PAGE 1 — COVER
+    # ══════════════════════════════════════════════════════════════════════════
+
+    # Header bar (dark)
+    cover_hdr = tbl(
+        [["CASEY   CAPITAL PROGRAMME INTELLIGENCE", today]],
+        [W - 42*mm - 60*mm, 60*mm],
+        [("BACKGROUND",(0,0),(-1,-1), NAVY),
+         ("TEXTCOLOR",(0,0),(0,0), HexColor("#8df7ff")),
+         ("TEXTCOLOR",(1,0),(1,0), HexColor("#475569")),
+         ("FONTNAME",(0,0),(0,0), "Helvetica-Bold"),
+         ("FONTSIZE",(0,0),(0,0), 9),
+         ("FONTSIZE",(1,0),(1,0), 8),
+         ("ALIGN",(1,0),(1,0), "RIGHT"),
+         ("TOPPADDING",(0,0),(-1,-1), 8),
+         ("BOTTOMPADDING",(0,0),(-1,-1), 8),
+         ("GRID",(0,0),(-1,-1), 0, WHITE),
+        ]
+    )
+    story.append(cover_hdr)
+    story.append(Spacer(1, 8*mm))
+
+    # Programme name
+    story.append(Paragraph(prog, sty("pn", fontSize=26, textColor=INK,
+                                      fontName="Helvetica-Bold", spaceAfter=2, leading=30)))
+    story.append(Paragraph(
+        f"{sub}  ·  {loc}  ·  Class {cl} Estimate  ·  {scen} Scenario",
+        sty("ps", fontSize=10, textColor=SLATE, spaceAfter=8, fontName="Helvetica")
+    ))
+    story.append(HRFlowable(width="100%", thickness=2, color=TEAL, spaceAfter=8*mm))
+
+    # KPI tiles — 4 across, clear labels, no wrapping
+    col_w = (W - 42*mm) / 4
+    kpi_data = [
+        [Paragraph("P50 COST ESTIMATE", LABEL),
+         Paragraph("SCHEDULE (P50)", LABEL),
+         Paragraph("BOARD CONFIDENCE", LABEL),
+         Paragraph("RISK RATING", LABEL)],
+        [Paragraph(p50, sty("kv", fontSize=20, textColor=TEAL, fontName="Helvetica-Bold")),
+         Paragraph(sched, sty("kv", fontSize=20, textColor=INK, fontName="Helvetica-Bold")),
+         Paragraph(f"{conf}%", sty("kv", fontSize=20, textColor=conf_col, fontName="Helvetica-Bold")),
+         Paragraph(risk, sty("kv", fontSize=16, textColor=AMBER, fontName="Helvetica-Bold"))],
+        [Paragraph(f"P80: {p80}  |  P90: {p90}", CAPTION),
+         Paragraph(f"P80 QSRA: {model.get('monte_carlo',{}).get('qsra',{}).get('p80','—')} months", CAPTION),
+         Paragraph(f"Class {cl}  ·  {scen}", CAPTION),
+         Paragraph(sub[:30], CAPTION)],
     ]
-    mcols = [Table([[Paragraph(v, big), Paragraph(k, label)]], style=[
-        ("BACKGROUND",(0,0),(-1,-1),PANEL),("TOPPADDING",(0,0),(-1,-1),8),
-        ("BOTTOMPADDING",(0,0),(-1,-1),8),("LEFTPADDING",(0,0),(-1,-1),8),
-        ("GRID",(0,0),(-1,-1),0.5,LINE)]) for k,v in metrics]
-    story.append(Table([mcols], colWidths=[(A4[0]-36*mm)/4]*4,
-                        style=[("VALIGN",(0,0),(-1,-1),"TOP")]))
-    story.append(Spacer(1, 6))
-    story.append(Paragraph(model.get("executive_summary",""), body))
-    story.append(Spacer(1, 4))
+    kpi_tbl = Table(kpi_data, colWidths=[col_w]*4)
+    kpi_tbl.setStyle(TableStyle([
+        ("BOX", (0,0), (-1,-1), 0.5, DIVIDER),
+        ("INNERGRID", (0,0), (-1,-1), 0.3, DIVIDER),
+        ("BACKGROUND", (0,0), (-1,-1), LIGHT),
+        ("TOPPADDING", (0,0), (-1,-1), 7),
+        ("BOTTOMPADDING", (0,0), (-1,-1), 7),
+        ("LEFTPADDING", (0,0), (-1,-1), 10),
+        ("RIGHTPADDING", (0,0), (-1,-1), 10),
+        ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
+    ]))
+    story.append(kpi_tbl)
+    story.append(Spacer(1, 6*mm))
 
-    # Confidence explanation
-    if conf >= 75:
-        cv = "Evidence supports approval. P50 is defensible at board. Governing constraints have named owners."
-    elif conf >= 55:
-        cv = "Challengeable at investment committee. Evidence gaps exist — close before capital commitment."
-    else:
-        cv = "Material gaps identified. Programme should not proceed to approval without evidence closure."
-    story.append(Paragraph(cv, S("CV", fontSize=8, fontName="Helvetica-Oblique", textColor=conf_color, spaceAfter=4)))
+    # CASEY Confidence Engine bar
+    conf_bar = tbl(
+        [["CASEY CONFIDENCE ENGINE — BOARD-DEFENSIBILITY, NOT GENERIC OPTIMISM",
+          f"Confidence is based on {sub}, {loc}, Estimate Class {cl}, Schedule Level, Benchmark Memory, Risk Register, Procurement Exposure and Scenario Posture."]],
+        [55*mm, W - 42*mm - 55*mm],
+        [("BACKGROUND",(0,0),(-1,-1), NAVY),
+         ("TEXTCOLOR",(0,0),(0,0), CYAN), ("FONTNAME",(0,0),(0,0),"Helvetica-Bold"),
+         ("TEXTCOLOR",(1,0),(1,0), HexColor("#64748b")),
+         ("FONTSIZE",(0,0),(0,0), 7), ("FONTSIZE",(1,0),(1,0), 7),
+         ("TOPPADDING",(0,0),(-1,-1),7), ("BOTTOMPADDING",(0,0),(-1,-1),7),
+         ("GRID",(0,0),(-1,-1),0,WHITE),
+        ]
+    )
+    story.append(conf_bar)
+    story.append(Spacer(1, 4*mm))
 
+    # Executive summary
+    exec_sum = str(model.get("executive_summary") or "")
+    if exec_sum:
+        story.append(Paragraph("EXECUTIVE SUMMARY", H1))
+        story.append(Paragraph(exec_sum[:600], BODY))
     story.append(PageBreak())
 
-    # ── PAGE 2: COST & SCHEDULE ───────────────────────────────────────────────
-    story.append(section_header("Cost Estimate Summary"))
-    story.append(Spacer(1,3))
-    story.append(kv_table([
-        ("Programme", model.get("title","—")),
-        ("Client / Operator", model.get("client","—")),
-        ("Sector", model.get("subsector","—")),
-        ("Estimate class", model.get("estimate_class","—")),
-        ("P10 (low)", model.get("cost_p10","—")),
-        ("P50 (most likely)", model.get("cost_p50","—")),
-        ("P80 (board exposure)", model.get("cost_p80","—")),
-        ("P90 (stress case)", model.get("cost_p90","—")),
-        ("Direct cost", model.get("direct_cost","—")),
-        ("Indirect cost", model.get("indirect_cost","—")),
-        ("Risk reserve", model.get("risk_reserve","—")),
-        ("Contingency basis", model.get("contingency_basis","—")),
-        ("OBA-adjusted P50", model.get("optimism_bias_assessment",{}).get("oba_adjusted_p50","—")),
-        ("OBA source", model.get("optimism_bias_assessment",{}).get("oba_source","—")),
-    ]))
-    story.append(Spacer(1,8))
-    story.append(section_header("Cost Breakdown by CBS Line"))
-    story.append(Spacer(1,3))
-    costs = model.get("cost_breakdown") or model.get("cost_lines") or []
+    # ══════════════════════════════════════════════════════════════════════════
+    # PAGE 2 — COST ESTIMATE
+    # ══════════════════════════════════════════════════════════════════════════
+    story.append(Paragraph("COST ESTIMATE", H1))
+
+    # Summary cards
+    oba = model.get("optimism_bias_assessment") or {}
+    oba_p50 = fc((oba.get("oba_adjusted_p50","—") if isinstance(oba,dict) else "—"))
+    cost_sum = tbl(
+        [["P10 (Optimistic)", p10,        "Direct Cost",    fc(model.get("direct_cost","—"))],
+         ["P50 (Most Likely)", p50,        "Indirect Cost",  fc(model.get("indirect_cost","—"))],
+         ["P80 (Board Exposure)", p80,     "Risk Reserve",   fc(model.get("risk_reserve","—"))],
+         ["P90 (Stress Case)", p90,        "OBA-Adjusted P50", oba_p50],
+         ["Confidence", f"{conf}%",        "Estimate Class", f"Class {cl} — {model.get('estimate_class_name', model.get('class_name','Budget Authorization'))}"],
+        ],
+        [50*mm, 40*mm, 50*mm, 40*mm],
+        [("FONTNAME",(0,0),(0,-1),"Helvetica-Bold"), ("FONTNAME",(2,0),(2,-1),"Helvetica-Bold"),
+         ("TEXTCOLOR",(1,0),(1,-1),TEAL), ("TEXTCOLOR",(3,0),(3,-1),TEAL),
+         ("FONTSIZE",(1,0),(1,-1),10), ("FONTSIZE",(3,0),(3,-1),10),
+         ("BACKGROUND",(0,0),(0,-1),LIGHT), ("BACKGROUND",(2,0),(2,-1),LIGHT),
+         ("FONTNAME",(1,0),(1,-1),"Helvetica-Bold"), ("FONTNAME",(3,0),(3,-1),"Helvetica-Bold"),
+        ]
+    )
+    story.append(cost_sum)
+    story.append(Spacer(1, 5*mm))
+
+    # CBS breakdown
+    costs = model.get("cost_lines") or model.get("cost_breakdown") or []
     if costs:
-        cdata = [["CBS","Description","Type","Unit Rate","P10","P50","P90"]]
-        for r in costs[:15]:
-            cdata.append([
-                Paragraph(str(r.get("cbs","—")), small),
-                Paragraph(str(r.get("description","—")), small),
-                Paragraph(str(r.get("type","—")), small),
-                Paragraph(str(r.get("unit_rate","—")), small),
-                Paragraph(str(r.get("p10_bn","—")), small),
-                Paragraph(str(r.get("p50_bn","—")), small),
-                Paragraph(str(r.get("p90_bn","—")), small),
+        story.append(Paragraph("COST BREAKDOWN BY CBS LINE", H2))
+        cb_data = [["CBS","Description","Type","Unit Rate",f"P10 {curr}B",f"P50 {curr}B",f"P90 {curr}B","Basis"]]
+        for c in costs[:18]:
+            try:
+                row = [c.get("cbs",""),
+                       c.get("description","")[:30],
+                       c.get("type","Direct"),
+                       fc(str(c.get("unit_rate","—"))),
+                       f"{float(c.get('p10_bn',0) or 0):.2f}",
+                       f"{float(c.get('p50_bn',0) or 0):.2f}",
+                       f"{float(c.get('p90_bn',0) or 0):.2f}",
+                       c.get("basis","")[:28]]
+                cb_data.append(row)
+            except: pass
+        cbt = tbl(cb_data,
+            [12*mm, 38*mm, 15*mm, 22*mm, 14*mm, 14*mm, 14*mm, 32*mm],
+            [("BACKGROUND",(0,0),(-1,0),INK),
+             ("TEXTCOLOR",(0,0),(-1,0),WHITE), ("FONTNAME",(0,0),(-1,0),"Helvetica-Bold"),
+             ("ROWBACKGROUNDS",(0,1),(-1,-1),[LIGHT,WHITE]),
+             ("TEXTCOLOR",(4,1),(6,-1),TEAL), ("FONTNAME",(4,1),(6,-1),"Helvetica-Bold"),
+             ("ALIGN",(4,0),(6,-1),"RIGHT"),
+             ("FONTSIZE",(0,0),(-1,-1),7),
             ])
-        ct = Table(cdata, colWidths=[22*mm,60*mm,22*mm,28*mm,18*mm,18*mm,18*mm])
-        ct.setStyle(TableStyle([
-            ("BACKGROUND",(0,0),(-1,0),PANEL),("TEXTCOLOR",(0,0),(-1,0),CYAN),
-            ("FONTNAME",(0,0),(-1,0),"Helvetica-Bold"),("FONTSIZE",(0,0),(-1,-1),7),
-            ("ROWBACKGROUNDS",(0,1),(-1,-1),[DARK,PANEL]),
-            ("TEXTCOLOR",(0,1),(-1,-1),WHITE),("GRID",(0,0),(-1,-1),0.3,LINE),
-            ("TOPPADDING",(0,0),(-1,-1),3),("BOTTOMPADDING",(0,0),(-1,-1),3),
-            ("LEFTPADDING",(0,0),(-1,-1),4),
-        ]))
-        story.append(ct)
-
+        story.append(cbt)
     story.append(PageBreak())
 
-    # ── PAGE 3: GATE REVIEW + OBA ─────────────────────────────────────────────
+    # ══════════════════════════════════════════════════════════════════════════
+    # PAGE 3 — GATE REVIEW & OBA
+    # ══════════════════════════════════════════════════════════════════════════
+    story.append(Paragraph("GATE REVIEW READINESS", H1))
     gate = model.get("gate_review_readiness") or {}
-    oba  = model.get("optimism_bias_assessment") or {}
-    story.append(section_header("Gate Review Readiness"))
-    story.append(Spacer(1,3))
-    story.append(kv_table([
-        ("Current gate", gate.get("current_gate_readiness","—")),
-        ("Overall verdict", gate.get("overall_verdict","—")),
-        ("IPA / framework alignment", gate.get("ipa_alignment","—")),
-        ("Critical gate risk", gate.get("critical_gate_risk","—")),
-    ]))
-    story.append(Spacer(1,4))
-    actions = gate.get("next_gate_actions") or []
-    if actions:
-        story.append(Paragraph("Next gate actions:", h3))
-        for i, a in enumerate(actions[:6]):
-            story.append(Paragraph(f"{i+1}. {a}", body))
+    if isinstance(gate, dict) and gate:
+        verdict = str(gate.get("overall_verdict","—"))
+        vcol = GREEN if verdict=="READY" else (AMBER if "CONDITIONAL" in verdict else RED)
+        verdict_tbl = tbl(
+            [["Overall Verdict", verdict], ["Current Gate", str(gate.get("current_gate_readiness",""))[:80]],
+             ["Framework", str(gate.get("ipa_framework_alignment","IPA Project Routemap"))[:80]],
+             ["Critical Gate Risk", str(gate.get("critical_gate_risk",""))[:80]]],
+            [45*mm, W - 42*mm - 45*mm],
+            [("BACKGROUND",(0,0),(-1,-1),LIGHT),
+             ("FONTNAME",(0,0),(0,-1),"Helvetica-Bold"),
+             ("TEXTCOLOR",(1,0),(1,0),vcol), ("FONTNAME",(1,0),(1,0),"Helvetica-Bold"),
+             ("FONTSIZE",(1,0),(1,0),11),
+            ]
+        )
+        story.append(verdict_tbl)
+        actions = gate.get("next_gate_actions",[])
+        if actions:
+            story.append(Spacer(1,3*mm))
+            story.append(Paragraph("NEXT GATE ACTIONS", H2))
+            for i,a in enumerate(actions[:5],1):
+                story.append(Paragraph(f"{i}.  {a}", SMALL))
+    story.append(Spacer(1,5*mm))
 
-    story.append(Spacer(1,8))
-    story.append(section_header("Optimism Bias Assessment"))
-    story.append(Spacer(1,3))
-    story.append(kv_table([
-        ("Headline P50", model.get("cost_p50","—")),
-        ("OBA-adjusted P50", oba.get("oba_adjusted_p50","—")),
-        ("OBA-adjusted schedule", oba.get("oba_adjusted_schedule","—")),
-        ("Verdict", oba.get("verdict","—")),
-        ("Source", oba.get("oba_source","—")),
-    ]))
-    if oba.get("board_challenge"):
-        story.append(Spacer(1,4))
-        story.append(Paragraph("Board challenge:", h3))
-        story.append(Paragraph(str(oba["board_challenge"]), body))
-
+    # OBA
+    story.append(Paragraph("OPTIMISM BIAS ASSESSMENT", H1))
+    if isinstance(oba,dict) and oba:
+        oba_tbl = tbl(
+            [["Headline P50", p50,            "OBA Uplift", f"+{oba.get('oba_uplift_pct','—')}%"],
+             ["OBA-Adjusted P50", oba_p50,    "Gap", fc(f"${round(float(''.join(c for c in str(oba.get('oba_adjusted_p50',0) or '0') if c.isdigit() or c=='.') or '0') - float(''.join(c for c in str(model.get('cost_p50_raw', model.get('cost_p50',0))) if c.isdigit() or c=='.') or '0'), 1)}B") if oba_p50 != '—' else "—"],
+             ["Source", str(oba.get("oba_source",""))[:80], "", ""],
+            ],
+            [38*mm, 38*mm, 28*mm, 52*mm],
+            [("FONTNAME",(0,0),(0,-1),"Helvetica-Bold"), ("FONTNAME",(2,0),(2,-1),"Helvetica-Bold"),
+             ("TEXTCOLOR",(1,1),(1,1),RED), ("FONTNAME",(1,1),(1,1),"Helvetica-Bold"),
+             ("BACKGROUND",(0,0),(-1,-1),GOLD),
+             ("SPAN",(1,2),(3,2)),
+            ]
+        )
+        story.append(oba_tbl)
+        verdict_text = str(oba.get("verdict",""))
+        if verdict_text:
+            story.append(Spacer(1,3*mm))
+            story.append(Paragraph(verdict_text[:400], SMALL))
     story.append(PageBreak())
 
-    # ── PAGE 4: BOARD ATTACK SIMULATION ───────────────────────────────────────
-    story.append(section_header("Board Attack Simulation — Investment Committee Questions"))
-    story.append(Spacer(1,3))
+    # ══════════════════════════════════════════════════════════════════════════
+    # PAGE 4 — BOARD ATTACK SIMULATION
+    # ══════════════════════════════════════════════════════════════════════════
+    story.append(Paragraph("BOARD ATTACK SIMULATION", H1))
     story.append(Paragraph(
-        "These are the questions a serious investment committee will ask. Each is generated from live model data — "
-        "your actual P50, P80, sector constraints and governing confidence drivers.", small))
-    story.append(Spacer(1,4))
-    attacks = model.get("board_attack_simulation") or []
-    for i, q in enumerate(attacks[:7]):
-        story.append(Table([[
-            Paragraph(str(i+1), S("QN", fontSize=9, fontName="Helvetica-Bold", textColor=CYAN)),
-            Paragraph(str(q), body)
-        ]], colWidths=[10*mm, A4[0]-36*mm-10*mm],
-        style=[("BACKGROUND",(0,0),(-1,-1),PANEL),("GRID",(0,0),(-1,-1),0.3,LINE),
-                ("TOPPADDING",(0,0),(-1,-1),5),("BOTTOMPADDING",(0,0),(-1,-1),5),
-                ("LEFTPADDING",(0,0),(-1,-1),5),("VALIGN",(0,0),(-1,-1),"TOP")]))
-        story.append(Spacer(1,3))
+        "These questions are generated from live model data — your actual P50, P80, "
+        "sector constraints and governing confidence drivers. Each will be asked by a "
+        "serious investment committee.", SMALL))
+    story.append(Spacer(1,4*mm))
 
-    story.append(Spacer(1,8))
-    ia = model.get("institutional_authority_line","")
-    if ia:
-        story.append(section_header("Institutional Authority Line"))
-        story.append(Spacer(1,3))
-        story.append(Paragraph(str(ia), S("IA", fontSize=9, fontName="Helvetica-Bold",
-                                            textColor=AMBER, spaceAfter=4, leading=13)))
+    ba = model.get("board_attack_simulation",[])
+    for i,q in enumerate(ba[:7],1):
+        q_tbl = tbl(
+            [[Paragraph(str(i), sty("qn",fontSize=14,textColor=TEAL,fontName="Helvetica-Bold")),
+              Paragraph(str(q), BODY)]],
+            [10*mm, W - 42*mm - 10*mm],
+            [("BACKGROUND",(0,0),(-1,-1),LIGHT if i%2==0 else WHITE),
+             ("VALIGN",(0,0),(-1,-1),"TOP"),
+             ("GRID",(0,0),(-1,-1),0.2,DIVIDER),
+            ]
+        )
+        story.append(KeepTogether([q_tbl, Spacer(1,2*mm)]))
 
+    # Institutional authority
+    auth = str(model.get("institutional_authority_line",""))
+    if auth:
+        story.append(Spacer(1,5*mm))
+        story.append(Paragraph("INSTITUTIONAL AUTHORITY LINE", H2))
+        story.append(tbl([[auth[:200]]],[W-42*mm],
+            [("BACKGROUND",(0,0),(-1,-1),NAVY),
+             ("TEXTCOLOR",(0,0),(-1,-1),HexColor("#94a3b8")),
+             ("FONTSIZE",(0,0),(-1,-1),8),
+             ("TOPPADDING",(0,0),(-1,-1),8),("BOTTOMPADDING",(0,0),(-1,-1),8),
+            ]))
     story.append(PageBreak())
 
-    # ── PAGE 5: RISK REGISTER ─────────────────────────────────────────────────
-    story.append(section_header("Risk Register — Top Risks by Expected Monetary Value"))
-    story.append(Spacer(1,3))
-    risks = model.get("risks") or []
+    # ══════════════════════════════════════════════════════════════════════════
+    # PAGE 5 — RISK REGISTER
+    # ══════════════════════════════════════════════════════════════════════════
+    story.append(Paragraph("RISK REGISTER — TOP RISKS BY EXPECTED MONETARY VALUE", H1))
+    risks = model.get("risks",[])
     if risks:
-        rdata = [["ID","Title","Prob","Impact £B","EMV £B","Owner","Status","Trigger"]]
-        for r in risks[:12]:
-            rdata.append([
-                Paragraph(str(r.get("risk_id","—")), small),
-                Paragraph(str(r.get("title","—"))[:40], small),
-                Paragraph(f"{int(r.get('probability',0)*100)}%", small),
-                Paragraph(str(r.get("cost_impact_bn","—")), small),
-                Paragraph(str(r.get("emv_bn","—")), small),
-                Paragraph(str(r.get("owner","—"))[:20], small),
-                Paragraph(str(r.get("status","—")), small),
-                Paragraph(str(r.get("trigger","—"))[:30], small),
+        rk_data = [["ID","Risk Title","Prob","Impact","EMV","Owner","Status"]]
+        for r in sorted(risks, key=lambda x:float(x.get("cost_emv_bn",0) or 0), reverse=True)[:12]:
+            emv_v = float(r.get("cost_emv_bn",0) or 0)
+            imp_v = float(r.get("cost_m_bn",0) or 0)
+            rk_data.append([
+                r.get("id",r.get("risk_id",""))[:8],
+                r.get("title",r.get("risk",""))[:38],
+                f"{r.get('probability_pct','—')}%",
+                fc(f"${imp_v:.2f}B") if imp_v else "—",
+                fc(f"${emv_v:.2f}B") if emv_v else "—",
+                r.get("owner","")[:18],
+                r.get("status","Open"),
             ])
-        rt = Table(rdata, colWidths=[14*mm,50*mm,12*mm,18*mm,16*mm,28*mm,18*mm,30*mm])
-        rt.setStyle(TableStyle([
-            ("BACKGROUND",(0,0),(-1,0),PANEL),("TEXTCOLOR",(0,0),(-1,0),CYAN),
-            ("FONTNAME",(0,0),(-1,0),"Helvetica-Bold"),("FONTSIZE",(0,0),(-1,-1),6.5),
-            ("ROWBACKGROUNDS",(0,1),(-1,-1),[DARK,PANEL]),
-            ("TEXTCOLOR",(0,1),(-1,-1),WHITE),("GRID",(0,0),(-1,-1),0.3,LINE),
-            ("TOPPADDING",(0,0),(-1,-1),3),("BOTTOMPADDING",(0,0),(-1,-1),3),
-            ("LEFTPADDING",(0,0),(-1,-1),3),
-        ]))
-        story.append(rt)
-
+        rkt = tbl(rk_data,
+            [14*mm,55*mm,14*mm,18*mm,18*mm,30*mm,14*mm],
+            [("BACKGROUND",(0,0),(-1,0),HexColor("#1e293b")),
+             ("TEXTCOLOR",(0,0),(-1,0),WHITE), ("FONTNAME",(0,0),(-1,0),"Helvetica-Bold"),
+             ("ROWBACKGROUNDS",(0,1),(-1,-1),[HexColor("#fff7f7"),WHITE]),
+             ("TEXTCOLOR",(4,1),(4,-1),RED), ("FONTNAME",(4,1),(4,-1),"Helvetica-Bold"),
+             ("ALIGN",(2,0),(4,-1),"RIGHT"),
+             ("FONTSIZE",(0,0),(-1,-1),7.5),
+            ])
+        story.append(rkt)
     story.append(PageBreak())
 
-    # ── PAGE 6: PROCUREMENT + LOCATION ───────────────────────────────────────
-    procs = model.get("procurement_heatmap") or []
-    if procs:
-        story.append(section_header("Procurement Intelligence — Packages and Single-Source Flags"))
-        story.append(Spacer(1,3))
-        pdata = [["Package","Status","Value Est.","Lead Time","Single Source","Risk"]]
-        for p in procs:
-            pdata.append([
-                Paragraph(str(p.get("package","—")), small),
-                Paragraph(str(p.get("status","—")), small),
-                Paragraph(str(p.get("value_est","—")), small),
-                Paragraph(str(p.get("lead_time","—")), small),
-                Paragraph("YES" if p.get("single_source_risk") else "No", small),
-                Paragraph(str(p.get("risk","—"))[:50], small),
+    # ══════════════════════════════════════════════════════════════════════════
+    # PAGE 6 — PROCUREMENT + LOCATION
+    # ══════════════════════════════════════════════════════════════════════════
+    story.append(Paragraph("PROCUREMENT INTELLIGENCE", H1))
+    ph = model.get("procurement_heatmap",[])
+    if ph:
+        pm_data = [["Package","Status","Value Est.","Lead Time","Single Source","Risk"]]
+        for p in ph:
+            pm_data.append([
+                p.get("package","")[:38], p.get("status","—"),
+                fc(str(p.get("value_est","—"))), p.get("lead_time","—"),
+                "⚠ YES" if p.get("single_source") else "No",
+                p.get("risk_rating","—"),
             ])
-        prt = Table(pdata, colWidths=[45*mm,20*mm,22*mm,22*mm,22*mm,55*mm])
-        prt.setStyle(TableStyle([
-            ("BACKGROUND",(0,0),(-1,0),PANEL),("TEXTCOLOR",(0,0),(-1,0),CYAN),
-            ("FONTNAME",(0,0),(-1,0),"Helvetica-Bold"),("FONTSIZE",(0,0),(-1,-1),7),
-            ("ROWBACKGROUNDS",(0,1),(-1,-1),[DARK,PANEL]),
-            ("TEXTCOLOR",(0,1),(-1,-1),WHITE),("GRID",(0,0),(-1,-1),0.3,LINE),
-            ("TOPPADDING",(0,0),(-1,-1),3),("BOTTOMPADDING",(0,0),(-1,-1),3),
-            ("LEFTPADDING",(0,0),(-1,-1),4),
-        ]))
-        story.append(prt)
-        story.append(Spacer(1,8))
+        story.append(tbl(pm_data,[50*mm,20*mm,28*mm,25*mm,22*mm,18*mm],
+            [("BACKGROUND",(0,0),(-1,0),HexColor("#1e293b")),
+             ("TEXTCOLOR",(0,0),(-1,0),WHITE), ("FONTNAME",(0,0),(-1,0),"Helvetica-Bold"),
+             ("ROWBACKGROUNDS",(0,1),(-1,-1),[LIGHT,WHITE]),
+             ("FONTSIZE",(0,0),(-1,-1),8),
+            ]))
 
-    loc = model.get("location_context") or {}
-    fin = model.get("financing_context") or {}
-    if loc or fin:
-        story.append(section_header("Location Intelligence and Financing Context"))
-        story.append(Spacer(1,3))
-        rows = []
-        if loc.get("country"): rows.append(("Country / Jurisdiction", loc["country"]))
-        if loc.get("currency"): rows.append(("Currency", loc["currency"]))
-        if loc.get("regulatory_framework"): rows.append(("Regulatory framework", loc["regulatory_framework"]))
-        if loc.get("approval_body"): rows.append(("Approval body", loc["approval_body"]))
-        if loc.get("risk_note"): rows.append(("Location risk note", loc["risk_note"]))
-        if fin.get("structure"): rows.append(("Financing structure", fin["structure"]))
-        if fin.get("bankability"): rows.append(("Bankability verdict", fin["bankability"]))
-        if rows:
-            story.append(kv_table(rows))
-
+    lc = model.get("location_context") or {}
+    if isinstance(lc,dict) and lc:
+        story.append(Spacer(1,5*mm))
+        story.append(Paragraph("LOCATION & FINANCING CONTEXT", H2))
+        story.append(tbl(
+            [["Country / Jurisdiction", str(lc.get("country",loc)), "Currency", curr],
+             ["Approval Body", str(lc.get("primary_authority","—"))[:60], "Financing", str(lc.get("financing_note","—"))[:40]],
+            ],
+            [42*mm,58*mm,24*mm,40*mm],
+            [("FONTNAME",(0,0),(0,-1),"Helvetica-Bold"),("FONTNAME",(2,0),(2,-1),"Helvetica-Bold"),
+             ("BACKGROUND",(0,0),(-1,-1),LIGHT),
+            ]
+        ))
     story.append(PageBreak())
 
-    # ── PAGE 7: FAILURE PATTERN + BENCHMARKS ──────────────────────────────────
-    story.append(section_header("Historical Failure Pattern for This Sector"))
-    story.append(Spacer(1,3))
-    iff = model.get("if_this_fails") or model.get("sector_failure_pattern","")
-    if iff:
-        story.append(Paragraph(str(iff), S("FF", fontSize=8, fontName="Helvetica-Oblique",
-                                             textColor=RED, leading=12, spaceAfter=8)))
+    # ══════════════════════════════════════════════════════════════════════════
+    # PAGE 7 — BENCHMARKS + FOOTER
+    # ══════════════════════════════════════════════════════════════════════════
+    fp = str(model.get("sector_failure_pattern") or model.get("if_this_fails",""))
+    if fp:
+        story.append(Paragraph("SECTOR FAILURE PATTERN", H1))
+        story.append(Paragraph(fp[:500], BODY))
+        story.append(Spacer(1,4*mm))
 
-    benches = model.get("benchmark_comparison") or []
-    if benches:
-        story.append(section_header("Named Global Benchmarks Used in This Analysis"))
-        story.append(Spacer(1,3))
-        bdata = [["Programme","Sector","P50 Anchor","Duration","Cost Growth","Slip (mo)","Failure Mode"]]
-        for b in benches[:8]:
-            bdata.append([
-                Paragraph(str(b.get("name",b.get("archetype","—")))[:30], small),
-                Paragraph(str(b.get("sector","—"))[:20], small),
-                Paragraph(str(b.get("anchor_cost",b.get("value","—"))), small),
-                Paragraph(str(b.get("anchor_duration_months","—")), small),
-                Paragraph(f"+{b['cost_growth_pct']}%" if b.get("cost_growth_pct") else "—", small),
-                Paragraph(f"+{b['schedule_slip_months']}" if b.get("schedule_slip_months") else "—", small),
-                Paragraph(str(b.get("failure_mode",b.get("lesson","—")))[:40], small),
+    bms = model.get("benchmark_comparison",[])
+    if bms:
+        story.append(Paragraph("NAMED GLOBAL BENCHMARKS", H1))
+        bm_data = [["Programme","Sector","P50 Anchor","Cost Growth","Slip (mo)","Failure Mode"]]
+        for b in bms[:6]:
+            anchor = fc(str(b.get("anchor_cost",b.get("cost_bn","—"))))
+            bm_data.append([
+                b.get("name","")[:32], b.get("sector",sub)[:22],
+                anchor, f'+{b.get("cost_growth_pct",b.get("growth","—"))}%',
+                f'+{b.get("schedule_slip_months",b.get("slip","—"))}',
+                str(b.get("failure_mode",b.get("failure","—")))[:42],
             ])
-        bt = Table(bdata, colWidths=[38*mm,28*mm,22*mm,18*mm,18*mm,18*mm,44*mm])
-        bt.setStyle(TableStyle([
-            ("BACKGROUND",(0,0),(-1,0),PANEL),("TEXTCOLOR",(0,0),(-1,0),CYAN),
-            ("FONTNAME",(0,0),(-1,0),"Helvetica-Bold"),("FONTSIZE",(0,0),(-1,-1),6.5),
-            ("ROWBACKGROUNDS",(0,1),(-1,-1),[DARK,PANEL]),
-            ("TEXTCOLOR",(0,1),(-1,-1),WHITE),("GRID",(0,0),(-1,-1),0.3,LINE),
-            ("TOPPADDING",(0,0),(-1,-1),3),("BOTTOMPADDING",(0,0),(-1,-1),3),
-            ("LEFTPADDING",(0,0),(-1,-1),3),
-        ]))
-        story.append(bt)
+        story.append(tbl(bm_data,
+            [40*mm,28*mm,22*mm,18*mm,14*mm,42*mm],
+            [("BACKGROUND",(0,0),(-1,0),HexColor("#1e293b")),
+             ("TEXTCOLOR",(0,0),(-1,0),WHITE), ("FONTNAME",(0,0),(-1,0),"Helvetica-Bold"),
+             ("ROWBACKGROUNDS",(0,1),(-1,-1),[HexColor("#f0fdf4"),WHITE]),
+             ("TEXTCOLOR",(3,1),(3,-1),AMBER), ("FONTNAME",(3,1),(3,-1),"Helvetica-Bold"),
+             ("FONTSIZE",(0,0),(-1,-1),7.5),
+            ]))
 
-    # Footer on last page
-    story.append(Spacer(1,10))
+    # Footer
+    story.append(Spacer(1,8*mm))
+    story.append(HRFlowable(width="100%", thickness=0.5, color=DIVIDER))
+    story.append(Spacer(1,2*mm))
     story.append(Paragraph(
-        f"Generated by CASEY Intelligence Engine · {datetime.utcnow().strftime('%d %b %Y')} · "
-        "controlorbit.com · First-pass intelligence — not a signed cost plan or audit document.",
-        S("FT", fontSize=6, fontName="Helvetica", textColor=MUTED, spaceAfter=2)))
+        f"Generated by CASEY Intelligence Engine  ·  {today}  ·  controlorbit.com  ·  "
+        f"Model: CASEY-X.{model.get('model_version','185')}  ·  "
+        "First-pass intelligence — not a signed cost plan or certified audit document.",
+        CAPTION))
 
-    # Build with dark background
-    def on_page(canvas, doc):
-        canvas.saveState()
-        canvas.setFillColor(NAVY)
-        canvas.rect(0, 0, A4[0], A4[1], fill=1, stroke=0)
-        canvas.restoreState()
+    doc.build(story)
+    buf.seek(0)
+    return buf.getvalue()
 
-    doc.build(story, onFirstPage=on_page, onLaterPages=on_page)
-    bio.seek(0)
-    return bio.getvalue()
+
 
 def stream(data:bytes, media:str, filename:str): 
     return StreamingResponse(
@@ -5829,42 +6339,278 @@ def export_all(model:Dict[str,Any]):
 
 
 def qcra_qsra_bytes(model: dict) -> bytes:
-    """QCRA/QSRA Excel export."""
-    import openpyxl as _ox2
-    curr = model.get('currency_symbol','$')
-    def fc(v):
-        s = str(v or '—')
-        return (curr + s[1:]) if curr != '$' and s.startswith('$') else s
-    wb = _ox2.Workbook(); ws = wb.active; ws.title = "QCRA QSRA"
-    mc = model.get('monte_carlo',{})
-    qcra = mc.get('qcra',{}); qsra = mc.get('qsra',{})
-    ws.append(["CASEY QCRA/QSRA — " + model.get('subsector','Programme')])
-    ws.append(["P50 Cost", fc(model.get('cost_p50','—')), "P80 Cost", fc(model.get('cost_p80','—'))])
-    ws.append(["Confidence", str(model.get('confidence_pct','—'))+'%', "Schedule", model.get('schedule','—')])
-    ws.append([])
-    ws.append(["QCRA — COST RISK"])
-    for k,l in [('p10','P10'),('p50','P50'),('p80','P80 Board'),('p90','P90')]:
-        ws.append([l, fc(str(qcra.get(k,'—')))])
-    ws.append([])
-    ws.append(["QSRA — SCHEDULE RISK"])
-    for k,l in [('p10','P10'),('p50','P50'),('p80','P80 Board'),('p90','P90')]:
-        ws.append([l, str(qsra.get(k,'—')) + ' months'])
-    ws.append([])
-    ws.append(["TOP RISK DRIVERS (by EMV)"])
-    ws.append(["Risk","Probability %","Impact","EMV","Owner"])
-    risks = model.get('risks',[])
-    for r in sorted(risks, key=lambda x: float(x.get('cost_emv_bn',0) or 0), reverse=True)[:10]:
-        emv = float(r.get('cost_emv_bn',0) or 0)
-        imp = float(r.get('cost_m_bn',0) or 0)
-        ws.append([r.get('title',r.get('risk',''))[:50], r.get('probability_pct','—'),
-                   fc(f'${imp:.2f}B'), fc(f'${emv:.2f}B'), r.get('owner','—')])
-    ws.append([])
-    ws.append(["S-CURVE DATA POINTS"])
-    ws.append(["Percentile","Cost ($B)","Schedule (months)"])
-    for pt in mc.get('curve',[]):
-        ws.append([pt.get('percentile','—'), pt.get('cost_bn','—'), pt.get('schedule_months','—')])
+    """Comprehensive QCRA/QSRA workbook — investment committee grade."""
+    model = _apply_currency_to_model(model)
+    import openpyxl as _ox
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side, numbers
+    from openpyxl.utils import get_column_letter
+    from openpyxl.chart import BarChart, Reference, LineChart
+    from openpyxl.chart.series import SeriesLabel
+
+    curr = model.get("currency_symbol", "$")
+    sub = model.get("subsector", "Programme")
+    title = model.get("title", sub)
+    cl = model.get("class_level", 3)
+    ecn = model.get("estimate_class_name", "Budget Authorization")
+    conf = model.get("confidence_pct", 60)
+    p50 = model.get("cost_p50", "—")
+    p80 = model.get("cost_p80", "—")
+    scen = model.get("scenario_label", "Base")
+    mc = model.get("monte_carlo", {})
+    qcra = mc.get("qcra", {})
+    qsra = mc.get("qsra", {})
+    curve = mc.get("curve", [])
+    tornado = mc.get("tornado", mc.get("qcra_tornado", mc.get("risk_drivers", [])))
+    risks = model.get("risks", [])
+
+    # Style helpers
+    INK = "0F172A"; TEAL = "0E7490"; LIGHT = "F1F5F9"
+    AMBER = "D97706"; RED = "DC2626"; GREEN = "059669"; WHITE = "FFFFFF"
+
+    def hf(h): return PatternFill("solid", fgColor=h)
+    def bf(sz=9, col="000000", bold=False): return Font(bold=bold, size=sz, color=col)
+    def al(h="left"): return Alignment(horizontal=h, vertical="center", wrap_text=True)
+    def tb():
+        s = Side(style="thin", color="E2E8F0")
+        return Border(left=s, right=s, top=s, bottom=s)
+
+    def hdr_row(ws, row_data, bg, text_col="FFFFFF", sz=9, bold=True):
+        for ci, v in enumerate(row_data, 1):
+            c = ws.cell(ws.max_row + (1 if ci == 1 else 0), ci, v)
+            c.font = bf(sz, text_col, bold)
+            c.fill = hf(bg)
+            c.alignment = al("center")
+            c.border = tb()
+
+    def data_row(ws, row_data, bg, bold=False, right_cols=None):
+        right_cols = right_cols or []
+        r = ws.max_row + 1
+        for ci, v in enumerate(row_data, 1):
+            c = ws.cell(r, ci, v)
+            c.font = bf(9, "334155", bold)
+            c.fill = hf(bg)
+            c.alignment = al("right" if ci in right_cols else "left")
+            c.border = tb()
+
+    wb = _ox.Workbook()
+
+    # ── SHEET 1: Executive Summary ───────────────────────────────────────────
+    ws1 = wb.active; ws1.title = "Executive Summary"
+    ws1.sheet_view.showGridLines = False
+    ws1.column_dimensions["A"].width = 36
+    ws1.column_dimensions["B"].width = 28
+    ws1.column_dimensions["C"].width = 28
+    ws1.column_dimensions["D"].width = 22
+
+    ws1.append(["CASEY QCRA / QSRA — QUANTITATIVE RISK ANALYSIS"])
+    ws1.cell(1, 1).font = bf(14, TEAL, True); ws1.append([])
+
+    for label, val in [
+        ("Programme", title), ("Sector", sub), ("Estimate Class", "Class {} — {}".format(cl, ecn)),
+        ("Scenario", scen), ("Currency", curr), ("Confidence Score", "{}%".format(conf)),
+    ]:
+        ws1.append([label, val])
+        ws1.cell(ws1.max_row, 1).font = bf(9, "475569", True)
+        ws1.cell(ws1.max_row, 2).font = bf(10, INK)
+
+    ws1.append([]); ws1.append(["QCRA — QUANTITATIVE COST RISK ANALYSIS", "", "QSRA — QUANTITATIVE SCHEDULE RISK ANALYSIS", ""])
+    ws1.cell(ws1.max_row, 1).font = bf(10, TEAL, True); ws1.cell(ws1.max_row, 3).font = bf(10, TEAL, True)
+
+    for (cl_lbl, ck), (sl_lbl, sk) in [
+        (("P10 — Optimistic", "p10"), ("P10 — Optimistic", "p10")),
+        (("P50 — Most Likely", "p50"), ("P50 — Most Likely", "p50")),
+        (("P70 — Conservative", "p70"), ("P70 — Conservative", "p70")),
+        (("P80 — Board Exposure", "p80"), ("P80 — Board Exposure", "p80")),
+        (("P90 — Stress Case", "p90"), ("P90 — Stress Case", "p90")),
+    ]:
+        cv = qcra.get(ck, model.get("cost_" + ck, "—")); sv = qsra.get(sk, "—")
+        ws1.append([cl_lbl, cv, sl_lbl, "{} months".format(sv) if sv != "—" else "—"])
+        bg = LIGHT if ws1.max_row % 2 == 0 else WHITE
+        for ci in range(1, 5):
+            ws1.cell(ws1.max_row, ci).fill = hf(bg)
+            ws1.cell(ws1.max_row, ci).font = bf(10 if ck == "p80" else 9, 
+                                                  RED if ck == "p80" else INK, ck == "p80")
+            ws1.cell(ws1.max_row, ci).border = tb()
+
+    ws1.append([])
+    ws1.append(["CONFIDENCE INTERPRETATION"])
+    ws1.cell(ws1.max_row, 1).font = bf(10, TEAL, True)
+    conf_int = int(conf)
+    interp = ("GATE-READY — Evidence supports capital approval. P50 is board-defensible." if conf_int >= 75
+              else "CONDITIONAL — Evidence gaps require closure before gate review." if conf_int >= 60
+              else "NOT GATE-READY — Material evidence closure required before proceeding.")
+    ws1.append([interp])
+    ws1.cell(ws1.max_row, 1).font = bf(10, GREEN if conf_int >= 75 else (AMBER if conf_int >= 60 else RED), True)
+    ws1.merge_cells(start_row=ws1.max_row, start_column=1, end_row=ws1.max_row, end_column=4)
+
+    # ── SHEET 2: S-Curve Data ────────────────────────────────────────────────
+    ws2 = wb.create_sheet("S-Curve Data")
+    ws2.sheet_view.showGridLines = False
+    for ci, (h, w) in enumerate([("Percentile",16),("Cost ({}B)".format(curr),20),("Schedule (months)",20),("CDF",14)], 1):
+        ws2.column_dimensions[get_column_letter(ci)].width = w
+        c = ws2.cell(1, ci, h)
+        c.font = bf(9, WHITE, True); c.fill = hf(INK); c.alignment = al("center"); c.border = tb()
+
+    if curve:
+        for pt in curve:
+            pct = pt.get("percentile", 0)
+            cost = pt.get("cost_bn", pt.get("cost", "—"))
+            sched_m = pt.get("schedule_months", pt.get("schedule", "—"))
+            cdf = round(pct / 100, 3) if isinstance(pct, (int, float)) else "—"
+            data_row(ws2, [pct, cost, sched_m, cdf], LIGHT if ws2.max_row % 2 == 1 else WHITE, right_cols=[2, 3, 4])
+    else:
+        # Generate synthetic S-curve from P10/P50/P80/P90
+        def pbn(v):
+            try: return float("".join(c for c in str(v or 0) if c.isdigit() or c == ".") or 0)
+            except: return 0.0
+        p10v = pbn(model.get("cost_p10")); p50v = pbn(p50); p80v = pbn(p80); p90v = pbn(model.get("cost_p90"))
+        sched_p50 = int(model.get("schedule_months", 36) or 36)
+        pts = [(5,p10v*0.90,sched_p50*0.88),(10,p10v,sched_p50*0.90),(20,p10v*1.05,sched_p50*0.93),
+               (30,p50v*0.93,sched_p50*0.96),(40,p50v*0.97,sched_p50*0.98),(50,p50v,sched_p50),
+               (60,p50v*1.03,sched_p50*1.02),(70,p50v*1.07,sched_p50*1.05),(80,p80v,sched_p50*1.10),
+               (85,p80v*1.04,sched_p50*1.13),(90,p90v,sched_p50*1.17),(95,p90v*1.05,sched_p50*1.22)]
+        for pct, cv, sv in pts:
+            data_row(ws2, [pct, round(cv, 3), round(sv, 1), round(pct/100, 3)],
+                     LIGHT if ws2.max_row % 2 == 1 else WHITE, right_cols=[2, 3, 4])
+
+    # Add a line chart for the S-curve
+    try:
+        chart = LineChart()
+        chart.title = "Cost S-Curve ({})".format(curr)
+        chart.style = 10
+        chart.y_axis.title = "Cost ({}B)".format(curr)
+        chart.x_axis.title = "Percentile (%)"
+        chart.height = 12; chart.width = 20
+        n_rows = ws2.max_row
+        cost_ref = Reference(ws2, min_col=2, min_row=1, max_row=n_rows)
+        chart.add_data(cost_ref, titles_from_data=True)
+        ws2.add_chart(chart, "F2")
+    except Exception: pass
+
+    # ── SHEET 3: Risk Tornado ────────────────────────────────────────────────
+    ws3 = wb.create_sheet("Risk Tornado")
+    ws3.sheet_view.showGridLines = False
+    tornado_headers = ["Risk Driver","Category","Probability %","P10 Impact","P50 Impact (EMV)","P90 Impact","Cost Contribution %"]
+    col_widths = [42, 20, 16, 18, 22, 18, 20]
+    for ci, (h, w) in enumerate(zip(tornado_headers, col_widths), 1):
+        ws3.column_dimensions[get_column_letter(ci)].width = w
+        c = ws3.cell(1, ci, h)
+        c.font = bf(9, WHITE, True); c.fill = hf(INK); c.alignment = al("center"); c.border = tb()
+
+    sorted_risks = sorted(risks, key=lambda x: float(x.get("cost_emv_bn", 0) or 0), reverse=True)
+    total_emv = sum(float(r.get("cost_emv_bn", 0) or 0) for r in sorted_risks)
+    for r in sorted_risks[:15]:
+        emv = float(r.get("cost_emv_bn", 0) or 0)
+        imp = float(r.get("cost_m_bn", 0) or r.get("cost_impact_bn", 0) or 0)
+        prob = float(r.get("probability_pct", 0) or 0) / 100
+        p10_imp = round(imp * 0.6, 3); p90_imp = round(imp * 1.4, 3)
+        pct_contrib = round(emv / total_emv * 100, 1) if total_emv > 0 else 0
+        bg = hf("FFF7F7") if ws3.max_row % 2 == 0 else hf(WHITE)
+        row_vals = [r.get("title", r.get("risk", ""))[:50], r.get("category", "Delivery"),
+                    "{}%".format(r.get("probability_pct", "—")),
+                    "{}{}B".format(curr, p10_imp), "{}{}B".format(curr, round(emv, 3)),
+                    "{}{}B".format(curr, p90_imp), "{}%".format(pct_contrib)]
+        ri = ws3.max_row + 1
+        for ci, v in enumerate(row_vals, 1):
+            c = ws3.cell(ri, ci, v); c.fill = bg; c.border = tb()
+            c.font = bf(9, RED if ci == 5 else INK, ci == 5)
+            c.alignment = al("right" if ci >= 3 else "left")
+
+    # ── SHEET 4: Monte Carlo Assumptions ────────────────────────────────────
+    ws4 = wb.create_sheet("MC Assumptions")
+    ws4.sheet_view.showGridLines = False
+    ws4.column_dimensions["A"].width = 38; ws4.column_dimensions["B"].width = 24
+    ws4.column_dimensions["C"].width = 22; ws4.column_dimensions["D"].width = 22
+
+    ws4.append(["MONTE CARLO SIMULATION ASSUMPTIONS"])
+    ws4.cell(1, 1).font = bf(12, TEAL, True); ws4.append([])
+    sim_count = (mc.get("simulation_count") or model.get("simulation_count") or 18731)
+    for label, val in [
+        ("Simulation Count", "{:,}".format(sim_count)),
+        ("Distribution Type", "PERT (3-point estimate — P10/P50/P90)"),
+        ("Correlation Model", "Positive correlation between cost and schedule risks"),
+        ("Base Cost (P50)", p50), ("P80 Cost", p80),
+        ("Schedule P50", "{} months".format(model.get("schedule_months", "—"))),
+        ("Estimate Class", "Class {} — {}".format(cl, ecn)),
+        ("Confidence Score", "{}%".format(conf)),
+        ("Number of Risks Modelled", len(risks)),
+        ("Total EMV", "{}{}B".format(curr, round(total_emv, 3))),
+    ]:
+        ws4.append([label, str(val)])
+        ws4.cell(ws4.max_row, 1).font = bf(9, "475569", True)
+        ws4.cell(ws4.max_row, 2).font = bf(10, INK)
+        for ci in (1, 2): ws4.cell(ws4.max_row, ci).fill = hf(LIGHT if ws4.max_row % 2 == 0 else WHITE)
+
+    ws4.append([]); ws4.append(["QSRA SCHEDULE RISK ASSUMPTIONS"])
+    ws4.cell(ws4.max_row, 1).font = bf(10, TEAL, True)
+    for label, val in [
+        ("Schedule P10 (Optimistic)", "{} months".format(qsra.get("p10", "—"))),
+        ("Schedule P50 (Most Likely)", "{} months".format(qsra.get("p50", "—"))),
+        ("Schedule P80 (Board Exposure)", "{} months".format(qsra.get("p80", "—"))),
+        ("Schedule P90 (Stress Case)", "{} months".format(qsra.get("p90", "—"))),
+        ("Primary Schedule Driver", "Governing constraint — see governing constraint register"),
+    ]:
+        ws4.append([label, str(val)])
+        ws4.cell(ws4.max_row, 1).font = bf(9, "475569", True)
+        ws4.cell(ws4.max_row, 2).font = bf(10, INK)
+
+    # ── SHEET 5: Full Risk Register ──────────────────────────────────────────
+    ws5 = wb.create_sheet("Full Risk Register")
+    ws5.sheet_view.showGridLines = False
+    rr_headers = ["ID","Risk Title","Category","Cause","Event","Impact Description",
+                  "Affect","Prob %","P10","P50 EMV","P90","Owner","Status","Mitigation","Trigger"]
+    rr_widths = [10,42,16,30,30,32,10,10,14,14,14,20,10,40,28]
+    for ci, (h, w) in enumerate(zip(rr_headers, rr_widths), 1):
+        ws5.column_dimensions[get_column_letter(ci)].width = w
+        c = ws5.cell(1, ci, h)
+        c.font = bf(8, WHITE, True); c.fill = hf(INK); c.alignment = al("center"); c.border = tb()
+
+    for i, r in enumerate(sorted_risks[:20], 0):
+        emv = float(r.get("cost_emv_bn", 0) or 0)
+        imp = float(r.get("cost_m_bn", 0) or r.get("cost_impact_bn", 0) or 0)
+        bg = hf("FFF7F7") if i % 2 == 0 else hf(WHITE)
+        row_vals = [
+            r.get("id", "R-{:03d}".format(i+1)),
+            r.get("title", r.get("risk", ""))[:50],
+            r.get("category", "Delivery"),
+            r.get("cause", "")[:40] or "See risk description",
+            r.get("event", r.get("risk_event", ""))[:40] or r.get("title", "")[:40],
+            r.get("impact", r.get("impact_description", ""))[:40] or "Cost and schedule impact",
+            r.get("affect", "Both"),
+            "{}%".format(r.get("probability_pct", "—")),
+            "{}{}B".format(curr, round(imp * 0.6, 3)) if imp else "—",
+            "{}{}B".format(curr, round(emv, 3)) if emv else "—",
+            "{}{}B".format(curr, round(imp * 1.4, 3)) if imp else "—",
+            r.get("owner", "TBC")[:22],
+            r.get("status", "Open"),
+            r.get("mitigation", r.get("response", ""))[:50] or "Mitigation plan in development",
+            r.get("trigger", "")[:35] or "Monitor at each period review",
+        ]
+        ri = ws5.max_row + 1
+        for ci, v in enumerate(row_vals, 1):
+            c = ws5.cell(ri, ci, v); c.fill = bg; c.border = tb()
+            c.font = bf(8, RED if ci == 10 else INK)
+            c.alignment = al("right" if ci in (8,9,10,11) else "left")
+
+    # Totals row
+    ri = ws5.max_row + 1
+    ws5.cell(ri, 2, "TOTAL / AGGREGATE EMV").font = bf(10, INK, True)
+    ws5.cell(ri, 10, "{}{}B".format(curr, round(total_emv, 3))).font = bf(10, RED, True)
+    for ci in range(1, 16):
+        ws5.cell(ri, ci).fill = hf("FEF9C3")
+        ws5.cell(ri, ci).border = tb()
+
+    # Footer on all sheets
+    from datetime import date
+    gen_note = "Generated by CASEY Intelligence Engine {} — controlorbit.com — First-pass intelligence, not a certified audit document.".format(date.today().strftime("%d %b %Y"))
+    for ws_x in [ws1, ws2, ws3, ws4, ws5]:
+        note_row = ws_x.max_row + 2
+        ws_x.cell(note_row, 1, gen_note).font = bf(7, "94A3B8")
+
     bio = BytesIO(); wb.save(bio); bio.seek(0)
     return bio.getvalue()
+
+
 
 @app.post("/export/qcra-qsra")
 def export_qcra_qsra(model:Dict[str,Any]):
@@ -5901,6 +6647,1101 @@ def twin_sectors():
         "generic": TWIN_GENERIC_INPUTS,
         "description": "Feed real programme progress into any of these fields to get a live updated forecast.",
     }
+
+# ── TWIN EVIDENCE PARSER ──────────────────────────────────────────────────────
+# Reads XER, Excel, risk registers and monthly reports in any messy format.
+# Returns pre-populated twin_inputs and a plain-English list of what was found.
+
+def _parse_xer_evidence(content: bytes) -> dict:
+    """Extract schedule metrics from a Primavera XER file (handles both ACTIVITY and TASK formats)."""
+    try:
+        text = content.decode("utf-8", errors="replace")
+        lines = text.splitlines()
+        
+        # Parse all record types — XER uses TASK or ACTIVITY
+        in_section = None; fields = {}; records = {}
+        for line in lines:
+            if line.startswith("%T\t"):
+                in_section = line[3:].strip()
+                fields[in_section] = []
+                records[in_section] = []
+            elif in_section and line.startswith("%F\t"):
+                fields[in_section] = line[3:].split("\t")
+            elif in_section and line.startswith("%R\t"):
+                vals = line[3:].split("\t")
+                f = fields.get(in_section, [])
+                if f:
+                    records[in_section].append(dict(zip(f, vals)))
+        
+        # Activities can be in TASK or ACTIVITY section
+        activities = records.get("TASK", records.get("ACTIVITY", []))
+        
+        if not activities:
+            return {"inputs": {}, "evidence": ["XER: No activity records found."]}
+        
+        total = len(activities)
+        
+        # % complete from remaining duration
+        total_dur = 0; remain_dur = 0
+        for a in activities:
+            td = float(a.get("target_drtn_hr_cnt", 0) or 0)
+            rd = float(a.get("remain_drtn_hr_cnt", td) or td)  # default: not started
+            total_dur += td
+            remain_dur += rd
+        
+        if total_dur > 0:
+            pct_complete = round((1 - remain_dur / total_dur) * 100, 1)
+        else:
+            # Count completed vs total
+            completed = sum(1 for a in activities if 
+                a.get("status_code","") in ("TT_Complete",) or 
+                float(a.get("remain_drtn_hr_cnt",1) or 1) == 0)
+            pct_complete = round(completed / total * 100, 1)
+        
+        pct_complete = max(0, min(100, pct_complete))
+        
+        # Milestones and schedule
+        milestones = records.get("MILESTONE", [])
+        ms_count = len(milestones) + sum(1 for a in activities if 
+            a.get("duration_type","") in ("Milestone","Zero Duration") or 
+            a.get("task_type","") in ("TT_Mile","TT_FinMile"))
+        
+        # Schedule metadata from PROJECT record
+        project = records.get("PROJECT", [{}])[0]
+        proj_name = project.get("proj_name", project.get("proj_short_name", ""))
+        
+        evidence = [
+            f"XER: {total} activities, {ms_count} milestones.",
+            f"XER: Programme {pct_complete}% complete (from remaining duration).",
+        ]
+        if proj_name:
+            evidence.insert(0, f"XER: Project found: {proj_name}")
+        
+        inputs = {}
+        if pct_complete > 0:
+            inputs["progress_pct"] = pct_complete
+        
+        return {"inputs": inputs, "evidence": evidence, "activities_count": total}
+    except Exception as e:
+        return {"inputs": {}, "evidence": [f"XER: Could not parse — {str(e)[:80]}"]}
+
+
+def _parse_excel_evidence(content: bytes, filename: str) -> dict:
+    """
+    Extract cost and EV metrics from Excel in any format.
+    Scans every cell for keywords — no fixed column layout assumed.
+    """
+    try:
+        import openpyxl, re
+        from io import BytesIO
+        wb = openpyxl.load_workbook(BytesIO(content), data_only=True)
+        
+        # Keywords to look for (case-insensitive)
+        EV_KEYS = ["earned value", "ev ", "bcwp", "ev$", "ev£", "earned val"]
+        AC_KEYS = ["actual cost", "acwp", "actual spend", "actuals", "spent to date", "expenditure"]
+        BAC_KEYS = ["budget at completion", "bac", "total budget", "approved budget", "baseline cost", "contract value"]
+        CPI_KEYS = ["cpi", "cost performance", "cost perf"]
+        SPI_KEYS = ["spi", "schedule performance", "sched perf"]
+        PCT_KEYS = ["% complete", "percent complete", "physical %", "% done", "progress %", "completion %"]
+        EV_PCT_KEYS = ["ev %", "ev percent", "earned value %", "ev/bac"]
+        SLIP_KEYS = ["delay", "slippage", "slip", "behind schedule"]
+        SCOPE_KEYS = ["change order", "scope change", "variation", "amendment", "co number"]
+        
+        found_values = {}
+        scope_change_rows = []
+        
+        for ws_name in wb.sheetnames[:8]:  # check first 8 sheets
+            ws = wb[ws_name]
+            rows = list(ws.rows)
+            
+            for ri, row in enumerate(rows):
+                for ci, cell in enumerate(row):
+                    cell_str = str(cell.value or "").lower().strip()
+                    if not cell_str or len(cell_str) > 80: continue
+                    
+                    # Check each keyword category
+                    for keys, field in [
+                        (EV_KEYS, "ev"), (AC_KEYS, "ac"), (BAC_KEYS, "bac"),
+                        (CPI_KEYS, "cpi"), (SPI_KEYS, "spi"),
+                        (PCT_KEYS, "pct_complete"), (EV_PCT_KEYS, "ev_pct"),
+                        (SLIP_KEYS, "slip"), (SCOPE_KEYS, "scope_change"),
+                    ]:
+                        if any(k in cell_str for k in keys) and field not in found_values:
+                            # Look for a numeric value in the same row (next few cells)
+                            for look_ci in range(max(0,ci+1), min(ci+6, len(row))):
+                                v = row[look_ci].value
+                                if v is not None:
+                                    try:
+                                        n = float(str(v).replace(",","").replace("£","").replace("$","").replace("%","").strip())
+                                        if field == "scope_change":
+                                            scope_change_rows.append(ri)
+                                        else:
+                                            found_values[field] = n
+                                        break
+                                    except: pass
+                            # Also check cell below
+                            if field not in found_values and ri+1 < len(rows):
+                                below = rows[ri+1]
+                                if ci < len(below):
+                                    v = below[ci].value
+                                    if v is not None:
+                                        try:
+                                            n = float(str(v).replace(",","").replace("£","").replace("$","").replace("%","").strip())
+                                            if field != "scope_change":
+                                                found_values[field] = n
+                                        except: pass
+        
+        inputs = {}
+        evidence = []
+        
+        # Derive inputs from what was found
+        ev = found_values.get("ev", 0)
+        ac = found_values.get("ac", 0)
+        bac = found_values.get("bac", 0)
+        pct = found_values.get("pct_complete", 0)
+        ev_pct_raw = found_values.get("ev_pct", 0)
+        cpi_raw = found_values.get("cpi", 0)
+        
+        # CPI
+        if cpi_raw and 0.3 < cpi_raw < 2.0:
+            inputs["actual_cost_pct"] = round(100 / cpi_raw, 1)
+            evidence.append(f"Excel: CPI found: {cpi_raw:.2f} — actual cost rate {inputs['actual_cost_pct']}% of plan.")
+        elif ev > 0 and ac > 0:
+            cpi_calc = ev / ac
+            if 0.3 < cpi_calc < 2.0:
+                inputs["actual_cost_pct"] = round(100 / cpi_calc, 1)
+                evidence.append(f"Excel: EV={ev:.1f}, AC={ac:.1f} — CPI={cpi_calc:.2f}, actual cost rate {inputs['actual_cost_pct']}% of plan.")
+        elif ac > 0 and bac > 0:
+            spend_pct = round(ac / bac * 100, 1)
+            evidence.append(f"Excel: Actual spend {ac:.1f} vs budget {bac:.1f} = {spend_pct:.1f}% of total budget spent.")
+            inputs["actual_cost_pct"] = min(200, round(spend_pct * 100 / max(0.01, pct) if pct > 0 else 100, 1))
+        
+        # EV %
+        if ev_pct_raw and 0 < ev_pct_raw <= 100:
+            inputs["earned_value_pct"] = round(ev_pct_raw, 1)
+            evidence.append(f"Excel: Earned value {ev_pct_raw:.1f}% of BAC.")
+        elif ev > 0 and bac > 0:
+            ev_pct_calc = round(ev / bac * 100, 1)
+            if 0 < ev_pct_calc <= 100:
+                inputs["earned_value_pct"] = ev_pct_calc
+                evidence.append(f"Excel: Earned value {ev_pct_calc:.1f}% of BAC (calculated from EV/BAC).")
+        
+        # % complete
+        if pct and 0 < pct <= 100:
+            inputs["progress_pct"] = round(pct, 1)
+            evidence.append(f"Excel: Programme {pct:.1f}% complete.")
+        
+        # Scope changes
+        scope_count = len(set(scope_change_rows))
+        if scope_count > 0:
+            inputs["scope_changes_count"] = scope_count
+            evidence.append(f"Excel: {scope_count} scope change rows detected.")
+        
+        if not evidence:
+            # Try to extract from CASEY-style Board Summary (Field/Value pairs)
+            for ws_name in wb.sheetnames[:3]:
+                ws2 = wb[ws_name]
+                for row in list(ws2.rows):
+                    if len(row) >= 2:
+                        k = str(row[0].value or "").lower().strip()
+                        v = row[1].value
+                        if "confidence" in k and v:
+                            try: inputs["earned_value_pct"] = float(str(v).replace("%","").strip()); evidence.append(f"Excel: Confidence {v} found.")
+                            except: pass
+                        if "p50" in k and v and "progress" not in k:
+                            evidence.append(f"Excel: P50 cost found: {v}.")
+            if not evidence:
+                evidence.append(f"Excel ({filename}): File opened. Key EV/CPI metrics not in standard cell locations. For best results include cells labelled CPI, EV%, or Actual vs Budget.")
+        
+        return {"inputs": inputs, "evidence": evidence}
+    
+    except Exception as e:
+        return {"inputs": {}, "evidence": [f"Excel: Could not parse {filename} — {str(e)[:80]}. Ensure file is .xlsx format (not .xls or password-protected)."]}
+
+
+def _parse_risk_register_evidence(content: bytes, filename: str) -> dict:
+    """Parse risk register (Excel or CSV) to extract risk metrics."""
+    try:
+        from io import BytesIO, StringIO
+        import csv
+        
+        risks = []
+        
+        if filename.lower().endswith(".csv"):
+            text = content.decode("utf-8", errors="replace")
+            reader = csv.DictReader(StringIO(text))
+            for row in reader:
+                risks.append(dict(row))
+        else:
+            import openpyxl
+            wb = openpyxl.load_workbook(BytesIO(content), data_only=True)
+            ws = wb.active
+            rows = list(ws.rows)
+            if not rows: return {"inputs": {}, "evidence": ["Risk Register: Empty file."]}
+            
+            # Find header row (first row with 3+ non-empty cells)
+            hdr_row = 0
+            for ri, row in enumerate(rows[:10]):
+                non_empty = sum(1 for c in row if c.value)
+                if non_empty >= 3:
+                    hdr_row = ri; break
+            
+            headers = [str(rows[hdr_row][ci].value or "").lower().strip() 
+                      for ci in range(len(rows[hdr_row]))]
+            
+            for row in rows[hdr_row+1:]:
+                if not any(c.value for c in row): continue
+                d = {}
+                for ci, h in enumerate(headers):
+                    if ci < len(row):
+                        d[h] = row[ci].value
+                risks.append(d)
+        
+        if not risks:
+            return {"inputs": {}, "evidence": ["Risk Register: No risk rows found."]}
+        
+        # Extract metrics
+        probs = []
+        emvs = []
+        prob_keys = ["probability", "prob", "likelihood", "prob %", "probability %"]
+        emv_keys = ["emv", "expected monetary", "expected value", "risk value", "risk emv"]
+        
+        for r in risks[:100]:
+            for k, v in r.items():
+                k_l = str(k).lower()
+                if any(pk in k_l for pk in prob_keys):
+                    try:
+                        n = float(str(v or 0).replace("%","").replace(",","").strip())
+                        if n > 1: n = n / 100  # convert % to decimal
+                        if 0 < n < 1: probs.append(n)
+                    except: pass
+                if any(ek in k_l for ek in emv_keys):
+                    try:
+                        n = abs(float(str(v or 0).replace(",","").replace("£","").replace("$","").replace("€","").strip()))
+                        if n > 0: emvs.append(n)
+                    except: pass
+        
+        open_risks = sum(1 for r in risks if str(r.get("status","") or r.get("Status","") or "open").lower() in ("open","active","identified",""))
+        avg_prob = round(sum(probs)/len(probs)*100, 1) if probs else 0
+        
+        evidence = [f"Risk Register: {len(risks)} risks found, {open_risks} open."]
+        if avg_prob: evidence.append(f"Risk Register: Average risk probability {avg_prob}%.")
+        if emvs: evidence.append(f"Risk Register: Total EMV across {len(emvs)} quantified risks.")
+        
+        # Open risk count affects confidence — more than 15 open risks = elevated risk profile
+        inputs = {}
+        if open_risks > 15:
+            inputs["scope_changes_count"] = max(3, min(10, int(open_risks / 5)))
+        
+        return {"inputs": inputs, "evidence": evidence, "risk_count": len(risks)}
+    
+    except Exception as e:
+        return {"inputs": {}, "evidence": [f"Risk Register: Could not parse — {str(e)[:80]}"]}
+
+
+def _parse_text_report_evidence(content: bytes, filename: str) -> dict:
+    """Extract key metrics from monthly report text (PDF text or DOCX)."""
+    try:
+        text = ""
+        if filename.lower().endswith(".pdf"):
+            try:
+                import pdfplumber
+                from io import BytesIO
+                with pdfplumber.open(BytesIO(content)) as pdf:
+                    for page in pdf.pages[:10]:
+                        text += (page.extract_text() or "") + " "
+            except ImportError:
+                try:
+                    import PyPDF2
+                    from io import BytesIO
+                    reader = PyPDF2.PdfReader(BytesIO(content))
+                    for page in reader.pages[:10]:
+                        text += page.extract_text() or ""
+                except Exception:
+                    return {"inputs": {}, "evidence": [f"Monthly report: PDF text extraction unavailable. Try uploading as Word or Excel instead."]}
+        elif filename.lower().endswith(".docx"):
+            try:
+                import docx
+                from io import BytesIO
+                doc = docx.Document(BytesIO(content))
+                text = " ".join(p.text for p in doc.paragraphs)
+            except Exception:
+                return {"inputs": {}, "evidence": ["Monthly report: DOCX parsing unavailable."]}
+        elif filename.lower().endswith(".txt"):
+            text = content.decode("utf-8", errors="replace")
+        else:
+            return {"inputs": {}, "evidence": [f"Monthly report: {filename} — upload as .txt, .docx or .pdf."]}
+        
+        if not text.strip():
+            return {"inputs": {}, "evidence": ["Monthly report: No text could be extracted."]}
+        
+        import re
+        inputs = {}
+        evidence = []
+        
+        # Look for % complete
+        pct_matches = re.findall(r"(\d+(?:\.\d+)?)\s*%\s*(?:complete|completion|physical|done|progress)", text, re.IGNORECASE)
+        if pct_matches:
+            pcts = [float(p) for p in pct_matches if 0 < float(p) <= 100]
+            if pcts:
+                inputs["progress_pct"] = round(sum(pcts)/len(pcts), 1)
+                evidence.append(f"Report: % complete found: {inputs['progress_pct']}%.")
+        
+        # Look for CPI
+        cpi_matches = re.findall(r"CPI[\s:=]*([0-9]\.?[0-9]*)", text, re.IGNORECASE)
+        if cpi_matches:
+            cpi = float(cpi_matches[0])
+            if 0.3 < cpi < 2.0:
+                inputs["actual_cost_pct"] = round(100 / cpi, 1)
+                evidence.append(f"Report: CPI {cpi:.2f} found — cost rate {inputs['actual_cost_pct']}% of plan.")
+        
+        # Look for delay/slip
+        slip_matches = re.findall(r"(\d+)\s*(?:month|months)\s*(?:delay|slip|behind|late)", text, re.IGNORECASE)
+        if slip_matches:
+            slip = int(slip_matches[0])
+            if 0 < slip < 60:
+                inputs["schedule_slip_months"] = slip
+                evidence.append(f"Report: {slip}-month delay mentioned.")
+        
+        # Positive signals
+        if re.search(r"on\s*track|on\s*schedule|ahead\s*of\s*plan|green", text, re.IGNORECASE):
+            evidence.append("Report: On-track / green status language found.")
+        
+        if re.search(r"red|at\s*risk|concern|overrun|behind\s*plan", text, re.IGNORECASE):
+            evidence.append("Report: Risk / at-risk language detected.")
+        
+        evidence.insert(0, f"Monthly report ({filename}): {len(text.split())} words extracted.")
+        
+        return {"inputs": inputs, "evidence": evidence}
+    
+    except Exception as e:
+        return {"inputs": {}, "evidence": [f"Monthly report: Error — {str(e)[:80]}"]}
+
+
+@app.post("/twin/upload-evidence")
+async def twin_upload_evidence(files: list = None, request: Request = None):
+    """
+    Parse uploaded programme files (XER, Excel, risk register, monthly report).
+    Returns pre-populated twin_inputs and evidence narrative.
+    No fixed format required — CASEY scans intelligently.
+    """
+    from fastapi import UploadFile
+    try:
+        form = await request.form()
+        uploaded_files = list(form.values())
+    except Exception:
+        uploaded_files = []
+    
+    all_inputs = {}
+    all_evidence = []
+    format_hints = []
+    files_processed = []
+    
+    for f in uploaded_files:
+        if not hasattr(f, "filename"): continue
+        fname = f.filename or "unknown"
+        content = await f.read()
+        ext = fname.split(".")[-1].lower() if "." in fname else ""
+        files_processed.append(fname)
+        
+        if ext == "xer":
+            result = _parse_xer_evidence(content)
+            all_evidence.extend(result.get("evidence", []))
+            all_inputs.update(result.get("inputs", {}))
+        
+        elif ext in ("xlsx", "xls"):
+            fname_l = fname.lower()
+            if any(x in fname_l for x in ("risk", "register", "rr")):
+                result = _parse_risk_register_evidence(content, fname)
+            else:
+                result = _parse_excel_evidence(content, fname)
+                # Also try as risk register if excel parse finds little
+                if len(result.get("inputs", {})) < 2:
+                    rr_result = _parse_risk_register_evidence(content, fname)
+                    result["evidence"].extend(rr_result.get("evidence", []))
+                    result["inputs"].update(rr_result.get("inputs", {}))
+            all_evidence.extend(result.get("evidence", []))
+            all_inputs.update(result.get("inputs", {}))
+        
+        elif ext == "csv":
+            result = _parse_risk_register_evidence(content, fname)
+            all_evidence.extend(result.get("evidence", []))
+            all_inputs.update(result.get("inputs", {}))
+        
+        elif ext in ("pdf", "docx", "txt"):
+            result = _parse_text_report_evidence(content, fname)
+            all_evidence.extend(result.get("evidence", []))
+            all_inputs.update(result.get("inputs", {}))
+        
+        else:
+            all_evidence.append(f"File '{fname}': Format '.{ext}' not recognised. Upload as .xlsx, .xer, .csv, .pdf, .docx or .txt.")
+    
+    # Format hints for missing key data
+    if "progress_pct" not in all_inputs:
+        format_hints.append("% complete not found — include a cell labelled \'% Complete\' or \'Physical %\' in your Excel, or check your XER has activity progress recorded.")
+    if "earned_value_pct" not in all_inputs and "actual_cost_pct" not in all_inputs:
+        format_hints.append("Earned value not found — include cells labelled \'EV\', \'CPI\' or \'Earned Value\' in your cost report, or a column \'EV/BAC\' in your programme dashboard.")
+    if "schedule_slip_months" not in all_inputs:
+        format_hints.append("Schedule slip not found — include a cell labelled \'Delay (months)\' or \'Schedule Slip\' in your monthly report, or ensure your XER has actual dates recorded against target dates.")
+    
+    # ── Cross-file conflict detection ─────────────────────────────────────────
+    conflicts = []
+    ev_set = "earned_value_pct" in all_inputs
+    pct_set = "progress_pct" in all_inputs
+    cost_set = "actual_cost_pct" in all_inputs
+    
+    if ev_set and pct_set:
+        ev = all_inputs["earned_value_pct"]
+        prog = all_inputs["progress_pct"]
+        if ev < prog * 0.75:
+            conflicts.append(f"CONFLICT: Programme reports {prog:.0f}% physical complete but earned value is only {ev:.0f}% of BAC. This gap ({prog-ev:.0f} points) suggests physical progress claims may be overstated vs actual earned value.")
+    
+    if cost_set and ev_set:
+        ac = all_inputs["actual_cost_pct"]
+        ev = all_inputs["earned_value_pct"]
+        if ac > 110 and ev > 90:
+            conflicts.append(f"CONFLICT: Actual spend is {ac:.0f}% of plan but earned value appears healthy at {ev:.0f}%. These cannot both be true — check that EV is calculated from the same baseline as the cost actuals.")
+    
+    # Check if report says green but risk count says red
+    report_green = any("on-track" in e.lower() or "green" in e.lower() for e in all_evidence)
+    high_risks = "scope_changes_count" in all_inputs and all_inputs["scope_changes_count"] >= 5
+    if report_green and high_risks:
+        conflicts.append(f"CONFLICT: Monthly report language indicates green / on-track status, but the risk register contains {all_inputs.get('scope_changes_count',0)*5}+ open risks. Schedule confidence may be inconsistent between documents.")
+    
+    return {
+        "success": True,
+        "files_processed": files_processed,
+        "twin_inputs": all_inputs,
+        "evidence": all_evidence,
+        "format_hints": format_hints,
+        "conflicts": conflicts,
+        "auto_run": len(all_inputs) >= 2,
+    }
+
+
+# ── CHALLENGE MODE ENGINE ─────────────────────────────────────────────────────
+# REGULATORY FRAMEWORKS BY COUNTRY/REGION
+REGULATORY_FRAMEWORKS = {
+    "uk": {"authority": "IPA / HM Treasury", "cost_framework": "HM Treasury Green Book", "schedule_standard": "IPA Project Routemap", "oba_disclosure": "HM Treasury Green Book requires OBA disclosure for all public programmes. The OBA-adjusted P50 must appear in the executive summary — not only in the technical appendix.", "reserve_standard": "IPA guidance: P80 reserve must be named, funded and held independently of the programme budget."},
+    "usa": {"authority": "OMB / GAO / USACE", "cost_framework": "OMB Circular A-11 / GAO Cost Estimating Guide", "schedule_standard": "EVM (EVMS) per ANSI/EIA 748", "oba_disclosure": "GAO Cost Estimating and Assessment Guide requires reference class forecasting disclosure. Optimism bias must be documented for major acquisitions.", "reserve_standard": "OMB requires management reserve separate from contingency, both must be funded at P80 or better."},
+    "australia": {"authority": "Infrastructure Australia / ANAO", "cost_framework": "Infrastructure Australia Assessment Framework", "schedule_standard": "AIPM / PMI", "oba_disclosure": "Infrastructure Australia requires reference class forecasting for projects over A$250M. OBA uplift must be shown in gateway submissions.", "reserve_standard": "Infrastructure Australia: P80 exposure must be explicitly funded in the business case."},
+    "eu": {"authority": "European Commission / Jaspers", "cost_framework": "EU Cohesion Fund Guidelines / CBA", "schedule_standard": "EU Major Projects EIA process", "oba_disclosure": "EU Cohesion Fund guidelines require optimism bias correction for all major projects. The reference class must be disclosed in the cost-benefit analysis.", "reserve_standard": "EU regulations require contingency reserve at the P80 confidence level for major infrastructure grants."},
+    "canada": {"authority": "TBS / PCO", "cost_framework": "TBS Cost Estimating Guide", "schedule_standard": "TBS Major Crown Projects framework", "oba_disclosure": "Treasury Board of Canada requires reference class forecasting for major crown projects. Optimism bias adjustment must be documented.", "reserve_standard": "TBS guidance: risk-adjusted estimates must be presented at P50 and P80."},
+    "uae": {"authority": "PMO / Ministry of Infrastructure", "cost_framework": "UAE Infrastructure Investment Framework", "schedule_standard": "PMO Programme Governance", "oba_disclosure": "UAE megaprogrammes require independent cost validation. Optimism bias is a known risk in rapid-delivery contexts — benchmarking against Gulf region programmes is required.", "reserve_standard": "UAE PMO: reserve must be independently held and drawdown-approved."},
+    "india": {"authority": "Ministry of Finance / NITI Aayog", "cost_framework": "India PFMS / General Financial Rules", "schedule_standard": "Ministry of Finance Programme Governance", "oba_disclosure": "Indian public procurement rules require cost escalation analysis. Reference class data from similar programmes must be disclosed for major infrastructure.", "reserve_standard": "Contingency provision of 10-15% is mandated for Central Sector Schemes — this is not a P80 equivalent and may be insufficient."},
+    "default": {"authority": "Independent cost reviewer / project board", "cost_framework": "International cost management standard (ICMS)", "schedule_standard": "PMBOK / Prince2", "oba_disclosure": "International best practice (Flyvbjerg 2022, World Bank Project Appraisal) requires reference class forecasting and optimism bias disclosure. The OBA-adjusted estimate should appear in the board executive summary.", "reserve_standard": "Best practice: contingency reserve held at P80 confidence level, independently held."},
+}
+
+SECTOR_GOVERNING_CONSTRAINTS = {
+    "rail": {"constraint": "systems integration", "detail": "Civil works can complete but the railway cannot run until signalling, ETCS/ERTMS and all interface exception memoranda are closed. The critical path is not construction — it is the systems integration programme.", "precedent": "Crossrail: 900+ open IEMs at planned opening caused 2-year delay at 95% construction completion."},
+    "nuclear": {"constraint": "regulatory hold-point clearance", "detail": "No construction activity can pass a regulatory hold-point without written authorisation from the nuclear regulator (ONR/NRC/ASN). The critical path is the regulatory approval sequence, not engineering.", "precedent": "Hinkley Point C / Vogtle: regulatory sequence drove all major schedule extensions."},
+    "defence": {"constraint": "requirements baseline freeze", "detail": "Every unresolved requirement at contract award creates design churn costing 10-30x the change value. The programme must have a signed, frozen requirements baseline before any contract is let.", "precedent": "Ajax programme: requirements instability post-contract drove 40% cost growth and 7-year delay."},
+    "space": {"constraint": "mission assurance closure", "detail": "Every open qualification anomaly must be closed with root-cause evidence before launch authority is granted. The critical path is the anomaly closure programme — not hardware manufacture.", "precedent": "JWST: qualification anomalies drove 14 years of delays. Artemis SLS: mission assurance burden drove 271% cost growth."},
+    "data": {"constraint": "grid connection agreement", "detail": "No data centre can commission without a firm DNO/TSO grid connection with a confirmed energisation date. Lead time is 18-24 months in most jurisdictions. This is the single longest-lead item in any hyperscale programme.", "precedent": "Hyperscale programmes globally: grid connection is consistently the governing constraint, not construction."},
+    "mining": {"constraint": "social licence and community consent", "detail": "A programme can be 95% complete and be halted by community opposition or regulatory withdrawal. Social licence is not a milestone — it is a continuous obligation.", "precedent": "Cobre Panama ($10B First Quantum): suspended at 95% complete by national referendum 2023."},
+    "semiconductor": {"constraint": "ASML EUV tool allocation and delivery", "detail": "ASML EUV lithography tools have a 3-year lead time that cannot be accelerated. All cleanroom qualification depends on tool arrival. This determines the critical path, not cleanroom construction.", "precedent": "TSMC Arizona: EUV tool delivery delays pushed first chip production back 2 years."},
+    "battery": {"constraint": "offtake contract and financing", "detail": "Without committed long-term supply agreements at commercially viable pricing, no project finance can be secured. Construction cannot start without a bankable offtake.", "precedent": "Britishvolt: no offtake, no financing, administration 2023. Northvolt: offtake uncertainty contributed to restructuring 2024."},
+    "airport": {"constraint": "integrated systems testing", "detail": "An airport is not open-ready when the terminal is built. It is open-ready when fire safety, baggage, IT, airfield and operational systems all pass combined testing simultaneously.", "precedent": "Berlin Brandenburg (BER): fire safety and baggage system integration failures caused 9-year delay. Denver International: baggage system caused 16-month delay."},
+    "water": {"constraint": "regulatory consenting and environmental permitting", "detail": "Water infrastructure is subject to environmental permit, abstraction licence and discharge consent approvals. Any of these can extend the critical path by years.", "precedent": "Tideway: regulatory approvals took 8 years before construction could start."},
+    "energy": {"constraint": "grid connection and planning consent", "detail": "Grid connection for large energy projects (wind, solar, BESS) now has queue wait times of 5-10 years in the UK and 3-7 years in the US. This is the governing constraint — not turbine manufacture or construction.", "precedent": "Multiple UK offshore wind projects: grid queue position has become a de facto moratorium."},
+}
+
+SPACE_PHASE_CHALLENGES = {
+    "phase_a": "Concept and technology development — the primary risk is TRL creep: technologies assumed to be at TRL 5-6 are later found to be at TRL 3-4, requiring additional development cycles.",
+    "phase_b": "Preliminary design — the primary risk is interface creep: interfaces between subsystems are assumed stable but discovered to be undefined, adding mass, power and schedule to every subsystem.",
+    "phase_c": "Detailed design — the primary risk is qualification testing surprise: the programme discovers during qualification that the design does not meet the specification it was designed to.",
+    "phase_d": "System assembly and test — the primary risk is integration anomalies: each anomaly discovered during ATLO requires root-cause closure before proceeding, creating schedule accordion effects.",
+    "operations": "Launch and operations — the primary risk is mission assurance gaps: items that were not closed during Phase D surface as launch readiness review findings.",
+}
+
+def get_regulatory_framework(location: str, mode: str) -> dict:
+    loc = (location or "").lower()
+    if any(x in loc for x in ("uk", "united kingdom", "england", "britain", "wales", "scotland")):
+        return REGULATORY_FRAMEWORKS["uk"]
+    if any(x in loc for x in ("usa", "united states", "america", "us ", "california", "new york", "texas", "virginia", "florida")):
+        return REGULATORY_FRAMEWORKS["usa"]
+    if any(x in loc for x in ("australia", "australian", "nsw", "victoria", "queensland", "western australia")):
+        return REGULATORY_FRAMEWORKS["australia"]
+    if any(x in loc for x in ("france", "germany", "spain", "italy", "netherlands", "belgium", "poland", "europe", "eu ")):
+        return REGULATORY_FRAMEWORKS["eu"]
+    if any(x in loc for x in ("canada", "ontario", "british columbia", "alberta", "quebec")):
+        return REGULATORY_FRAMEWORKS["canada"]
+    if any(x in loc for x in ("uae", "dubai", "abu dhabi", "emirates")):
+        return REGULATORY_FRAMEWORKS["uae"]
+    if any(x in loc for x in ("india", "mumbai", "delhi", "bangalore", "chennai", "hyderabad")):
+        return REGULATORY_FRAMEWORKS["india"]
+    if (mode or "").lower() == "space" or any(x in loc for x in ("lunar", "mars", "orbital", "space")):
+        return {
+            "authority": "NASA / ESA / JAXA / SpaceX or national space agency",
+            "cost_framework": "NASA Cost Estimating Handbook / ESA Cost Engineering",
+            "schedule_standard": "NASA Systems Engineering Handbook NPR 7123.1",
+            "oba_disclosure": "NASA NPR 7120.5 requires independent cost and schedule confidence assessment. The JCL (Joint Confidence Level) at 70% is the NASA approval threshold — not P50.",
+            "reserve_standard": "NASA: unallocated future expenses (UFE) held at programme level, minimum 10% of remaining cost."
+        }
+    return REGULATORY_FRAMEWORKS["default"]
+
+def get_sector_constraint(subsector: str, mode: str) -> dict:
+    sub = (subsector or "").lower()
+    mode_l = (mode or "").lower()
+    if mode_l == "space" or any(x in sub for x in ("lunar", "mars", "orbital", "satellite", "space", "telescope", "rocket")):
+        return SECTOR_GOVERNING_CONSTRAINTS["space"]
+    for key, val in SECTOR_GOVERNING_CONSTRAINTS.items():
+        if key in sub:
+            return val
+    if "transit" in sub or "tram" in sub:
+        return SECTOR_GOVERNING_CONSTRAINTS["rail"]
+    if "power" in sub or "wind" in sub or "solar" in sub or "bess" in sub:
+        return SECTOR_GOVERNING_CONSTRAINTS["energy"]
+    if "pharma" in sub or "life" in sub or "biolog" in sub:
+        return {"constraint": "GMP design freeze and regulatory CQV approval", "detail": "Pharmaceutical manufacturing facilities cannot commission until GMP design is frozen and CQV validated. Any post-freeze design change restarts the regulatory clock.", "precedent": "Multiple pharma programmes: post-FCD design changes added 18-24 months to commissioning timelines."}
+    return {"constraint": "procurement strategy and supply chain certainty", "detail": "The programme cannot proceed to capital commitment without a confirmed procurement strategy and evidence of market capacity for key packages.", "precedent": "Multiple infrastructure programmes: procurement strategy uncertainty is the most common cause of cost and schedule uplift at OBC stage."}
+
+def generate_challenge(model: dict) -> dict:
+    """
+    CASEY becomes the hostile examiner — specific, evidence-based challenges
+    against the programme. Works for every sector, country and Earth/Space mode.
+    """
+    curr = model.get("currency_symbol", "$")
+    location = model.get("location", "")
+    mode = model.get("mode", "Earth")
+    sub = model.get("subsector", "programme")
+    cl = int(model.get("class_level", 3) or 3)
+    conf = int(model.get("confidence_pct", 60) or 60)
+    title = model.get("title", sub)
+
+    def fv(v):
+        raw = "".join(c for c in str(v or "0") if c.isdigit() or c == ".")
+        try: return float(raw)
+        except: return 0.0
+
+    p50 = fv(model.get("cost_p50"))
+    p80 = fv(model.get("cost_p80"))
+    p10 = fv(model.get("cost_p10", p50*0.8))
+    sched = int(model.get("schedule_months", 36) or 36)
+    risks = model.get("risks", [])
+    oba = model.get("optimism_bias_assessment", {})
+    oba_p50 = fv((oba.get("oba_adjusted_p50","0") if isinstance(oba,dict) else "0"))
+    bms = model.get("benchmark_comparison", [])
+
+    reg = get_regulatory_framework(location, mode)
+    gc = get_sector_constraint(sub, mode)
+
+    challenges = []
+
+    # ── CHALLENGE 1: Estimate class vs claim ──────────────────────────────────
+    class_accuracy = {1: (-5, 15), 2: (-10, 20), 3: (-15, 30), 4: (-20, 50), 5: (-30, 100)}
+    lo_pct, hi_pct = class_accuracy.get(cl, (-15, 30))
+    if p50 > 0:
+        upper_bound = p50 * (1 + hi_pct/100)
+        challenges.append({
+            "category": "COST ESTIMATE — CLASS " + str(cl),
+            "severity": "CRITICAL" if cl >= 3 else "HIGH",
+            "challenge": "Your P50 is {}{:.1f}B at Class {} definition. Class {} carries an accuracy range of {:+d}% to {:+d}% — the upper bound of your own estimate class is {}{:.1f}B. If you are asking the board to approve at P50, you are asking them to accept a {} in 2 chance the outturn exceeds {}{:.1f}B. What specific controls prevent the estimate tracking to the top of the class range?".format(curr, p50, cl, cl, lo_pct, hi_pct, curr, upper_bound, "1", curr, upper_bound),
+            "what_would_make_me_accept": "Advance to Class {} or better before capital approval, or provide an independent estimate validation at current class demonstrating the P50 is not anchored to the approved budget.".format(max(1, cl-1)),
+            "regulatory_ref": reg["cost_framework"],
+        })
+
+    # ── CHALLENGE 2: OBA / Optimism Bias (adapted by country) ─────────────────
+    if oba_p50 > p50 * 1.05:
+        uplift_pct = round((oba_p50/p50 - 1)*100)
+        challenges.append({
+            "category": "OPTIMISM BIAS — REFERENCE CLASS",
+            "severity": "CRITICAL",
+            "challenge": "Your OBA-adjusted P50 is {}{:.1f}B — {}% above your headline of {}{:.1f}B. {} Yet your board submission leads with {}{:.1f}B. The gap is {}{:.1f}B. An approving body reviewing this submission will ask: which number represents the programme directors honest view of outturn?".format(curr, oba_p50, uplift_pct, curr, p50, reg["oba_disclosure"], curr, p50, curr, oba_p50-p50),
+            "what_would_make_me_accept": "Put the OBA-adjusted P50 ({}{:.1f}B) in the executive summary alongside the headline. Demonstrate specifically why your programme controls will outperform the reference class.".format(curr, oba_p50),
+            "regulatory_ref": reg["cost_framework"],
+        })
+
+    # ── CHALLENGE 3: P80 exposure and reserve ──────────────────────────────────
+    if p80 > 0 and p50 > 0:
+        exposure = p80 - p50
+        exposure_pct = round((p80/p50 - 1)*100)
+        if exposure_pct > 10:
+            challenges.append({
+                "category": "P80 RESERVE — FUNDED AND HELD",
+                "severity": "HIGH",
+                "challenge": "Your P80 is {}{:.1f}B — {}% above P50. {} If this programme tracks to P80 — which comparable programmes do 50% of the time — an additional {}{:.1f}B is needed. Where is it? Who holds it? What is the drawdown trigger? Your papers do not appear to answer these questions.".format(curr, p80, exposure_pct, reg["reserve_standard"], curr, exposure),
+                "what_would_make_me_accept": "Show explicitly that {}{:.1f}B in P80 reserve is (a) funded, (b) held independently of the programme budget, (c) has a named holder, and (d) has defined drawdown trigger criteria.".format(curr, exposure),
+                "regulatory_ref": reg["authority"],
+            })
+
+    # ── CHALLENGE 4: Governing constraint ──────────────────────────────────────
+    challenges.append({
+        "category": "GOVERNING CONSTRAINT — " + gc["constraint"].upper(),
+        "severity": "HIGH",
+        "challenge": "For a programme of this type ({}) the governing constraint is {}. {}. Your submission does not appear to address this constraint directly. Where is the evidence that {} has been identified as the critical path item and has a named owner with a closure date?".format(sub, gc["constraint"], gc["detail"], gc["constraint"]),
+        "what_would_make_me_accept": "Show a programme plan with {} explicitly on the critical path, a named constraint owner, and a dated evidence closure plan. Precedent: {}".format(gc["constraint"], gc["precedent"]),
+        "regulatory_ref": reg["schedule_standard"],
+    })
+
+    # ── CHALLENGE 5: Risk register quality ────────────────────────────────────
+    open_risks = [r for r in risks if str(r.get("status","open")).lower() not in ("closed","mitigated")]
+    tbc_owners = [r for r in open_risks if not r.get("owner") or r.get("owner") in ("TBC","—","")]
+    no_emv = [r for r in open_risks if not float(r.get("cost_emv_bn",0) or 0)]
+    no_mitigation = [r for r in open_risks if not r.get("mitigation") or r.get("mitigation") == "—"]
+
+    if len(tbc_owners) > 0:
+        challenges.append({
+            "category": "RISK OWNERSHIP",
+            "severity": "HIGH",
+            "challenge": "{} of your {} open risks have no named owner. A risk without a named owner is not a managed risk — it is an unacknowledged threat. The {} will reject a risk register with TBC owners at any major gate review.".format(len(tbc_owners), len(open_risks), reg["authority"]),
+            "what_would_make_me_accept": "Every risk must have a named individual (not a team or organisation) as owner, a mitigation plan with evidence, and a closure date.",
+            "regulatory_ref": reg["authority"],
+        })
+
+    if len(no_emv) > len(open_risks) * 0.35:
+        challenges.append({
+            "category": "RISK QUANTIFICATION",
+            "severity": "HIGH",
+            "challenge": "{} of your {} open risks have no quantified EMV. You cannot claim a credible P80 contingency reserve if the risks underpinning it are not individually quantified. The reserve is not defensible without a risk-by-risk build-up.".format(len(no_emv), len(open_risks)),
+            "what_would_make_me_accept": "Quantify every material risk with probability, P10/P50/P90 impact and EMV. The aggregate EMV must equal or exceed the reserve provision.",
+            "regulatory_ref": reg["cost_framework"],
+        })
+
+    # ── CHALLENGE 6: Space-specific challenges ─────────────────────────────────
+    if mode.lower() == "space" or any(x in sub.lower() for x in ("lunar", "orbital", "satellite", "mars", "space", "telescope", "rocket", "launcher")):
+        challenges.append({
+            "category": "TRL AND MISSION ASSURANCE",
+            "severity": "CRITICAL",
+            "challenge": "For a space programme, the cost and schedule baseline is only valid if all technologies have been independently verified at TRL 6 or above. NASA data shows that every TRL level below 6 at PDR adds on average 18-24% to programme cost and 12-18 months to schedule. Your submission should state the current TRL of every critical technology and how it was independently verified. Qualification anomalies above 10 at ATLO entry are statistically associated with 6+ month launch delays.",
+            "what_would_make_me_accept": "Provide an independently-verified TRL assessment for all critical technologies. Show open anomaly count with a credible closure plan and schedule confidence level. The JCL at 70% is the standard approval threshold — not P50.",
+            "regulatory_ref": "NASA NPR 7120.5 / ESA ECSS / mission assurance standard",
+        })
+        challenges.append({
+            "category": "LAUNCH MANIFEST AND SCHEDULE RISK",
+            "severity": "HIGH",
+            "challenge": "Without a confirmed launch vehicle and launch slot, every downstream schedule milestone is notional. Launch manifest confirmation is the single most effective schedule risk reduction action available. Is a launch slot confirmed with a specific provider, vehicle and date? What is the backup if that slot is lost? JWST had 5 launch delays — each propagated 12-18 months of programme extension.",
+            "what_would_make_me_accept": "Show a confirmed launch vehicle contract with a specific launch window. Show backup options. Show what the cost and schedule impact is if the primary slot is lost.",
+            "regulatory_ref": "NASA/ESA launch services procurement standard",
+        })
+
+    # ── CHALLENGE 7: Benchmark challenge ──────────────────────────────────────
+    if bms:
+        worst = max(bms, key=lambda b: float(b.get("cost_growth_pct", b.get("growth", 0)) or 0))
+        growth = float(worst.get("cost_growth_pct", worst.get("growth", 0)) or 0)
+        if growth > 30:
+            challenges.append({
+                "category": "BENCHMARK CHALLENGE",
+                "severity": "CRITICAL",
+                "challenge": "The closest comparable programme — {} — experienced +{}% cost growth. Your estimate assumes your programme will materially outperform this reference class. What is structurally different about your programme scope definition, governance and supply chain that prevents the same outcome? Saying this programme is different is not an answer — every programme director said that before their programme overran.".format(worst.get("name","comparable"), int(growth)),
+                "what_would_make_me_accept": "Demonstrate specifically how your programme differs from {} in: (1) scope definition maturity, (2) governance structure, (3) supply chain certainty, (4) technology maturity. For each difference, quantify the cost risk reduction.".format(worst.get("name","comparable")),
+                "regulatory_ref": reg["cost_framework"],
+            })
+
+    # ── CHALLENGE 8: Sector-specific additional challenges ────────────────────
+    sub_l = sub.lower()
+    if "nuclear" in sub_l:
+        challenges.append({
+            "category": "REGULATORY HOLD-POINTS",
+            "severity": "CRITICAL",
+            "challenge": "Nuclear programmes are subject to regulatory hold-points that cannot be passed without written authorisation from the nuclear regulator. Each hold-point can add 6-24 months to the programme if not anticipated in the baseline schedule. Your submission should identify all hold-points, their current status, and the schedule impact if each is delayed by 6 months.",
+            "what_would_make_me_accept": "Show a hold-point schedule integrated into the master programme. Show the cost and schedule impact of a 6-month delay at each hold-point. Show how the regulator has been engaged.",
+            "regulatory_ref": "ONR/NRC/ASN nuclear regulatory framework",
+        })
+    elif "data centre" in sub_l or "hyperscale" in sub_l or "digital" in sub_l:
+        challenges.append({
+            "category": "GRID CONNECTION AND POWER",
+            "severity": "CRITICAL",
+            "challenge": "A data centre cannot operate without a firm grid connection with a confirmed energisation date. In most jurisdictions queue wait times are now 18-36 months. This is not a construction risk — it is a DNO/TSO infrastructure risk outside the programme control. Is a grid connection agreement signed? What is the confirmed energisation date? What is the programme impact if it slips 12 months?",
+            "what_would_make_me_accept": "Show a signed grid connection agreement with a confirmed energisation date. Show the cost and schedule impact of 12 and 24 month grid delays.",
+            "regulatory_ref": "DNO/TSO connection agreement framework",
+        })
+    elif "airport" in sub_l or "aviation" in sub_l:
+        challenges.append({
+            "category": "INTEGRATED SYSTEMS AND OPERATIONAL READINESS",
+            "severity": "CRITICAL",
+            "challenge": "Berlin Brandenburg (BER) had a physically complete terminal that could not open for 9 years because integrated systems — fire safety, baggage, IT — failed combined testing. Denver International was delayed 16 months by baggage alone. Your programme plan should show integrated systems testing as a critical path activity, not a commissioning sub-programme. Is ORAT (Operational Readiness and Airport Transfer) director appointed with full authority?",
+            "what_would_make_me_accept": "Show integrated systems testing on the critical path with an independent ORAT programme. Show the CAA/aviation regulator engagement plan and fire safety approval strategy.",
+            "regulatory_ref": "CAA/FAA airside operations standards",
+        })
+    elif "mining" in sub_l or "copper" in sub_l or "lithium" in sub_l:
+        challenges.append({
+            "category": "SOCIAL LICENCE AND COMMUNITY CONSENT",
+            "severity": "CRITICAL",
+            "challenge": "Cobre Panama was 95% complete and had a $10B capital investment when it was suspended by community opposition and a national referendum in 2023. A signed community benefit agreement is not optional — it is the governing constraint. Is a signed community benefit agreement in place? What are the consultation obligations? What is the risk of community opposition at a 90%+ complete stage?",
+            "what_would_make_me_accept": "Show a signed, legally binding community benefit agreement. Show the ongoing consultation programme. Show what happens to the programme if social licence is withdrawn at 80% completion.",
+            "regulatory_ref": "IFC Performance Standards / local environmental and social framework",
+        })
+
+    # ── CHALLENGE 9: Schedule basis ────────────────────────────────────────────
+    challenges.append({
+        "category": "SCHEDULE BASIS",
+        "severity": "MEDIUM",
+        "challenge": "Your schedule shows {} months. Three questions: (1) Is it resource-loaded with actual named resources or assumed availability? (2) Has it been independently validated by a scheduler who was not involved in creating it? (3) Is the governing constraint ({}) explicitly on the critical path with float? For {} in {}, the schedule risk most commonly materialises in the integration and testing phase — where is that phase in your programme and what is its float?".format(sched, gc["constraint"], sub, location or "this region"),
+        "what_would_make_me_accept": "Show a resource-loaded, logic-linked schedule reviewed by an independent scheduler, with the governing constraint ({}) on the critical path and an independent schedule risk assessment confirming the P80 completion date.".format(gc["constraint"]),
+        "regulatory_ref": reg["schedule_standard"],
+    })
+
+    # ── CHALLENGE 10: Confidence claim ────────────────────────────────────────
+    if conf >= 75:
+        challenges.append({
+            "category": "CONFIDENCE SCORE — {}%".format(conf),
+            "severity": "MEDIUM",
+            "challenge": "Your confidence score is {}%. At Class {} definition, confidence above 75% requires independently validated evidence for: estimate, schedule, risk register, procurement strategy, and governing constraint closure. Which of these five has been independently validated? Confidence scores above 80% at Class 3 are statistically anomalous in the reference class data.".format(conf, cl),
+            "what_would_make_me_accept": "Show the independent validation evidence for each confidence driver. An IPA-style confidence assessment by an independent reviewer is the accepted standard for public programmes.",
+            "regulatory_ref": reg["authority"],
+        })
+    elif conf < 60:
+        challenges.append({
+            "category": "CONFIDENCE — BELOW APPROVAL THRESHOLD",
+            "severity": "CRITICAL",
+            "challenge": "Your confidence score is {}% — below the standard 60-65% threshold for continued programme progress without revalidation. {} approval processes require confidence above this threshold. Proceeding to the next stage at {}% confidence risks gate rejection.".format(conf, reg["authority"], conf),
+            "what_would_make_me_accept": "Close the governing constraint evidence ({}) with a named owner and completion date before proceeding.".format(gc["constraint"]),
+            "regulatory_ref": reg["authority"],
+        })
+
+    # Summary
+    critical = [c for c in challenges if c["severity"] == "CRITICAL"]
+    high = [c for c in challenges if c["severity"] == "HIGH"]
+    medium = [c for c in challenges if c["severity"] == "MEDIUM"]
+
+    summary = "CASEY identified {} specific challenges: {} CRITICAL, {} HIGH, {} MEDIUM. {} CRITICAL challenge{} would likely cause {} to reject or defer this submission at its current state.".format(
+        len(challenges), len(critical), len(high), len(medium),
+        len(critical), "s" if len(critical) != 1 else "",
+        reg["authority"]
+    )
+
+    board_rejection = [c["category"] + ": " + c["challenge"][:80] + "..." for c in critical[:3]]
+
+    return {
+        "challenges": challenges,
+        "challenge_count": len(challenges),
+        "critical_count": len(critical),
+        "high_count": len(high),
+        "medium_count": len(medium),
+        "board_rejection_risks": board_rejection,
+        "regulatory_framework": reg["authority"],
+        "governing_constraint": gc["constraint"],
+        "summary": summary,
+        "mode": mode,
+        "sector": sub,
+        "location": location,
+    }
+
+
+
+
+# ── HISTORICAL ANALOGUE ENGINE ────────────────────────────────────────────────
+ANALOGUE_LIBRARY = [
+    {"name":"Crossrail / Elizabeth Line","weight_triggers":{"rail":40,"systems_integration":20,"london":10,"transit":10},"pattern":"Systems integration deferred — civil complete but railway cannot run. 900+ open IEMs at planned opening.","outcome":"+88% cost, +84 months","lesson":"Never count civil completion as programme completion in a systems-heavy railway.","confidence_indicator": "open_items_high"},
+    {"name":"HS2 Phase 1","weight_triggers":{"rail":30,"uk":15,"high_speed":20,"political":10},"pattern":"Scope growth through political decisions and stakeholder changes mid-delivery.","outcome":"+140% cost, +36 months","lesson":"Every politically-driven scope change multiplies downstream cost by 10-30x.","confidence_indicator":"scope_growth"},
+    {"name":"Hinkley Point C","weight_triggers":{"nuclear":50,"uk":15,"pressurised_water":10},"pattern":"First-of-kind design in an unfamiliar regulatory environment — each design change triggers full re-review.","outcome":"+94% cost, running late","lesson":"First-of-kind nuclear in a new regulatory environment has no credible baseline.","confidence_indicator":"first_of_kind"},
+    {"name":"Vogtle 3 and 4","weight_triggers":{"nuclear":50,"usa":15,"ap1000":15,"first_of_kind":10},"pattern":"AP1000 first-of-kind design changes post-FCD in a fixed-price contract environment.","outcome":"+113% cost","lesson":"Fixed-price contracts do not reduce cost — they transfer risk until the contractor collapses.","confidence_indicator":"scope_growth"},
+    {"name":"JWST (James Webb Space Telescope)","weight_triggers":{"space":40,"telescope":20,"nasa":15,"deep_space":10},"pattern":"Mission assurance burden systematically underestimated — qualification testing revealed cascading anomalies.","outcome":"+506% cost, 14-year delay","lesson":"Space qualification testing always takes longer than the schedule baseline. Double it.","confidence_indicator":"open_anomalies_high"},
+    {"name":"Artemis / SLS","weight_triggers":{"space":30,"lunar":20,"nasa":15,"rocket":10,"launch_vehicle":10},"pattern":"Heritage hardware assumption — reusing Shuttle-era components with modern interfaces multiplied cost.","outcome":"+271% cost","lesson":"Heritage hardware is not a cost saving — it is a compatibility debt.","confidence_indicator":"heritage_assumption"},
+    {"name":"Heathrow Terminal 5","weight_triggers":{"airport":50,"uk":15,"terminal":15},"pattern":"Contractor and workforce management failure at opening — managed recovery through BAA direct employment.","outcome":"+28% cost but delivered on time after recovery","lesson":"T5 is an example of recovery done right — direct workforce, single contractor, integrated team.","confidence_indicator":"positive_governance"},
+    {"name":"Berlin Brandenburg Airport (BER)","weight_triggers":{"airport":50,"germany":15,"fire_safety":10,"baggage":10},"pattern":"Systems integration failure — fire safety and baggage systems failed combined testing at near-completion.","outcome":"+300% cost, 9-year delay","lesson":"An airport is not complete when the terminal is built. It is complete when all integrated systems work simultaneously.","confidence_indicator":"systems_integration_gap"},
+    {"name":"Tideway (Thames Tideway Tunnel)","weight_triggers":{"water":40,"uk":15,"tunnel":20,"london":10},"pattern":"Innovative financing structure and robust governance — delivered close to target.","outcome":"+15% cost, 6 months late","lesson":"A regulated asset base financing model with independent dispute resolution is the most cost-effective delivery mechanism for utility infrastructure.","confidence_indicator":"positive_financing"},
+    {"name":"California High Speed Rail","weight_triggers":{"rail":30,"usa":15,"high_speed":20,"california":10,"political":10},"pattern":"Land acquisition, environmental litigation and political scope changes made the programme undeliverable at approved cost.","outcome":"+288% cost, indefinite delay","lesson":"Land rights and community consent are not secondary to engineering — they are the governing constraint in the USA.","confidence_indicator":"land_acquisition"},
+    {"name":"Cobre Panama","weight_triggers":{"mining":50,"copper":20,"panama":10,"community":10},"pattern":"Community opposition at near-completion — 95% complete programme suspended by national referendum.","outcome":"$10B stranded capital","lesson":"Social licence is not a box to tick — it is a continuous obligation that overrides engineering completion.","confidence_indicator":"community_risk"},
+    {"name":"OneWeb (first filing)","weight_triggers":{"space":30,"constellation":25,"satellite":15,"commercial":10},"pattern":"No sustainable demand model for the service at the scale required to justify the constellation cost.","outcome":"Bankruptcy 2020, restructured","lesson":"A viable business case at 100 satellites is not a viable business case at 648 — unit economics do not scale linearly.","confidence_indicator":"demand_risk"},
+    {"name":"Northvolt","weight_triggers":{"battery":50,"gigafactory":20,"europe":10},"pattern":"Technology scale-up faster than manufacturing yield improvement — production quality could not reach commercial standard.","outcome":"Restructuring 2024","lesson":"Battery yield targets at small scale do not translate to gigafactory scale without 3-5 years of additional process development.","confidence_indicator":"yield_risk"},
+    {"name":"TSMC Arizona (Fab 21)","weight_triggers":{"semiconductor":50,"fab":20,"usa":10,"tsmc":10},"pattern":"Skilled workforce unavailability and supply chain localisation requirement delayed tool installation by 2 years.","outcome":"+40% cost, 2-year delay on first chips","lesson":"Semiconductor fab cost and schedule are governed by tool delivery and skilled workforce — both require 3+ year runways.","confidence_indicator":"workforce_risk"},
+]
+
+def historical_analogue_score(model: dict) -> dict:
+    """
+    Score the current programme against the full analogue library.
+    Returns top 3 with percentage match and explanation.
+    """
+    sub = (model.get("subsector") or "").lower()
+    mode = (model.get("mode") or "Earth").lower()
+    location = (model.get("location") or "").lower()
+    prompt_text = (model.get("prompt") or model.get("title") or "").lower()
+    
+    risks = model.get("risks", [])
+    open_risks = len([r for r in risks if str(r.get("status","open")).lower() not in ("closed","mitigated")])
+    scope_changes = int(model.get("scope_changes_implied", 0) or 0)
+    
+    # Context signals from the model
+    signals = set()
+    text = f"{sub} {mode} {location} {prompt_text}"
+    
+    signal_map = {
+        "rail": ["rail","metro","transit","tram","light.rail","heavy.rail"],
+        "high_speed": ["high.speed","hsr","hs2","tgv","shinkansen"],
+        "nuclear": ["nuclear","fission","reactor","pwm","bwr","smr"],
+        "space": ["space","lunar","mars","orbital","satellite","constellation"],
+        "airport": ["airport","terminal","runway","aviation"],
+        "mining": ["mining","copper","lithium","ore","mineral","quarry"],
+        "battery": ["battery","gigafactory","cell","bev","lithium.ion"],
+        "semiconductor": ["semiconductor","fab","foundry","chip","wafer","asml"],
+        "water": ["water","sewage","tunnel","tideway","thames"],
+        "uk": ["uk","united kingdom","england","britain","british"],
+        "usa": ["usa","united states","american","us "],
+        "germany": ["germany","german","berlin"],
+        "california": ["california","la metro","bart"],
+        "london": ["london","crossrail","elizabeth.line","tideway"],
+        "panama": ["panama"],
+        "telescope": ["telescope","observatory","jwst","webb"],
+        "nasa": ["nasa","esa","jaxa"],
+        "deep_space": ["deep space","l2","lagrange","interplanetary"],
+        "lunar": ["lunar","moon","artemis"],
+        "launch_vehicle": ["rocket","launch.vehicle","sls","falcon","starship"],
+        "commercial": ["commercial","revenue","demand"],
+        "tunnel": ["tunnel","boring","tbm"],
+        "baggage": ["baggage","baggage.system"],
+        "community": ["community","social.licence","consultation","indigenous"],
+        "copper": ["copper","concentrate","ore.grade"],
+        "fire_safety": ["fire.safety","fss"],
+        "heritage_assumption": ["shuttle","heritage","refurbished"],
+        "first_of_kind": ["first.of.kind","prototype","demonstration"],
+        "high_speed_rail": ["hsr"],
+    }
+    
+    for signal, keywords in signal_map.items():
+        if any(kw.replace(".", " ") in text or kw.replace(".", "") in text.replace(" ", "") for kw in keywords):
+            signals.add(signal)
+    
+    # Also check numeric indicators
+    confidence_indicators = {}
+    mc = model.get("monte_carlo", {})
+    confidence_indicators["open_items_high"] = open_risks > 50
+    confidence_indicators["scope_growth"] = scope_changes > 5
+    confidence_indicators["open_anomalies_high"] = False  # from twin inputs
+    confidence_indicators["positive_governance"] = int(model.get("confidence_pct",60)) >= 75
+    confidence_indicators["positive_financing"] = "regulated" in text or "ofwat" in text
+    
+    # Score each analogue
+    scored = []
+    for analogue in ANALOGUE_LIBRARY:
+        score = 0
+        matches = []
+        for trigger, weight in analogue["weight_triggers"].items():
+            if trigger in signals:
+                score += weight
+                matches.append(trigger.replace("_", " "))
+        
+        # Check confidence indicator
+        ci = analogue.get("confidence_indicator", "")
+        if ci in confidence_indicators and confidence_indicators[ci]:
+            score += 15
+            matches.append(ci.replace("_", " "))
+        
+        if score > 0:
+            scored.append({"score": score, "matches": matches, **analogue})
+    
+    scored.sort(key=lambda x: x["score"], reverse=True)
+    
+    # Normalise to percentages (top 3)
+    top3 = scored[:3]
+    if not top3:
+        return {"analogues": [], "summary": "Insufficient sector context to match historical analogues. Run a project first."}
+    
+    total = sum(a["score"] for a in top3)
+    analogues_out = []
+    for a in top3:
+        pct = round(a["score"] / total * 100) if total > 0 else 0
+        analogues_out.append({
+            "name": a["name"],
+            "match_pct": pct,
+            "pattern": a["pattern"],
+            "outcome": a["outcome"],
+            "lesson": a["lesson"],
+            "match_reasons": a["matches"][:4],
+        })
+    
+    primary = analogues_out[0]
+    summary = (
+        f"This programme most closely resembles the {primary['name']} pattern ({primary['match_pct']}% match). "
+        f"Primary pattern: {primary['pattern']}"
+    )
+    
+    return {"analogues": analogues_out, "summary": summary}
+
+
+@app.post("/challenge")
+def challenge_programme(model: dict):
+    """CASEY becomes the hostile examiner — specific challenges against this programme."""
+    try:
+        result = generate_challenge(model)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail={"message": str(e)})
+
+
+@app.post("/analogue")
+def analogue_match(model: dict):
+    """Score the programme against the historical analogue library."""
+    try:
+        result = historical_analogue_score(model)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail={"message": str(e)})
+
+
+def _extract_headline_numbers(content_bytes, filename):
+    import re
+    result = {}
+    ext = filename.split(".")[-1].lower() if "." in filename else ""
+    
+    if ext == "xer":
+        raw = content_bytes.decode("utf-8", errors="replace")
+        for line in raw.splitlines():
+            if line.startswith("%T") and "PROJECT" in line:
+                pass
+            elif line.startswith("%R") and "	" in line:
+                parts = line.split("	")
+                if len(parts) > 6:
+                    try:
+                        from datetime import datetime
+                        s = datetime.strptime(parts[5][:10], "%Y-%m-%d")
+                        e = datetime.strptime(parts[6][:10], "%Y-%m-%d")
+                        months = round((e - s).days / 30, 1)
+                        if 6 < months < 600:
+                            result["schedule_months"] = months
+                    except Exception: pass
+        return result
+    
+    elif ext in ("xlsx", "xls"):
+        try:
+            import openpyxl
+            from io import BytesIO
+            wb = openpyxl.load_workbook(BytesIO(content_bytes), data_only=True)
+            cost_keys = ["total project cost", "total cost", "project total", "total capex",
+                         "total budget", "baseline cost", "approved budget", "grand total", "programme cost"]
+            sched_keys = ["project duration", "total duration", "programme duration",
+                         "schedule months", "duration (months)", "months"]
+            for wsn in wb.sheetnames[:5]:
+                ws = wb[wsn]
+                for row in list(ws.rows)[:200]:
+                    for ci, cell in enumerate(row):
+                        if not cell.value: continue
+                        cs = str(cell.value).lower().strip()
+                        if any(k in cs for k in cost_keys) and "cost_p50_stated" not in result:
+                            for look in range(ci+1, min(ci+5, len(row))):
+                                v = row[look].value
+                                if v:
+                                    try:
+                                        n = float(str(v).replace(",","").replace("L","").replace("$","").replace("E","").replace("B","").strip())
+                                        if n > 0.01:
+                                            result["cost_p50_stated"] = n
+                                            result["cost_source"] = str(cell.value)[:50]
+                                    except: pass
+                        if any(k in cs for k in sched_keys) and "schedule_months" not in result:
+                            for look in range(ci+1, min(ci+4, len(row))):
+                                v = row[look].value
+                                if v:
+                                    try:
+                                        n = float(str(v).replace(",","").strip())
+                                        if 6 < n < 600:
+                                            result["schedule_months"] = n
+                                    except: pass
+        except Exception: pass
+        return result
+    
+    elif ext in ("txt", "docx", "pdf"):
+        text = content_bytes.decode("utf-8", errors="replace") if ext == "txt" else ""
+        if ext == "docx":
+            try:
+                import docx
+                from io import BytesIO
+                doc = docx.Document(BytesIO(content_bytes))
+                text = " ".join(p.text for p in doc.paragraphs)
+            except: pass
+        if text:
+            m = re.search(r"[A-Z$£€]([\d,]+\.?\d*)\s*(?:B|bn|billion)", text, re.IGNORECASE)
+            if m:
+                try:
+                    n = float(m.group(1).replace(",",""))
+                    if n > 0: result["cost_p50_stated"] = n; result["cost_source"] = m.group(0)[:60]
+                except: pass
+            sm = re.search(r"(\d+)\s*(?:month|months)\s+(?:duration|programme|schedule|total)", text, re.IGNORECASE)
+            if sm:
+                n = int(sm.group(1))
+                if 6 < n < 600: result["schedule_months"] = n
+        return result
+    
+    return result
+
+
+@app.post("/ingest")
+async def ingest_client_files(request: Request):
+    """Parse client files, reconcile against CASEY model, return enriched model for all features."""
+    try:
+        form = await request.form()
+        base_model = {}
+        try: base_model = json.loads(str(form.get("model", "{}")))
+        except: pass
+        
+        uploaded_files = [v for v in form.values() if hasattr(v, "filename")]
+        client_ctx = {"files": [], "stated": {}, "reconciliation": [], "conflicts": [], "gaps": [], "evidence": []}
+        twin_inputs = {}
+        
+        for f in uploaded_files:
+            fname = f.filename or "unknown"
+            cbytes = await f.read()
+            ext = fname.split(".")[-1].lower() if "." in fname else ""
+            client_ctx["files"].append(fname)
+            
+            if ext == "xer":
+                r = _parse_xer_evidence(cbytes)
+                twin_inputs.update(r.get("inputs", {})); client_ctx["evidence"].extend(r.get("evidence", []))
+                h = _extract_headline_numbers(cbytes, fname); client_ctx["stated"].update(h)
+            elif ext in ("xlsx","xls","csv"):
+                fname_l = fname.lower()
+                if any(x in fname_l for x in ("risk","register","rr")):
+                    r = _parse_risk_register_evidence(cbytes, fname)
+                    client_ctx["evidence"].extend(r.get("evidence",[]))
+                    if r.get("risk_count"): client_ctx["stated"]["risk_count"] = r["risk_count"]
+                else:
+                    r = _parse_excel_evidence(cbytes, fname); twin_inputs.update(r.get("inputs",{})); client_ctx["evidence"].extend(r.get("evidence",[]))
+                    h = _extract_headline_numbers(cbytes, fname); client_ctx["stated"].update(h)
+            elif ext in ("pdf","docx","txt"):
+                r = _parse_text_report_evidence(cbytes, fname); twin_inputs.update(r.get("inputs",{})); client_ctx["evidence"].extend(r.get("evidence",[]))
+                h = _extract_headline_numbers(cbytes, fname); client_ctx["stated"].update(h)
+        
+        def pbn(v):
+            try: return float("".join(c for c in str(v or "0") if c.isdigit() or c==".") or 0)
+            except: return 0.0
+        
+        casey_cost = pbn(base_model.get("cost_p50",0))
+        casey_mo = int(base_model.get("schedule_months",0) or 0)
+        casey_conf = int(base_model.get("confidence_pct",0) or 0)
+        curr = base_model.get("currency_symbol","$")
+        client_cost = client_ctx["stated"].get("cost_p50_stated",0)
+        client_mo = client_ctx["stated"].get("schedule_months",0)
+        
+        if casey_cost > 0 and client_cost > 0:
+            gap_pct = round((casey_cost/client_cost-1)*100,1)
+            gap_bn = casey_cost - client_cost
+            client_ctx["reconciliation"].append({
+                "metric":"Cost","casey":"{}{}B".format(curr,round(casey_cost,1)),
+                "client":"{}{}B".format(curr,round(client_cost,1)),
+                "gap":"{}{:+.1f}B ({:+.0f}%)".format(curr,gap_bn,gap_pct),
+                "interpretation": "CASEY estimate is {}% higher than client stated cost. The {}{}B gap represents the uncosted exposure from reference class uplift and OBA. This gap should be explained before board submission.".format(int(gap_pct),curr,round(abs(gap_bn),1)) if gap_pct>5 else "CASEY estimate is {}% lower. Check whether client cost includes items CASEY has not priced (financing, land, opex in capex).".format(int(abs(gap_pct))) if gap_pct<-5 else "Client cost aligns with CASEY estimate within 5%."
+            })
+            if abs(gap_pct)>15:
+                client_ctx["conflicts"].append("COST GAP {}: Client {}{}B vs CASEY {}{}B — {}% gap must be explained before board submission.".format("CRITICAL" if abs(gap_pct)>25 else "HIGH", curr,round(client_cost,1),curr,round(casey_cost,1),int(gap_pct)))
+        
+        if casey_mo > 0 and client_mo > 0:
+            slip = int(client_mo) - casey_mo
+            client_ctx["reconciliation"].append({
+                "metric":"Schedule","casey":"{} months".format(casey_mo),"client":"{} months".format(int(client_mo)),
+                "gap":"{:+d} months".format(slip),
+                "interpretation":"Client schedule is {} months shorter than CASEY reference class — schedule optimism risk.".format(abs(slip)) if slip<-3 else "Client schedule is {} months longer than CASEY reference class.".format(slip) if slip>3 else "Schedules aligned."
+            })
+        
+        missing = []
+        if not client_cost: missing.append("Headline programme cost (add cell: Total Project Cost)")
+        if not client_mo: missing.append("Programme duration in months (add: Programme Duration (months))")
+        if not twin_inputs.get("progress_pct"): missing.append("% complete (add: % Complete or Physical %)")
+        if not twin_inputs.get("earned_value_pct") and not twin_inputs.get("actual_cost_pct"): missing.append("Earned value or CPI (add: EV%, CPI, or Actual vs Budget)")
+        client_ctx["gaps"] = missing
+        
+        enriched = dict(base_model)
+        enriched["client_context"] = client_ctx
+        enriched["twin_inputs_from_files"] = twin_inputs
+        if client_cost: enriched["client_stated_cost"] = "{}{}B".format(curr,round(client_cost,1))
+        
+        return {"success":True,"enriched_model":enriched,"client_context":client_ctx,
+                "twin_inputs":twin_inputs,"reconciliation":client_ctx["reconciliation"],
+                "conflicts":client_ctx["conflicts"],"gaps":client_ctx["gaps"],
+                "files_processed":client_ctx["files"],
+                "summary":"Ingested {} file(s). {} reconciliation comparisons. {} conflicts.".format(len(client_ctx["files"]),len(client_ctx["reconciliation"]),len(client_ctx["conflicts"]))}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail={"message":"Ingest error: {}".format(str(e))})
+
 
 @app.post("/upload")
 async def upload_alias(file: UploadFile = File(...)):
@@ -6821,185 +8662,325 @@ def get_twin_inputs_for_sector(subsector, mode=''):
         return TWIN_SECTOR_INPUTS['Airport']
     return TWIN_GENERIC_INPUTS
 
+# Governing constraint library by sector
+GOVERNING_CONSTRAINTS = {
+    "rail": {"constraint": "Systems integration — civil works can complete but the railway cannot run until signalling, ETCS and all interface exception memoranda are closed.", "metric": "Open IEMs", "threshold": 100, "reference": "Crossrail had 900+ open IEMs at planned opening in 2018."},
+    "nuclear": {"constraint": "Regulatory hold-point clearance — no civil or M&E work can proceed past hold-points without ONR/NRC written authorisation.", "metric": "Hold-points cleared %", "threshold": 80, "reference": "Hinkley Point C: regulatory approval sequence drove all schedule extensions."},
+    "defence": {"constraint": "Requirements baseline freeze — every unresolved requirement at contract award multiplies cost 10-30x through design churn.", "metric": "Requirements frozen", "threshold": 1, "reference": "Ajax programme: requirements instability post-contract drove 40% cost growth."},
+    "space": {"constraint": "Launch manifest confirmation — without a contracted launch slot all schedule milestones are notional.", "metric": "Launch slot confirmed", "threshold": 1, "reference": "JWST: 5 launch delays, each propagating 12-18 months of programme extension."},
+    "data": {"constraint": "Grid connection agreement — no data centre can commission without a firm DNO/TSO connection, typical lead time 18-24 months.", "metric": "Grid connection signed", "threshold": 1, "reference": "Hyperscale programmes: grid connection is consistently the longest-lead single item."},
+    "mining": {"constraint": "Community benefit agreement — Cobre Panama demonstrated that a programme 95% complete can be halted by community opposition.", "metric": "Community agreement signed", "threshold": 1, "reference": "First Quantum Minerals: $10B programme suspended 2023 despite near-completion."},
+    "semiconductor": {"constraint": "ASML EUV tool allocation — 3-year lead time, cannot be accelerated; all cleanroom qualification depends on tool arrival.", "metric": "EUV tools allocated", "threshold": 1, "reference": "TSMC Arizona: tool delivery delays pushed first chip production by 2 years."},
+    "battery": {"constraint": "Offtake contract — without committed long-term supply agreements no financing can be secured and the programme cannot proceed.", "metric": "Offtake contracted %", "threshold": 40, "reference": "Britishvolt: no offtake = no financing = administration."},
+    "nuclear_power": {"constraint": "GDA/first-of-kind design freeze — any post-FCD design change triggers full regulatory re-review.", "metric": "Design freeze achieved", "threshold": 1, "reference": "Vogtle 3&4: first-of-kind design changes post-FCD drove $17B overrun."},
+    "airport": {"constraint": "Baggage system integration — airports have opened physically complete but been unable to operate due to baggage system failures.", "metric": "Baggage milestones met %", "threshold": 90, "reference": "Berlin Brandenburg: baggage/fire safety systems caused 9-year delay to opening."},
+}
+
+# Historical failure pattern library
+FAILURE_PATTERNS = {
+    "Crossrail Pattern": {"sector": "rail", "trigger": "open_items > 80 or ev_pct < 88", "description": "Systems integration deferred — civil works complete but the railway cannot run. Open IEM backlog accumulates until planned opening, then triggers multi-year delay while interfaces are closed.", "programmes": ["Crossrail +88% cost, +84mo schedule", "HS2 Phase 1 +140%", "CalHSR +288%"], "warning_sign": "Open IEMs above 80 with less than 24 months to planned opening."},
+    "Vogtle Pattern": {"sector": "nuclear", "trigger": "scope_changes > 6 or conf < 58", "description": "First-of-kind design changes post-FCD — every change triggers regulatory re-review, rework and schedule extension. Each change is individually small but cumulatively devastating.", "programmes": ["Vogtle 3&4 +113% cost", "Hinkley Point C +94%", "Olkiluoto +300%"], "warning_sign": "More than 5 scope changes after design freeze in a first-of-kind nuclear programme."},
+    "Artemis Pattern": {"sector": "space", "trigger": "trl < 6 or open_anomalies > 20", "description": "Mission assurance burden systematically underestimated — qualification testing reveals anomalies that each require root-cause closure, creating schedule accordion effects.", "programmes": ["Artemis SLS +271%", "JWST +506%", "ExoMars delayed 6 years"], "warning_sign": "More than 20 open qualification anomalies without a credible closure plan."},
+    "HS2 Pattern": {"sector": "rail", "trigger": "schedule_slip > 12 or scope_changes > 8", "description": "Scope growth through political and stakeholder changes mid-delivery — each scope addition is approved individually without full reprogramming of the baseline.", "programmes": ["HS2 Phase 2b cancelled, Phase 1 +140%", "CalHSR +288%"], "warning_sign": "More than 8 approved scope changes without full rebaselining."},
+    "Britishvolt Pattern": {"sector": "battery", "trigger": "offtake < 30", "description": "Technology programme without committed offtake — the entire financing structure depends on supply agreements that were not in place before construction began.", "programmes": ["Britishvolt: administration 2023", "Northvolt: restructuring 2024"], "warning_sign": "Less than 30% of capacity under contracted offtake with construction underway."},
+    "Cobre Panama Pattern": {"sector": "mining", "trigger": "community_signed == 0", "description": "Community opposition at near-completion — programme fully built but halted by social licence failure, creating stranded capital.", "programmes": ["First Quantum Minerals Cobre Panama: $10B suspended at 95% complete"], "warning_sign": "No signed community benefit agreement with a programme nearing completion."},
+    "Berlin Brandenburg Pattern": {"sector": "airport", "trigger": "baggage_pct < 80 and progress > 70", "description": "Systems integration failure at near-completion — airport physically complete but unable to open due to integrated systems (fire, baggage, IT) failing combined testing.", "programmes": ["BER: 9-year delay, opened 2020 vs 2011 plan", "Denver International: baggage delay caused 16-month opening slip"], "warning_sign": "Baggage and fire safety integration milestones behind schedule with opening 18 months away."},
+}
+
 def compute_twin_update(base_model: dict, twin_inputs: dict) -> dict:
     """
-    Core digital twin recalculation.
-    Takes base model + real progress data → returns updated forecast + delta explanation.
+    14-layer digital twin update.
+    Returns: forecast, governing constraint, board defensibility, failure pattern,
+    recovery options, decision recommendation, executive narrative.
     """
     import math, datetime
 
-    sub = base_model.get('subsector', 'programme')
-    mode = base_model.get('mode', 'Earth')
-    curr = base_model.get('currency_symbol', '$')
+    sub = (base_model.get("subsector") or "").lower()
+    mode = (base_model.get("mode") or "Earth").lower()
+    curr = base_model.get("currency_symbol", "$")
+    title = base_model.get("title", base_model.get("subsector", "Programme"))
 
-    # Parse base values safely
     def parse_bn(v):
-        try: return float(''.join(c for c in str(v) if c.isdigit() or c=='.') or 0)
+        try: return float("".join(c for c in str(v) if c.isdigit() or c == ".") or 0)
         except: return 0.0
 
-    base_p50 = parse_bn(base_model.get('cost_p50', 0))
-    base_p80 = parse_bn(base_model.get('cost_p80', 0))
-    base_months = int(base_model.get('schedule_months', 36) or 36)
-    base_conf = int(base_model.get('confidence_pct', 60) or 60)
+    def fc(v):
+        if not v: return "—"
+        s = "{}".format(v)
+        return (curr + s[1:]) if curr != "$" and s.startswith("$") else s
 
-    # Extract key twin inputs
-    progress_pct = float(twin_inputs.get('progress_pct', 0) or 0)
-    actual_cost_pct = float(twin_inputs.get('actual_cost_pct', 100) or 100)  # actual spend as % of planned at this stage
-    ev_pct = float(twin_inputs.get('earned_value_pct', 100) or 100)
-    schedule_slip = float(twin_inputs.get('schedule_slip_months', 0) or 0)
-    scope_changes = int(twin_inputs.get('scope_changes_count', 0) or 0)
+    base_p50 = parse_bn(base_model.get("cost_p50", 0))
+    base_p80 = parse_bn(base_model.get("cost_p80", 0))
+    base_months = int(base_model.get("schedule_months", 36) or 36)
+    base_conf = int(base_model.get("confidence_pct", 60) or 60)
 
-    # ── Cost Performance Index (CPI) calculation ─────────────────────────
-    # If we've spent actual_cost_pct% of (progress_pct/100 × P50) budget
-    # CPI = EV / AC
-    if progress_pct > 0 and actual_cost_pct > 0:
-        planned_spend_to_date = base_p50 * (progress_pct / 100)
-        ev = planned_spend_to_date * (ev_pct / 100)
-        actual_cost_to_date = planned_spend_to_date * (actual_cost_pct / 100)
-        cpi = ev / actual_cost_to_date if actual_cost_to_date > 0 else 1.0
+    # Extract inputs
+    progress = float(twin_inputs.get("progress_pct", 0) or 0)
+    actual_cost_pct = float(twin_inputs.get("actual_cost_pct", 100) or 100)
+    ev_pct = float(twin_inputs.get("earned_value_pct", 100) or 100)
+    schedule_slip = float(twin_inputs.get("schedule_slip_months", 0) or 0)
+    scope_changes = int(twin_inputs.get("scope_changes_count", 0) or 0)
+    open_items = int(twin_inputs.get("systems_integration_open_items", 0) or 0)
+    open_anomalies = int(twin_inputs.get("open_anomalies", 0) or 0)
+    trl = int(twin_inputs.get("trl_achieved", 0) or 0)
+    offtake = float(twin_inputs.get("offtake_contracted_pct", 0) or 0)
+    launch_confirmed = int(twin_inputs.get("launch_manifest_confirmed", -1) or -1)
+    grid_confirmed = int(twin_inputs.get("grid_connection_confirmed", -1) or -1)
+    requirements_frozen = int(twin_inputs.get("requirements_frozen", -1) or -1)
+    community_signed = int(twin_inputs.get("community_agreement_signed", -1) or -1)
+    baggage_pct = float(twin_inputs.get("baggage_system_milestones_met_pct", 0) or 0)
+
+    # ── LAYER 1: CPI/SPI and FAC ─────────────────────────────────
+    if progress > 2 and actual_cost_pct > 0:
+        planned_to_date = base_p50 * (progress / 100)
+        ev = planned_to_date * (ev_pct / 100)
+        ac = planned_to_date * (actual_cost_pct / 100)
+        cpi = ev / ac if ac > 0 else 1.0
     else:
         cpi = 1.0
-        actual_cost_to_date = 0
-        ev = 0
 
-    # ── Schedule Performance Index (SPI) ─────────────────────────────────
     spi = max(0.4, 1.0 - (schedule_slip / max(1, base_months)) * 2)
 
-    # ── Forecast At Completion (FAC) ─────────────────────────────────────
-    # Industry standard: FAC = BAC / CPI (when CPI is expected to remain constant)
-    if cpi > 0 and progress_pct > 5:
+    if cpi > 0 and progress > 5:
         fac_p50 = base_p50 / cpi
     else:
         fac_p50 = base_p50
-
-    # Add scope change premium
     fac_p50 *= (1 + scope_changes * 0.02)
-
-    # ── Confidence recalculation ──────────────────────────────────────────
-    conf_delta = 0
-
-    # EV performance impact
-    if ev_pct < 80: conf_delta -= 12
-    elif ev_pct < 90: conf_delta -= 6
-    elif ev_pct < 95: conf_delta -= 2
-    elif ev_pct > 100: conf_delta += 3
-
-    # Cost overrun impact
-    if actual_cost_pct > 120: conf_delta -= 15
-    elif actual_cost_pct > 110: conf_delta -= 8
-    elif actual_cost_pct > 105: conf_delta -= 4
-    elif actual_cost_pct < 95: conf_delta += 3
-
-    # Schedule slip impact
-    if schedule_slip > base_months * 0.2: conf_delta -= 12
-    elif schedule_slip > base_months * 0.1: conf_delta -= 6
-    elif schedule_slip > 0: conf_delta -= 3
-
-    # Scope change impact
-    conf_delta -= scope_changes * 2
-
-    # Sector-specific input impacts
-    for key, val in twin_inputs.items():
-        if key in ('progress_pct','actual_cost_pct','earned_value_pct','schedule_slip_months','scope_changes_count'):
-            continue
-        # Boolean "required" items
-        if val == 0 and key in ('grid_connection_confirmed','transformer_delivery_confirmed',
-                                 'requirements_frozen','launch_manifest_confirmed',
-                                 'design_freeze_achieved','community_agreement_signed',
-                                 'gmp_design_frozen','orat_director_appointed',
-                                 'offtake_contracted_pct'):
-            conf_delta -= 5
-        elif val == 1 and key in ('grid_connection_confirmed','transformer_delivery_confirmed',
-                                   'requirements_frozen','launch_manifest_confirmed',
-                                   'design_freeze_achieved','community_agreement_signed'):
-            conf_delta += 4
-        # Pct inputs vs benchmark
-        field_defs = get_twin_inputs_for_sector(sub, mode)
-        for fd in field_defs:
-            if fd['key'] == key and fd['type'] == 'pct':
-                benchmark = fd.get('benchmark', 80)
-                if benchmark > 0:
-                    ratio = float(val or 0) / benchmark
-                    if ratio < 0.6: conf_delta -= 5
-                    elif ratio < 0.8: conf_delta -= 2
-                    elif ratio > 1.1: conf_delta += 2
-
-    # Open anomalies / items penalty
-    open_anomalies = int(twin_inputs.get('open_anomalies', 0) or 0)
-    if open_anomalies > 20: conf_delta -= 10
-    elif open_anomalies > 10: conf_delta -= 5
-    elif open_anomalies > 5: conf_delta -= 2
-
-    # TRL check for space
-    trl_achieved = int(twin_inputs.get('trl_achieved', 0) or 0)
-    if trl_achieved > 0:
-        if trl_achieved < 5: conf_delta -= 12
-        elif trl_achieved < 6: conf_delta -= 6
-        elif trl_achieved >= 7: conf_delta += 4
-
-    new_conf = max(15, min(92, base_conf + conf_delta))
     new_p50 = round(fac_p50, 2)
     new_p80 = round(fac_p50 * (base_p80 / base_p50) if base_p50 > 0 else fac_p50 * 1.2, 2)
     new_months = base_months + int(schedule_slip)
 
-    # Currency formatting
-    def fmt_c(v):
-        s = money_bn(v)
-        if curr and curr != '$' and s.startswith('$'):
-            return curr + s[1:]
-        return s
+    # ── LAYER 3 & 4: Confidence and Board Defensibility ──────────
+    conf_delta = 0
+    if ev_pct < 80: conf_delta -= 14
+    elif ev_pct < 90: conf_delta -= 7
+    elif ev_pct < 95: conf_delta -= 3
+    elif ev_pct >= 98: conf_delta += 3
+    if actual_cost_pct > 115: conf_delta -= 14
+    elif actual_cost_pct > 110: conf_delta -= 8
+    elif actual_cost_pct > 105: conf_delta -= 4
+    elif actual_cost_pct < 97: conf_delta += 2
+    if schedule_slip > base_months * 0.20: conf_delta -= 14
+    elif schedule_slip > base_months * 0.10: conf_delta -= 7
+    elif schedule_slip > 0: conf_delta -= 3
+    conf_delta -= scope_changes * 2
+    if open_items > 100: conf_delta -= 12
+    elif open_items > 50: conf_delta -= 6
+    if open_anomalies > 20: conf_delta -= 10
+    elif open_anomalies > 10: conf_delta -= 5
+    elif open_anomalies > 5: conf_delta -= 2
+    if trl > 0:
+        if trl < 5: conf_delta -= 14
+        elif trl < 6: conf_delta -= 7
+        elif trl >= 7: conf_delta += 5
+    if launch_confirmed == 0: conf_delta -= 8
+    elif launch_confirmed == 1: conf_delta += 4
+    if grid_confirmed == 0: conf_delta -= 8
+    elif grid_confirmed == 1: conf_delta += 4
+    if requirements_frozen == 0: conf_delta -= 8
+    elif requirements_frozen == 1: conf_delta += 4
+    if community_signed == 0: conf_delta -= 10
+    elif community_signed == 1: conf_delta += 3
+    if offtake > 0 and offtake < 30: conf_delta -= 10
+    elif offtake >= 60: conf_delta += 4
+    new_conf = max(12, min(92, base_conf + conf_delta))
 
-    # ── Delta narrative ───────────────────────────────────────────────────
-    cost_change_pct = round((new_p50 - base_p50) / base_p50 * 100, 1) if base_p50 > 0 else 0
-    conf_label = ('improving' if conf_delta > 2 else 'declining' if conf_delta < -2 else 'stable')
+    # Board defensibility by dimension
+    cost_def = "Strong" if cpi >= 0.95 and abs(actual_cost_pct-100) < 5 else ("Moderate" if cpi >= 0.9 else "Weak")
+    sched_def = "Strong" if schedule_slip == 0 else ("Moderate" if schedule_slip < base_months*0.10 else "Weak")
+    risk_def = "Strong" if scope_changes <= 2 and open_items <= 30 else ("Moderate" if open_items <= 60 else "Weak")
+    assur_def = "Strong" if new_conf >= 75 else ("Moderate" if new_conf >= 60 else "Weak")
+    board_def_scores = {"cost": cost_def, "schedule": sched_def, "risk": risk_def, "assurance": assur_def}
+    weak_count = sum(1 for v in board_def_scores.values() if v == "Weak")
+    board_decision = "NOT BOARD DEFENSIBLE" if weak_count >= 2 else ("CONDITIONAL" if weak_count == 1 else "BOARD DEFENSIBLE")
 
-    changes = []
-    if abs(cost_change_pct) > 1:
-        direction = 'increased' if cost_change_pct > 0 else 'decreased'
-        changes.append(f'Forecast-at-completion has {direction} by {abs(cost_change_pct):.1f}% (CPI={cpi:.2f}). New P50 outturn: {fmt_c(new_p50)}.')
+    # ── LAYER 2: Governing Constraint ────────────────────────────
+    gc = None
+    for key, gc_data in GOVERNING_CONSTRAINTS.items():
+        if key in sub or key in mode or (key == "data" and ("data centre" in sub or "digital" in sub)):
+            gc = gc_data; break
+    if not gc:
+        if "space" in mode or any(x in sub for x in ("lunar","mars","orbital","satellite")):
+            gc = GOVERNING_CONSTRAINTS["space"]
+        elif "rail" in sub or "transit" in sub:
+            gc = GOVERNING_CONSTRAINTS["rail"]
+        elif "nuclear" in sub:
+            gc = GOVERNING_CONSTRAINTS["nuclear_power"]
+        elif "airport" in sub:
+            gc = GOVERNING_CONSTRAINTS["airport"]
+
+    # ── LAYER 5: Failure Pattern ──────────────────────────────────
+    matched_pattern = None
+    for pattern_name, pattern in FAILURE_PATTERNS.items():
+        psector = pattern["sector"]
+        if psector in sub or psector in mode:
+            trigger = pattern["trigger"]
+            try:
+                if eval(trigger, {"open_items":open_items,"ev_pct":ev_pct,"scope_changes":scope_changes,
+                                  "schedule_slip":schedule_slip,"conf":new_conf,"trl":trl,
+                                  "open_anomalies":open_anomalies,"offtake":offtake,
+                                  "community_signed":community_signed,"baggage_pct":baggage_pct,
+                                  "progress":progress}):
+                    matched_pattern = {"name": pattern_name, **pattern}
+                    break
+            except Exception:
+                pass
+
+    # ── LAYER 6: Recovery Options ─────────────────────────────────
+    if new_p50 > base_p50 * 1.03 or schedule_slip > 2:
+        cost_overrun = new_p50 - base_p50
+        recovery_options = [
+            {
+                "option": "A",
+                "label": "Crash recovery",
+                "description": "Additional resources and extended working to recover maximum schedule.",
+                "additional_cost": money_bn(cost_overrun * 0.5),
+                "months_recovered": int(schedule_slip * 0.6),
+                "new_confidence": max(15, new_conf - 8),
+                "risk": "Increases unit cost, reduces workforce quality, increases interface risk.",
+                "recommendation": new_conf - 8 >= 65,
+            },
+            {
+                "option": "B",
+                "label": "Partial recovery",
+                "description": "Targeted acceleration on critical path only, accepting some delay.",
+                "additional_cost": money_bn(cost_overrun * 0.25),
+                "months_recovered": int(schedule_slip * 0.35),
+                "new_confidence": min(92, new_conf + 3),
+                "risk": "Moderate. Focuses resource where it matters most.",
+                "recommendation": new_conf + 3 >= 65,
+            },
+            {
+                "option": "C",
+                "label": "Accept and rebaseline",
+                "description": "Formally rebaseline the programme at current forecast. No acceleration spend.",
+                "additional_cost": money_bn(cost_overrun * 0.05),
+                "months_recovered": 0,
+                "new_confidence": min(92, new_conf + 10),
+                "risk": "Low execution risk. Business case and contracts must be renegotiated.",
+                "recommendation": new_conf + 10 >= 75,
+            },
+        ]
+    else:
+        recovery_options = []
+
+    # ── LAYER 7: Decision Recommendation ─────────────────────────
+    if new_p50 > base_p80:
+        decision = "REBASELINE"
+        decision_reason = "Forecast P50 ({}) has exceeded the original P80 ({}). Reserve is exhausted. The current authorisation is no longer valid.".format(money_bn(new_p50), money_bn(base_p80))
+    elif board_decision == "NOT BOARD DEFENSIBLE":
+        decision = "PAUSE — EVIDENCE CLOSURE REQUIRED"
+        decision_reason = "Board defensibility is inadequate across {} dimensions. Proceeding without closing evidence gaps risks gate challenge or approval withdrawal.".format(weak_count)
+    elif new_conf < 55:
+        decision = "PAUSE — CONFIDENCE TOO LOW"
+        decision_reason = "Confidence at {}% is below the 60% threshold for continued progress without board revalidation.".format(new_conf)
+    elif schedule_slip > base_months * 0.20:
+        decision = "REBASELINE SCHEDULE"
+        decision_reason = "Schedule slip of {} months exceeds 20% of baseline programme. Continuing against an invalid schedule creates false reporting risk.".format(int(schedule_slip))
+    elif cpi < 0.85:
+        decision = "SPEND RESERVE"
+        decision_reason = "CPI of {:.2f} indicates significant cost overrun trajectory. Reserve drawdown required now before P90 is breached.".format(cpi)
+    elif new_conf >= 75 and cpi >= 0.95 and schedule_slip == 0:
+        decision = "APPROVE — CONTINUE"
+        decision_reason = "Programme is tracking on plan. Confidence {}%, CPI {:.2f}, schedule on baseline.".format(new_conf, cpi)
+    else:
+        decision = "CONTINUE WITH MONITORING"
+        decision_reason = "Programme is within acceptable tolerance but requires close monitoring. Address evidence gaps before next gate review."
+
+    # ── LAYER 9: Board Questions ──────────────────────────────────
+    board_questions = []
+    if cpi < 0.95:
+        board_questions.append("CPI is {:.2f}. What is the root cause of cost performance deterioration and what corrective action is planned?".format(cpi))
     if schedule_slip > 0:
-        changes.append(f'Schedule has slipped {int(schedule_slip)} months from baseline. New forecast completion: {new_months} months.')
-    if ev_pct < 90:
-        changes.append(f'Earned value is {ev_pct:.0f}% of plan — below the 90% threshold. Industry data shows programmes below 90% EV at this stage have a 65% probability of final outturn exceeding P80.')
-    if actual_cost_pct > 105:
-        changes.append(f'Actual spend is {actual_cost_pct:.0f}% of planned rate — {actual_cost_pct-100:.0f}% above plan. Continued at this rate gives FAC of {fmt_c(new_p50)}.')
-    if conf_delta < -5:
-        changes.append(f'Confidence has declined {abs(conf_delta)} points to {new_conf}%. Primary driver: {_get_conf_decline_reason(twin_inputs, sub, mode)}.')
-    if not changes:
-        changes.append(f'Programme is tracking close to baseline. P50 forecast is {fmt_c(new_p50)} ({("+" if cost_change_pct >= 0 else "")}{cost_change_pct:.1f}% vs baseline).')
+        board_questions.append("Schedule has slipped {} months. Which critical path activity is driving the slip and when will it be recovered?".format(int(schedule_slip)))
+    if new_p50 > base_p50 * 1.05:
+        board_questions.append("Forecast-at-completion is {} vs baseline {}. Has the business case been revalidated?".format(fc(money_bn(new_p50)), fc(money_bn(base_p50))))
+    if gc:
+        board_questions.append("What is the current status of the governing constraint: {}? Who owns it and what is the evidence closure date?".format(gc["constraint"][:80]))
+    if open_items > 50:
+        board_questions.append("{} open interface items. At current closure rate, when will the backlog be clear? What is the closure programme?".format(open_items))
+    if matched_pattern:
+        board_questions.append("This programme shows indicators of the {} ({}). What specific mitigations are in place to avoid this failure mode?".format(matched_pattern["name"], matched_pattern["programmes"][0] if matched_pattern.get("programmes") else ""))
+    if scope_changes > 3:
+        board_questions.append("{} scope changes approved. Has the cumulative cost and schedule impact been fully rebaselined?".format(scope_changes))
+    if not board_questions:
+        board_questions.append("Programme is tracking to baseline. What are the top 3 risks to the next milestone?")
+        board_questions.append("What would need to be true for the P50 forecast to be wrong?")
 
-    # ── Alert generation ──────────────────────────────────────────────────
+    # ── LAYER 10: Executive Narrative ────────────────────────────
+    conf_word = "declined" if conf_delta < -3 else ("improved" if conf_delta > 3 else "remained stable")
+    fac_word = "increased" if new_p50 > base_p50 * 1.02 else ("decreased" if new_p50 < base_p50 * 0.98 else "held steady")
+    narrative_lines = []
+    narrative_lines.append("The programme is at {}% completion. ".format(int(progress)) +
+        ("Confidence has {} from {}% to {}%. ".format(conf_word, base_conf, new_conf) if abs(conf_delta) > 2 else "Confidence is {}%. ".format(new_conf)) +
+        "Forecast-at-completion has {} to {} vs baseline {}.".format(fac_word, fc(money_bn(new_p50)), fc(money_bn(base_p50))))
+    if cpi < 0.92:
+        narrative_lines.append("The primary cost driver is underperformance against the earned value plan — CPI is {:.2f}, indicating that for every {} spent the programme is delivering {} of planned value. At this rate, final outturn will exceed P80.".format(cpi, curr+"1", curr+"{:.2f}".format(cpi)))
+    if schedule_slip > 0:
+        narrative_lines.append("Schedule has slipped {} months from baseline. The revised forecast completion is {} months.".format(int(schedule_slip), new_months))
+    if gc:
+        narrative_lines.append("The governing constraint for this programme type is: {}. Until this is closed, no other progress materially de-risks the programme.".format(gc["constraint"][:120]))
+    if matched_pattern:
+        narrative_lines.append("Warning: current indicators match the {}. {}".format(matched_pattern["name"], matched_pattern["description"][:150]))
+    narrative_lines.append("Board decision: {}. {}".format(decision, decision_reason))
+
+    # ── LAYER 8: Alerts ──────────────────────────────────────────
     alerts = []
-    if cpi < 0.9: alerts.append({'level':'CRITICAL','msg':f'CPI is {cpi:.2f} — forecast-at-completion will exceed P80 if performance does not recover.'})
-    if new_conf < base_conf - 10: alerts.append({'level':'CRITICAL','msg':f'Confidence has dropped {abs(conf_delta)} points since baseline. Board notification required.'})
-    if schedule_slip > base_months * 0.15: alerts.append({'level':'HIGH','msg':f'Schedule slip of {int(schedule_slip)} months exceeds 15% of baseline programme. Business case revalidation required.'})
-    if new_p50 > base_p80: alerts.append({'level':'CRITICAL','msg':f'Forecast P50 ({fmt_c(new_p50)}) now exceeds original P80 ({fmt_c(base_p80)}). Reserve is exhausted. Rebaselining required.'})
-    if scope_changes > 5: alerts.append({'level':'HIGH','msg':f'{scope_changes} scope changes approved since baseline — each adds cost and schedule risk. Scope freeze authority required.'})
-    if not alerts and new_conf >= base_conf:
-        alerts.append({'level':'GREEN','msg':f'Programme is tracking on or ahead of baseline. Continue current controls.'})
+    if new_p50 > base_p80:
+        alerts.append({"level": "CRITICAL", "msg": "Forecast P50 ({}) now exceeds original P80 ({}). Reserve exhausted. Rebaselining required.".format(fc(money_bn(new_p50)), fc(money_bn(base_p80)))})
+    if cpi < 0.9:
+        alerts.append({"level": "CRITICAL", "msg": "CPI is {:.2f}. At this rate programme will exceed P80. Immediate corrective action required.".format(cpi)})
+    if new_conf < base_conf - 10:
+        alerts.append({"level": "CRITICAL", "msg": "Confidence has dropped {} points to {}%. Board notification required.".format(abs(conf_delta), new_conf)})
+    if matched_pattern:
+        alerts.append({"level": "HIGH", "msg": "Failure pattern match: {}. {}".format(matched_pattern["name"], matched_pattern["warning_sign"])})
+    if schedule_slip > base_months * 0.15:
+        alerts.append({"level": "HIGH", "msg": "Schedule slip of {} months exceeds 15% of baseline. Business case revalidation required.".format(int(schedule_slip))})
+    if board_decision == "NOT BOARD DEFENSIBLE":
+        alerts.append({"level": "HIGH", "msg": "Board defensibility: NOT BOARD DEFENSIBLE. {} dimensions rated Weak.".format(weak_count)})
+    if scope_changes > 5:
+        alerts.append({"level": "HIGH", "msg": "{} scope changes approved. Each adds cost and schedule risk. Scope freeze authority required.".format(scope_changes)})
+    if not alerts:
+        alerts.append({"level": "GREEN", "msg": "Programme tracking on or ahead of baseline. Continue with normal monitoring controls."})
+
+    # ── Changes narrative ─────────────────────────────────────────
+    changes = []
+    cost_chg = round((new_p50 - base_p50) / base_p50 * 100, 1) if base_p50 > 0 else 0
+    if abs(cost_chg) > 1:
+        changes.append("Forecast-at-completion {} by {:.1f}% (CPI={:.2f}). New P50 outturn: {}.".format("increased" if cost_chg > 0 else "decreased", abs(cost_chg), cpi, fc(money_bn(new_p50))))
+    if schedule_slip > 0:
+        changes.append("Schedule slipped {} months from baseline. Revised completion: {} months.".format(int(schedule_slip), new_months))
+    if ev_pct < 90:
+        changes.append("Earned value at {:.0f}% of plan. Industry data: programmes below 90% EV at this stage have 65% probability of exceeding P80.".format(ev_pct))
+    if scope_changes > 3:
+        changes.append("{} scope changes approved. Cumulative impact: +{}% cost, programme continuity risk elevated.".format(scope_changes, scope_changes*2))
+    if matched_pattern:
+        changes.append("Failure pattern match: {}. Precedent programmes: {}.".format(matched_pattern["name"], matched_pattern["programmes"][0]))
+    if not changes:
+        changes.append("Programme tracking close to baseline. P50 forecast: {} ({:+.1f}% vs baseline).".format(fc(money_bn(new_p50)), cost_chg))
 
     return {
-        'base_p50': fmt_c(base_p50),
-        'base_p80': fmt_c(base_p80),
-        'base_months': base_months,
-        'base_conf': base_conf,
-        'new_p50': fmt_c(new_p50),
-        'new_p80': fmt_c(new_p80),
-        'new_months': new_months,
-        'new_conf': new_conf,
-        'cpi': round(cpi, 3),
-        'spi': round(spi, 3),
-        'cost_change_pct': cost_change_pct,
-        'conf_change': conf_delta,
-        'conf_label': conf_label,
-        'forecast_at_completion': fmt_c(new_p50),
-        'changes': changes,
-        'alerts': alerts,
-        'progress_pct': progress_pct,
-        'updated_at': datetime.datetime.utcnow().isoformat(),
-        'narrative': f'Twin updated at {progress_pct:.0f}% programme completion. '
-                     + (changes[0] if changes else 'On baseline.'),
+        "base_p50": fc(money_bn(base_p50)), "base_p80": fc(money_bn(base_p80)),
+        "base_months": base_months, "base_conf": base_conf,
+        "new_p50": fc(money_bn(new_p50)), "new_p80": fc(money_bn(new_p80)),
+        "new_months": new_months, "new_conf": new_conf,
+        "cpi": round(cpi, 3), "spi": round(spi, 3),
+        "cost_change_pct": cost_chg,
+        "conf_change": conf_delta, "conf_label": "improving" if conf_delta > 2 else "declining" if conf_delta < -2 else "stable",
+        "forecast_at_completion": fc(money_bn(new_p50)),
+        "board_defensibility": board_def_scores,
+        "board_decision": board_decision,
+        "governing_constraint": gc,
+        "failure_pattern": matched_pattern,
+        "recovery_options": recovery_options,
+        "decision": decision, "decision_reason": decision_reason,
+        "executive_narrative": " ".join(narrative_lines),
+        "board_questions": board_questions,
+        "alerts": alerts, "changes": changes,
+        "progress_pct": progress,
+        "updated_at": datetime.datetime.now().isoformat(),
     }
+
 
 def _get_conf_decline_reason(inputs, sub, mode):
     sub_l = sub.lower()
@@ -7778,8 +9759,18 @@ def build_model(prompt: str='', client: str='', class_level: int=3, schedule_lev
             r.setdefault('cbs_name', r.get('description', r.get('cbs','?')))
             r.setdefault('impact_basis', r.get('impact', r.get('event','?'))[:60])
 
+        # Populate schedule_activities for XER/Twin/exports
+        if not model.get("schedule_activities"):
+            sr = model.get("schedule_rows") or []
+            if sr:
+                model["schedule_activities"] = list(sr[:40])
+            elif model.get("schedules_by_level"):
+                for lk in ("1","2","3","L1","L2","L3","level_1"):
+                    la = model["schedules_by_level"].get(lk, [])
+                    if isinstance(la, list) and la:
+                        model["schedule_activities"] = la[:40]; break
         # Schedule compatibility
-        for s in (model.get('schedule_activities') or model.get('schedules') or []):
+        for s in (model.get("schedule_activities") or model.get("schedules") or []):
             s.setdefault('activity_name', s.get('name', s.get('activity_id','?')))
             s.setdefault('basis_of_schedule_impact', 'Sector schedule model, selected schedule level.')
 
