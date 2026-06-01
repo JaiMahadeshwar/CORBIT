@@ -6210,6 +6210,23 @@ def stream(data:bytes, media:str, filename:str):
     )
 
 
+def stream_error(msg: str = "Export failed"):
+    """Return a CORS-safe JSON error when an export function crashes."""
+    import json as _j
+    body = _j.dumps({"error": msg, "ok": False}).encode()
+    return StreamingResponse(
+        BytesIO(body),
+        media_type="application/json",
+        status_code=500,
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization",
+            "Access-Control-Expose-Headers": "Content-Disposition, Content-Type",
+        }
+    )
+
+
 
 
 @app.get("/v26/launch-readiness")
@@ -6425,7 +6442,11 @@ def export_xer(model:Dict[str,Any]):
     except Exception as _ex:
         return stream_error("XER export failed: "+str(_ex)[:100])
 @app.post("/export/word")
-def export_word(model:Dict[str,Any]): return stream(word_bytes(model),"application/vnd.openxmlformats-officedocument.wordprocessingml.document","CASEY_Executive_Board_Report.docx")
+def export_word(model:Dict[str,Any]):
+    try:
+        return stream(word_bytes(model),"application/vnd.openxmlformats-officedocument.wordprocessingml.document","CASEY_Executive_Board_Report.docx")
+    except Exception as _ex:
+        return stream_error("Word export failed: "+str(_ex)[:100])
 @app.post("/export/pdf")
 def export_pdf(model:Dict[str,Any]):
     try:
@@ -6433,7 +6454,11 @@ def export_pdf(model:Dict[str,Any]):
     except Exception as _ex:
         return stream_error("PDF export failed: "+str(_ex)[:100])
 @app.post("/export/pptx")
-def export_pptx(model:Dict[str,Any]): return stream(pptx_bytes(model),"application/vnd.openxmlformats-officedocument.presentationml.presentation","CASEY_Board_Deck_Elite.pptx")
+def export_pptx(model:Dict[str,Any]):
+    try:
+        return stream(pptx_bytes(model),"application/vnd.openxmlformats-officedocument.presentationml.presentation","CASEY_Board_Deck_Elite.pptx")
+    except Exception as _ex:
+        return stream_error("PPTX export failed: "+str(_ex)[:100])
 @app.post("/export/json")
 def export_json(model:Dict[str,Any]): return stream(json.dumps(model,indent=2).encode(),"application/json","CASEY_TITAN_X_v26_Model.json")
 @app.post("/export/all")
@@ -6743,7 +6768,10 @@ def qcra_qsra_bytes(model: dict) -> bytes:
 
 @app.post("/export/qcra-qsra")
 def export_qcra_qsra(model:Dict[str,Any]):
-    return stream(qcra_qsra_bytes(model),"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","CASEY_QCRA_QSRA.xlsx")
+    try:
+        return stream(qcra_qsra_bytes(model),"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","CASEY_QCRA_QSRA.xlsx")
+    except Exception as _ex:
+        return stream_error("QCRA/QSRA export failed: "+str(_ex)[:100])
 @app.get("/twin/inputs/{subsector}")
 def twin_get_inputs(subsector: str, mode: str = "Earth"):
     """Get the sector-specific twin input fields for a given programme."""
@@ -7973,6 +8001,70 @@ def _v107_export_block(message: str):
 
 
 
+
+def _build_programme_title(prompt: str, location: str, subsector: str, mode: str) -> str:
+    """Build a professional programme title from prompt, location, subsector."""
+    if not prompt:
+        return f"{subsector} — {location or 'Global'}"
+    
+    # STOP WORDS to skip when extracting key terms
+    stop = {'a','an','the','in','at','of','for','and','or','with','to','from',
+            'km','miles','gw','mw','tpa','bpd','phase','stage','project',
+            'programme','program','infrastructure','development','construction',
+            'new','major','large','proposed','planned'}
+    
+    # Named programme patterns → clean title
+    named_map = [
+        (r'hs2\s*phase\s*1', 'HS2 Phase 1'),
+        (r'hs2\s*phase\s*2[ab]?', 'HS2 Phase 2b'),
+        (r'crossrail|elizabeth line', 'Crossrail / Elizabeth Line'),
+        (r'california high speed rail|ca hsr|cahsr', 'California High Speed Rail Phase 1'),
+        (r'grand paris express', 'Grand Paris Express'),
+        (r'hinkley point c', 'Hinkley Point C'),
+        (r'sizewell c', 'Sizewell C'),
+        (r'vogtle', 'Vogtle Units 3 & 4'),
+        (r'flamanville', 'Flamanville EPR'),
+        (r'f-35|f35|joint strike', 'F-35 Lightning II Programme'),
+        (r'dangote refinery|dangote petroleum', 'Dangote Refinery'),
+        (r'mumbai.{0,10}ahmedabad', 'Mumbai–Ahmedabad High Speed Rail'),
+        (r'riyadh metro', 'Riyadh Metro'),
+        (r'grand paris', 'Grand Paris Express'),
+        (r'neom.*line|the line.*saudi', 'NEOM — The Line'),
+        (r'snowy 2\.0', 'Snowy 2.0 Hydroelectric'),
+        (r'inland rail', 'Inland Rail (Melbourne–Brisbane)'),
+        (r'sydney metro west', 'Sydney Metro West'),
+        (r'melbourne metro', 'Melbourne Metro Tunnel'),
+        (r'stuttgart 21', 'Stuttgart 21'),
+        (r'lunar base', 'Lunar Base Alpha'),
+        (r'artemis|sls.*lunar|lunar.*sls', 'Artemis / SLS Programme'),
+        (r'stack.*denver|denver.*stack', 'STACK Infrastructure Denver Campus'),
+        (r'stack.*virginia|virginia.*stack', 'STACK Infrastructure Northern Virginia'),
+        (r'stack.*chicago|chicago.*stack', 'STACK Infrastructure Chicago Campus'),
+        (r'stack.*frankfurt|frankfurt.*stack', 'STACK Infrastructure Frankfurt Campus'),
+        (r'stack.*tokyo|tokyo.*stack', 'STACK Infrastructure Tokyo Campus'),
+        (r'stack.*warsaw|warsaw.*stack', 'STACK Infrastructure Warsaw Campus'),
+        (r'stack.*singapore|singapore.*stack', 'STACK Infrastructure Singapore Campus'),
+        (r'stack.*phoenix|phoenix.*stack', 'STACK Infrastructure Phoenix Campus'),
+    ]
+    pl = prompt.lower()
+    for pattern, clean_name in named_map:
+        if re.search(pattern, pl):
+            # Add location suffix
+            loc_suffix = f" — {location}" if location and location not in clean_name else ""
+            sub_suffix = f" ({subsector})" if subsector else ""
+            return clean_name + loc_suffix + sub_suffix
+    
+    # Extract meaningful words from prompt (first 6 non-stop words)
+    words = [w for w in re.split(r'[\s,]+', prompt)
+             if w.lower() not in stop and len(w) > 2 and not w.isdigit()]
+    prog_name = ' '.join(words[:5]) if words else subsector
+    
+    # Build: "Programme Name — Location (Sector)"
+    loc_part = f" — {location}" if location else ""
+    sec_part = f" ({subsector})" if subsector else ""
+    return f"{prog_name}{loc_part}{sec_part}"
+
+
 def _v107_stamp_model(model: Dict[str, Any]) -> Dict[str, Any]:
     m = dict(model or {})
     base = m.get('base_comparison') or {}
@@ -7989,9 +8081,16 @@ def _v107_stamp_model(model: Dict[str, Any]) -> Dict[str, Any]:
         'scenario_value': {'cost_p50': m.get('cost_p50'), 'schedule': m.get('schedule'), 'confidence_pct': m.get('confidence_pct'), 'risk': m.get('risk')},
         'trade_off_reason': m.get('casey_thinking') or m.get('executive_shock_insight') or 'Scenario-controlled first-pass CASEY intelligence.'
     }
-    title = str(m.get('title') or 'CASEY Project')
-    if 'DEMO' not in title.upper():
-        m['title'] = f'DEMO - {title}'
+    # Build professional title from prompt + location + subsector
+    _prompt = str(m.get('prompt') or m.get('user_prompt') or '')
+    _loc = str(m.get('location') or '')
+    _sub = str(m.get('subsector') or m.get('sector') or 'Programme')
+    _mode = str(m.get('mode') or 'Earth')
+    proper_title = _build_programme_title(_prompt, _loc, _sub, _mode)
+    if proper_title and proper_title != 'Programme':
+        m['title'] = proper_title
+    elif not m.get('title'):
+        m['title'] = _sub
     return m
 
 
@@ -8376,18 +8475,31 @@ NAMED_BENCHMARKS = {
 
 # Currency symbols by location
 CURRENCY_SYMBOLS = {
-    'United Kingdom': '£', 'UK': '£',
+    'United Kingdom': '£', 'UK': '£', 'England': '£', 'Scotland': '£', 'Wales': '£',
     'France': '€', 'Germany': '€', 'Italy': '€', 'Spain': '€',
     'Netherlands': '€', 'Belgium': '€', 'Austria': '€', 'Portugal': '€',
-    'Poland': '€', 'Sweden': 'SEK ', 'Norway': 'NOK ', 'Denmark': 'DKK ',
-    'Switzerland': 'CHF ',
+    'Ireland': '€', 'Finland': '€', 'Greece': '€', 'Luxembourg': '€',
+    'Slovakia': '€', 'Slovenia': '€', 'Estonia': '€', 'Latvia': '€',
+    'Lithuania': '€', 'Cyprus': '€', 'Malta': '€',
+    'Poland': 'PLN ', 'Czech': 'CZK ', 'Hungary': 'HUF ', 'Romania': 'RON ',
+    'Bulgaria': 'BGN ', 'Croatia': 'HRK ',
+    'Sweden': 'SEK ', 'Norway': 'NOK ', 'Denmark': 'DKK ', 'Switzerland': 'CHF ',
     'Australia': 'A$', 'New Zealand': 'NZ$', 'Canada': 'CA$',
     'Japan': '¥', 'South Korea': '₩', 'India': '₹',
-    'China': '¥', 'Singapore': 'S$', 'Hong Kong': 'HK$',
+    'China': '¥', 'Vietnam': 'VND ', 'Singapore': 'S$', 'Hong Kong': 'HK$',
+    'Indonesia': 'IDR ', 'Philippines': 'PHP ', 'Thailand': 'THB ', 'Malaysia': 'MYR ',
+    'Taiwan': 'TWD ', 'Mongolia': 'MNT ', 'Myanmar': 'MMK ',
     'Brazil': 'R$', 'Mexico': 'MXN ', 'Argentina': 'ARS ',
-    'South Africa': 'ZAR ', 'Nigeria': 'NGN ',
+    'Colombia': 'COP ', 'Peru': 'PEN ', 'Chile': 'CLP ',
+    'South Africa': 'ZAR ', 'Nigeria': 'NGN ', 'Kenya': 'KES ',
+    'Egypt': 'EGP ', 'Morocco': 'MAD ', 'Ethiopia': 'ETB ',
+    'Tanzania': 'TZS ', 'Ghana': 'GHS ', 'Angola': 'AOA ', 'Mozambique': 'MZN ',
     'Saudi Arabia': 'SAR ', 'UAE': 'AED ', 'Qatar': 'QAR ',
+    'Kuwait': 'KWD ', 'Bahrain': 'BHD ', 'Oman': 'OMR ',
     'Turkey': 'TRY ', 'Russia': '₽', 'Ukraine': 'UAH ',
+    'Kazakhstan': 'KZT ', 'Caspian': 'KZT ', 'Uzbekistan': 'UZS ',
+    'Pakistan': 'PKR ', 'Bangladesh': 'BDT ',
+    'International': '$', 'Global': '$', 'Space': '$', 'Lunar': '$', 'Mars': '$',
 }
 
 # Unit rate labels by sector/mode
@@ -8457,14 +8569,77 @@ def get_named_benchmarks(subsector, mode=''):
         return _enrich(NAMED_BENCHMARKS.get('General Space Infrastructure', []))
     return _enrich(NAMED_BENCHMARKS.get('General Infrastructure', []))
 
-def get_currency_symbol(location):
-    """Get currency symbol for a location."""
-    if not location:
+def get_currency_symbol(location, prompt: str = ''):
+    """Get currency symbol for a location. Falls back to raw prompt search.
+    Uses longest-key-match to ensure Vietnam wins over China etc."""
+    search_str = (str(location or '') + ' ' + str(prompt or '')).lower()
+    if not search_str.strip():
         return '$'
-    for k, v in CURRENCY_SYMBOLS.items():
-        if k.lower() in location.lower():
+    # Longest key wins (Vietnam beats China, South Korea beats Korea)
+    candidates = [(k, v) for k, v in CURRENCY_SYMBOLS.items()
+                  if k.lower() in search_str]
+    if candidates:
+        return max(candidates, key=lambda x: len(x[0]))[1]
+    return '$' 
+
+
+CURRENCY_FX_RATES = {
+    '$': 1.0, '£': 0.79, '€': 0.92, 'A$': 1.53, 'CA$': 1.36, 'NZ$': 1.64,
+    'CHF ': 0.88, 'SEK ': 10.5, 'NOK ': 10.8, 'DKK ': 6.9,
+    '¥': 150.0, '₩': 1350.0, '₹': 83.0, 'S$': 1.35, 'HK$': 7.8,
+    'R$': 4.9, 'MXN ': 17.2, 'ZAR ': 18.5, 'NGN ': 1580.0,
+    'SAR ': 3.75, 'AED ': 3.67, 'QAR ': 3.64, 'KES ': 130.0,
+    'EGP ': 30.9, 'CNY ': 7.24, 'IDR ': 15800.0, 'MYR ': 4.7,
+    'ARS ': 870.0, 'COP ': 3900.0, 'PEN ': 3.75, 'TWD ': 32.0,
+    'PLN ': 4.0, 'CZK ': 23.0, 'HUF ': 360.0, 'RON ': 4.7,
+    'VND ': 24500.0, 'CLP ': 950.0, 'KZT ': 460.0, 'PHP ': 57.0,
+    'THB ': 35.0, 'PKR ': 280.0, 'BDT ': 110.0, 'ETB ': 56.0,
+    'TZS ': 2500.0, 'GHS ': 12.0, 'MNT ': 3400.0, 'MAD ': 10.0,
+    'TRY ': 32.0, 'UAH ': 37.0, 'RUB ': 90.0, 'UZS ': 12500.0,
+    'AOA ': 830.0, 'MZN ': 64.0,
+}
+
+def get_fx_rate(curr: str) -> float:
+    cs = (curr or '$').strip()
+    for k, v in CURRENCY_FX_RATES.items():
+        if k.strip() == cs or (cs and k.strip() and cs.startswith(k.strip())):
             return v
-    return '$'
+    return 1.0
+
+def money_lc(v: float, curr: str = '$') -> str:
+    cs = (curr or '$').strip()
+    fx = get_fx_rate(cs)
+    local = v * fx
+    if local >= 1000: return f"{cs}{local/1000:.1f}T"
+    if local >= 1: return f"{cs}{local:.1f}B"
+    return f"{cs}{local*1000:.0f}M"
+
+KNOWN_PROGRAMME_COSTS = {
+    "california high speed rail": 110.0, "ca hsr": 110.0,
+    "hs2 phase 1": 45.0, "hs2 phase 2": 88.0,
+    "crossrail": 19.0, "elizabeth line": 19.0,
+    "grand paris express": 38.0, "grand paris": 38.0,
+    "riyadh metro": 22.5, "sydney metro west": 12.0,
+    "honolulu rail": 10.0, "stuttgart 21": 9.5,
+    "fehmarnbelt": 7.4, "inland rail": 31.0,
+    "mumbai ahmedabad": 14.0, "mumbai-ahmedabad": 14.0,
+    "hinkley point c": 31.0, "sizewell c": 20.0,
+    "vogtle": 35.0, "flamanville": 13.2, "olkiluoto 3": 11.0,
+    "barakah": 24.4, "f-35": 428.0, "f35": 428.0,
+    "f-35 lightning": 428.0, "joint strike fighter": 428.0,
+    "columbia class": 110.0, "dangote": 19.0, "dangote refinery": 19.0,
+    "snowy 2.0": 12.0, "mozambique lng": 24.0,
+    "neom": 300.0, "the line": 300.0,
+    "lunar gateway": 8.0, "lunar base": 90.0,
+}
+
+def get_programme_anchor(prompt: str) -> float:
+    pl = (prompt or '').lower()
+    for name, cost in KNOWN_PROGRAMME_COSTS.items():
+        if name in pl:
+            return cost
+    return 0.0
+
 
 def get_unit_rate_label(subsector):
     """Get the meaningful unit rate metric for a sector."""
@@ -8618,11 +8793,11 @@ def build_oba_assessment(p50, p80, risk_score, subsector, location, mode):
     currency = get_currency_symbol(location)
     
     return {
-        'oba_adjusted_p50': money_bn(oba_p50),
+        'oba_adjusted_p50': money_lc(oba_p50,currency),
         'oba_uplift_pct': round(uplift * 100),
         'oba_adjusted_schedule_mult': round(oba_months_mult, 2),
         'oba_source': ref,
-        'verdict': f'OBA reference class uplift for {subsector} is +{round(uplift*100)}%. OBA-adjusted P50 is {money_bn(oba_p50)} vs headline P50 of {money_bn(p50)}. The headline P50 represents the most likely outturn if all programme controls function as planned.',
+        'verdict': f'OBA reference class uplift for {subsector} is +{round(uplift*100)}%. OBA-adjusted P50 is {money_lc(oba_p50,currency)} vs headline P50 of {money_lc(p50,currency)}. The headline P50 represents the most likely outturn if all programme controls function as planned.',
         'board_challenge': f'Board will ask: what OBA uplift have you applied and why is it not in the executive summary? HM Treasury Green Book requires OBA disclosure for all public programmes.',
         'ipa_ref': 'IPA/HM Treasury OBA requirements: Green Book Annex 4 and IPA Annual Report 2023.',
     }
@@ -8830,7 +9005,16 @@ def compute_twin_update(base_model: dict, twin_inputs: dict) -> dict:
     title = base_model.get("title", base_model.get("subsector", "Programme"))
 
     def parse_bn(v):
-        try: return float("".join(c for c in str(v) if c.isdigit() or c == ".") or 0)
+        """Parse a money string back to USD-equivalent billions."""
+        try:
+            s = str(v or '0').strip()
+            _c = base_model.get('currency_symbol','$').strip() if isinstance(base_model, dict) else '$'
+            _fx = get_fx_rate(_c) if _c and _c != '$' else 1.0
+            is_t = 'T' in s.upper() and 'TR' not in s.upper()
+            num_str = ''.join(c for c in s if c.isdigit() or c == '.')
+            num = float(num_str or 0)
+            if is_t: num *= 1000  # T = trillions of local currency
+            return num / _fx if _fx > 0 else num
         except: return 0.0
 
     def fc(v):
@@ -8839,6 +9023,8 @@ def compute_twin_update(base_model: dict, twin_inputs: dict) -> dict:
         return (curr + s[1:]) if curr != "$" and s.startswith("$") else s
 
     base_p50 = parse_bn(base_model.get("cost_p50", 0))
+    _tw_lc = base_model.get('currency_symbol', '$') if isinstance(base_model, dict) else '$'
+    def money_tw(v): return money_lc(v, _tw_lc)
     base_p80 = parse_bn(base_model.get("cost_p80", 0))
     base_months = int(base_model.get("schedule_months", 36) or 36)
     base_conf = int(base_model.get("confidence_pct", 60) or 60)
@@ -8963,7 +9149,7 @@ def compute_twin_update(base_model: dict, twin_inputs: dict) -> dict:
                 "option": "A",
                 "label": "Crash recovery",
                 "description": "Additional resources and extended working to recover maximum schedule.",
-                "additional_cost": money_bn(cost_overrun * 0.5),
+                "additional_cost": money_tw(cost_overrun * 0.5),
                 "months_recovered": int(schedule_slip * 0.6),
                 "new_confidence": max(15, new_conf - 8),
                 "risk": "Increases unit cost, reduces workforce quality, increases interface risk.",
@@ -8973,7 +9159,7 @@ def compute_twin_update(base_model: dict, twin_inputs: dict) -> dict:
                 "option": "B",
                 "label": "Partial recovery",
                 "description": "Targeted acceleration on critical path only, accepting some delay.",
-                "additional_cost": money_bn(cost_overrun * 0.25),
+                "additional_cost": money_tw(cost_overrun * 0.25),
                 "months_recovered": int(schedule_slip * 0.35),
                 "new_confidence": min(92, new_conf + 3),
                 "risk": "Moderate. Focuses resource where it matters most.",
@@ -8983,7 +9169,7 @@ def compute_twin_update(base_model: dict, twin_inputs: dict) -> dict:
                 "option": "C",
                 "label": "Accept and rebaseline",
                 "description": "Formally rebaseline the programme at current forecast. No acceleration spend.",
-                "additional_cost": money_bn(cost_overrun * 0.05),
+                "additional_cost": money_tw(cost_overrun * 0.05),
                 "months_recovered": 0,
                 "new_confidence": min(92, new_conf + 10),
                 "risk": "Low execution risk. Business case and contracts must be renegotiated.",
@@ -8996,7 +9182,7 @@ def compute_twin_update(base_model: dict, twin_inputs: dict) -> dict:
     # ── LAYER 7: Decision Recommendation ─────────────────────────
     if new_p50 > base_p80:
         decision = "REBASELINE"
-        decision_reason = "Forecast P50 ({}) has exceeded the original P80 ({}). Reserve is exhausted. The current authorisation is no longer valid.".format(money_bn(new_p50), money_bn(base_p80))
+        decision_reason = "Forecast P50 ({}) has exceeded the original P80 ({}). Reserve is exhausted. The current authorisation is no longer valid.".format(money_tw(new_p50), money_tw(base_p80))
     elif board_decision == "NOT BOARD DEFENSIBLE":
         decision = "PAUSE — EVIDENCE CLOSURE REQUIRED"
         decision_reason = "Board defensibility is inadequate across {} dimensions. Proceeding without closing evidence gaps risks gate challenge or approval withdrawal.".format(weak_count)
@@ -9023,7 +9209,7 @@ def compute_twin_update(base_model: dict, twin_inputs: dict) -> dict:
     if schedule_slip > 0:
         board_questions.append("Schedule has slipped {} months. Which critical path activity is driving the slip and when will it be recovered?".format(int(schedule_slip)))
     if new_p50 > base_p50 * 1.05:
-        board_questions.append("Forecast-at-completion is {} vs baseline {}. Has the business case been revalidated?".format(fc(money_bn(new_p50)), fc(money_bn(base_p50))))
+        board_questions.append("Forecast-at-completion is {} vs baseline {}. Has the business case been revalidated?".format(fc(money_tw(new_p50)), fc(money_tw(base_p50))))
     if gc:
         board_questions.append("What is the current status of the governing constraint: {}? Who owns it and what is the evidence closure date?".format(gc["constraint"][:80]))
     if open_items > 50:
@@ -9042,7 +9228,7 @@ def compute_twin_update(base_model: dict, twin_inputs: dict) -> dict:
     narrative_lines = []
     narrative_lines.append("The programme is at {}% completion. ".format(int(progress)) +
         ("Confidence has {} from {}% to {}%. ".format(conf_word, base_conf, new_conf) if abs(conf_delta) > 2 else "Confidence is {}%. ".format(new_conf)) +
-        "Forecast-at-completion has {} to {} vs baseline {}.".format(fac_word, fc(money_bn(new_p50)), fc(money_bn(base_p50))))
+        "Forecast-at-completion has {} to {} vs baseline {}.".format(fac_word, fc(money_tw(new_p50)), fc(money_tw(base_p50))))
     if cpi < 0.92:
         narrative_lines.append("The primary cost driver is underperformance against the earned value plan — CPI is {:.2f}, indicating that for every {} spent the programme is delivering {} of planned value. At this rate, final outturn will exceed P80.".format(cpi, curr+"1", curr+"{:.2f}".format(cpi)))
     if schedule_slip > 0:
@@ -9056,7 +9242,7 @@ def compute_twin_update(base_model: dict, twin_inputs: dict) -> dict:
     # ── LAYER 8: Alerts ──────────────────────────────────────────
     alerts = []
     if new_p50 > base_p80:
-        alerts.append({"level": "CRITICAL", "msg": "Forecast P50 ({}) now exceeds original P80 ({}). Reserve exhausted. Rebaselining required.".format(fc(money_bn(new_p50)), fc(money_bn(base_p80)))})
+        alerts.append({"level": "CRITICAL", "msg": "Forecast P50 ({}) now exceeds original P80 ({}). Reserve exhausted. Rebaselining required.".format(fc(money_tw(new_p50)), fc(money_tw(base_p80)))})
     if cpi < 0.9:
         alerts.append({"level": "CRITICAL", "msg": "CPI is {:.2f}. At this rate programme will exceed P80. Immediate corrective action required.".format(cpi)})
     if new_conf < base_conf - 10:
@@ -9076,7 +9262,7 @@ def compute_twin_update(base_model: dict, twin_inputs: dict) -> dict:
     changes = []
     cost_chg = round((new_p50 - base_p50) / base_p50 * 100, 1) if base_p50 > 0 else 0
     if abs(cost_chg) > 1:
-        changes.append("Forecast-at-completion {} by {:.1f}% (CPI={:.2f}). New P50 outturn: {}.".format("increased" if cost_chg > 0 else "decreased", abs(cost_chg), cpi, fc(money_bn(new_p50))))
+        changes.append("Forecast-at-completion {} by {:.1f}% (CPI={:.2f}). New P50 outturn: {}.".format("increased" if cost_chg > 0 else "decreased", abs(cost_chg), cpi, fc(money_tw(new_p50))))
     if schedule_slip > 0:
         changes.append("Schedule slipped {} months from baseline. Revised completion: {} months.".format(int(schedule_slip), new_months))
     if ev_pct < 90:
@@ -9086,20 +9272,20 @@ def compute_twin_update(base_model: dict, twin_inputs: dict) -> dict:
     if matched_pattern:
         changes.append("Failure pattern match: {}. Precedent programmes: {}.".format(matched_pattern["name"], matched_pattern["programmes"][0]))
     if not changes:
-        changes.append("Programme tracking close to baseline. P50 forecast: {} ({:+.1f}% vs baseline).".format(fc(money_bn(new_p50)), cost_chg))
+        changes.append("Programme tracking close to baseline. P50 forecast: {} ({:+.1f}% vs baseline).".format(fc(money_tw(new_p50)), cost_chg))
 
     return {
-        "base_p50": fc(money_bn(base_p50)), "base_p80": fc(money_bn(base_p80)),
+        "base_p50": fc(money_tw(base_p50)), "base_p80": fc(money_tw(base_p80)),
         "base_months": base_months, "base_conf": base_conf,
-        "new_p50": fc(money_bn(new_p50)), "new_p80": fc(money_bn(new_p80)),
+        "new_p50": fc(money_tw(new_p50)), "new_p80": fc(money_bn(new_p80)),
         "new_months": new_months, "new_conf": new_conf,
         "cpi": round(cpi, 3), "spi": round(spi, 3),
         "cost_change_pct": cost_chg,
         "conf_change": conf_delta, "conf_label": "improving" if conf_delta > 2 else "declining" if conf_delta < -2 else "stable",
-        "forecast_at_completion": fc(money_bn(new_p50)),
+        "forecast_at_completion": fc(money_tw(new_p50)),
         "board_defensibility": board_def_scores,
         "board_decision": board_decision,
-        "governing_constraint": gc,
+        "governing_constraint": gc or base_model.get("governing_constraint", ""),
         "failure_pattern": matched_pattern,
         "recovery_options": recovery_options,
         "decision": decision, "decision_reason": decision_reason,
@@ -9857,6 +10043,378 @@ def _fetch_live_intel_threaded(sector, location, mode, prompt, result_holder):
         result_holder.append({})
 
 
+# ── Named programme cost anchors (from public sources / benchmark library) ──
+# When a user's prompt matches a known named programme, anchor the base cost
+# to the known real-world figure rather than running pure generic estimation
+KNOWN_PROGRAMME_COSTS = {
+    # Rail
+    "california high speed rail": 110.0,   # USD B, Phase 1 current est ~$100-128B
+    "ca hsr": 110.0,
+    "hs2 phase 1": 45.0,                   # GBP B
+    "hs2 phase 2": 88.0,                   # GBP B (full Phase 2a+2b)
+    "crossrail": 19.0,                     # GBP B
+    "elizabeth line": 19.0,
+    "grand paris express": 38.0,           # EUR B
+    "grand paris": 38.0,
+    "riyadh metro": 22.5,                  # USD B
+    "sydney metro west": 12.0,             # AUD B
+    "honolulu rail": 10.0,                 # USD B
+    "stuttgart 21": 9.5,                   # EUR B
+    "fehmarnbelt": 7.4,                    # EUR B
+    "inland rail": 31.0,                   # AUD B
+    "mumbai ahmedabad": 14.0,              # USD B
+    "mumbai-ahmedabad": 14.0,
+    # Nuclear
+    "hinkley point c": 31.0,              # GBP B (latest EDF est)
+    "sizewell c": 20.0,                    # GBP B
+    "vogtle": 35.0,                        # USD B (final actual)
+    "flamanville": 13.2,                   # EUR B
+    "olkiluoto 3": 11.0,                   # EUR B
+    "barakah": 24.4,                       # USD B
+    # Defence
+    "f-35": 428.0,                         # USD B (total programme cost)
+    "f35": 428.0,
+    "columbia class": 110.0,              # USD B (programme)
+    # Energy/Resources
+    "dangote": 19.0,                       # USD B
+    "snowy 2.0": 12.0,                     # AUD B
+    "mozambique lng": 24.0,               # USD B
+    # Urban/Space
+    "neom": 300.0,                         # USD B (revised programme)
+    "the line": 300.0,
+}
+
+def get_programme_anchor(prompt: str) -> float:
+    """Return a known anchor cost (USD-B) if prompt matches a named programme, else 0."""
+    pl = (prompt or '').lower()
+    best = 0.0
+    for name, cost in KNOWN_PROGRAMME_COSTS.items():
+        if name in pl:
+            best = cost
+            break
+    return best
+
+
+
+def build_self_challenge(model: dict) -> dict:
+    """
+    CASEY attacks its own output. Scores cost, schedule, risk and OBA realism
+    against benchmarks and sector norms. Returns specific issues, not generics.
+    """
+    issues = []
+    
+    prompt   = str(model.get('prompt','') or '').lower()
+    subsect  = str(model.get('subsector','') or '').lower()
+    curr     = str(model.get('currency_symbol','$') or '$').strip()
+    mode     = str(model.get('mode','Earth') or 'Earth')
+    location = str(model.get('location','') or '')
+    
+    def _parse(v):
+        s = str(v or '0')
+        ns = re.findall(r'[\d.]+', s)
+        n = float(ns[0]) if ns else 0.0
+        if 'T' in s: n *= 1000
+        return n
+    
+    p50  = _parse(model.get('cost_p50', 0))
+    p80  = _parse(model.get('cost_p80', 0))
+    dur  = float(model.get('schedule_months') or 0)
+    conf = float(model.get('confidence_pct') or 50)
+    
+    # ── OBA uplift ──────────────────────────────────────────────────────
+    oba = model.get('optimism_bias_assessment') or {}
+    oba_p50 = _parse(oba.get('oba_adjusted_p50', 0))
+    oba_pct = float(oba.get('oba_uplift_pct') or 0)
+    
+    # ── Unit rates ──────────────────────────────────────────────────────
+    costs = model.get('cost_breakdown', model.get('cost_lines', []))
+    ur_values = []
+    for c in costs[:8]:
+        ur = str(c.get('unit_rate',''))
+        nums = re.findall(r'[\d.]+', ur)
+        if nums:
+            try: ur_values.append(float(nums[0]))
+            except: pass
+    avg_ur = sum(ur_values)/len(ur_values) if ur_values else 0
+    
+    # ── Risks ───────────────────────────────────────────────────────────
+    risks = model.get('risks', [])
+    risk_titles = ' '.join(str(r.get('title','') or r.get('name','')).lower() for r in risks)
+    
+    # ── Benchmark comparison ─────────────────────────────────────────────
+    benchmarks = model.get('analogues', []) or model.get('benchmarks', [])
+    bench_costs = [_parse(b.get('cost_p50') or b.get('cost_bn') or 0) for b in benchmarks[:3] if b]
+    bench_avg   = sum(bench_costs)/len(bench_costs) if bench_costs else 0
+    
+    # ════════════════════════════════════════
+    # DIMENSION 1: COST REALISM
+    # ════════════════════════════════════════
+    cost_score = 100
+    cost_issues = []
+    
+    # Check against named programme anchor
+    from functools import lru_cache
+    KNOWN_COSTS_USD = {
+        "california high speed rail": 110.0,
+        "hs2 phase 1": 45.0, "hs2 phase 2": 88.0,
+        "crossrail": 19.0, "elizabeth line": 19.0,
+        "grand paris express": 38.0, "grand paris": 38.0,
+        "hinkley point c": 31.0, "vogtle": 35.0,
+        "f-35": 428.0, "dangote": 19.0,
+        "riyadh metro": 22.5, "neom": 300.0,
+        "mumbai ahmedabad": 14.0, "mumbai-ahmedabad": 14.0,
+        "artemis": 23.0, "lunar gateway": 8.0,
+    }
+    for name, known_usd in KNOWN_COSTS_USD.items():
+        if name in prompt:
+            fx = 1.0
+            if curr and curr != '$':
+                try: fx = get_fx_rate(curr)
+                except: fx = 1.0
+            known_local = known_usd * fx
+            if known_local > 0 and p50 > 0:
+                ratio = p50 / known_local
+                if ratio < 0.3:
+                    cost_score -= 40
+                    cost_issues.append(f"P50 {model.get('cost_p50')} is {1/ratio:.0f}× below the published {name.title()} benchmark of {curr}{known_local:.0f}B. Anchor may not have applied.")
+                elif ratio > 3.0:
+                    cost_score -= 20
+                    cost_issues.append(f"P50 {model.get('cost_p50')} is {ratio:.1f}× above published {name.title()} benchmark. Validate scope assumption.")
+                elif ratio > 1.5:
+                    cost_score -= 10
+                    cost_issues.append(f"P50 {ratio:.1f}× above published benchmark — check if scope additions are justified.")
+    
+    # Check P80/P50 spread (should be 1.15–1.35× for most programmes)
+    if p50 > 0 and p80 > 0:
+        spread = p80 / p50
+        if spread < 1.05:
+            cost_score -= 15
+            cost_issues.append(f"P80/P50 spread of {spread:.2f}× is unusually narrow — risk distribution may be underestimated.")
+        elif spread > 2.0:
+            cost_score -= 10
+            cost_issues.append(f"P80/P50 spread of {spread:.1f}× is very wide — estimate class or risk register may need review.")
+    
+    # Check OBA uplift vs sector norms (Flyvbjerg 2022 reference classes)
+    sector_oba = {
+        'rail': (0.40, 0.60), 'nuclear': (0.50, 0.80), 'space': (0.50, 1.0),
+        'defence': (0.35, 0.55), 'data': (0.10, 0.25), 'road': (0.25, 0.45),
+        'airport': (0.30, 0.50), 'port': (0.25, 0.45), 'energy': (0.20, 0.40),
+        'water': (0.25, 0.50), 'mining': (0.30, 0.60),
+    }
+    for sec_key, (lo_oba, hi_oba) in sector_oba.items():
+        if sec_key in subsect:
+            oba_frac = oba_pct / 100 if oba_pct > 0 else 0
+            if oba_frac < lo_oba * 0.5:
+                cost_score -= 15
+                cost_issues.append(f"OBA uplift {oba_pct:.0f}% is below the Flyvbjerg {sec_key} reference class ({lo_oba*100:.0f}–{hi_oba*100:.0f}%). Board will challenge this.")
+            break
+    
+    # Check unit rates vs sector norms
+    ur_norms = {
+        'rail / transit': (20, 500), 'nuclear': (500, 5000),
+        'road': (5, 100), 'airport': (50, 500), 'data centre': (5, 50),
+        'mining': (5, 200), 'energy': (1, 100), 'defence': (100, 2000),
+    }
+    for sec_key, (lo_ur, hi_ur) in ur_norms.items():
+        if sec_key in subsect.lower():
+            if avg_ur > 0 and avg_ur < lo_ur * 0.2:
+                cost_score -= 20
+                cost_issues.append(f"Unit rates average {avg_ur:.0f}M — well below typical {sec_key} range of {lo_ur}–{hi_ur}M. Check km/scale assumption.")
+            elif avg_ur > hi_ur * 5:
+                cost_score -= 10
+                cost_issues.append(f"Unit rates {avg_ur:.0f}M/unit — above typical {sec_key} range. Validate scope definition.")
+            break
+    
+    cost_score = max(10, min(100, cost_score))
+    
+    # ════════════════════════════════════════
+    # DIMENSION 2: SCHEDULE REALISM  
+    # ════════════════════════════════════════
+    sched_score = 100
+    sched_issues = []
+    
+    # Check QSRA P80 vs base schedule
+    mc = model.get('monte_carlo', {}) or {}
+    qsra = mc.get('qsra', {}) or {}
+    qsra_p80 = float(qsra.get('p80', 0) or 0)
+    if dur > 0 and qsra_p80 > 0:
+        slip_ratio = qsra_p80 / dur
+        if slip_ratio < 1.02:
+            sched_score -= 20
+            sched_issues.append(f"QSRA P80 ({qsra_p80:.0f} mo) nearly matches base ({dur:.0f} mo) — schedule risk is underrepresented. Typical P80 is 10–25% above P50.")
+        elif slip_ratio > 2.5:
+            sched_score -= 10
+            sched_issues.append(f"QSRA P80 is {slip_ratio:.1f}× the base schedule — schedule confidence is very low. Revisit critical path assumptions.")
+    
+    # Check duration vs sector benchmarks
+    sched_norms = {
+        'rail / transit': (60, 200), 'nuclear': (120, 300),
+        'airport': (48, 180), 'data centre': (18, 60),
+        'space': (60, 240), 'defence': (60, 240),
+        'road': (24, 120), 'mining': (48, 180),
+    }
+    for sec_key, (lo_mo, hi_mo) in sched_norms.items():
+        if sec_key in subsect.lower():
+            if dur < lo_mo * 0.5:
+                sched_score -= 25
+                sched_issues.append(f"Schedule of {dur:.0f} months is below typical {sec_key} range ({lo_mo}–{hi_mo} mo). Risk of scope underestimation.")
+            elif dur > hi_mo * 2.5:
+                sched_score -= 10
+                sched_issues.append(f"Schedule of {dur:.0f} months exceeds typical {sec_key} range — validate phasing and interfaces.")
+            break
+    
+    # Named programme schedule anchors
+    sched_anchors = {
+        "california high speed rail": 360, "hs2 phase 2": 216,
+        "hinkley point c": 228, "crossrail": 216,
+        "grand paris": 180, "vogtle": 180,
+    }
+    for name, known_mo in sched_anchors.items():
+        if name in prompt and dur > 0:
+            ratio = dur / known_mo
+            if ratio < 0.4:
+                sched_score -= 20
+                sched_issues.append(f"Schedule of {dur:.0f} months is {1/ratio:.1f}× faster than published {name.title()} timeline ({known_mo} mo).")
+    
+    sched_score = max(10, min(100, sched_score))
+    
+    # ════════════════════════════════════════
+    # DIMENSION 3: RISK REGISTER COMPLETENESS
+    # ════════════════════════════════════════
+    risk_score = 100
+    risk_issues = []
+    
+    n_risks = len(risks)
+    if n_risks < 5:
+        risk_score -= 30
+        risk_issues.append(f"Only {n_risks} risks identified — a defensible register needs 10+ for board submission.")
+    elif n_risks < 8:
+        risk_score -= 10
+        risk_issues.append(f"{n_risks} risks — consider expanding to 12+ for complete board coverage.")
+    
+    # Sector-specific expected risks
+    expected_risks = {
+        'rail': ['planning', 'land', 'ground', 'utility', 'possess', 'signall'],
+        'nuclear': ['regulatory', 'first.*kind', 'weld', 'safety case', 'nuclear'],
+        'data centre': ['grid', 'power', 'permit', 'cooling', 'transformer'],
+        'space': ['launch', 'radiation', 'reliab', 'interface', 'reentry'],
+        'defence': ['requirement', 'concurr', 'export', 'cyber', 'classif'],
+        'mining': ['geotechn', 'water', 'community', 'permit', 'tail'],
+        'energy': ['grid', 'permit', 'supply chain', 'weather', 'offtake'],
+        'airport': ['airspace', 'passenger', 'airline', 'planning', 'ground'],
+    }
+    for sec_key, expected in expected_risks.items():
+        if sec_key in subsect.lower():
+            for exp_risk in expected:
+                if not re.search(exp_risk, risk_titles):
+                    risk_score -= 8
+                    risk_issues.append(f"No {exp_risk.replace('.*',' ')}-related risk identified — typical for {sec_key} sector and expected by reviewers.")
+            break
+    
+    # Check for missing cost-linked EMV
+    risks_with_emv = [r for r in risks if float(r.get('cost_emv_bn',0) or 0) > 0]
+    if risks and len(risks_with_emv) / len(risks) < 0.5:
+        risk_score -= 15
+        risk_issues.append(f"Only {len(risks_with_emv)}/{len(risks)} risks have quantified EMV — board will ask for full quantification.")
+    
+    risk_score = max(10, min(100, risk_score))
+    
+    # ════════════════════════════════════════
+    # DIMENSION 4: OBA / REFERENCE CLASS FIT
+    # ════════════════════════════════════════
+    oba_score = 100
+    oba_issues = []
+    
+    if oba_pct == 0:
+        oba_score -= 30
+        oba_issues.append("No OBA uplift applied — HM Treasury Green Book and IPA require OBA for all major programmes at any gate.")
+    elif oba_pct < 5:
+        oba_score -= 20
+        oba_issues.append(f"OBA uplift of {oba_pct:.0f}% is very low — minimum credible uplift for most sectors is 15–25%.")
+    
+    if oba_p50 > 0 and p50 > 0 and oba_p50 < p50 * 1.01:
+        oba_score -= 25
+        oba_issues.append("OBA-adjusted P50 is barely above headline P50 — the uplift is not being correctly applied to the estimate.")
+    
+    oba_score = max(10, min(100, oba_score))
+    
+    # ════════════════════════════════════════
+    # DIMENSION 5: BENCHMARK ALIGNMENT
+    # ════════════════════════════════════════
+    bench_score = 100
+    bench_issues = []
+    
+    lib = model.get('benchmark_library_used', []) or model.get('analogues', []) or []
+    if not lib:
+        bench_score -= 15
+        bench_issues.append("No named benchmarks loaded from the 137-programme library — realism checks are weaker without comparable programmes.")
+    else:
+        n_bench = len(lib)
+        if n_bench < 3:
+            bench_score -= 10
+            bench_issues.append(f"Only {n_bench} comparable programme(s) loaded — 5+ gives stronger defensibility.")
+    
+    bench_score = max(10, min(100, bench_score))
+    
+    # ════════════════════════════════════════
+    # AGGREGATE + VERDICT
+    # ════════════════════════════════════════
+    overall = int((cost_score*0.35 + sched_score*0.25 + risk_score*0.25 + oba_score*0.10 + bench_score*0.05))
+    
+    def traffic(s):
+        if s >= 80: return "green"
+        if s >= 60: return "amber"
+        return "red"
+    
+    def shorten(issues_list, n=2):
+        return issues_list[:n]
+    
+    verdict_text = (
+        "Output is board-defensible. All dimensions pass minimum thresholds."
+        if overall >= 80 else
+        "Output requires review before board submission. See flagged dimensions."
+        if overall >= 60 else
+        "Output has significant gaps. Do not use for board submission without addressing all red flags."
+    )
+    
+    return {
+        "overall_score": overall,
+        "overall_traffic": traffic(overall),
+        "verdict": verdict_text,
+        "dimensions": {
+            "cost_realism": {
+                "score": cost_score,
+                "traffic": traffic(cost_score),
+                "label": "Cost realism",
+                "issues": shorten(cost_issues),
+                "pass": cost_score >= 70,
+            },
+            "schedule_realism": {
+                "score": sched_score,
+                "traffic": traffic(sched_score),
+                "label": "Schedule realism",
+                "issues": shorten(sched_issues),
+                "pass": sched_score >= 70,
+            },
+            "risk_completeness": {
+                "score": risk_score,
+                "traffic": traffic(risk_score),
+                "label": "Risk completeness",
+                "issues": shorten(risk_issues),
+                "pass": risk_score >= 70,
+            },
+            "oba_calibration": {
+                "score": oba_score,
+                "traffic": traffic(oba_score),
+                "label": "OBA calibration",
+                "issues": shorten(oba_issues),
+                "pass": oba_score >= 70,
+            },
+        },
+        "total_issues": len(cost_issues) + len(sched_issues) + len(risk_issues) + len(oba_issues),
+    }
+
+
 def build_model(prompt: str='', client: str='', class_level: int=3, schedule_level: int=4, scenario: str='base'):
     prompt = str(prompt or '').strip()
     client = str(client or '').strip()
@@ -9918,6 +10476,21 @@ def build_model(prompt: str='', client: str='', class_level: int=3, schedule_lev
         cal_cost = float(cal_cost) * float(cost_mult)
 
     p50 = max(0.05, float(cal_cost))
+
+    # ── Named programme anchor: override p50 with known real-world cost ──
+    # Anchor values are in USD billions. p50 is also in USD-equivalent internally.
+    # money_lc() applies FX at display time, so we just set p50 = USD value here.
+    # ── Named programme anchor (preserves scenario multiplier) ────────────
+    _anchor_usd = get_programme_anchor(prompt)
+    if _anchor_usd > 0:
+        # p50 at this point already has scenario cost_mult applied
+        # Compute what base p50 would be (dividing out the multiplier)
+        _base_p50_no_scen = max(0.05, float(cal_cost) / max(float(cost_mult), 0.01))
+        _ratio = _anchor_usd / max(_base_p50_no_scen, 0.01)
+        if 0.01 < _ratio < 200:
+            # Apply anchor to base, then re-apply the scenario multiplier
+            p50 = float(_anchor_usd) * float(cost_mult)
+
     p10 = p50 * float(lo)
     p90 = p50 * float(hi) * max(1.0, risk_mult * 0.95)
     p80 = p50 + (p90 - p50) * 0.65
@@ -9953,13 +10526,19 @@ def build_model(prompt: str='', client: str='', class_level: int=3, schedule_lev
     indirect = sum(x['p50_bn'] for x in costs if x.get('type') == 'Indirect')
     reserves = max(0, p50 - direct - indirect)
 
+    _lc = get_currency_symbol(loc_name, prompt)
+    # ── Compute professional programme title ────────────────────────────
+    _proper_title = _build_programme_title(prompt, loc_name, subsector, mode)
+    if _proper_title and 'CASEY Project' not in _proper_title:
+        title = _proper_title
+    _lc = get_currency_symbol(loc_name, prompt)
     model = {
         'id': 'CASEY-' + str(abs(hash(prompt + scenario)) % 900000 + 100000),
         'prompt': prompt, 'client': client, 'title': title, 'mode': mode, 'subsector': subsector,
         'location': loc_name, 'scale': scale_name, 'scenario': scenario, 'scenario_label': scenario_label, 'scenario_why': scenario_why,
         'estimate_class': int(class_level or 3), 'estimate_class_name': class_name, 'class_level': int(class_level or 3), 'schedule_level': int(schedule_level or 4),
-        'cost_p10': money_bn(p10), 'cost_p50': money_bn(p50), 'cost_p80': money_bn(p80), 'cost_p90': money_bn(p90), 'cost_range': f'{money_bn(p10)}-{money_bn(p90)}',
-        'direct_cost': money_bn(direct), 'indirect_cost': money_bn(indirect), 'risk_reserve': money_bn(reserves),
+        'cost_p10': money_lc(p10,_lc), 'cost_p50': money_lc(p50,_lc), 'cost_p80': money_lc(p80,_lc), 'cost_p90': money_lc(p90,_lc), 'cost_range': f'{money_lc(p10,_lc)}-{money_lc(p90,_lc)}',
+        'direct_cost': money_lc(direct,_lc), 'indirect_cost': money_lc(indirect,_lc), 'risk_reserve': money_lc(reserves,_lc),
         'schedule': f'{months} months', 'schedule_months': months,
         'confidence_pct': confidence, 'risk': risk, 'risk_score': round(risk_score,1),
         'cost_lines': costs, 'cost_breakdown': costs, 'cost_detail': costs,
@@ -9989,7 +10568,7 @@ def build_model(prompt: str='', client: str='', class_level: int=3, schedule_lev
         'scenario_trade': scenario_why,
         'curve_interpretation': signature.get('human_basis'),
         'input_quality_score': 82 if len(prompt.split()) >= 10 else 62,
-        'currency_symbol': get_currency_symbol(loc_name),
+        'currency_symbol': _lc,
         'unit_rate_label': get_unit_rate_label(subsector),
         'board_attack_simulation': build_board_attacks(mode, subsector, p50, p80, months, confidence, int(class_level or 3), risks),
         'gate_review_readiness': build_gate_review(confidence, int(class_level or 3), risks, months, subsector, mode),
@@ -10388,15 +10967,36 @@ def build_model(prompt: str='', client: str='', class_level: int=3, schedule_lev
         pass
 
     
-    # ── Apply currency to unit_rate fields (generated with $ internally) ──
+    # ── Apply currency to ALL text fields that contain $ amounts ──────────
     try:
         _curr = str(model.get('currency_symbol') or '$').strip()
         if _curr and _curr != '$':
             import re as _re
+            _dollar_re = _re.compile(r'\$([0-9])')
+            def _fix(v):
+                if isinstance(v, str): return _dollar_re.sub(_curr + r'\1', v)
+                if isinstance(v, list): return [_fix(i) for i in v]
+                if isinstance(v, dict): return {k: _fix(vv) for k,vv in v.items()}
+                return v
+            _text_fields = [
+                'executive_summary','board_attack_simulation','casey_position',
+                'sector_failure_pattern','if_this_fails','institutional_authority_line',
+                'governing_constraint','confidence_explanation','executive_shock_insight',
+                'traditional_vs_casey','location_context',
+            ]
+            for _tf in _text_fields:
+                if _tf in model:
+                    model[_tf] = _fix(model[_tf])
+            # Unit rates
             for _cb in model.get('cost_breakdown', []) + model.get('cost_lines', []):
                 if isinstance(_cb, dict) and _cb.get('unit_rate'):
-                    _ur = str(_cb['unit_rate'])
-                    _cb['unit_rate'] = _re.sub(r'\$([0-9])', _curr + r'\1', _ur)
+                    _cb['unit_rate'] = _dollar_re.sub(_curr + r'\1', str(_cb['unit_rate']))
+            # OBA text
+            _oba = model.get('optimism_bias_assessment', {})
+            if isinstance(_oba, dict):
+                for _k in ('verdict','oba_source','board_challenge'):
+                    if _k in _oba:
+                        _oba[_k] = _fix(_oba[_k])
     except Exception:
         pass
 
@@ -10417,6 +11017,12 @@ def build_model(prompt: str='', client: str='', class_level: int=3, schedule_lev
     except Exception:
         pass
 
+    # ── CASEY Self-Challenge (runs on every output) ────────────────────
+    try:
+        model['self_challenge'] = build_self_challenge(model)
+    except Exception as _sc_err:
+        model['self_challenge'] = {"overall_score": 75, "overall_traffic": "amber",
+            "verdict": "Self-challenge unavailable.", "dimensions": {}, "total_issues": 0}
     return model
 
 APP_VERSION = 'CASEY FINAL Backend-Derived Model Restored'
