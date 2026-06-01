@@ -81,11 +81,12 @@ function ProfessionalIntakeResult({ result, model }) {
   const file = r.filename || 'Client_Source_Bundle.xlsx';
   const fileType = (r.file_type || (file.toLowerCase().includes('.xer') ? 'Schedule XER' : file.toLowerCase().includes('risk') ? 'Risk register' : 'Cost estimate')).toString();
   const confPct = Number(cm.confidence_pct ?? model?.confidence_pct ?? 55);
-  const challengeP50 = cm.p50_bn ? ('$' + Number(cm.p50_bn).toFixed(1) + 'B') : baselineP50;
-  const challengeP80 = cm.p80_bn ? ('$' + Number(cm.p80_bn).toFixed(1) + 'B') : (qcraP80 ? moneyLocal(qcraP80) : '—');
-  const challengeP90 = cm.p90_bn ? ('$' + Number(cm.p90_bn).toFixed(1) + 'B') : (model?.monte_carlo?.qcra?.p90 ? moneyLocal(model.monte_carlo.qcra.p90) : '—');
+  const _curr = model?.currency_symbol || '$';
+  const challengeP50 = cm.p50_bn ? (_curr + Number(cm.p50_bn).toFixed(1) + 'B') : baselineP50;
+  const challengeP80 = cm.p80_bn ? (_curr + Number(cm.p80_bn).toFixed(1) + 'B') : (qcraP80 ? moneyLocal(qcraP80, _curr) : '—');
+  const challengeP90 = cm.p90_bn ? (_curr + Number(cm.p90_bn).toFixed(1) + 'B') : (model?.monte_carlo?.qcra?.p90 ? moneyLocal(model.monte_carlo.qcra.p90) : '—');
   const deltaBn = cm.delta_bn ?? (cm.p80_bn && model?.cost_p50_bn ? Number(cm.p80_bn) - Number(model.cost_p50_bn) : null);
-  const deltaText = deltaBn !== null && deltaBn !== undefined && !Number.isNaN(Number(deltaBn)) ? ((Number(deltaBn) >= 0 ? '+' : '−') + '$' + Math.abs(Number(deltaBn)).toFixed(1) + 'B latent exposure') : 'Exposure delta requires source bundle';
+  const deltaText = deltaBn !== null && deltaBn !== undefined && !Number.isNaN(Number(deltaBn)) ? ((Number(deltaBn) >= 0 ? '+' : '−') + _curr + Math.abs(Number(deltaBn)).toFixed(1) + 'B latent exposure') : 'Exposure delta requires source bundle';
   const scheduleDelta = cm.schedule_delta_months ?? src.xer?.schedule_delta_months ?? null;
   const scheduleDeltaText = scheduleDelta !== null && scheduleDelta !== undefined ? ((Number(scheduleDelta) >= 0 ? '+' : '−') + Math.abs(Number(scheduleDelta)) + ' months schedule exposure') : `QSRA P80 ${qsraP80 || '—'} months`;
 
@@ -249,7 +250,7 @@ function HolyGrailRuntime({ model, scenario, generate, runShock }) {
   ];
   const fire = (id) => { setLastFired(id); runShock(id); };
   const scenarioLabels = { base:'Base', faster:'Faster', cheaper:'Cheaper', lower_risk:'Lower Risk', premium:'Premium' };
-  const p50 = model?.cost_p50 || (model?.cost_p50_bn ? '$' + model.cost_p50_bn + 'B' : '—');
+  const p50 = model?.cost_p50 || (model?.cost_p50_bn ? (model?.currency_symbol || '$') + model.cost_p50_bn + 'B' : '—');
   const conf = model?.confidence_pct;
   const chain = (model?.causal_chain || []).join(' → ') || 'Generate a project first to see the causal chain';
   return <section className="layout two runtimePanel">
@@ -529,12 +530,13 @@ function parseMoneyLocal(v) {
   if (s.includes('M')) return n / 1000;
   return n;
 }
-function moneyLocal(n) { return n >= 1000 ? `$${(n/1000).toFixed(1)}T` : n >= 1 ? `$${n.toFixed(1)}B` : `$${Math.round(n*1000)}M`; }
+function moneyLocal(n, curr) { const c = curr || '$'; return n >= 1000 ? `${c}${(n/1000).toFixed(1)}T` : n >= 1 ? `${c}${n.toFixed(1)}B` : `${c}${Math.round(n*1000)}M`; }
 
-function fmt(v) {
+function fmt(v, curr) {
   if (v === undefined || v === null || v === '') return '—';
   if (typeof v === 'string') return v;
-  return v >= 1000 ? `$${(v / 1000).toFixed(1)}T` : v >= 1 ? `$${v.toFixed(1)}B` : `$${(v * 1000).toFixed(0)}M`;
+  const c = curr || '$';
+  return v >= 1000 ? `${c}${(v / 1000).toFixed(1)}T` : v >= 1 ? `${c}${v.toFixed(1)}B` : `${c}${(v * 1000).toFixed(0)}M`;
 }
 async function post(path, body) {
   const r = await apiFetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -588,10 +590,10 @@ function Kpi({ icon: Icon, label, value, sub, hot }) {
   const band = hot ? (n >= 80 ? 'riskLow' : n >= 60 ? 'riskMedium' : 'riskHigh') : '';
   return <Card className={`v50Kpi ${hot ? 'hot' : ''} ${band}`}><Icon size={21}/><div><p>{safeRender(label)}</p><b>{safeRender(value)}</b><span>{safeRender(sub)}</span></div></Card>;
 }
-function Table({ rows = [], cols = [], moneyCols = [], cellFmt = null }) {
+function Table({ rows = [], cols = [], moneyCols = [], cellFmt = null, curr = '$' }) {
   const renderCell = (col, row) => {
     const raw = row[col] ?? '';
-    if (moneyCols.includes(col)) return fmt(raw);
+    if (moneyCols.includes(col)) return fmt(raw, curr);
     if (cellFmt) return cellFmt(col, raw);
     return String(raw);
   };
@@ -1270,7 +1272,7 @@ function p80PlainEnglish(model) {
   const mc = model?.monte_carlo || {};
   const qcra = mc.qcra || {};
   const qsra = mc.qsra || {};
-  const p80Cost = qcra.p80 ? fmt(qcra.p80) : 'the P80 cost';
+  const p80Cost = qcra.p80 ? fmt(qcra.p80, model?.currency_symbol) : 'the P80 cost';
   const p80Schedule = qsra.p80 ? `${qsra.p80} months` : 'the P80 date';
   return {
     cost: `P80 cost means there is roughly a 1-in-5 downside chance the final cost exceeds ${p80Cost}.`,
@@ -1483,7 +1485,7 @@ function assuranceKillChain(model) {
 function traditionalConsultantDelta(model) {
   const lens = confidenceLens(model || {});
   const pct = Number(model?.confidence_pct || 50);
-  const p80 = model?.monte_carlo?.qcra?.p80 ? fmt(model.monte_carlo.qcra.p80) : 'P80 exposure';
+  const p80 = model?.monte_carlo?.qcra?.p80 ? fmt(model.monte_carlo.qcra.p80, model?.currency_symbol || '$') : 'P80 exposure';
   const qsra = model?.monte_carlo?.qsra?.p80 ? `${model.monte_carlo.qsra.p80} months` : 'P80 finish date';
   const tvc = model?.traditional_vs_casey || {};
   // Use sector-specific language from backend if available, fall back to generic
@@ -1503,9 +1505,9 @@ function exportAuditSpine(model, direct, indirect, reserves, reconcileCheck) {
   const qcra = model?.monte_carlo?.qcra || {};
   const qsra = model?.monte_carlo?.qsra || {};
   return [
-    { label:'Cost reconciliation', value: reconcileCheck < 0.02 ? 'PASS' : 'CHECK', detail:`Direct ${fmt(direct)} + Indirect ${fmt(indirect)} + Reserve ${fmt(reserves)} = ${fmt(direct+indirect+reserves)} vs P50 ${fmt(total)}` },
+    { label:'Cost reconciliation', value: reconcileCheck < 0.02 ? 'PASS' : 'CHECK', detail:`Direct ${fmt(direct, model?.currency_symbol)} + Indirect ${fmt(indirect, model?.currency_symbol)} + Reserve ${fmt(reserves, model?.currency_symbol)} = ${fmt(direct+indirect+reserves, model?.currency_symbol)} vs P50 ${fmt(total, model?.currency_symbol)}` },
     { label:'Scenario lock', value:String(model?.scenario_label || model?.scenario || 'Base'), detail:'Cards, narratives, QCRA/QSRA and exports are stamped from the selected scenario payload.' },
-    { label:'P-tail linkage', value: qcra.p80 ? fmt(qcra.p80) : 'P80 active', detail:`Cost P80 and QSRA P80 ${qsra.p80 || '—'} months are visible for board challenge.` },
+    { label:'P-tail linkage', value: qcra.p80 ? fmt(qcra.p80, model?.currency_symbol) : 'P80 active', detail:`Cost P80 and QSRA P80 ${qsra.p80 || '—'} months are visible for board challenge.` },
     { label:'Evidence gate', value: String(confidenceLens(model).headline || ''), detail: String(confidenceLens(model).decisionRule || '') },
     { label:'Audit readiness', value:'High', detail:'Scenario propagation is traceable end-to-end — every cost, schedule and risk output is stamped from the same source payload.' },
     ...(model?.stress_test_applied ? [{
@@ -2210,6 +2212,86 @@ function EmailGateForm({ onSubmit, onDismiss }) {
   </div>;
 }
 
+// ── CASEY Self-Challenge Component ─────────────────────────────────────────
+function SelfChallenge({ sc, programme }) {
+  const [expanded, setExpanded] = React.useState(false);
+  if (!sc) return null;
+
+  const overall = sc.overall_score || 0;
+  const traffic = sc.overall_traffic || 'amber';
+  const dims = sc.dimensions || {};
+  const totalIssues = sc.total_issues || 0;
+
+  const trafficColor = t => t === 'green' ? '#10b981' : t === 'amber' ? '#f59e0b' : '#ef4444';
+  const trafficBg = t => t === 'green' ? 'rgba(16,185,129,0.08)' : t === 'amber' ? 'rgba(245,158,11,0.08)' : 'rgba(239,68,68,0.08)';
+  const trafficBorder = t => t === 'green' ? 'rgba(16,185,129,0.25)' : t === 'amber' ? 'rgba(245,158,11,0.25)' : 'rgba(239,68,68,0.3)';
+  const dot = t => <span style={{display:'inline-block',width:8,height:8,borderRadius:'50%',background:trafficColor(t),marginRight:6,flexShrink:0,marginTop:3}}/>;
+
+  const dimList = Object.values(dims);
+
+  return (
+    <div style={{background:'#0a0f1e',border:`1px solid ${trafficBorder(traffic)}`,borderRadius:6,marginBottom:16,overflow:'hidden'}}>
+      {/* Header row */}
+      <div onClick={()=>setExpanded(!expanded)}
+           style={{display:'flex',alignItems:'center',gap:12,padding:'10px 16px',cursor:'pointer',
+                   background:trafficBg(traffic)}}>
+        <div style={{display:'flex',alignItems:'center',gap:6,flex:1}}>
+          <span style={{fontSize:'9px',fontWeight:'800',color:trafficColor(traffic),letterSpacing:'.12em'}}>
+            ⚡ CASEY OUTPUT CHALLENGE
+          </span>
+          <span style={{fontSize:'10px',color:'#475569',marginLeft:4}}>
+            — {programme || 'This programme'}
+          </span>
+        </div>
+        <div style={{display:'flex',gap:16,alignItems:'center'}}>
+          {dimList.slice(0,4).map(d=>(
+            <div key={d.label} style={{display:'flex',alignItems:'center',gap:4}}>
+              {dot(d.traffic)}
+              <span style={{fontSize:'9px',color:'#64748b'}}>{d.label?.split(' ')[0]}</span>
+              <span style={{fontSize:'10px',fontWeight:'700',color:trafficColor(d.traffic)}}>{d.score}%</span>
+            </div>
+          ))}
+          <div style={{width:1,height:14,background:'rgba(255,255,255,0.08)'}}/>
+          <span style={{fontSize:'11px',fontWeight:'800',color:trafficColor(traffic)}}>{overall}%</span>
+          <span style={{fontSize:'9px',color:'#475569',fontFamily:'monospace'}}>{expanded?'▲':'▼'}</span>
+        </div>
+      </div>
+
+      {/* Expanded detail */}
+      {expanded && <div style={{padding:'12px 16px',borderTop:`1px solid ${trafficBorder(traffic)}`}}>
+        <div style={{fontSize:'11px',color:'#94a3b8',marginBottom:12,lineHeight:'1.5'}}>
+          {sc.verdict}
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:10}}>
+          {dimList.map(d=>(
+            <div key={d.label} style={{background:'rgba(255,255,255,0.03)',border:`1px solid rgba(255,255,255,0.07)`,borderRadius:4,padding:'10px 12px'}}>
+              <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:d.issues?.length?8:0}}>
+                {dot(d.traffic)}
+                <span style={{fontSize:'10px',fontWeight:'700',color:'#fff'}}>{d.label}</span>
+                <span style={{fontSize:'11px',fontWeight:'800',color:trafficColor(d.traffic),marginLeft:'auto'}}>{d.score}%</span>
+              </div>
+              {d.issues?.map((iss,i)=>(
+                <div key={i} style={{display:'flex',gap:6,marginTop:4}}>
+                  <span style={{color:trafficColor(d.traffic),fontSize:'10px',flexShrink:0,marginTop:1}}>→</span>
+                  <span style={{fontSize:'10px',color:'#94a3b8',lineHeight:'1.5'}}>{iss}</span>
+                </div>
+              ))}
+              {(!d.issues || d.issues.length===0) && (
+                <div style={{fontSize:'10px',color:'#10b981',marginTop:2}}>✓ No issues identified</div>
+              )}
+            </div>
+          ))}
+        </div>
+        {totalIssues === 0 && (
+          <div style={{marginTop:10,fontSize:'10px',color:'#10b981',textAlign:'center'}}>
+            ✅ Output passed all CASEY self-challenge checks — board-defensible
+          </div>
+        )}
+      </div>}
+    </div>
+  );
+}
+
 function App() {
   const [show, setShow] = useState(true);
   const [briefing, setBriefing] = useState(false);
@@ -2332,7 +2414,7 @@ function scenarioAdjustedModel(currentModel, nextScenario) {
       if (s.endsWith('M')) return Number(s.slice(0,-1)) / 1000;
       return Number(s) || 0;
     };
-    const toMoney = (bn) => bn >= 1000 ? '$' + (bn/1000).toFixed(1) + 'T' : bn >= 1 ? '$' + bn.toFixed(1) + 'B' : '$' + (bn*1000).toFixed(0) + 'M';
+    const toMoney = (bn) => bn >= 1000 ? (curr || '$') + (bn/1000).toFixed(1) + 'T' : bn >= 1 ? (curr || '$') + bn.toFixed(1) + 'B' : (curr || '$') + (bn*1000).toFixed(0) + 'M';
 
     const baseCostBn = currentModel._base_cost_bn || moneyToBn(currentModel.cost_p50);
     const baseMonths = currentModel._base_months || parseFloat(String(currentModel.schedule || '').replace(/[^0-9.]/g,'')) || 60;
@@ -2444,7 +2526,7 @@ function parseMoneyLocal(v) {
     if (s.includes('M')) return n / 1000;
     return n;
   }
-  function moneyLocal(n) { return n >= 1000 ? `$${(n/1000).toFixed(1)}T` : n >= 1 ? `$${n.toFixed(1)}B` : `$${Math.round(n*1000)}M`; }
+  function moneyLocal(n, curr) { const c = curr || '$'; return n >= 1000 ? `${c}${(n/1000).toFixed(1)}T` : n >= 1 ? `${c}${n.toFixed(1)}B` : `${c}${Math.round(n*1000)}M`; }
   function normalizeCostRowsForUI(modelLike) {
     const m = modelLike || {};
     const target = parseMoneyLocal(m.cost_p50);
@@ -3110,6 +3192,7 @@ function parseMoneyLocal(v) {
         </div>}
       <nav className="tabs">{[['overview','Overview'],['twin','⚡ Twin'],['compare','Scenarios'],['delta','Intel'],['causal','Causal'],['cost','Cost'],['schedule','Schedule'],['risk','Risk'],['monte','QCRA/QSRA'],['outputs','Outputs'],['assurance','Assurance'],['runtime','Stress Test'],['advisor','Advisor'],['method','Method'],['benchmark','Benchmarks'],['pricing','Pricing']].map(x => <button key={x[0]} className={tab===x[0]?'active':''} onClick={() => setTab(x[0])}>{x[1]}</button>)}</nav>
         {tab === 'overview' && <>
+          <SelfChallenge sc={model?.self_challenge} programme={model?.title}/>
           <div style={{background:'linear-gradient(90deg,rgba(141,247,255,0.08),rgba(141,247,255,0.02))',border:'1px solid rgba(141,247,255,0.18)',borderRadius:'5px',padding:'10px 16px',marginBottom:'10px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:'12px',flexWrap:'wrap'}}>
             <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
               <span style={{fontSize:'18px'}}>⚡</span>
@@ -3150,7 +3233,7 @@ function parseMoneyLocal(v) {
           </section>}
           {model.executive_shock_insight && <section className="layout one"><Card className="shockCard"><h2>⚡ Live model update</h2><p>{model.executive_shock_insight}</p></Card></section>}
           <section className="layout two">
-            <Card><h2>Executive summary</h2><p style={{fontSize:'13px',lineHeight:'1.6'}}>{model.executive_summary || `${model.title} has been classified as ${safeRender(model.subsector)}. CASEY generated a first-pass cost, schedule, risk and confidence model for the selected scenario.`}</p><div className="miniMetrics"><b><span>Direct cost</span>{fmt(direct)}</b><b><span>Indirect cost</span>{fmt(indirect)}</b><b><span>Risk / reserve</span>{fmt(reserves)}</b></div><h3>Recommendation</h3>{(model.next_best_actions || []).slice(0,5).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{safeRender(x)}</div>)}</Card>
+            <Card><h2>Executive summary</h2><p style={{fontSize:'13px',lineHeight:'1.6'}}>{model.executive_summary || `${model.title} has been classified as ${safeRender(model.subsector)}. CASEY generated a first-pass cost, schedule, risk and confidence model for the selected scenario.`}</p><div className="miniMetrics"><b><span>Direct cost</span>{fmt(direct, model?.currency_symbol)}</b><b><span>Indirect cost</span>{fmt(indirect, model?.currency_symbol)}</b><b><span>Risk / reserve</span>{fmt(reserves, model?.currency_symbol)}</b></div><h3>Recommendation</h3>{(model.next_best_actions || []).slice(0,5).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{safeRender(x)}</div>)}</Card>
             <Card><h2>Board briefing — what the data says</h2>{(model.board_briefing || model.board_challenge_questions || []).slice(0,5).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{safeRender(x)}</div>)}<h3>CASEY thinking</h3><p className="caseyThinking">{model.casey_thinking || 'CASEY interprets this as a system-of-systems infrastructure programme requiring cost, schedule, risk and decision intelligence.'}</p></Card>
           </section>
           <section className="layout two eliteLayer">
@@ -3231,14 +3314,14 @@ function parseMoneyLocal(v) {
               </div>
               <p style={{fontSize:'9px',color:'#64748b',margin:0,lineHeight:'1.4'}}>Unit rates below show cost per {model.unit_rate_label?.metric||'programme unit'} for each CBS line, derived from this programme estimate. Compare to the typical sector range (right). Divergence indicates exceptional scope or unusual location/complexity.</p>
             </div>}
-            <h3>Cost estimate workbook</h3><Table rows={costs} cols={[["cbs","CBS"],["description","Description"],["type","Type"],["unit_rate","Unit rate"],["p10_bn","P10"],["p50_bn","P50"],["p90_bn","P90"],["basis","Basis"]]} moneyCols={["p10_bn","p50_bn","p90_bn"]} cellFmt={(col, val) => {
+            <h3>Cost estimate workbook</h3><Table rows={costs} cols={[["cbs","CBS"],["description","Description"],["type","Type"],["unit_rate","Unit rate"],["p10_bn","P10"],["p50_bn","P50"],["p90_bn","P90"],["basis","Basis"]]} curr={model?.currency_symbol || "$"} moneyCols={["p10_bn","p50_bn","p90_bn"]} cellFmt={(col, val) => {
                 const curr = model?.currency_symbol || '$';
                 if (col === 'unit_rate' && curr !== '$') return String(val).replace(/\$([0-9])/g, curr + '$1');
                 return String(val);
               }}/></Card><Card><h2>Cost composition</h2><p className="chartCaption">Direct, indirect and reserve are scenario-controlled and reconciled to selected P50. For the detailed uncertainty view use QCRA/QSRA.</p><ResponsiveContainer width="100%" height={320}><BarChart data={[{name:'Direct',value:direct},{name:'Indirect',value:indirect},{name:'Reserve',value:reserves}]}><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis dataKey="name"/><YAxis/><Tooltip/><Bar dataKey="value" fill="#8df7ff"/></BarChart></ResponsiveContainer></Card></section>}
         {tab === 'schedule' && <section className="layout two"><Card><h2>Schedule bridge vs Base</h2><p className="chartCaption">This is the month-by-month reason the scenario becomes faster or slower than Base.</p>{scheduleWaterfall.map((x,i)=><div className={`reason ${x.kind==='total'?'deltaReason':''}`} key={i}><span>{i+1}</span><b>{x.driver}</b><br/>{x.kind==='total'?`${x.months} months`:(x.months>=0?'+':'') + x.months + ' months'}</div>)}<h3>Scenario schedule logic</h3><Table rows={schedule} cols={[["activity_id","Activity"],["phase","Phase"],["activity","Name"],["predecessor","Pred"],["duration_months","Months"],["critical","Critical"],["basis","Basis"]]}/></Card><Card><h2>QSRA finish-date curve</h2><p className="chartCaption">P50 equals the headline schedule. P80/P90 show how severe the delivery tail becomes after the scenario trade-off.</p><div className="metrics"><div>P50<b>{qsra.p50} mo</b></div><div>P80<b>{qsra.p80} mo</b></div><div>P90<b>{qsra.p90} mo</b></div></div><ResponsiveContainer width="100%" height={280}><LineChart data={curve}><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis dataKey="percentile"/><YAxis/><Tooltip formatter={(v) => [`${v} months`, "QSRA finish date"]}/><ReferenceLine x={50} stroke="#ffffff88" label="P50 = headline"/><ReferenceLine x={80} stroke="#ffffff55" label="P80 = board risk"/><Line type="monotone" name="QSRA finish date" dataKey="schedule_months" stroke="#b18cff" strokeWidth={4}/></LineChart></ResponsiveContainer><div className="reason p80Translation"><span>1/5</span>{safeRender(p80Talk.schedule)}</div><div className="reason p80Translation"><span>!</span>{safeRender(p80Talk.board)}</div>{(model.monte_carlo?.curve_readout || []).slice(1).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{x}</div>)}</Card></section>}
         {tab === 'risk' && <section className="layout two"><Card><h2>Risk Register Pro</h2><p style={{fontSize:'11px',color:'#64748b',marginBottom:'8px'}}>Each risk has a cause (what triggers it), event (what happens), impact (cost/schedule consequence), probability, named owner, and mitigation. The top risks by expected monetary value drive the P80/P90 exposure in the QCRA chart.</p>{model?.stress_test_applied && <div style={{background:"rgba(239,68,68,0.08)",borderLeft:"2px solid #ef4444",padding:"6px 10px",marginBottom:"8px",fontSize:"11px",color:"#ef4444"}}>Stress test applied: risk posture has shifted. Confidence is now {model.confidence_pct}%. The risks below drove this position before the shock was applied.</div>}<Table rows={risks} cols={[['risk_id','ID'],['risk','Risk'],['cause','Cause'],['event','Event'],['impact','Impact'],['probability_pct','Prob %'],['activity_id','Activity'],['cbs','CBS'],['owner','Owner'],['mitigation','Mitigation']]}/></Card><Card><h2>Top exposure drivers</h2><ResponsiveContainer width="100%" height={380}><BarChart data={tornado} layout="vertical"><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis type="number"/><YAxis dataKey="driver" type="category" width={150}/><Tooltip/><Bar dataKey="contribution" fill="#8df7ff"/></BarChart></ResponsiveContainer></Card></section>}
-        {tab === 'monte' && <section className="layout two"><Card><h2>QCRA cost range curve</h2>{model?.stress_test_applied && <div style={{background:'rgba(245,158,11,0.08)',borderLeft:'2px solid #f59e0b',padding:'6px 10px',marginBottom:'8px',fontSize:'11px',color:'#f59e0b'}}>Stress test active: {String(model.stress_test_applied).replace(/_/g,' ')} — P50 updated to {safeRender(model.cost_p50)}. Download Export QCRA/QSRA to capture the stressed curves.</div>}<p style={{fontSize:'11px',color:'#64748b',marginBottom:'8px'}}>Probability range across 10,000+ simulations. P50 = the most likely outturn (headline number). P80 = 80% chance of coming in at this or less — this is the board's risk exposure. P90 = stress-case downside. Not a cashflow profile.</p><div className="metrics"><div>P50 headline<b>{safeRender(model.cost_p50)}</b></div><div>P80 risk exposure<b>{fmt(qcra.p80)}</b></div><div>P90 stress case<b>{fmt(qcra.p90)}</b></div></div><ResponsiveContainer width="100%" height={280}><AreaChart data={curve}><defs><linearGradient id="caseyG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#8df7ff" stopOpacity=".55"/><stop offset="1" stopColor="#8df7ff" stopOpacity="0"/></linearGradient></defs><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis dataKey="percentile"/><YAxis/><Tooltip formatter={(v) => {const curr = model?.currency_symbol || '$'; return [`${curr}${Number(v).toFixed(1)}B`, "QCRA total outturn"];}}/><ReferenceLine x={50} stroke="#ffffff88" label="P50 = headline"/><ReferenceLine x={80} stroke="#ffffff55" label="P80 = board risk"/><Area type="monotone" name="QCRA total outturn" dataKey="cost_bn" stroke="#8df7ff" fill="url(#caseyG)"/></AreaChart></ResponsiveContainer>{(model.monte_carlo?.curve_readout || []).slice(0,1).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{safeRender(x)}</div>)}<div className="reason p80Translation"><span>1/5</span>{safeRender(p80Talk.cost)}</div><div className="reason"><span>!</span>This curve is a probability distribution, not spend over time. The x-axis is confidence percentile. P50 equals the headline estimate; P80/P90 are board downside exposure.</div></Card><Card><h2>QSRA schedule range curve</h2><p className="chartCaption">P50 matches the headline duration. P80/P90 show the likely board conversation if critical path risk lands.</p><div className="metrics"><div>P50 headline<b>{qsra.p50} mo</b></div><div>P80 risk date<b>{qsra.p80} mo</b></div><div>P90 stress date<b>{qsra.p90} mo</b></div></div><ResponsiveContainer width="100%" height={280}><LineChart data={curve}><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis dataKey="percentile"/><YAxis/><Tooltip formatter={(v) => [`${v} months`, "QSRA finish date"]}/><ReferenceLine x={50} stroke="#ffffff88" label="P50 = headline"/><ReferenceLine x={80} stroke="#ffffff55" label="P80 = board risk"/><Line type="monotone" name="QSRA finish date" dataKey="schedule_months" stroke="#b18cff" strokeWidth={4}/></LineChart></ResponsiveContainer><div className="reason p80Translation"><span>1/5</span>{safeRender(p80Talk.schedule)}</div><div className="reason p80Translation"><span>!</span>{safeRender(p80Talk.board)}</div>{(model.monte_carlo?.curve_readout || []).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{safeRender(x)}</div>)}</Card></section>}
+        {tab === 'monte' && <section className="layout two"><Card><h2>QCRA cost range curve</h2>{model?.stress_test_applied && <div style={{background:'rgba(245,158,11,0.08)',borderLeft:'2px solid #f59e0b',padding:'6px 10px',marginBottom:'8px',fontSize:'11px',color:'#f59e0b'}}>Stress test active: {String(model.stress_test_applied).replace(/_/g,' ')} — P50 updated to {safeRender(model.cost_p50)}. Download Export QCRA/QSRA to capture the stressed curves.</div>}<p style={{fontSize:'11px',color:'#64748b',marginBottom:'8px'}}>Probability range across 10,000+ simulations. P50 = the most likely outturn (headline number). P80 = 80% chance of coming in at this or less — this is the board's risk exposure. P90 = stress-case downside. Not a cashflow profile.</p><div className="metrics"><div>P50 headline<b>{safeRender(model.cost_p50)}</b></div><div>P80 risk exposure<b>{fmt(qcra.p80, model?.currency_symbol)}</b></div><div>P90 stress case<b>{fmt(qcra.p90, model?.currency_symbol)}</b></div></div><ResponsiveContainer width="100%" height={280}><AreaChart data={curve}><defs><linearGradient id="caseyG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#8df7ff" stopOpacity=".55"/><stop offset="1" stopColor="#8df7ff" stopOpacity="0"/></linearGradient></defs><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis dataKey="percentile"/><YAxis/><Tooltip formatter={(v) => {const curr = model?.currency_symbol || '$'; return [`${curr}${Number(v).toFixed(1)}B`, "QCRA total outturn"];}}/><ReferenceLine x={50} stroke="#ffffff88" label="P50 = headline"/><ReferenceLine x={80} stroke="#ffffff55" label="P80 = board risk"/><Area type="monotone" name="QCRA total outturn" dataKey="cost_bn" stroke="#8df7ff" fill="url(#caseyG)"/></AreaChart></ResponsiveContainer>{(model.monte_carlo?.curve_readout || []).slice(0,1).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{safeRender(x)}</div>)}<div className="reason p80Translation"><span>1/5</span>{safeRender(p80Talk.cost)}</div><div className="reason"><span>!</span>This curve is a probability distribution, not spend over time. The x-axis is confidence percentile. P50 equals the headline estimate; P80/P90 are board downside exposure.</div></Card><Card><h2>QSRA schedule range curve</h2><p className="chartCaption">P50 matches the headline duration. P80/P90 show the likely board conversation if critical path risk lands.</p><div className="metrics"><div>P50 headline<b>{qsra.p50} mo</b></div><div>P80 risk date<b>{qsra.p80} mo</b></div><div>P90 stress date<b>{qsra.p90} mo</b></div></div><ResponsiveContainer width="100%" height={280}><LineChart data={curve}><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis dataKey="percentile"/><YAxis/><Tooltip formatter={(v) => [`${v} months`, "QSRA finish date"]}/><ReferenceLine x={50} stroke="#ffffff88" label="P50 = headline"/><ReferenceLine x={80} stroke="#ffffff55" label="P80 = board risk"/><Line type="monotone" name="QSRA finish date" dataKey="schedule_months" stroke="#b18cff" strokeWidth={4}/></LineChart></ResponsiveContainer><div className="reason p80Translation"><span>1/5</span>{safeRender(p80Talk.schedule)}</div><div className="reason p80Translation"><span>!</span>{safeRender(p80Talk.board)}</div>{(model.monte_carlo?.curve_readout || []).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{safeRender(x)}</div>)}</Card></section>}
         {tab === 'delta' && <section className="layout two">
           <Card><h2>Strategic Delta Intelligence</h2><p>What changed because this scenario was selected.</p>
             {(model.scenario_delta_intelligence || []).map((x,i)=><div className="reason" key={i}><span>{i+1}</span><b>{x.label}: {x.value}</b><br/>{x.meaning}</div>)}
@@ -4398,6 +4481,7 @@ const HELP_ARTICLES = [
   {id:'gate',cat:'Intelligence',icon:'🚦',title:'What is the Gate Review assessment?',body:'CASEY maps your programme to IPA gateway readiness (G0-G4). G0 = strategic definition. G1 = business justification. G2 = delivery strategy. G3 = investment decision. G4 = readiness for service. The gate verdict (READY / CONDITIONAL / NOT READY) comes from confidence level and estimate class. The Evidence Gaps tab names what is missing before any gate can complete.',tags:['gate','ipa','gateway','g2','g3','readiness','evidence','conditional']},
   {id:'challenge',cat:'Intelligence',icon:'🔴',title:'How to use Challenge Mode',body:'Click the red CHALLENGE MY PROGRAMME button on the Overview tab after running any project. CASEY becomes the hostile examiner — it challenges your estimate class, OBA disclosure, P80 reserve, risk register quality, governing constraint, schedule basis and benchmark evidence. Each challenge includes what CASEY would need to accept the position. Works for every sector and country.',tags:['challenge','hostile','examiner','oba','p80','risk register','benchmark']},
   {id:'sector',cat:'Intelligence',icon:'⚠',title:'What is the Sector Failure Pattern?',body:'Every sector has a primary failure mode. Rail = systems integration deferred (civil complete but railway cannot run). Nuclear = first-of-kind design changes post-FCD. Space = mission assurance burden underestimated. Data centre = grid connection not on critical path. Airport = baggage and fire safety systems integration. Mining = social licence failure at near-completion. The Challenge tab names which historical programme failure your programme most resembles.',tags:['sector failure','mortality','cancel','crossrail','vogtle','artemis','pattern']},
+  {id:'casey-challenge',cat:'How CASEY Works',icon:'⚡',title:'CASEY Output Challenge — how the self-attack works',body:'Every time CASEY generates an output — whether from a free project run, Earth Demo, Space Demo, or the Showcase Library — it immediately attacks its own output before you see it. This is called the CASEY Output Challenge. It runs automatically on every programme, every sector, every location, Earth and Space. WHAT IT CHECKS: Cost Realism — CASEY compares its own P50 against known named programme benchmarks (California HSR $110B, HS2 £69B, Vogtle $35B, F-35 $428B and 30 others from GAO, IPA and Infrastructure Australia). If CASEY generated $11B for California HSR, the challenge would immediately flag it as 12x below the GAO benchmark. It also checks the P80/P50 spread, OBA uplift against Flyvbjerg reference classes, and unit rates against sector norms. Schedule Realism — checks whether the QSRA P80 is believable (P80 should be 10-25% above base), whether the programme duration matches sector norms, and whether it aligns with named programme published timelines. Risk Completeness — checks whether the risk register has enough risks for the sector (10+ for board submission), whether sector-specific risks are present (grid connection for energy, planning for rail, regulatory for nuclear, cyber for defence), and whether risks have quantified EMV. OBA Calibration — checks whether Optimism Bias uplift has been applied and whether it matches the Flyvbjerg 2022 reference class for the sector. HOW TO READ IT: Green (80%+) means the output passed all checks and is board-defensible. Amber (60-79%) means the output needs review before submission. Red (below 60%) means there are significant gaps — do not use for board submission without addressing the flags. Each dimension shows a specific issue, not a generic warning. The challenge runs in under 100ms and is shown at the top of the Overview tab. You cannot turn it off — it is part of what makes CASEY defensible.',tags:['challenge','self-attack','quality','realism','oba','risk','cost','benchmark','defence','board']},
   {id:'free-limits',cat:'Access & Pricing',icon:'🔓',title:'What is free? What requires a subscription?',body:'CASEY has a generous free tier that covers the core intelligence experience. ALWAYS FREE — unlimited: Earth Demo (run as many times as you like, any sector, any scenario), Space Demo (same — full space programme intelligence, unlimited), Showcase Library (137 named real programmes from HS2 to JWST, unlimited browsing and loading), Open Crawl intelligence (live World Bank, GDELT, Wikipedia, SpaceX, FX and climate data on every run). FREE ONCE: 1 project run — your own Free Run where you type a custom programme description. 1 comparison run. After your 1 free run, you will see the upgrade screen. Earth Demo and Space Demo are never limited. PROFESSIONAL (£99/mo, coming soon): unlimited project runs, all exports (PDF board pack, Excel workbook, risk register, QCRA/QSRA, P6 XER), Advisor (Claude and GPT-4o), Digital Twin, file ingestion, Programme Memory. TEAM (£349/mo, coming soon): 5 seats, everything in Professional, priority support, white-label PDF exports.',tags:['free','pricing','limits','subscription','demo','project run','upgrade']},
   {id:'opencrawl',cat:'Open Crawl',icon:'🌐',title:'What is Open Crawl intelligence?',body:'CASEY uses Open Crawl — a system of free, open data APIs — to fetch real-time global intelligence for every programme run. No paid subscription required. Sources: NewsAPI (free tier, 80,000+ news sources including Reuters, Bloomberg, New Civil Engineer, Engineering News-Record, Infrastructure Intelligence — full article headlines and descriptions from the last 30 days, set NEWS_API_KEY in Render environment to activate), GDELT Project (global news database, updated every 15 minutes, 100+ countries, 65 languages), World Bank Open Data (217 countries, GDP growth, inflation, infrastructure investment), Wikipedia (programme intelligence), SpaceX API (live launch manifest for space programmes), Open-Meteo (7-day climate signals for construction risk), Open Exchange Rates (live FX for 170 currencies). When ANTHROPIC_API_KEY or OPENAI_API_KEY is set in the server environment, the raw data is additionally processed through AI for a richer narrative — but the underlying data is always free.',tags:['open crawl','live','intelligence','real-time','world bank','wikipedia','spacex','nasa','free','global']},
   {id:'opencrawl-how',cat:'Open Crawl',icon:'🌐',title:'How Open Crawl works in CASEY',body:'Every time you run a project — Free Run, Earth Demo, Space Demo or Showcase Library — CASEY immediately starts fetching live data in the background. It takes up to 6 seconds. You will see a pulsing green dot and the text OPEN CRAWL or LIVE INTEL appear in the navigation bar once data arrives. The intelligence appears in the Overview tab as a green-bordered panel above the main analysis. It also appears in the PDF Board Pack (final page) and the QCRA/QSRA workbook. For UK, France, Nigeria or any of 217 countries: inflation data, GDP growth and infrastructure investment signals. For space programmes: live SpaceX launch manifest and current mission data. The data informs the confidence calibration and is passed to the Advisor so it can reference current conditions.',tags:['open crawl','how it works','navigation','green dot','overview','pdf','exports','advisor','background']},
