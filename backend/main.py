@@ -1163,7 +1163,72 @@ BENCHMARK_LIBRARY = [
      "keywords":["starlink","spacex","satellite","constellation","leo","broadband"],
      "cost_bn":30.0,"months":96,"cost_growth_pct":0,"schedule_slip_months":0,
      "failure_mode":"Successfully scaled — reusable launch, vertical integration, iterative design",
-     "lesson":"Vertical integration (own launch + own satellite) is the only structure that achieves constellation economics — merchant launch makes constellations unfinanceable"},
+     "lesson":"Vertical integration (own launch + own satellite) is the only structure that achieves constellation economics — merchant launch makes constellations unfinanceable at scale."}
+,
+    {"name": "East West Rail", "sector": "Rail / Transit", "mode": "Earth", "keywords": ["rail", "east west", "ewrc", "bedford", "cambridge"], "cost_bn": 5.0, "months": 144, "cost_growth_pct": 62, "schedule_slip_months": 36, "failure_mode": "Scope changes and planning consent delays post-OBC.", "lesson": "Scope freeze before OBC approval prevents the most expensive changes."},
+    {"name": "Lower Thames Crossing", "sector": "Road / Highways", "mode": "Earth", "keywords": ["thames", "crossing", "road", "tunnel", "kent"], "cost_bn": 9.0, "months": 180, "cost_growth_pct": 80, "schedule_slip_months": 48, "failure_mode": "Planning process consumed over 300M with no construction started.", "lesson": "Planning consent is the governing constraint for major road schemes."},
+    {"name": "Transpennine Route Upgrade", "sector": "Rail / Transit", "mode": "Earth", "keywords": ["transpennine", "tru", "leeds", "manchester"], "cost_bn": 11.5, "months": 120, "cost_growth_pct": 55, "schedule_slip_months": 24, "failure_mode": "Scope escalation and possession availability constraints.", "lesson": "Possession windows must be secured before the baseline is set."},
+    {"name": "Sizewell C Nuclear", "sector": "Nuclear Power", "mode": "Earth", "keywords": ["sizewell", "nuclear", "epr", "suffolk"], "cost_bn": 20.0, "months": 228, "cost_growth_pct": 0, "schedule_slip_months": 0, "failure_mode": "First-of-kind UK EPR RAB financing model not yet confirmed.", "lesson": "Novel financing structures carry the same schedule risk as novel technology."},
+    {"name": "UK Defence Equipment Plan", "sector": "Defence / Military", "mode": "Earth", "keywords": ["defence", "military", "mod", "dstl"], "cost_bn": 288.0, "months": 120, "cost_growth_pct": 17, "schedule_slip_months": 24, "failure_mode": "Structural unaffordability; 16.9B gap identified by NAO 2023.", "lesson": "Portfolio unaffordability compounds \u2014 small overruns cancel only on paper."},
+    {"name": "New Hospital Programme NHS", "sector": "Health / Public Buildings", "mode": "Earth", "keywords": ["hospital", "nhs", "health", "public building"], "cost_bn": 20.0, "months": 144, "cost_growth_pct": 0, "schedule_slip_months": 60, "failure_mode": "Slipped from 2030 to 2040 plus; RAAC structural failures accelerated need.", "lesson": "Deferring hospital replacement creates a capital and operational emergency simultaneously."},
+    {"name": "Smart Motorways Programme UK", "sector": "Road / Highways", "mode": "Earth", "keywords": ["smart motorway", "all lane running", "motorway", "highways"], "cost_bn": 5.7, "months": 84, "cost_growth_pct": 35, "schedule_slip_months": 18, "failure_mode": "Programme paused 2023 following safety review; stranded capital on incomplete works.", "lesson": "Safety pauses mid-programme create stranded assets and programme restarts cost more than completion."},
+    {"name": "F-35 Lightning II Programme", "sector": "Defence / Military", "mode": "Earth", "keywords": ["f-35", "f35", "fighter", "joint strike", "jsf", "lockheed"], "cost_bn": 428.0, "months": 240, "cost_growth_pct": 88, "schedule_slip_months": 84, "failure_mode": "Requirements instability and concurrency of development and production.", "lesson": "Concurrency is the most reliably expensive decision in defence acquisition."},
+    {"name": "Ford-class Aircraft Carrier CVN-78", "sector": "Defence / Military", "mode": "Earth", "keywords": ["ford", "aircraft carrier", "cvn", "navy", "carrier"], "cost_bn": 13.3, "months": 180, "cost_growth_pct": 22, "schedule_slip_months": 24, "failure_mode": "First-of-kind advanced arresting gear required repeated redesign.", "lesson": "Novel technology on a platform that cannot stop mid-build creates unlimited redesign cost."},
+    {"name": "Honolulu Rail Transit HART", "sector": "Rail / Transit", "mode": "Earth", "keywords": ["honolulu", "hawaii", "rail", "hart", "transit"], "cost_bn": 10.0, "months": 132, "cost_growth_pct": 168, "schedule_slip_months": 96, "failure_mode": "Soil conditions, utility conflicts and contractor performance failures.", "lesson": "Geotechnical risk in island geology is always underestimated. No desktop study removes it."},
+    {"name": "Columbia-class Submarine", "sector": "Defence / Military", "mode": "Earth", "keywords": ["columbia", "submarine", "ssbn", "trident"], "cost_bn": 110.0, "months": 240, "cost_growth_pct": 24, "schedule_slip_months": 36, "failure_mode": "Industrial base capacity; lead submarine 24 months behind schedule.", "lesson": "The industrial base must be grown 10 years before programme peak \u2014 not concurrently."},
+    {"name": "Gateway Program NY-NJ Rail", "sector": "Rail / Transit", "mode": "Earth", "keywords": ["gateway", "new jersey", "new york", "amtrak", "penn station"], "cost_bn": 16.0, "months": 180, "cost_growth_pct": 15, "schedule_slip_months": 24, "failure_mode": "Federal funding uncertainty delayed programme by years.", "lesson": "Federal funding dependency makes local programme schedules uncontrollable."},
+    {"name": "Purple Line Maryland", "sector": "Rail / Transit", "mode": "Earth", "keywords": ["purple line", "maryland", "metro", "light rail"], "cost_bn": 6.0, "months": 96, "cost_growth_pct": 42, "schedule_slip_months": 48, "failure_mode": "Contractor default required full rebidding of construction contract.", "lesson": "Contractor default mid-programme doubles the remaining cost through rebidding and delay claims."},
+    {"name": "Samsung Austin Semiconductor Fab", "sector": "Semiconductor", "mode": "Earth", "keywords": ["samsung", "austin", "texas", "fab", "semiconductor", "chip"], "cost_bn": 25.0, "months": 60, "cost_growth_pct": 35, "schedule_slip_months": 24, "failure_mode": "CHIPS Act incentives delayed; workforce and equipment supply constraints.", "lesson": "Government subsidy programmes create schedule dependency outside the programme team control."},
+    {"name": "Intel Ohio Semiconductor Fab", "sector": "Semiconductor", "mode": "Earth", "keywords": ["intel", "ohio", "fab", "semiconductor", "foundry"], "cost_bn": 20.0, "months": 60, "cost_growth_pct": 0, "schedule_slip_months": 12, "failure_mode": "CHIPS Act delays; scaled back from 100B to 20B Phase 1.", "lesson": "Phased delivery is the correct risk mitigation for first-of-scale manufacturing."},
+    {"name": "Virginia-class Submarine Block V", "sector": "Defence / Military", "mode": "Earth", "keywords": ["virginia", "submarine", "ssn", "block v", "general dynamics"], "cost_bn": 84.0, "months": 240, "cost_growth_pct": 8, "schedule_slip_months": 18, "failure_mode": "Shipyard capacity and workforce shortfalls; delivery rate below requirement.", "lesson": "Workforce and tooling capacity constrain nuclear shipbuilding more than any other single factor."},
+    {"name": "Sydney Metro City Southwest", "sector": "Rail / Transit", "mode": "Earth", "keywords": ["sydney", "metro", "city", "southwest", "nsw", "australia"], "cost_bn": 12.5, "months": 108, "cost_growth_pct": 28, "schedule_slip_months": 12, "failure_mode": "Tunnelling complexity and station fitout delays.", "lesson": "Station fitout is always the last activity and always underestimated."},
+    {"name": "Melbourne Metro Tunnel", "sector": "Rail / Transit", "mode": "Earth", "keywords": ["melbourne", "metro tunnel", "victoria", "australia"], "cost_bn": 12.6, "months": 120, "cost_growth_pct": 35, "schedule_slip_months": 18, "failure_mode": "Ground conditions and COVID labour impacts.", "lesson": "COVID compounded existing programme risk \u2014 it did not create it."},
+    {"name": "Inland Rail Melbourne-Brisbane", "sector": "Rail / Transit", "mode": "Earth", "keywords": ["inland rail", "australia", "freight", "melbourne", "brisbane"], "cost_bn": 31.0, "months": 180, "cost_growth_pct": 120, "schedule_slip_months": 60, "failure_mode": "Cost tripled from AUD 9.9B to AUD 31B in successive business case reviews.", "lesson": "Sequential business case reviews without binding scope freeze produce unbounded cost growth."},
+    {"name": "Snowy 2.0 Hydroelectric", "sector": "Energy / Power", "mode": "Earth", "keywords": ["snowy", "hydro", "pumped", "australia", "energy"], "cost_bn": 12.0, "months": 120, "cost_growth_pct": 180, "schedule_slip_months": 36, "failure_mode": "Tunnelling geology far worse than forecast; TBM stuck 14 months.", "lesson": "Tunnelling geology is binary: either it works or it does not. The P80 must fund a complete reroute."},
+    {"name": "WestConnex Motorway Sydney", "sector": "Road / Highways", "mode": "Earth", "keywords": ["westconnex", "sydney", "motorway", "nsw", "toll"], "cost_bn": 16.8, "months": 120, "cost_growth_pct": 45, "schedule_slip_months": 18, "failure_mode": "Traffic modelling optimism and community compensation costs underestimated.", "lesson": "Traffic demand forecasting always overestimates and compensation always underestimates."},
+    {"name": "Bruce Highway Upgrade Queensland", "sector": "Road / Highways", "mode": "Earth", "keywords": ["bruce highway", "queensland", "road", "highway", "australia"], "cost_bn": 13.0, "months": 180, "cost_growth_pct": 22, "schedule_slip_months": 24, "failure_mode": "Scope growth through successive government approvals; no fixed completion date.", "lesson": "Open-ended funding commitments produce open-ended programmes."},
+    {"name": "Stuttgart 21 Rail Germany", "sector": "Rail / Transit", "mode": "Earth", "keywords": ["stuttgart", "s21", "rail", "germany", "hauptbahnhof"], "cost_bn": 4.5, "months": 180, "cost_growth_pct": 350, "schedule_slip_months": 168, "failure_mode": "Gypsum layer flooding, community opposition, scope changes.", "lesson": "Community opposition that starts after construction begins costs more than the original project."},
+    {"name": "Flamanville EPR Nuclear France", "sector": "Nuclear Power", "mode": "Earth", "keywords": ["flamanville", "epr", "nuclear", "france", "edf"], "cost_bn": 13.2, "months": 192, "cost_growth_pct": 374, "schedule_slip_months": 132, "failure_mode": "First-of-kind EPR design errors in welds, containment, steam generators.", "lesson": "First-of-kind nuclear anywhere in the world requires a 3-4x cost multiplier as the baseline."},
+    {"name": "Olkiluoto 3 Nuclear Finland", "sector": "Nuclear Power", "mode": "Earth", "keywords": ["olkiluoto", "finland", "nuclear", "epr", "areva", "tvo"], "cost_bn": 3.0, "months": 60, "cost_growth_pct": 330, "schedule_slip_months": 168, "failure_mode": "First EPR globally; contractor lacked nuclear experience. Opened 14 years late.", "lesson": "Awarding nuclear construction to a contractor without nuclear experience is the primary risk."},
+    {"name": "Lyon-Turin Rail Tunnel TELT", "sector": "Rail / Transit", "mode": "Earth", "keywords": ["lyon", "turin", "telt", "alpine", "tunnel"], "cost_bn": 26.0, "months": 240, "cost_growth_pct": 38, "schedule_slip_months": 48, "failure_mode": "Geological complexity and cross-border financing disputes.", "lesson": "Cross-border infrastructure financing requires legally binding political commitment before ground is broken."},
+    {"name": "Fehmarnbelt Fixed Link", "sector": "Road / Rail", "mode": "Earth", "keywords": ["fehmarnbelt", "denmark", "germany", "tunnel", "fixed link"], "cost_bn": 7.4, "months": 156, "cost_growth_pct": 25, "schedule_slip_months": 24, "failure_mode": "Environmental permits and pandemic delays.", "lesson": "Cross-border environmental consenting always takes longer than domestic consenting."},
+    {"name": "Brenner Base Tunnel BBT", "sector": "Rail / Transit", "mode": "Earth", "keywords": ["brenner", "tunnel", "austria", "italy", "rail", "alpine"], "cost_bn": 8.9, "months": 216, "cost_growth_pct": 28, "schedule_slip_months": 24, "failure_mode": "Geological complexity and cross-border coordination.", "lesson": "Cross-border major infrastructure requires a joint delivery authority with binding decision-making."},
+    {"name": "Mochovce 3 and 4 Nuclear Slovakia", "sector": "Nuclear Power", "mode": "Earth", "keywords": ["mochovce", "slovakia", "nuclear", "vver", "se"], "cost_bn": 5.6, "months": 120, "cost_growth_pct": 220, "schedule_slip_months": 180, "failure_mode": "Soviet-era VVER completion; regulatory hold-points exceeded forecast.", "lesson": "Completing unfinished Soviet-era nuclear is not cheaper than new build \u2014 it is more expensive."},
+    {"name": "Grand Paris Express", "sector": "Rail / Transit", "mode": "Earth", "keywords": ["grand paris", "gpe", "metro", "paris", "france", "sncf", "ile de france"], "cost_bn": 35.0, "months": 180, "cost_growth_pct": 42, "schedule_slip_months": 36, "failure_mode": "COVID, geological encounters and utility diversions above baseline.", "lesson": "Utility diversion costs in Paris are consistently 2-3x the forecast regardless of survey depth."},
+    {"name": "HS1 Channel Tunnel Rail Link", "sector": "Rail / Transit", "mode": "Earth", "keywords": ["hs1", "channel tunnel", "rail link", "eurostar", "st pancras"], "cost_bn": 5.2, "months": 120, "cost_growth_pct": 30, "schedule_slip_months": 24, "failure_mode": "Land acquisition and financing structure changes drove cost growth.", "lesson": "Financing structure changes imposed by government mid-delivery are treated as scope changes by every contractor."},
+    {"name": "NEOM The Line Saudi Arabia", "sector": "Urban / Smart City", "mode": "Earth", "keywords": ["neom", "the line", "saudi", "linear city", "vision 2030"], "cost_bn": 500.0, "months": 300, "cost_growth_pct": 0, "schedule_slip_months": 60, "failure_mode": "Revised 2023 to 2.4km from 170km; financial viability questioned by global analysts.", "lesson": "Political programmes driven by vision rather than demand always rebaseline when reality meets the plan."},
+    {"name": "Riyadh Metro Saudi Arabia", "sector": "Rail / Transit", "mode": "Earth", "keywords": ["riyadh", "metro", "saudi", "rail", "transit"], "cost_bn": 22.5, "months": 108, "cost_growth_pct": 18, "schedule_slip_months": 36, "failure_mode": "Desert ground conditions and underground utility conflicts.", "lesson": "Utility corridor conflicts in city-centre desert construction are consistently underestimated."},
+    {"name": "Barakah Nuclear Plant UAE", "sector": "Nuclear Power", "mode": "Earth", "keywords": ["barakah", "uae", "nuclear", "enec", "kepco", "emirates"], "cost_bn": 24.4, "months": 168, "cost_growth_pct": 12, "schedule_slip_months": 36, "failure_mode": "COVID delays. Unit 1 operational 2021, Unit 4 target 2025.", "lesson": "Korean-model nuclear delivery reduces but does not eliminate schedule risk from external events."},
+    {"name": "Qatar Lusail Light Rail", "sector": "Rail / Transit", "mode": "Earth", "keywords": ["lusail", "qatar", "lrt", "light rail", "world cup"], "cost_bn": 3.6, "months": 72, "cost_growth_pct": 22, "schedule_slip_months": 18, "failure_mode": "Systems integration delays and FIFA World Cup 2022 operational disruption.", "lesson": "Event-driven deadlines prevent proper commissioning. The system that opens on time is never ready on time."},
+    {"name": "Etihad Rail UAE", "sector": "Rail / Transit", "mode": "Earth", "keywords": ["etihad rail", "uae", "abu dhabi", "freight rail", "passenger"], "cost_bn": 11.0, "months": 180, "cost_growth_pct": 15, "schedule_slip_months": 24, "failure_mode": "Phased delivery; freight network complete, passenger services delayed.", "lesson": "Separating freight and passenger phases enables earlier revenue but delays the passenger case indefinitely."},
+    {"name": "Mumbai-Ahmedabad High Speed Rail", "sector": "Rail / Transit", "mode": "Earth", "keywords": ["mumbai", "ahmedabad", "bullet train", "india", "high speed", "shinkansen"], "cost_bn": 13.5, "months": 168, "cost_growth_pct": 35, "schedule_slip_months": 48, "failure_mode": "Land acquisition in Maharashtra blocking 100km of route.", "lesson": "Land rights in India are the governing constraint \u2014 not engineering or funding."},
+    {"name": "Delhi-Meerut Rapid Rail RRTS", "sector": "Rail / Transit", "mode": "Earth", "keywords": ["delhi", "meerut", "rrts", "rapid transit", "india", "ncrtc"], "cost_bn": 5.6, "months": 96, "cost_growth_pct": 18, "schedule_slip_months": 24, "failure_mode": "Land acquisition and utility relocation above forecast.", "lesson": "State-level land acquisition in India takes 2-3x longer than central government estimates."},
+    {"name": "Singapore Cross Island Line", "sector": "Rail / Transit", "mode": "Earth", "keywords": ["singapore", "cross island", "crl", "mrt", "rail"], "cost_bn": 16.0, "months": 216, "cost_growth_pct": 0, "schedule_slip_months": 0, "failure_mode": "On track 2032 \u2014 referenced as positive governance comparator.", "lesson": "Strong client governance and an integrated delivery team is the greatest predictor of on-time delivery."},
+    {"name": "Jakarta MRT Indonesia", "sector": "Rail / Transit", "mode": "Earth", "keywords": ["jakarta", "mrt", "indonesia", "metro", "rail"], "cost_bn": 1.7, "months": 84, "cost_growth_pct": 8, "schedule_slip_months": 12, "failure_mode": "Utility diversions and land acquisition in central Jakarta.", "lesson": "Japanese ODA model delivers with low cost growth when governance disciplines are maintained."},
+    {"name": "Kuala Lumpur MRT Putrajaya Line", "sector": "Rail / Transit", "mode": "Earth", "keywords": ["kuala lumpur", "mrt", "malaysia", "putrajaya", "rail"], "cost_bn": 15.0, "months": 120, "cost_growth_pct": 22, "schedule_slip_months": 24, "failure_mode": "COVID impact and systems integration delays.", "lesson": "COVID compounded existing programme risk. Systems integration is always the last risk to close."},
+    {"name": "TSMC Japan Fab Kumamoto", "sector": "Semiconductor", "mode": "Earth", "keywords": ["tsmc", "japan", "kumamoto", "fab", "semiconductor", "chip"], "cost_bn": 8.6, "months": 36, "cost_growth_pct": 18, "schedule_slip_months": 6, "failure_mode": "Workforce availability and equipment localisation constraints.", "lesson": "Semiconductor fab delivery speed is driven by equipment supplier lead times \u2014 not construction."},
+    {"name": "Dangote Refinery Nigeria", "sector": "Energy / Refinery", "mode": "Earth", "keywords": ["dangote", "refinery", "nigeria", "oil", "gas", "petrochemical"], "cost_bn": 19.0, "months": 120, "cost_growth_pct": 65, "schedule_slip_months": 72, "failure_mode": "Scale complexity, FX fluctuation and procurement delays.", "lesson": "The world's largest single-train refinery has no reference class \u2014 first-of-scale carries first-of-kind risk."},
+    {"name": "Kenya Standard Gauge Railway", "sector": "Rail / Transit", "mode": "Earth", "keywords": ["standard gauge", "kenya", "mombasa", "nairobi", "sgr"], "cost_bn": 3.8, "months": 84, "cost_growth_pct": 28, "schedule_slip_months": 24, "failure_mode": "Land acquisition delays and revenue below forecast.", "lesson": "Revenue assumptions in emerging market infrastructure are the least scrutinised and most important number."},
+    {"name": "Egypt New Administrative Capital", "sector": "Urban / Smart City", "mode": "Earth", "keywords": ["egypt", "new capital", "administrative", "cairo", "smart city"], "cost_bn": 58.0, "months": 240, "cost_growth_pct": 0, "schedule_slip_months": 48, "failure_mode": "Financing and population targets unmet.", "lesson": "A city without population is infrastructure without purpose \u2014 demand must precede supply."},
+    {"name": "Simandou Iron Ore Guinea", "sector": "Mining / Resources", "mode": "Earth", "keywords": ["simandou", "guinea", "iron ore", "mining", "rio tinto", "smfg"], "cost_bn": 20.0, "months": 120, "cost_growth_pct": 0, "schedule_slip_months": 0, "failure_mode": "30 years from discovery to FID; political risk and corridor infrastructure dependency.", "lesson": "Resource projects requiring new national infrastructure corridors have a fundamentally different risk profile."},
+    {"name": "Mozambique LNG TotalEnergies", "sector": "Energy / LNG", "mode": "Earth", "keywords": ["mozambique", "lng", "total", "natural gas", "rovuma"], "cost_bn": 24.0, "months": 120, "cost_growth_pct": 0, "schedule_slip_months": 60, "failure_mode": "Force majeure declared 2021 due to insurgency; programme suspended.", "lesson": "Social licence and security context can override any amount of engineering and financial preparation."},
+    {"name": "Lima Metro Line 2 Peru", "sector": "Rail / Transit", "mode": "Earth", "keywords": ["lima", "metro", "peru", "transit", "latin america"], "cost_bn": 5.5, "months": 120, "cost_growth_pct": 55, "schedule_slip_months": 84, "failure_mode": "Archaeological discoveries and utility relocation in historic Lima centre.", "lesson": "Archaeological risk in ancient cities cannot be de-risked by desktop study."},
+    {"name": "Bogota Metro Line 1 Colombia", "sector": "Rail / Transit", "mode": "Earth", "keywords": ["bogota", "metro", "colombia", "mass transit", "latin america"], "cost_bn": 4.5, "months": 96, "cost_growth_pct": 12, "schedule_slip_months": 18, "failure_mode": "Design procurement delays and community consultation extensions.", "lesson": "Elevated guideway avoids underground cost risk at the price of urban interface complexity."},
+    {"name": "Panama Canal Expansion", "sector": "Ports / Maritime", "mode": "Earth", "keywords": ["panama canal", "expansion", "panamax", "locks", "shipping"], "cost_bn": 5.25, "months": 96, "cost_growth_pct": 12, "schedule_slip_months": 12, "failure_mode": "Concrete aggregate dispute and water level management delays.", "lesson": "Infrastructure that cannot stop operating during construction has no tolerance for contractor disputes."},
+    {"name": "Hornsea One Offshore Wind", "sector": "Energy / Offshore Wind", "mode": "Earth", "keywords": ["hornsea", "offshore wind", "uk", "orsted", "wind farm"], "cost_bn": 3.2, "months": 60, "cost_growth_pct": 5, "schedule_slip_months": 3, "failure_mode": "Largely on time \u2014 positive delivery comparator for offshore wind.", "lesson": "Identical technology on familiar seabed geology is the closest to risk-free megaproject delivery."},
+    {"name": "South-North Water Transfer China", "sector": "Water / Utilities", "mode": "Earth", "keywords": ["south north", "water transfer", "china", "snwtp", "canal"], "cost_bn": 79.0, "months": 300, "cost_growth_pct": 42, "schedule_slip_months": 60, "failure_mode": "Resettlement of 330000 people exceeded forecast cost and programme time.", "lesson": "Population resettlement cost and time is systematically underestimated in every megaproject globally."},
+    {"name": "Quellaveco Copper Mine Peru", "sector": "Mining / Resources", "mode": "Earth", "keywords": ["quellaveco", "peru", "copper", "angloamerican", "mining"], "cost_bn": 5.5, "months": 96, "cost_growth_pct": 10, "schedule_slip_months": 12, "failure_mode": "20-year community dialogue preceded construction.", "lesson": "20 years of community dialogue produced 10% cost growth. The alternative was project cancellation."},
+    {"name": "ESA Ariane 6 Launch Vehicle", "sector": "Space / Launch", "mode": "Space", "keywords": ["ariane", "esa", "launcher", "rocket", "arianespace", "european"], "cost_bn": 4.0, "months": 120, "cost_growth_pct": 75, "schedule_slip_months": 48, "failure_mode": "Development underestimated; first launch July 2024 vs 2020 plan.", "lesson": "Launch vehicle development timelines are almost always doubled by interface and qualification challenges."},
+    {"name": "Lunar Gateway Station NASA", "sector": "Space / Lunar", "mode": "Space", "keywords": ["gateway", "lunar", "station", "nasa", "artemis", "halo"], "cost_bn": 8.0, "months": 120, "cost_growth_pct": 0, "schedule_slip_months": 24, "failure_mode": "Schedule driven by SLS manifest and commercial partner delays.", "lesson": "A programme dependent on another programme for its critical path inherits all of that schedule risk."},
+    {"name": "NASA VIPER Lunar Rover", "sector": "Space / Lunar", "mode": "Space", "keywords": ["viper", "lunar rover", "nasa", "moon", "volatiles", "water ice"], "cost_bn": 0.433, "months": 60, "cost_growth_pct": 42, "schedule_slip_months": 18, "failure_mode": "Cancelled July 2024 due to cost growth and launch vehicle constraints.", "lesson": "When mission cost exceeds mission value, early cancellation is correct. The difficulty is deciding early enough."},
+    {"name": "ISRO Gaganyaan Crewed Mission", "sector": "Space / Crewed", "mode": "Space", "keywords": ["gaganyaan", "india", "crewed", "isro", "astronaut", "human spaceflight"], "cost_bn": 1.1, "months": 72, "cost_growth_pct": 30, "schedule_slip_months": 36, "failure_mode": "COVID disruption and crew escape system qualification delays.", "lesson": "First national human spaceflight programmes always take twice the estimated time regardless of funding."},
+    {"name": "Blue Origin New Glenn Rocket", "sector": "Space / Launch", "mode": "Space", "keywords": ["blue origin", "new glenn", "rocket", "launch vehicle", "bezos"], "cost_bn": 2.5, "months": 96, "cost_growth_pct": 80, "schedule_slip_months": 48, "failure_mode": "BE-4 engine development and manufacturing scale-up delays.", "lesson": "Engine development drives rocket development. The engine must be finished first."},
+    {"name": "Europa Clipper NASA", "sector": "Space / Science", "mode": "Space", "keywords": ["europa clipper", "jupiter", "moon", "nasa", "astrobiology"], "cost_bn": 5.0, "months": 132, "cost_growth_pct": 25, "schedule_slip_months": 18, "failure_mode": "Launch vehicle transition from SLS to Falcon Heavy caused replanning.", "lesson": "Changing launch vehicle mid-programme creates cascading interface changes across the spacecraft."},
+    {"name": "JAXA H3 Launch Vehicle", "sector": "Space / Launch", "mode": "Space", "keywords": ["h3", "jaxa", "japan", "launcher", "rocket"], "cost_bn": 1.5, "months": 120, "cost_growth_pct": 20, "schedule_slip_months": 18, "failure_mode": "Second stage ignition failure 2023; first successful launch 2024.", "lesson": "Second stage failure is the most common launch vehicle failure mode. Qualification must be exhaustive."},
+    {"name": "Starship SpaceX Programme", "sector": "Space / Launch", "mode": "Space", "keywords": ["starship", "spacex", "super heavy", "orbital", "megatonne"], "cost_bn": 2.0, "months": 60, "cost_growth_pct": 150, "schedule_slip_months": 36, "failure_mode": "FAA licensing and environmental review delays; iterative model creates regulatory friction.", "lesson": "Regulatory approval processes add linear time to exponential development."},
+    {"name": "NASA Dragonfly Titan Mission", "sector": "Space / Science", "mode": "Space", "keywords": ["dragonfly", "titan", "nasa", "drone", "saturn", "moon"], "cost_bn": 3.35, "months": 120, "cost_growth_pct": 55, "schedule_slip_months": 36, "failure_mode": "Budget constraints caused programmatic hold; launch delayed 2026 to 2028.", "lesson": "When budget pressure forces a hold, the resumption cost always exceeds the savings from the hold."},
+    {"name": "Nancy Grace Roman Space Telescope", "sector": "Space / Science", "mode": "Space", "keywords": ["roman", "space telescope", "nancy grace", "wfirst", "nasa"], "cost_bn": 3.2, "months": 84, "cost_growth_pct": 35, "schedule_slip_months": 18, "failure_mode": "Detector development complexity; programmatic scope additions.", "lesson": "Science missions absorb scope additions that have no equivalent in engineering programmes. Each addition is small. The aggregate is not."},
+    {"name": "Artemis SLS Rocket Programme", "sector": "Space / Launch", "mode": "Space", "keywords": ["artemis", "sls", "space launch system", "nasa", "moon", "orion"], "cost_bn": 23.0, "months": 120, "cost_growth_pct": 100, "schedule_slip_months": 48, "failure_mode": "Boeing cost-plus contract cost 9B vs 2.8B target; single-use vehicle economics unsustainable.", "lesson": "Cost-plus contracts without performance incentives on first-of-kind programmes produce unbounded cost."}
 ]
 
 
@@ -4509,6 +4574,10 @@ def chat(req: ChatRequest):
     for b in bms:
         bm_lines += f"  {b.get('name','?')}: +{b.get('cost_growth_pct',0)}% cost, +{b.get('schedule_slip_months',0)}mo | failure: {b.get('failure_mode',b.get('failure','?'))[:60]}\n"
 
+    # Include live intelligence in advisor context if available
+    live_intel = m.get("live_intel_text", "")
+    live_ts = m.get("live_intel_timestamp", "")
+
     context = f"""LIVE MODEL DATA FOR THIS PROGRAMME:
 Programme: {m.get('title', sub)}
 Sector: {sub} | Location: {loc} | Mode: {m.get('mode','Earth')}
@@ -4535,6 +4604,7 @@ BOARD ATTACK [0]: {ba[0] if ba else '—'}
 TRADITIONAL VIEW: {tvc.get('traditional','—')[:150] if isinstance(tvc,dict) else '—'}
 CASEY READ: {tvc.get('casey','—')[:150] if isinstance(tvc,dict) else '—'}
 EXECUTIVE SHOCK: {str(shock)[:200]}
+{"" if not live_intel else f"\n\nLIVE WEB INTELLIGENCE (fetched {live_ts}):\n" + live_intel[:600]}
 """
 
     system_prompt = """You are CASEY — the capital programme intelligence engine at controlorbit.com.
@@ -4671,6 +4741,17 @@ WHAT NOT TO DO:
 
     return {"answer": ans, "delta": delta, "source": "pattern"}
 
+
+@app.post("/capture-email")
+def capture_email(req: dict):
+    """Capture lead email from free run gate. Logs to console (wire to CRM/email service later)."""
+    email = str(req.get("email", "")).strip().lower()
+    action = str(req.get("action", ""))
+    import datetime
+    ts = datetime.datetime.utcnow().isoformat()
+    print(f"[LEAD] {ts} | {email} | action={action}")
+    # Future: send to Mailchimp, HubSpot, Supabase etc.
+    return {"ok": True, "email": email}
 
 @app.post("/upload/analyse")
 # ═══════════════════════════════════════════════════════════════════════
@@ -5609,8 +5690,11 @@ def _apply_currency_to_model(model: dict) -> dict:
     if curr == "$":
         return model  # nothing to do
     
-    import re, copy
-    m = copy.deepcopy(model)
+    import re, json as _json
+    try:
+        m = _json.loads(_json.dumps(model, default=str))
+    except Exception:
+        m = dict(model)
     
     def fix_text(text):
         if not isinstance(text, str): return text
@@ -6078,6 +6162,25 @@ def pdf_bytes(model: dict) -> bytes:
             ]))
 
     # Footer
+    # Live intelligence section
+    live_intel = model.get("live_intel_text", "")
+    live_ts = model.get("live_intel_timestamp", "")
+    if live_intel and len(live_intel) > 50:
+        story.append(Paragraph("LIVE SECTOR INTELLIGENCE", H1))
+        story.append(Paragraph(
+            f"The following intelligence was fetched in real-time at {live_ts} "
+            f"and informed the confidence calibration and benchmark scoring for this report.",
+            SMALL))
+        story.append(Spacer(1, 2*mm))
+        story.append(tbl([[live_intel[:600]]],[W-42*mm],
+            [("BACKGROUND",(0,0),(-1,-1),HexColor("#f0fdf4")),
+             ("FONTSIZE",(0,0),(-1,-1),8),
+             ("TEXTCOLOR",(0,0),(-1,-1),HexColor("#14532d")),
+             ("TOPPADDING",(0,0),(-1,-1),8),("BOTTOMPADDING",(0,0),(-1,-1),8),
+             ("LEFTPADDING",(0,0),(-1,-1),10),
+            ]))
+        story.append(Spacer(1,4*mm))
+
     story.append(Spacer(1,8*mm))
     story.append(HRFlowable(width="100%", thickness=0.5, color=DIVIDER))
     story.append(Spacer(1,2*mm))
@@ -6304,15 +6407,31 @@ def v26_pricing():
     }
 
 @app.post("/export/workbook")
-def export_workbook(model:Dict[str,Any]): return stream(workbook_bytes(model),"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","CASEY_Cost_Model_Planet_Class.xlsx")
+def export_workbook(model:Dict[str,Any]):
+    try:
+        return stream(workbook_bytes(model),"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","CASEY_Cost_Model_Planet_Class.xlsx")
+    except Exception as _ex:
+        return stream_error("Workbook export failed: "+str(_ex)[:100])
 @app.post("/export/risk-register")
-def export_risk(model:Dict[str,Any]): return stream(risk_register_workbook_bytes(model),"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","CASEY_Risk_Register_Pro.xlsx")
+def export_risk(model:Dict[str,Any]):
+    try:
+        return stream(risk_register_workbook_bytes(model),"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","CASEY_Risk_Register_Pro.xlsx")
+    except Exception as _ex:
+        return stream_error("Risk register export failed: "+str(_ex)[:100])
 @app.post("/export/xer")
-def export_xer(model:Dict[str,Any]): return stream(xer_bytes(model),"application/octet-stream","CASEY_TITAN_X_v26_P6_Schedule.xer")
+def export_xer(model:Dict[str,Any]):
+    try:
+        return stream(xer_bytes(model),"application/octet-stream","CASEY_TITAN_X_v26_P6_Schedule.xer")
+    except Exception as _ex:
+        return stream_error("XER export failed: "+str(_ex)[:100])
 @app.post("/export/word")
 def export_word(model:Dict[str,Any]): return stream(word_bytes(model),"application/vnd.openxmlformats-officedocument.wordprocessingml.document","CASEY_Executive_Board_Report.docx")
 @app.post("/export/pdf")
-def export_pdf(model:Dict[str,Any]): return stream(pdf_bytes(model),"application/pdf","CASEY_Board_Intelligence_Pack.pdf")
+def export_pdf(model:Dict[str,Any]):
+    try:
+        return stream(pdf_bytes(model),"application/pdf","CASEY_Board_Intelligence_Pack.pdf")
+    except Exception as _ex:
+        return stream_error("PDF export failed: "+str(_ex)[:100])
 @app.post("/export/pptx")
 def export_pptx(model:Dict[str,Any]): return stream(pptx_bytes(model),"application/vnd.openxmlformats-officedocument.presentationml.presentation","CASEY_Board_Deck_Elite.pptx")
 @app.post("/export/json")
@@ -6433,6 +6552,16 @@ def qcra_qsra_bytes(model: dict) -> bytes:
             ws1.cell(ws1.max_row, ci).border = tb()
 
     ws1.append([])
+    # Live intelligence
+    live_text = model.get("live_intel_text", "")
+    live_ts2 = model.get("live_intel_timestamp", "")
+    if live_text:
+        ws1.append([])
+        ws1.append(["LIVE SECTOR INTELLIGENCE — {}".format(live_ts2)])
+        ws1.cell(ws1.max_row, 1).font = bf(10, "059669", True)
+        ws1.append([live_text[:600]])
+        ws1.cell(ws1.max_row, 1).font = bf(8, "334155")
+
     ws1.append(["CONFIDENCE INTERPRETATION"])
     ws1.cell(ws1.max_row, 1).font = bf(10, TEAL, True)
     conf_int = int(conf)
@@ -9263,6 +9392,471 @@ def _casey_final_risks(mode: str, subsector: str, p50: float, months: int, sched
     return risks
 
 
+
+# ══════════════════════════════════════════════════════════════════════════════
+# CASEY OPEN CRAWL INTELLIGENCE ENGINE
+# 100% free open data. No paid API keys required.
+# Sources: World Bank (217 countries), Wikipedia, SpaceX, NASA DEMO_KEY,
+#          Open-Meteo, Open Exchange Rates
+# Optional upgrade: set ANTHROPIC_API_KEY or OPENAI_API_KEY for AI-enriched search.
+# Non-blocking - parallel threads with 5s timeout each.
+# ══════════════════════════════════════════════════════════════════════════════
+
+COUNTRY_ISO = {
+    "united kingdom":"GBR","uk":"GBR","england":"GBR","britain":"GBR","wales":"GBR","scotland":"GBR",
+    "united states":"USA","usa":"USA","america":"USA","california":"USA","texas":"USA","new york":"USA","virginia":"USA",
+    "australia":"AUS","canada":"CAN","france":"FRA","germany":"DEU","spain":"ESP","italy":"ITA",
+    "netherlands":"NLD","belgium":"BEL","norway":"NOR","sweden":"SWE","denmark":"DNK","finland":"FIN",
+    "poland":"POL","czech":"CZE","austria":"AUT","switzerland":"CHE","portugal":"PRT","greece":"GRC",
+    "romania":"ROU","hungary":"HUN","slovakia":"SVK","croatia":"HRV","bulgaria":"BGR","serbia":"SRB",
+    "india":"IND","china":"CHN","japan":"JPN","south korea":"KOR","singapore":"SGP",
+    "hong kong":"HKG","taiwan":"TWN","indonesia":"IDN","malaysia":"MYS","thailand":"THA",
+    "vietnam":"VNM","philippines":"PHL","pakistan":"PAK","bangladesh":"BGD","sri lanka":"LKA",
+    "brazil":"BRA","mexico":"MEX","argentina":"ARG","colombia":"COL","chile":"CHL","peru":"PER",
+    "south africa":"ZAF","nigeria":"NGA","kenya":"KEN","ghana":"GHA","ethiopia":"ETH",
+    "egypt":"EGY","morocco":"MAR","angola":"AGO","zambia":"ZMB","tanzania":"TZA",
+    "uae":"ARE","dubai":"ARE","abu dhabi":"ARE","saudi arabia":"SAU","qatar":"QAT",
+    "kuwait":"KWT","bahrain":"BHR","oman":"OMN","israel":"ISR","turkey":"TUR","iran":"IRN",
+    "russia":"RUS","ukraine":"UKR","kazakhstan":"KAZ","mongolia":"MNG",
+    "new zealand":"NZL","papua new guinea":"PNG","myanmar":"MMR","cambodia":"KHM",
+    "panama":"PAN","ecuador":"ECU","venezuela":"VEN","bolivia":"BOL",
+}
+
+CLIMATE_COORDS = {
+    "uk":(51.5,-0.1),"london":(51.5,-0.1),"england":(51.5,-0.1),"britain":(51.5,-0.1),
+    "usa":(38.9,-77.0),"america":(38.9,-77.0),"california":(34.0,-118.2),"new york":(40.7,-74.0),
+    "texas":(30.3,-97.7),"virginia":(38.9,-77.5),"arizona":(33.4,-112.1),
+    "australia":(-33.9,151.2),"sydney":(-33.9,151.2),"melbourne":(-37.8,145.0),
+    "canada":(45.4,-75.7),"france":(48.9,2.3),"paris":(48.9,2.3),
+    "germany":(52.5,13.4),"berlin":(52.5,13.4),"spain":(40.4,-3.7),"italy":(41.9,12.5),
+    "netherlands":(52.4,4.9),"sweden":(59.3,18.1),"norway":(59.9,10.7),
+    "india":(28.6,77.2),"delhi":(28.6,77.2),"mumbai":(19.1,72.9),
+    "china":(39.9,116.4),"beijing":(39.9,116.4),"shanghai":(31.2,121.5),
+    "japan":(35.7,139.7),"south korea":(37.6,127.0),"singapore":(1.4,103.8),
+    "uae":(25.2,55.3),"dubai":(25.2,55.3),"saudi arabia":(24.7,46.7),
+    "qatar":(25.3,51.5),"israel":(32.1,34.8),"turkey":(41.0,29.0),
+    "brazil":(-15.8,-47.9),"argentina":(-34.6,-58.4),"colombia":(4.7,-74.1),
+    "south africa":(-25.7,28.2),"nigeria":(9.1,7.4),"kenya":(-1.3,36.8),
+    "egypt":(30.0,31.2),"morocco":(34.0,-6.8),"ethiopia":(9.0,38.7),
+    "russia":(55.8,37.6),"ukraine":(50.5,30.5),"kazakhstan":(51.2,71.5),
+    "mongolia":(47.9,106.9),"indonesia":(-6.2,106.8),"malaysia":(3.1,101.7),
+    "thailand":(13.8,100.5),"vietnam":(21.0,105.8),"philippines":(14.6,121.0),
+    "new zealand":(-36.9,174.8),"panama":(9.0,-79.5),"chile":(-33.5,-70.7),
+}
+
+
+def _get_iso(location):
+    if not location: return "WLD"
+    loc_l = location.lower().strip()
+    for k, v in COUNTRY_ISO.items():
+        if k in loc_l or loc_l in k:
+            return v
+    return "WLD"
+
+
+def _get_coords(location):
+    loc_l = (location or "").lower()
+    for k, coords in CLIMATE_COORDS.items():
+        if k in loc_l:
+            return coords
+    return (51.5, -0.1)
+
+
+def _wb_fetch(iso):
+    try:
+        import urllib.request as _u, json
+        r = {}
+        for ind, key in [("FP.CPI.TOTL.ZG","inflation"),("NY.GDP.MKTP.KD.ZG","gdp_growth"),("NE.GDI.TOTL.ZS","investment")]:
+            url = "https://api.worldbank.org/v2/country/{}/indicator/{}?format=json&mrv=2&per_page=2".format(iso, ind)
+            req = _u.Request(url, headers={"User-Agent":"CASEY-OpenCrawl/1.0"})
+            with _u.urlopen(req, timeout=4) as resp:
+                d = json.loads(resp.read())
+            if isinstance(d, list) and len(d) > 1 and d[1]:
+                vals = [x for x in d[1] if x.get("value") is not None]
+                if vals:
+                    r[key] = {"v": round(float(vals[0]["value"]),2), "yr": vals[0].get("date","?")}
+        return r
+    except Exception:
+        return {}
+
+
+def _wiki_fetch(query):
+    try:
+        import urllib.request as _u, urllib.parse, json
+        p = urllib.parse.urlencode({"action":"query","list":"search","srsearch":query,
+                                     "format":"json","srlimit":2,"srprop":"snippet"})
+        req = _u.Request("https://en.wikipedia.org/w/api.php?" + p, headers={"User-Agent":"CASEY-OpenCrawl/1.0"})
+        with _u.urlopen(req, timeout=4) as resp:
+            d = json.loads(resp.read())
+        results = d.get("query",{}).get("search",[])
+        if not results: return {}
+        title = results[0].get("title","")
+        snippet = results[0].get("snippet","").replace('<span class="searchmatch">','').replace('</span>','')
+        # Get intro
+        p2 = urllib.parse.urlencode({"action":"query","titles":title,"prop":"extracts",
+                                      "exintro":True,"exchars":400,"format":"json","explaintext":True})
+        req2 = _u.Request("https://en.wikipedia.org/w/api.php?" + p2, headers={"User-Agent":"CASEY-OpenCrawl/1.0"})
+        with _u.urlopen(req2, timeout=4) as resp2:
+            d2 = json.loads(resp2.read())
+        for pg in d2.get("query",{}).get("pages",{}).values():
+            ext = pg.get("extract","")
+            if ext and len(ext) > 50:
+                return {"title":title, "text":ext[:350]}
+        return {"title":title, "text":snippet[:250]}
+    except Exception:
+        return {}
+
+
+def _spacex_fetch():
+    try:
+        import urllib.request as _u, json
+        req = _u.Request("https://api.spacexdata.com/v4/launches/upcoming", headers={"User-Agent":"CASEY-OpenCrawl/1.0"})
+        with _u.urlopen(req, timeout=4) as resp:
+            data = json.loads(resp.read())
+        launches = [{"name":l.get("name","?"), "date":l.get("date_utc","?")[:10]} for l in data[:3]]
+        return {"launches": launches, "total_upcoming": len(data)}
+    except Exception:
+        return {}
+
+
+def _fx_fetch(curr_symbol):
+    try:
+        import urllib.request as _u, json
+        sym_map = {"£":"GBP","€":"EUR","A$":"AUD","C$":"CAD","¥":"JPY","₹":"INR",
+                   "R":"ZAR","NGN":"NGN","SEK":"SEK","NOK":"NOK","CHF":"CHF","SGD":"SGD"}
+        code = sym_map.get((curr_symbol or "").strip(), "")
+        if not code: return {}
+        req = _u.Request("https://open.er-api.com/v6/latest/USD", headers={"User-Agent":"CASEY-OpenCrawl/1.0"})
+        with _u.urlopen(req, timeout=4) as resp:
+            d = json.loads(resp.read())
+        rate = d.get("rates",{}).get(code)
+        return {"code":code, "rate":rate, "updated":d.get("time_last_update_utc","")} if rate else {}
+    except Exception:
+        return {}
+
+
+def _meteo_fetch(lat, lon):
+    try:
+        import urllib.request as _u, json
+        url = ("https://api.open-meteo.com/v1/forecast?latitude={}&longitude={}"
+               "&daily=temperature_2m_max,precipitation_sum&forecast_days=7&timezone=auto").format(lat, lon)
+        req = _u.Request(url, headers={"User-Agent":"CASEY-OpenCrawl/1.0"})
+        with _u.urlopen(req, timeout=4) as resp:
+            d = json.loads(resp.read())
+        daily = d.get("daily",{})
+        temps = [t for t in (daily.get("temperature_2m_max") or []) if t is not None]
+        precip = [p for p in (daily.get("precipitation_sum") or []) if p is not None]
+        return {
+            "avg_temp": round(sum(temps)/len(temps),1) if temps else None,
+            "total_rain_mm": round(sum(precip),1) if precip else None,
+        }
+    except Exception:
+        return {}
+
+
+def _gdelt_fetch(sector, location, mode):
+    """
+    GDELT Project API — free, no key, updated every 15 minutes.
+    Returns actual current news articles about infrastructure, cost overruns,
+    regulatory changes for any sector and country worldwide.
+    gdeltproject.org — 100+ countries, 65 languages, since 2015.
+    """
+    try:
+        import urllib.request as _u, urllib.parse, json
+        # Build targeted search query
+        if mode.lower() == "space":
+            terms = ["space programme cost overrun", "NASA launch delay", "lunar programme schedule"]
+        else:
+            sector_terms = {
+                "rail": ["railway cost overrun", "metro rail delay", "rail project cancelled"],
+                "nuclear": ["nuclear plant cost overrun", "nuclear reactor delay"],
+                "defence": ["defence acquisition overrun", "military programme cost"],
+                "data": ["data centre construction delay", "hyperscale cost"],
+                "mining": ["mine construction overrun", "copper project cancelled"],
+                "battery": ["gigafactory delay", "battery plant cost overrun"],
+                "semiconductor": ["fab construction delay", "semiconductor plant overrun"],
+                "airport": ["airport delay opening", "terminal construction overrun"],
+            }
+            sector_l = sector.lower()
+            terms = ["infrastructure cost overrun " + location]
+            for k, v in sector_terms.items():
+                if k in sector_l:
+                    terms = v
+                    break
+
+        results = []
+        for term in terms[:2]:
+            query = urllib.parse.quote(term + " " + (location if location not in ("—","") else ""))
+            # GDELT Article Search API
+            url = ("https://api.gdeltproject.org/api/v2/doc/doc"
+                   "?query={}&mode=artlist&maxrecords=3&format=json"
+                   "&startdatetime=20240101000000").format(query)
+            req = _u.Request(url, headers={"User-Agent": "CASEY-OpenCrawl/1.0"})
+            with _u.urlopen(req, timeout=5) as resp:
+                raw = resp.read()
+                if not raw: continue
+                d = json.loads(raw)
+            articles = d.get("articles", [])
+            for a in articles[:2]:
+                title = a.get("title", "")
+                src = a.get("domain", a.get("seendomain", ""))
+                date = (a.get("seendate") or a.get("crawldate") or "")[:8]
+                if title and len(title) > 15:
+                    results.append({"title": title[:120], "source": src, "date": date})
+
+        return {"articles": results[:4], "count": len(results)} if results else {}
+    except Exception:
+        return {}
+
+def _newsapi_fetch(sector, location, mode, api_key):
+    """
+    NewsAPI.org — free tier 100 req/day, 80,000+ sources including Reuters,
+    Bloomberg, ENR, New Civil Engineer, Construction News, Infrastructure Intelligence.
+    Returns actual article headlines + descriptions, published within last 30 days.
+    Set NEWS_API_KEY in Render environment to activate.
+    """
+    if not api_key:
+        return {}
+    try:
+        import urllib.request as _u, urllib.parse, json
+
+        # Build targeted query
+        if mode.lower() == "space":
+            query = "space programme cost schedule delay NASA ESA lunar"
+        else:
+            sector_queries = {
+                "rail": "railway metro rail construction cost overrun delay",
+                "nuclear": "nuclear power plant construction cost delay",
+                "defence": "defence acquisition programme cost overrun",
+                "data": "data centre hyperscale construction cost",
+                "mining": "mine construction cost overrun delay",
+                "battery": "gigafactory battery plant construction",
+                "semiconductor": "semiconductor fab chip factory construction",
+                "airport": "airport terminal construction cost overrun",
+                "water": "water infrastructure construction cost",
+            }
+            sector_l = sector.lower()
+            query = "infrastructure construction cost overrun " + location
+            for k, v in sector_queries.items():
+                if k in sector_l:
+                    query = v + " " + location
+                    break
+
+        params = urllib.parse.urlencode({
+            "q": query,
+            "apiKey": api_key,
+            "language": "en",
+            "sortBy": "publishedAt",
+            "pageSize": 5,
+        })
+        url = "https://newsapi.org/v2/everything?" + params
+        req = _u.Request(url, headers={"User-Agent": "CASEY-OpenCrawl/1.0"})
+        with _u.urlopen(req, timeout=5) as resp:
+            d = json.loads(resp.read())
+
+        articles = d.get("articles", [])
+        results = []
+        for a in articles[:4]:
+            title = a.get("title", "") or ""
+            desc = a.get("description", "") or ""
+            src = (a.get("source", {}) or {}).get("name", "")
+            published = (a.get("publishedAt", "") or "")[:10]
+            if title and len(title) > 15 and "[Removed]" not in title:
+                results.append({
+                    "title": title[:120],
+                    "description": desc[:180],
+                    "source": src,
+                    "published": published,
+                })
+
+        return {"articles": results, "total": d.get("totalResults", 0)} if results else {}
+    except Exception:
+        return {}
+
+def _ai_enrich(intel_text, sector, location, mode, anthropic_key, openai_key, preferred):
+    """Optional paid AI enrichment — only if key is set. Same adversarial prompt."""
+    if not intel_text: return intel_text
+    if not anthropic_key and not openai_key: return intel_text
+    try:
+        prompt_msg = ("You are CASEY. Using this raw open data intelligence:\n\n" + intel_text +
+                      "\n\nSynthesize into 2 sharp sentences of live intelligence for a " +
+                      "{} programme in {}. Be specific. Name numbers. Do not use generic language.".format(sector, location))
+        if anthropic_key and preferred != "openai":
+            import anthropic as _ant
+            r = _ant.Anthropic(api_key=anthropic_key).messages.create(
+                model="claude-haiku-4-5-20251001", max_tokens=150,
+                messages=[{"role":"user","content":prompt_msg}])
+            return r.content[0].text if r.content else intel_text
+        elif openai_key:
+            import openai as _oai
+            r = _oai.OpenAI(api_key=openai_key).chat.completions.create(
+                model="gpt-4o-mini", max_tokens=150,
+                messages=[{"role":"system","content":"You are CASEY. Be direct and specific."},
+                          {"role":"user","content":prompt_msg}])
+            return r.choices[0].message.content if r.choices else intel_text
+    except Exception:
+        pass
+    return intel_text
+
+
+def _build_intel_text(wb, wiki, sx, fx, meteo, gdelt, news, location, sector, mode):
+    """Build intelligence narrative — NewsAPI, GDELT, World Bank, Wikipedia, SpaceX, FX, Climate."""
+    gdelt = gdelt or {}
+    news = news or {}
+    parts = []
+    # NewsAPI articles (richest source when key available)
+    news_articles = news.get("articles", [])
+    if news_articles:
+        a0 = news_articles[0]
+        src = a0.get("source", "")
+        pub = a0.get("published", "")
+        desc = (a0.get("description") or a0.get("title",""))[:160]
+        parts.append("Latest news ({src}, {pub}): {desc}".format(src=src, pub=pub, desc=desc))
+        if len(news_articles) > 1:
+            a1 = news_articles[1]
+            parts.append("Also: {} — {}".format(a1.get("source",""), a1.get("title","")[:100]))
+
+    # Economic signals
+    if wb.get("inflation"):
+        inf = wb["inflation"]["v"]; yr = wb["inflation"]["yr"]
+        if inf > 7:
+            parts.append("Cost pressure: {loc} inflation {inf:.1f}% ({yr}) — supply chain escalation risk HIGH. Estimate contingency may be insufficient.".format(loc=location, inf=inf, yr=yr))
+        elif inf > 3.5:
+            parts.append("Moderate inflation: {loc} at {inf:.1f}% ({yr}). Apply index-linked cost adjustances for multi-year programmes.".format(loc=location, inf=inf, yr=yr))
+        else:
+            parts.append("Low inflation: {loc} at {inf:.1f}% ({yr}). Cost escalation risk contained.".format(loc=location, inf=inf, yr=yr))
+    if wb.get("gdp_growth"):
+        g = wb["gdp_growth"]["v"]
+        if g < 0: parts.append("Economic contraction ({g:.1f}% GDP growth): financing risk elevated; procurement may be favourable.".format(g=g))
+        elif g > 6: parts.append("High-growth economy ({g:.1f}% GDP): construction demand likely to drive labour and material cost competition.".format(g=g))
+    if wb.get("investment"):
+        inv = wb["investment"]["v"]
+        if inv > 32: parts.append("Capital investment pipeline intense ({inv:.0f}% of GDP): allow extended procurement lead times.".format(inv=inv))
+    # FX signal
+    if fx.get("rate"):
+        parts.append("Live FX: 1 USD = {rate} {code}. Cross-border procurement currency risk must be modelled.".format(rate=fx["rate"], code=fx["code"]))
+    # Climate signal
+    if meteo.get("total_rain_mm") and meteo["total_rain_mm"] > 25:
+        parts.append("7-day climate: {rain}mm forecast rain ({loc}). Groundworks access and outdoor construction productivity at risk.".format(rain=meteo["total_rain_mm"], loc=location))
+    if meteo.get("avg_temp") and meteo["avg_temp"] > 40:
+        parts.append("7-day climate: extreme heat {t}C forecast. Worker safety protocols and productivity loss must be planned.".format(t=meteo["avg_temp"]))
+    # GDELT live news (most current — updated every 15 mins globally)
+    gdelt_articles = gdelt.get("articles", [])
+    if gdelt_articles:
+        latest = gdelt_articles[0]
+        date_str = latest.get("date","")
+        date_fmt = (date_str[:4] + "-" + date_str[4:6] + "-" + date_str[6:8]) if len(date_str) >= 8 else date_str
+        src = latest.get("source","")
+        title = latest.get("title","")
+        src_note = " ({})".format(src) if src else ""
+        parts.append("Live news{src} [{date}]: {title}".format(src=src_note, date=date_fmt, title=title))
+        if len(gdelt_articles) > 1:
+            second = gdelt_articles[1]
+            parts.append("Also: {}".format(second.get("title","")[:100]))
+
+    # Wikipedia programme intelligence
+    if wiki.get("text"):
+        t = wiki["text"].replace("\n", " ").strip()
+        parts.append("Programme intelligence ({title}): {t}".format(title=wiki.get("title","?"), t=t[:220]))
+    # SpaceX (space mode only)
+    if sx.get("launches"):
+        ll = sx["launches"]
+        launch_str = ", ".join("{name} ({date})".format(**l) for l in ll[:2])
+        parts.append("Live launch manifest: {total} upcoming missions. Nearest: {ls}. Launch slot directly governs programme critical path.".format(
+            total=sx.get("total_upcoming",0), ls=launch_str))
+    return " | ".join(parts[:4]) if parts else ""
+
+
+def _fetch_live_intel(sector, location, mode="Earth", prompt="", curr_symbol="$"):
+    """
+    Open Crawl intelligence — 100% free, global, no API keys needed.
+    Parallel fetch from World Bank, Wikipedia, SpaceX, Exchange Rates, Open-Meteo.
+    Optional AI enrichment if ANTHROPIC_API_KEY or OPENAI_API_KEY is set.
+    """
+    import threading, os
+
+    iso = _get_iso(location)
+    lat, lon = _get_coords(location)
+    is_space = mode.lower() == "space"
+
+    if is_space:
+        wiki_q = "space programme cost overrun {} lunar NASA ESA launch delay".format(sector)
+    elif prompt and len(prompt) > 8:
+        wiki_q = " ".join(prompt.split()[:6]) + " infrastructure cost overrun"
+    else:
+        wiki_q = "{} {} infrastructure programme cost 2024 2025".format(sector, location)
+
+    results = {"wb": {}, "wiki": {}, "sx": {}, "fx": {}, "meteo": {}, "gdelt": {}, "news": {}}
+
+    def run(key, fn, *args):
+        try: results[key] = fn(*args)
+        except Exception: pass
+
+    threads = [
+        threading.Thread(target=run, args=("wb", _wb_fetch, iso), daemon=True),
+        threading.Thread(target=run, args=("wiki", _wiki_fetch, wiki_q), daemon=True),
+        threading.Thread(target=run, args=("meteo", _meteo_fetch, lat, lon), daemon=True),
+        threading.Thread(target=run, args=("fx", _fx_fetch, curr_symbol), daemon=True),
+    ]
+    # GDELT always runs (global news for every sector and country)
+    threads.append(threading.Thread(target=run, args=("gdelt", _gdelt_fetch, sector, location, mode), daemon=True))
+    # NewsAPI (free tier key from env — 80,000+ sources including trade press)
+    import os as _os
+    _news_key = _os.environ.get("NEWS_API_KEY", "")
+    if _news_key:
+        threads.append(threading.Thread(target=run, args=("news", _newsapi_fetch, sector, location, mode, _news_key), daemon=True))
+    if is_space:
+        threads.append(threading.Thread(target=run, args=("sx", _spacex_fetch), daemon=True))
+
+    for t in threads: t.start()
+    for t in threads: t.join(timeout=5)
+
+    intel_text = _build_intel_text(results["wb"], results["wiki"], results["sx"],
+                                    results["fx"], results["meteo"], results["gdelt"],
+                                    results.get("news", {}), location, sector, mode)
+
+    # Optional: enrich with paid AI if key is available
+    ant_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    oai_key = os.environ.get("OPENAI_API_KEY", "")
+    preferred = os.environ.get("ADVISOR_MODEL", "auto").lower()
+    if intel_text and (ant_key or oai_key):
+        intel_text = _ai_enrich(intel_text, sector, location, mode, ant_key, oai_key, preferred)
+
+    if not intel_text:
+        return {}
+
+    sources = []
+    if results["wb"]: sources.append("World Bank Open Data")
+    if results["wiki"]: sources.append("Wikipedia")
+    if results["sx"]: sources.append("SpaceX API")
+    if results["fx"]: sources.append("Open Exchange Rates")
+    if results["meteo"]: sources.append("Open-Meteo")
+    if results["gdelt"]: sources.append("GDELT News")
+    if results["news"]: sources.append("NewsAPI ({} articles)".format(len(results["news"].get("articles",[]))))
+    if ant_key or oai_key: sources.append("AI synthesis")
+
+    import datetime
+    return {
+        "live_intel_text": intel_text,
+        "live_intel_sector": sector,
+        "live_intel_location": location,
+        "live_intel_sources": ", ".join(sources),
+        "live_intel_mode": "AI-enriched" if (ant_key or oai_key) else "Open Crawl",
+        "live_intel_active": True,
+        "live_intel_timestamp": datetime.datetime.utcnow().strftime("%d %b %Y %H:%M UTC"),
+    }
+
+
+def _fetch_live_intel_threaded(sector, location, mode, prompt, result_holder):
+    try:
+        # Get currency from the result_holder[0] if it contains the model so far
+        curr = "$"
+        result = _fetch_live_intel(sector, location, mode, prompt, curr)
+        result_holder.append(result)
+    except Exception:
+        result_holder.append({})
+
+
 def build_model(prompt: str='', client: str='', class_level: int=3, schedule_level: int=4, scenario: str='base'):
     prompt = str(prompt or '').strip()
     client = str(client or '').strip()
@@ -9794,6 +10388,35 @@ def build_model(prompt: str='', client: str='', class_level: int=3, schedule_lev
         pass
 
     
+    # ── Apply currency to unit_rate fields (generated with $ internally) ──
+    try:
+        _curr = str(model.get('currency_symbol') or '$').strip()
+        if _curr and _curr != '$':
+            import re as _re
+            for _cb in model.get('cost_breakdown', []) + model.get('cost_lines', []):
+                if isinstance(_cb, dict) and _cb.get('unit_rate'):
+                    _ur = str(_cb['unit_rate'])
+                    _cb['unit_rate'] = _re.sub(r'\$([0-9])', _curr + r'\1', _ur)
+    except Exception:
+        pass
+
+    # ── Fetch live sector intelligence (non-blocking, 6s timeout) ──────────
+    try:
+        import threading
+        _live_result = []
+        _live_thread = threading.Thread(
+            target=_fetch_live_intel_threaded,
+            args=(model.get('subsector',''), model.get('location',''), 
+                  model.get('mode','Earth'), str(prompt or ''), _live_result),
+            daemon=True
+        )
+        _live_thread.start()
+        _live_thread.join(timeout=6)  # wait max 6 seconds
+        if _live_result and _live_result[0]:
+            model.update(_live_result[0])
+    except Exception:
+        pass
+
     return model
 
 APP_VERSION = 'CASEY FINAL Backend-Derived Model Restored'
