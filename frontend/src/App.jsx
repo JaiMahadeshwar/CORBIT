@@ -317,7 +317,66 @@ class CaseyErrorBoundary extends React.Component {
   componentDidCatch(error, info) { console.error('CASEY UI crash guard:', error, info); }
   render() {
     if (this.state.error) {
-      return <div className="app v50EliteApp"><main className="v50Console"><section className="layout one"><div className="card shockCard"><h2>CASEY UI recovered</h2><p>The interface caught a render exception instead of going blank. Refresh and re-run the same programme, or use the preset advisor buttons while the custom question guard is active.</p><pre>{safeRender(this.state.error?.message || this.state.error)}</pre></div></section></main></div>;
+      return <div className="app v50EliteApp">
+    {showLanding && <div style={{position:'fixed',inset:0,background:'#070d1a',zIndex:9998,overflowY:'auto'}}>
+      <div style={{maxWidth:'860px',margin:'0 auto',padding:'40px 24px 80px'}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'52px'}}>
+          <div style={{fontFamily:'monospace',fontSize:'12px',fontWeight:'800',color:'#22d3ee',letterSpacing:'.2em'}}>CASEY · CONTROLORBIT.COM</div>
+          <button onClick={()=>{localStorage.setItem('casey_seen_landing','1');setShowLanding(false);}} style={{padding:'9px 22px',background:'#0e7490',color:'#fff',border:'none',borderRadius:'4px',fontWeight:'700',fontSize:'12px',cursor:'pointer'}}>Enter the tool →</button>
+        </div>
+        <div style={{marginBottom:'56px'}}>
+          <div style={{fontSize:'10px',fontWeight:'800',color:'#ef4444',letterSpacing:'.14em',marginBottom:'14px'}}>THE PROBLEM</div>
+          <h1 style={{fontSize:'clamp(26px,4vw,50px)',fontWeight:'900',color:'#fff',lineHeight:'1.1',marginBottom:'16px'}}>Every major programme is approved at <span style={{color:'#ef4444'}}>the wrong number</span>.</h1>
+          <p style={{fontSize:'16px',color:'#94a3b8',lineHeight:'1.6',maxWidth:'600px',marginBottom:'28px'}}>The UK reference class shows infrastructure programmes overrun by an average of <strong style={{color:'#fff'}}>+44%</strong>. HM Treasury requires OBA adjustment in every major board submission. Most boards never see it. CASEY applies it in 12 seconds.</p>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))',gap:'10px',maxWidth:'600px'}}>
+            {[['HS2','£33B → £88B → OBA £127B','+285%'],['Vogtle','$14B → $35B','+150%'],['Crossrail','£14.8B → £18.9B','+28%'],['JWST','$1.6B → $10B','+525%']].map(([n,d,p])=><div key={n} style={{background:'rgba(239,68,68,0.06)',border:'1px solid rgba(239,68,68,0.15)',borderRadius:'5px',padding:'12px'}}>
+              <div style={{fontSize:'12px',fontWeight:'800',color:'#fff',marginBottom:'3px'}}>{n}</div>
+              <div style={{fontSize:'9px',color:'#64748b',marginBottom:'5px'}}>{d}</div>
+              <div style={{fontSize:'16px',fontWeight:'900',color:'#ef4444'}}>{p}</div>
+            </div>)}
+          </div>
+        </div>
+        <div style={{marginBottom:'52px'}}>
+          <div style={{fontSize:'10px',fontWeight:'800',color:'#22d3ee',letterSpacing:'.14em',marginBottom:'14px'}}>WHAT CASEY DELIVERS</div>
+          <h2 style={{fontSize:'26px',fontWeight:'800',color:'#fff',marginBottom:'12px'}}>Board-ready intelligence. 12 seconds. Any programme. Anywhere.</h2>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:'7px',maxWidth:'580px'}}>
+            {['P50/P80/P90 cost with OBA-adjusted outturn','QSRA P80 schedule — not Gantt chart optimism','Risk register — quantified EMV, named owners','5 scenario trade-offs from a single description','Board attack questions from live model data','137 named global benchmarks (HS2 to JWST)','PDF board pack, Excel, Risk Register, P6 XER','Live Open Crawl: World Bank, GDELT, FX, weather'].map((f,i)=><div key={i} style={{display:'flex',gap:'6px'}}><span style={{color:'#22d3ee',fontSize:'10px',fontWeight:'800',marginTop:'1px',flexShrink:0}}>✓</span><span style={{fontSize:'11px',color:'#94a3b8',lineHeight:'1.5'}}>{f}</span></div>)}
+          </div>
+        </div>
+        <div style={{marginBottom:'48px'}}>
+          <div style={{fontSize:'10px',fontWeight:'800',color:'#22d3ee',letterSpacing:'.14em',marginBottom:'14px'}}>PRICING</div>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'10px',maxWidth:'680px'}}>
+            {[{t:'Free',p:'£0',b:'Earth Demo · Space Demo · 137-programme Showcase · 1 free project run',cta:'Start free',go:true},
+              {t:'Professional',p:'£99 / mo',b:'Unlimited runs · All exports · Advisor · Digital Twin · File ingestion',cta:'Join waitlist →',go:false,hi:true},
+              {t:'Team',p:'£349 / mo',b:'5 seats · White-label PDF · Priority support · Everything in Pro',cta:'Join waitlist →',go:false}
+            ].map(({t,p,b,cta,go,hi})=><div key={t} style={{background:hi?'rgba(14,116,144,0.1)':'rgba(255,255,255,0.03)',border:hi?'1px solid #0e7490':'1px solid rgba(255,255,255,0.07)',borderRadius:'5px',padding:'16px',display:'flex',flexDirection:'column',gap:'7px'}}>
+              <div style={{fontSize:'9px',fontWeight:'800',color:'#22d3ee'}}>{t}</div>
+              <div style={{fontSize:'20px',fontWeight:'900',color:'#fff'}}>{p}</div>
+              <div style={{fontSize:'10px',color:'#64748b',lineHeight:'1.5',flex:1}}>{b}</div>
+              <button onClick={go?()=>{localStorage.setItem('casey_seen_landing','1');setShowLanding(false);}:()=>window.open('mailto:hello@controlorbit.com?subject=CASEY+Waitlist','_blank')} style={{padding:'7px 10px',background:go?'#0e7490':'rgba(255,255,255,0.06)',color:go?'#fff':'#64748b',border:'none',borderRadius:'3px',fontWeight:'700',fontSize:'10px',cursor:'pointer'}}>{cta}</button>
+            </div>)}
+          </div>
+        </div>
+        <div style={{textAlign:'center',borderTop:'1px solid rgba(255,255,255,0.06)',paddingTop:'32px'}}>
+          <button onClick={()=>{localStorage.setItem('casey_seen_landing','1');setShowLanding(false);}} style={{padding:'12px 36px',background:'#0e7490',color:'#fff',border:'none',borderRadius:'5px',fontWeight:'800',fontSize:'14px',cursor:'pointer',marginBottom:'8px',display:'block',margin:'0 auto 8px'}}>Try CASEY free →</button>
+          <p style={{fontSize:'10px',color:'#475569'}}>1 free project run · Earth Demo + Space Demo always free · No card</p>
+        </div>
+      </div>
+    </div>}
+    {emailGateOpen && <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',zIndex:9999,display:'flex',alignItems:'center',justifyContent:'center'}}>
+      <div style={{background:'#0c1a2e',border:'1px solid #0e7490',borderRadius:'8px',padding:'28px',maxWidth:'380px',width:'100%',margin:'0 16px'}}>
+        <div style={{fontSize:'9px',fontWeight:'800',color:'#22d3ee',letterSpacing:'.12em',marginBottom:'8px'}}>1 FREE RUN</div>
+        <h2 style={{fontSize:'18px',fontWeight:'800',color:'#fff',marginBottom:'7px'}}>Enter your email to continue</h2>
+        <p style={{fontSize:'11px',color:'#94a3b8',marginBottom:'16px',lineHeight:'1.5'}}>1 free project run — P50/P80/P90, 5 scenarios, risk register, board pack PDF. Earth Demo and Space Demo always free.</p>
+        <input type="email" id="egate-input" placeholder="your@email.com"
+          style={{width:'100%',padding:'9px 11px',background:'#0a0f1e',border:'1px solid #0e7490',borderRadius:'4px',color:'#fff',fontSize:'12px',marginBottom:'9px',outline:'none',boxSizing:'border-box'}}
+          onKeyDown={e=>{if(e.key==='Enter'){const v=e.target.value;if(v.includes('@'))saveEmailAndContinue(v);}}}/>
+        <div style={{display:'flex',gap:'7px'}}>
+          <button onClick={()=>{const v=document.getElementById('egate-input').value;if(v.includes('@'))saveEmailAndContinue(v);}} style={{flex:1,padding:'9px',background:'#0e7490',color:'#fff',border:'none',borderRadius:'4px',fontWeight:'700',fontSize:'12px',cursor:'pointer'}}>Get my free run →</button>
+          <button onClick={()=>setEmailGateOpen(false)} style={{padding:'9px 12px',background:'transparent',color:'#64748b',border:'1px solid #334155',borderRadius:'4px',fontSize:'11px',cursor:'pointer'}}>Cancel</button>
+        </div>
+      </div>
+    </div>}<main className="v50Console"><section className="layout one"><div className="card shockCard"><h2>CASEY UI recovered</h2><p>The interface caught a render exception instead of going blank. Refresh and re-run the same programme, or use the preset advisor buttons while the custom question guard is active.</p><pre>{safeRender(this.state.error?.message || this.state.error)}</pre></div></section></main></div>;
     }
     return this.props.children;
   }
@@ -529,8 +588,14 @@ function Kpi({ icon: Icon, label, value, sub, hot }) {
   const band = hot ? (n >= 80 ? 'riskLow' : n >= 60 ? 'riskMedium' : 'riskHigh') : '';
   return <Card className={`v50Kpi ${hot ? 'hot' : ''} ${band}`}><Icon size={21}/><div><p>{safeRender(label)}</p><b>{safeRender(value)}</b><span>{safeRender(sub)}</span></div></Card>;
 }
-function Table({ rows = [], cols = [], moneyCols = [] }) {
-  return <div className="tableWrap"><table><thead><tr>{cols.map(c => <th key={c[0]}>{c[1]}</th>)}</tr></thead><tbody>{rows.map((r, i) => <tr key={i}>{cols.map(c => <td key={c[0]}>{moneyCols.includes(c[0]) ? fmt(r[c[0]]) : String(r[c[0]] ?? '')}</td>)}</tr>)}</tbody></table></div>;
+function Table({ rows = [], cols = [], moneyCols = [], cellFmt = null }) {
+  const renderCell = (col, row) => {
+    const raw = row[col] ?? '';
+    if (moneyCols.includes(col)) return fmt(raw);
+    if (cellFmt) return cellFmt(col, raw);
+    return String(raw);
+  };
+  return <div className="tableWrap"><table><thead><tr>{cols.map(c => <th key={c[0]}>{c[1]}</th>)}</tr></thead><tbody>{rows.map((r, i) => <tr key={i}>{cols.map(c => <td key={c[0]}>{renderCell(c[0], r)}</td>)}</tr>)}</tbody></table></div>;
 }
 // ── ACCOUNT PANEL ─────────────────────────────────────────────────────────────
 function AccountPanel({ email, setEmail, projects, loading, onLoad, onDelete, onSave, onLoadProjects, onClose, model }) {
@@ -1159,7 +1224,13 @@ function OneShotDemo({ open, onClose, onComplete }) {
       </div>
 
       {error && <div style={{fontSize:'12px',color:'#ef4444',padding:'8px 10px',background:'rgba(239,68,68,0.08)',borderRadius:'4px',marginBottom:'8px'}}>{error}</div>}
-      {busy && <div className="missionProcessing"><Rocket size={18}/><div><b>CASEY is building your intelligence pack</b><span>Parsing brief, applying {brief.sector||'infrastructure'} benchmarks…</span></div></div>}
+      {busy && <div className="missionProcessing"><Rocket size={18}/><div><b>CASEY is building your intelligence pack</b><span style={{display:'flex',flexDirection:'column',gap:'2px'}}>
+            <span>Parsing brief, applying {brief.sector||'infrastructure'} benchmarks…</span>
+            <span style={{fontSize:'10px',color:'#10b981',display:'flex',alignItems:'center',gap:'4px'}}>
+              <span style={{width:'5px',height:'5px',borderRadius:'50%',background:'#10b981',display:'inline-block',animation:'pulse 1.2s infinite'}}/>
+              🌐 Open Crawl — scanning {brief.location||'global'} news, markets and benchmarks…
+            </span>
+          </span></div></div>}
       {result && <div className="publicDemoSuccess"><b>Intelligence pack ready.</b><span>Close this and explore your model.</span></div>}
 
       <div style={{display:'flex',gap:'8px',marginTop:'4px'}}>
@@ -2117,6 +2188,28 @@ function DemoBanner({ model }) {
   );
 }
 
+function EmailGateForm({ onSubmit, onDismiss }) {
+  const [val, setVal] = React.useState('');
+  return <div>
+    <input type="email" value={val} onChange={e => setVal(e.target.value)}
+      placeholder="your@email.com"
+      style={{width:'100%',padding:'10px 12px',background:'#0a0f1e',border:'1px solid #0e7490',borderRadius:'4px',color:'#fff',fontSize:'13px',marginBottom:'10px',outline:'none'}}
+      onKeyDown={e => e.key === 'Enter' && val.includes('@') && onSubmit(val)}
+    />
+    <div style={{display:'flex',gap:'8px'}}>
+      <button onClick={() => val.includes('@') && onSubmit(val)}
+        style={{flex:1,padding:'10px',background:'#0e7490',color:'#fff',border:'none',borderRadius:'4px',fontWeight:'700',fontSize:'13px',cursor:'pointer'}}>
+        Get my free run →
+      </button>
+      <button onClick={onDismiss}
+        style={{padding:'10px 16px',background:'transparent',color:'#64748b',border:'1px solid #334155',borderRadius:'4px',fontSize:'12px',cursor:'pointer'}}>
+        Cancel
+      </button>
+    </div>
+    <p style={{fontSize:'9px',color:'#475569',marginTop:'8px',fontFamily:'monospace'}}>No spam. No card. 1 free project run. Earth Demo and Space Demo always free.</p>
+  </div>;
+}
+
 function App() {
   const [show, setShow] = useState(true);
   const [briefing, setBriefing] = useState(false);
@@ -2153,7 +2246,42 @@ function App() {
   const [confidencePulse, setConfidencePulse] = useState(false);
   const [showShowcase, setShowShowcase] = useState(false);
 
-  useEffect(() => {
+  
+  // ── Usage limits & email gate (localStorage-tracked) ──────────────────
+  const [showLanding, setShowLanding] = React.useState(() => !localStorage.getItem('casey_seen_landing'));
+  const [emailGateOpen, setEmailGateOpen] = React.useState(false);
+  const [emailGateFor, setEmailGateFor] = React.useState('');
+  const [capturedEmail, setCapturedEmail] = React.useState(() => localStorage.getItem('casey_email') || '');
+  const [freeRunsUsed, setFreeRunsUsed] = React.useState(() => parseInt(localStorage.getItem('casey_free_runs') || '0'));
+  const [freeCompareUsed, setFreeCompareUsed] = React.useState(() => parseInt(localStorage.getItem('casey_free_compare') || '0'));
+  const FREE_RUN_LIMIT = 1;
+  const FREE_COMPARE_LIMIT = 1;
+  const isUnlimited = false;
+  const checkAndGate = (action) => {
+    if (isUnlimited) return true;
+    if (action === 'run') {
+      if (!capturedEmail) { setEmailGateFor('run'); setEmailGateOpen(true); return false; }
+      if (freeRunsUsed >= FREE_RUN_LIMIT) { setTab('upgrade'); return false; }
+    }
+    if (action === 'compare') {
+      if (!capturedEmail) { setEmailGateFor('compare'); setEmailGateOpen(true); return false; }
+      if (freeCompareUsed >= FREE_COMPARE_LIMIT) { setTab('upgrade'); return false; }
+    }
+    return true;
+  };
+  const recordUsage = (action) => {
+    if (isUnlimited) return;
+    if (action === 'run') { const n = freeRunsUsed + 1; setFreeRunsUsed(n); localStorage.setItem('casey_free_runs', String(n)); }
+    if (action === 'compare') { const n = freeCompareUsed + 1; setFreeCompareUsed(n); localStorage.setItem('casey_free_compare', String(n)); }
+  };
+  const saveEmailAndContinue = (email) => {
+    localStorage.setItem('casey_email', email);
+    setCapturedEmail(email);
+    fetch(API + '/capture-email', {method:'POST',credentials:'omit',headers:{'Content-Type':'application/json'},body:JSON.stringify({email, action: emailGateFor})}).catch(()=>{});
+    setEmailGateOpen(false);
+  };
+
+useEffect(() => {
     // Ping backend on page load to pre-warm Render instance & check status
     const checkBackend = async () => {
       // Try up to 3 times with delay — Render cold starts take 20-30s
@@ -2900,6 +3028,13 @@ function parseMoneyLocal(v) {
       <button onClick={runSpace}>Space demo</button>
       <button onClick={() => setShowInvestor(s => !s)} style={{color:'#b18cff',fontWeight:'700'}}>Investor brief</button>
       <button onClick={() => setShowOnboarding(true)} style={{color:'#64748b',fontSize:'10px',fontWeight:'700',letterSpacing:'.06em'}}>How to use</button>
+      {model?.live_intel_active && <div style={{display:'flex',alignItems:'center',gap:'5px',padding:'3px 9px',background:'rgba(16,185,129,0.08)',border:'1px solid rgba(16,185,129,0.2)',borderRadius:'4px'}}>
+        <div style={{width:'6px',height:'6px',borderRadius:'50%',background:'#10b981',animation:'pulse 1.5s infinite',flexShrink:0}}/>
+        <span style={{fontSize:'9px',fontWeight:'800',color:'#10b981',letterSpacing:'.06em'}}>
+            {model.live_intel_mode === 'AI-enriched' ? '⚡ LIVE INTEL (AI)' : '🌐 OPEN CRAWL'}
+          </span>
+          <span style={{fontSize:'8px',color:'#334155'}}>{(model.live_intel_sources||'').includes('GDELT') ? '🌐 Live news' : ''} {(model.live_intel_timestamp||'').split(' ').slice(0,3).join(' ')}</span>
+      </div>}
       <button onClick={() => setShowHelp(true)} style={{color:'#8df7ff',fontSize:'10px',fontWeight:'800',letterSpacing:'.06em',background:'rgba(141,247,255,0.08)',border:'1px solid rgba(141,247,255,0.2)',borderRadius:'4px',padding:'3px 10px',cursor:'pointer'}}>? HELP</button>
       {model && <button onClick={() => setShowIngestPanel(p=>!p)} style={{color:'#10b981',fontSize:'10px',fontWeight:'800',letterSpacing:'.06em',background:'rgba(16,185,129,0.08)',border:'1px solid rgba(16,185,129,0.2)',borderRadius:'4px',padding:'3px 10px',cursor:'pointer'}}>📂 UPLOAD CLIENT FILES</button>}
       <a href={emailLink}>Request access</a>
@@ -2913,6 +3048,34 @@ function parseMoneyLocal(v) {
     {showAccount && <AccountPanel email={accountEmail} setEmail={setAccountEmail} projects={accountProjects} loading={accountLoading} onLoad={loadAccountProject} onDelete={deleteAccountProject} onSave={saveToAccount} onLoadProjects={loadAccountProjects} onClose={() => setShowAccount(false)} model={model}/>}
     {showCompare && <ComparePanel promptA={comparePromptA} setPromptA={setComparePromptA} promptB={comparePromptB} setPromptB={setComparePromptB} onRun={runComparison} loading={compareLoading} result={compareResult} error={compareError} onClose={() => setShowCompare(false)} currentModel={model}/>}
     {showHelp && <HelpPanel onClose={() => setShowHelp(false)}/>}
+      {tab === 'upgrade' && <div style={{padding:'40px 24px',maxWidth:'600px',margin:'0 auto',textAlign:'center'}}>
+        <div style={{fontSize:'9px',fontWeight:'800',color:'#ef4444',letterSpacing:'.12em',marginBottom:'12px'}}>FREE LIMIT REACHED</div>
+        <h2 style={{fontSize:'24px',fontWeight:'800',color:'#fff',marginBottom:'12px'}}>You have used your 1 free project run.</h2>
+        <p style={{fontSize:'13px',color:'#94a3b8',lineHeight:'1.6',marginBottom:'24px'}}>Earth Demo and Space Demo are always free — run them as many times as you like. For unlimited project runs, exports and advisor: upgrade to Professional.</p>
+        <div style={{background:'rgba(14,116,144,0.1)',border:'1px solid #0e7490',borderRadius:'6px',padding:'20px',marginBottom:'20px'}}>
+          <div style={{fontSize:'11px',fontWeight:'800',color:'#22d3ee',marginBottom:'6px'}}>ALWAYS FREE</div>
+          <p style={{fontSize:'12px',color:'#94a3b8'}}>Earth Demo · Space Demo · Showcase Library (137 programmes) · Open Crawl intelligence</p>
+        </div>
+        <div style={{display:'flex',gap:'10px',justifyContent:'center'}}>
+          <button onClick={() => runEarth()} style={{padding:'10px 20px',background:'#0e7490',color:'#fff',border:'none',borderRadius:'4px',fontWeight:'700',cursor:'pointer'}}>Try Earth Demo free</button>
+          <button onClick={() => runSpace()} style={{padding:'10px 20px',background:'#1e293b',color:'#fff',border:'none',borderRadius:'4px',fontWeight:'700',cursor:'pointer'}}>Try Space Demo free</button>
+        </div>
+        <p style={{fontSize:'10px',color:'#475569',marginTop:'16px'}}>Professional plan (£99/mo) launching soon — <a href="mailto:hello@controlorbit.com" style={{color:'#22d3ee'}}>join the waitlist</a></p>
+      </div>}
+      {tab === 'upgrade' && <div style={{padding:'48px 24px',maxWidth:'580px',margin:'0 auto',textAlign:'center'}}>
+        <div style={{fontSize:'9px',fontWeight:'800',color:'#ef4444',letterSpacing:'.12em',marginBottom:'12px'}}>FREE LIMIT REACHED</div>
+        <h2 style={{fontSize:'22px',fontWeight:'800',color:'#fff',marginBottom:'10px'}}>You have used your 1 free project run.</h2>
+        <p style={{fontSize:'13px',color:'#94a3b8',lineHeight:'1.6',marginBottom:'20px'}}>Earth Demo and Space Demo are always free — run them as many times as you like, any sector, any scenario. For unlimited project runs and all exports, Professional is coming soon.</p>
+        <div style={{background:'rgba(14,116,144,0.08)',border:'1px solid rgba(14,116,144,0.2)',borderRadius:'6px',padding:'18px',marginBottom:'18px'}}>
+          <div style={{fontSize:'10px',fontWeight:'800',color:'#22d3ee',marginBottom:'6px'}}>ALWAYS FREE — NO LIMIT</div>
+          <p style={{fontSize:'12px',color:'#94a3b8'}}>Earth Demo · Space Demo · Showcase Library (137 programmes) · Open Crawl intelligence</p>
+        </div>
+        <div style={{display:'flex',gap:'10px',justifyContent:'center',marginBottom:'16px'}}>
+          <button onClick={()=>runEarth()} style={{padding:'10px 20px',background:'#0e7490',color:'#fff',border:'none',borderRadius:'4px',fontWeight:'700',cursor:'pointer',fontSize:'12px'}}>Earth Demo →</button>
+          <button onClick={()=>runSpace()} style={{padding:'10px 20px',background:'#1e293b',color:'#fff',border:'none',borderRadius:'4px',fontWeight:'700',cursor:'pointer',fontSize:'12px'}}>Space Demo →</button>
+        </div>
+        <p style={{fontSize:'10px',color:'#475569'}}>Professional (unlimited, £99/mo) launching soon — <a href="mailto:hello@controlorbit.com?subject=CASEY+Professional+Waitlist" style={{color:'#22d3ee'}}>join the waitlist</a></p>
+      </div>}
       {showIngestPanel && model && <ClientIngestPanel model={model} setModel={setModel} onClose={()=>setShowIngestPanel(false)}/>}
     <main className={model ? 'v50Console' : 'v50Console emptyConsole'}>
       {error && !showShowcase && !show && <GatedMessage raw={error} onDismiss={() => setError('')} onShowcase={() => { setError(''); setShowShowcase(true); }} onEarth={() => { setError(''); runEarth(); }} onSpace={() => { setError(''); runSpace(); }}/>}
@@ -2920,7 +3083,11 @@ function parseMoneyLocal(v) {
       {!model && !show && !showShowcase && <section className="commandGrid"><Card className="command">
   <h1 style={{fontSize:'18px',marginBottom:'4px'}}>Generate a project</h1>
   <p style={{fontSize:'11px',color:'#475569',marginBottom:'12px',lineHeight:'1.5'}}>Enter any capital programme — infrastructure, defence, space, pharma, energy, data centres. CASEY generates a first-pass cost estimate (P10/P50/P90), schedule, risk register, scenario analysis and board intelligence pack. All fields are sector-specific and location-aware.</p>
-  <label>Project command</label><textarea value={prompt} onChange={e => setPrompt(e.target.value)} /> <div className="chips">{examples.map(x => <button key={x} onClick={() => setPrompt(x)}>{x}</button>)}</div><div className="grid4"><input value={client} onChange={e => setClient(e.target.value)} placeholder="Client / operator"/><select value={classLevel} onChange={e => setClassLevel(e.target.value)}>{[1,2,3,4,5].map(x => <option key={x} value={x}>Class {x}</option>)}</select><select value={scheduleLevel} onChange={e => setScheduleLevel(e.target.value)}>{[1,2,3,4,5].map(x => <option key={x} value={x}>Level {x}</option>)}</select><select value={scenario} onChange={e => setScenario(e.target.value)}>{scenarios.map(x => <option key={x} value={x}>{x}</option>)}</select></div><button className="primary" onClick={() => generate()}><Sparkles/> Generate full intelligence pack</button><button className="secondary" onClick={() => { setShowShowcase(true); setError(''); }}><Globe2/> Open global showcase library</button></Card><Card><h2>What CASEY generates</h2><p style={{fontSize:'11px',color:'#64748b',marginBottom:'10px'}}>From a single project description — in seconds.</p>{['Executive summary with P50, schedule and confidence score','Cost workbook — direct, indirect, reserve by CBS line','5 scenario trade-offs: base, faster, cheaper, lower risk, premium','Risk register — cause, event, impact, owner, trigger, mitigation','QCRA/QSRA probability curves and tornado chart','Board attack simulation — 5 questions your committee will ask','Location intelligence, financing context and OBA assessment','Procurement packages with lead times and single-source flags'].map((x,i)=><div className="reason" style={{padding:'5px 0',borderBottom:'1px solid rgba(255,255,255,0.04)'}} key={x}><span style={{color:'#8df7ff',marginRight:'8px',fontSize:'10px',fontWeight:'800'}}>{i+1}</span><span style={{fontSize:'11px'}}>{x}</span></div>)}</Card></section>}
+  <label>Project command</label><textarea value={prompt} onChange={e => setPrompt(e.target.value)} /> <div className="chips">{examples.map(x => <button key={x} onClick={() => setPrompt(x)}>{x}</button>)}</div><div className="grid4"><input value={client} onChange={e => setClient(e.target.value)} placeholder="Client / operator"/><select value={classLevel} onChange={e => setClassLevel(e.target.value)}>{[1,2,3,4,5].map(x => <option key={x} value={x}>Class {x}</option>)}</select><select value={scheduleLevel} onChange={e => setScheduleLevel(e.target.value)}>{[1,2,3,4,5].map(x => <option key={x} value={x}>Level {x}</option>)}</select><select value={scenario} onChange={e => setScenario(e.target.value)}>{scenarios.map(x => <option key={x} value={x}>{x}</option>)}</select></div><button className="primary" onClick={() => {
+              if (!checkAndGate('run')) return;
+              generate();
+              recordUsage('run');
+            }}><Sparkles/> Generate full intelligence pack {freeRunsUsed >= FREE_RUN_LIMIT && !isUnlimited ? '(limit reached)' : freeRunsUsed === 0 ? '— 1 free run' : ''}</button><button className="secondary" onClick={() => { setShowShowcase(true); setError(''); }}><Globe2/> Open global showcase library</button></Card><Card><h2>What CASEY generates</h2><p style={{fontSize:'11px',color:'#64748b',marginBottom:'10px'}}>From a single project description — in seconds.</p>{['Executive summary with P50, schedule and confidence score','Cost workbook — direct, indirect, reserve by CBS line','5 scenario trade-offs: base, faster, cheaper, lower risk, premium','Risk register — cause, event, impact, owner, trigger, mitigation','QCRA/QSRA probability curves and tornado chart','Board attack simulation — 5 questions your committee will ask','Location intelligence, financing context and OBA assessment','Procurement packages with lead times and single-source flags'].map((x,i)=><div className="reason" style={{padding:'5px 0',borderBottom:'1px solid rgba(255,255,255,0.04)'}} key={x}><span style={{color:'#8df7ff',marginRight:'8px',fontSize:'10px',fontWeight:'800'}}>{i+1}</span><span style={{fontSize:'11px'}}>{x}</span></div>)}</Card></section>}
       {model && <>
         <DemoBanner model={model}/>
         <section className="confidenceEngineBadge"><b>{model.confidence_engine_label || 'CASEY Confidence Engine'}</b><span>{safeRender(typeof model.confidence_engine_detail === 'object' ? model.confidence_engine_detail?.plain_english || 'Benchmark + probabilistic + sector-trained reasoning' : model.confidence_engine_detail || 'Benchmark + probabilistic + sector-trained reasoning')}</span></section>
@@ -2963,6 +3130,24 @@ function parseMoneyLocal(v) {
             </div>
             <ChallengeAnaloguePanel model={model} />
           </div>}
+          {/* LIVE INTELLIGENCE SIGNAL */}
+          {model?.live_intel_active && model?.live_intel_text && <section className="layout one">
+            <div style={{padding:'10px 16px',background:'rgba(16,185,129,0.05)',border:'1px solid rgba(16,185,129,0.2)',borderLeft:'3px solid #10b981',borderRadius:'5px',marginBottom:'10px'}}>
+              <div style={{display:'flex',alignItems:'center',gap:'8px',marginBottom:'6px'}}>
+                <div style={{width:'7px',height:'7px',borderRadius:'50%',background:'#10b981',animation:'pulse 1.5s infinite',flexShrink:0}}/>
+                <div style={{display:'flex',flexDirection:'column',gap:'1px'}}>
+                <span style={{fontSize:'9px',fontWeight:'900',color:'#10b981',letterSpacing:'.08em'}}>
+                  {model.live_intel_mode === 'AI-enriched' ? '⚡ AI-ENRICHED INTELLIGENCE' : '🌐 OPEN CRAWL INTELLIGENCE'} — {model.live_intel_timestamp}
+                </span>
+                <span style={{fontSize:'8px',color:'#334155'}}>Sources: {model.live_intel_sources}</span>
+              </div>
+              </div>
+              <p style={{fontSize:'10px',color:'#94a3b8',lineHeight:'1.6',margin:0}}>{model.live_intel_text?.slice(0,600)}</p>
+              {model.live_intel_sources?.includes('NewsAPI') && <div style={{marginTop:'4px',fontSize:'9px',color:'#10b981',fontWeight:'600'}}>
+                Includes live trade press articles — Reuters, NCE, ENR, Infrastructure Intelligence
+              </div>}
+            </div>
+          </section>}
           {model.executive_shock_insight && <section className="layout one"><Card className="shockCard"><h2>⚡ Live model update</h2><p>{model.executive_shock_insight}</p></Card></section>}
           <section className="layout two">
             <Card><h2>Executive summary</h2><p style={{fontSize:'13px',lineHeight:'1.6'}}>{model.executive_summary || `${model.title} has been classified as ${safeRender(model.subsector)}. CASEY generated a first-pass cost, schedule, risk and confidence model for the selected scenario.`}</p><div className="miniMetrics"><b><span>Direct cost</span>{fmt(direct)}</b><b><span>Indirect cost</span>{fmt(indirect)}</b><b><span>Risk / reserve</span>{fmt(reserves)}</b></div><h3>Recommendation</h3>{(model.next_best_actions || []).slice(0,5).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{safeRender(x)}</div>)}</Card>
@@ -3046,10 +3231,14 @@ function parseMoneyLocal(v) {
               </div>
               <p style={{fontSize:'9px',color:'#64748b',margin:0,lineHeight:'1.4'}}>Unit rates below show cost per {model.unit_rate_label?.metric||'programme unit'} for each CBS line, derived from this programme estimate. Compare to the typical sector range (right). Divergence indicates exceptional scope or unusual location/complexity.</p>
             </div>}
-            <h3>Cost estimate workbook</h3><Table rows={costs} cols={[["cbs","CBS"],["description","Description"],["type","Type"],["unit_rate","Unit rate"],["p10_bn","P10"],["p50_bn","P50"],["p90_bn","P90"],["basis","Basis"]]} moneyCols={["p10_bn","p50_bn","p90_bn"]}/></Card><Card><h2>Cost composition</h2><p className="chartCaption">Direct, indirect and reserve are scenario-controlled and reconciled to selected P50. For the detailed uncertainty view use QCRA/QSRA.</p><ResponsiveContainer width="100%" height={320}><BarChart data={[{name:'Direct',value:direct},{name:'Indirect',value:indirect},{name:'Reserve',value:reserves}]}><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis dataKey="name"/><YAxis/><Tooltip/><Bar dataKey="value" fill="#8df7ff"/></BarChart></ResponsiveContainer></Card></section>}
+            <h3>Cost estimate workbook</h3><Table rows={costs} cols={[["cbs","CBS"],["description","Description"],["type","Type"],["unit_rate","Unit rate"],["p10_bn","P10"],["p50_bn","P50"],["p90_bn","P90"],["basis","Basis"]]} moneyCols={["p10_bn","p50_bn","p90_bn"]} cellFmt={(col, val) => {
+                const curr = model?.currency_symbol || '$';
+                if (col === 'unit_rate' && curr !== '$') return String(val).replace(/\$([0-9])/g, curr + '$1');
+                return String(val);
+              }}/></Card><Card><h2>Cost composition</h2><p className="chartCaption">Direct, indirect and reserve are scenario-controlled and reconciled to selected P50. For the detailed uncertainty view use QCRA/QSRA.</p><ResponsiveContainer width="100%" height={320}><BarChart data={[{name:'Direct',value:direct},{name:'Indirect',value:indirect},{name:'Reserve',value:reserves}]}><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis dataKey="name"/><YAxis/><Tooltip/><Bar dataKey="value" fill="#8df7ff"/></BarChart></ResponsiveContainer></Card></section>}
         {tab === 'schedule' && <section className="layout two"><Card><h2>Schedule bridge vs Base</h2><p className="chartCaption">This is the month-by-month reason the scenario becomes faster or slower than Base.</p>{scheduleWaterfall.map((x,i)=><div className={`reason ${x.kind==='total'?'deltaReason':''}`} key={i}><span>{i+1}</span><b>{x.driver}</b><br/>{x.kind==='total'?`${x.months} months`:(x.months>=0?'+':'') + x.months + ' months'}</div>)}<h3>Scenario schedule logic</h3><Table rows={schedule} cols={[["activity_id","Activity"],["phase","Phase"],["activity","Name"],["predecessor","Pred"],["duration_months","Months"],["critical","Critical"],["basis","Basis"]]}/></Card><Card><h2>QSRA finish-date curve</h2><p className="chartCaption">P50 equals the headline schedule. P80/P90 show how severe the delivery tail becomes after the scenario trade-off.</p><div className="metrics"><div>P50<b>{qsra.p50} mo</b></div><div>P80<b>{qsra.p80} mo</b></div><div>P90<b>{qsra.p90} mo</b></div></div><ResponsiveContainer width="100%" height={280}><LineChart data={curve}><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis dataKey="percentile"/><YAxis/><Tooltip formatter={(v) => [`${v} months`, "QSRA finish date"]}/><ReferenceLine x={50} stroke="#ffffff88" label="P50 = headline"/><ReferenceLine x={80} stroke="#ffffff55" label="P80 = board risk"/><Line type="monotone" name="QSRA finish date" dataKey="schedule_months" stroke="#b18cff" strokeWidth={4}/></LineChart></ResponsiveContainer><div className="reason p80Translation"><span>1/5</span>{safeRender(p80Talk.schedule)}</div><div className="reason p80Translation"><span>!</span>{safeRender(p80Talk.board)}</div>{(model.monte_carlo?.curve_readout || []).slice(1).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{x}</div>)}</Card></section>}
         {tab === 'risk' && <section className="layout two"><Card><h2>Risk Register Pro</h2><p style={{fontSize:'11px',color:'#64748b',marginBottom:'8px'}}>Each risk has a cause (what triggers it), event (what happens), impact (cost/schedule consequence), probability, named owner, and mitigation. The top risks by expected monetary value drive the P80/P90 exposure in the QCRA chart.</p>{model?.stress_test_applied && <div style={{background:"rgba(239,68,68,0.08)",borderLeft:"2px solid #ef4444",padding:"6px 10px",marginBottom:"8px",fontSize:"11px",color:"#ef4444"}}>Stress test applied: risk posture has shifted. Confidence is now {model.confidence_pct}%. The risks below drove this position before the shock was applied.</div>}<Table rows={risks} cols={[['risk_id','ID'],['risk','Risk'],['cause','Cause'],['event','Event'],['impact','Impact'],['probability_pct','Prob %'],['activity_id','Activity'],['cbs','CBS'],['owner','Owner'],['mitigation','Mitigation']]}/></Card><Card><h2>Top exposure drivers</h2><ResponsiveContainer width="100%" height={380}><BarChart data={tornado} layout="vertical"><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis type="number"/><YAxis dataKey="driver" type="category" width={150}/><Tooltip/><Bar dataKey="contribution" fill="#8df7ff"/></BarChart></ResponsiveContainer></Card></section>}
-        {tab === 'monte' && <section className="layout two"><Card><h2>QCRA cost range curve</h2>{model?.stress_test_applied && <div style={{background:'rgba(245,158,11,0.08)',borderLeft:'2px solid #f59e0b',padding:'6px 10px',marginBottom:'8px',fontSize:'11px',color:'#f59e0b'}}>Stress test active: {String(model.stress_test_applied).replace(/_/g,' ')} — P50 updated to {safeRender(model.cost_p50)}. Download Export QCRA/QSRA to capture the stressed curves.</div>}<p style={{fontSize:'11px',color:'#64748b',marginBottom:'8px'}}>Probability range across 10,000+ simulations. P50 = the most likely outturn (headline number). P80 = 80% chance of coming in at this or less — this is the board's risk exposure. P90 = stress-case downside. Not a cashflow profile.</p><div className="metrics"><div>P50 headline<b>{safeRender(model.cost_p50)}</b></div><div>P80 risk exposure<b>{fmt(qcra.p80)}</b></div><div>P90 stress case<b>{fmt(qcra.p90)}</b></div></div><ResponsiveContainer width="100%" height={280}><AreaChart data={curve}><defs><linearGradient id="caseyG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#8df7ff" stopOpacity=".55"/><stop offset="1" stopColor="#8df7ff" stopOpacity="0"/></linearGradient></defs><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis dataKey="percentile"/><YAxis/><Tooltip formatter={(v) => [`$${Number(v).toFixed(1)}B`, "QCRA total outturn"]}/><ReferenceLine x={50} stroke="#ffffff88" label="P50 = headline"/><ReferenceLine x={80} stroke="#ffffff55" label="P80 = board risk"/><Area type="monotone" name="QCRA total outturn" dataKey="cost_bn" stroke="#8df7ff" fill="url(#caseyG)"/></AreaChart></ResponsiveContainer>{(model.monte_carlo?.curve_readout || []).slice(0,1).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{safeRender(x)}</div>)}<div className="reason p80Translation"><span>1/5</span>{safeRender(p80Talk.cost)}</div><div className="reason"><span>!</span>This curve is a probability distribution, not spend over time. The x-axis is confidence percentile. P50 equals the headline estimate; P80/P90 are board downside exposure.</div></Card><Card><h2>QSRA schedule range curve</h2><p className="chartCaption">P50 matches the headline duration. P80/P90 show the likely board conversation if critical path risk lands.</p><div className="metrics"><div>P50 headline<b>{qsra.p50} mo</b></div><div>P80 risk date<b>{qsra.p80} mo</b></div><div>P90 stress date<b>{qsra.p90} mo</b></div></div><ResponsiveContainer width="100%" height={280}><LineChart data={curve}><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis dataKey="percentile"/><YAxis/><Tooltip formatter={(v) => [`${v} months`, "QSRA finish date"]}/><ReferenceLine x={50} stroke="#ffffff88" label="P50 = headline"/><ReferenceLine x={80} stroke="#ffffff55" label="P80 = board risk"/><Line type="monotone" name="QSRA finish date" dataKey="schedule_months" stroke="#b18cff" strokeWidth={4}/></LineChart></ResponsiveContainer><div className="reason p80Translation"><span>1/5</span>{safeRender(p80Talk.schedule)}</div><div className="reason p80Translation"><span>!</span>{safeRender(p80Talk.board)}</div>{(model.monte_carlo?.curve_readout || []).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{safeRender(x)}</div>)}</Card></section>}
+        {tab === 'monte' && <section className="layout two"><Card><h2>QCRA cost range curve</h2>{model?.stress_test_applied && <div style={{background:'rgba(245,158,11,0.08)',borderLeft:'2px solid #f59e0b',padding:'6px 10px',marginBottom:'8px',fontSize:'11px',color:'#f59e0b'}}>Stress test active: {String(model.stress_test_applied).replace(/_/g,' ')} — P50 updated to {safeRender(model.cost_p50)}. Download Export QCRA/QSRA to capture the stressed curves.</div>}<p style={{fontSize:'11px',color:'#64748b',marginBottom:'8px'}}>Probability range across 10,000+ simulations. P50 = the most likely outturn (headline number). P80 = 80% chance of coming in at this or less — this is the board's risk exposure. P90 = stress-case downside. Not a cashflow profile.</p><div className="metrics"><div>P50 headline<b>{safeRender(model.cost_p50)}</b></div><div>P80 risk exposure<b>{fmt(qcra.p80)}</b></div><div>P90 stress case<b>{fmt(qcra.p90)}</b></div></div><ResponsiveContainer width="100%" height={280}><AreaChart data={curve}><defs><linearGradient id="caseyG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#8df7ff" stopOpacity=".55"/><stop offset="1" stopColor="#8df7ff" stopOpacity="0"/></linearGradient></defs><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis dataKey="percentile"/><YAxis/><Tooltip formatter={(v) => {const curr = model?.currency_symbol || '$'; return [`${curr}${Number(v).toFixed(1)}B`, "QCRA total outturn"];}}/><ReferenceLine x={50} stroke="#ffffff88" label="P50 = headline"/><ReferenceLine x={80} stroke="#ffffff55" label="P80 = board risk"/><Area type="monotone" name="QCRA total outturn" dataKey="cost_bn" stroke="#8df7ff" fill="url(#caseyG)"/></AreaChart></ResponsiveContainer>{(model.monte_carlo?.curve_readout || []).slice(0,1).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{safeRender(x)}</div>)}<div className="reason p80Translation"><span>1/5</span>{safeRender(p80Talk.cost)}</div><div className="reason"><span>!</span>This curve is a probability distribution, not spend over time. The x-axis is confidence percentile. P50 equals the headline estimate; P80/P90 are board downside exposure.</div></Card><Card><h2>QSRA schedule range curve</h2><p className="chartCaption">P50 matches the headline duration. P80/P90 show the likely board conversation if critical path risk lands.</p><div className="metrics"><div>P50 headline<b>{qsra.p50} mo</b></div><div>P80 risk date<b>{qsra.p80} mo</b></div><div>P90 stress date<b>{qsra.p90} mo</b></div></div><ResponsiveContainer width="100%" height={280}><LineChart data={curve}><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis dataKey="percentile"/><YAxis/><Tooltip formatter={(v) => [`${v} months`, "QSRA finish date"]}/><ReferenceLine x={50} stroke="#ffffff88" label="P50 = headline"/><ReferenceLine x={80} stroke="#ffffff55" label="P80 = board risk"/><Line type="monotone" name="QSRA finish date" dataKey="schedule_months" stroke="#b18cff" strokeWidth={4}/></LineChart></ResponsiveContainer><div className="reason p80Translation"><span>1/5</span>{safeRender(p80Talk.schedule)}</div><div className="reason p80Translation"><span>!</span>{safeRender(p80Talk.board)}</div>{(model.monte_carlo?.curve_readout || []).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{safeRender(x)}</div>)}</Card></section>}
         {tab === 'delta' && <section className="layout two">
           <Card><h2>Strategic Delta Intelligence</h2><p>What changed because this scenario was selected.</p>
             {(model.scenario_delta_intelligence || []).map((x,i)=><div className="reason" key={i}><span>{i+1}</span><b>{x.label}: {x.value}</b><br/>{x.meaning}</div>)}
@@ -3302,6 +3491,10 @@ function parseMoneyLocal(v) {
           {/* ORIGINAL ADVISOR PANEL */}
           <section className="layout two advisorElite challengeRoom"><Card><h2>CASEY Board Assurance Console</h2>
 <p className="advisorIntro" style={{borderLeft:'3px solid #ef4444',paddingLeft:'10px',color:'#94a3b8'}}>
+  {model?.live_intel_active && <span style={{display:'block',fontSize:'9px',color:'#10b981',fontWeight:'700',marginBottom:'4px',display:'flex',alignItems:'center',gap:'5px'}}>
+    <span style={{width:'5px',height:'5px',borderRadius:'50%',background:'#10b981',display:'inline-block',animation:'pulse 1.5s infinite'}}/>
+    {model.live_intel_mode === 'AI-enriched' ? 'AI-enriched intelligence active' : 'Open Crawl active'} — advisor answers include real-time data from {model.live_intel_sources?.split(',')[0]} and {(model.live_intel_sources||'').split(',').length - 1} other sources ({model.live_intel_timestamp})
+  </span>}
   CASEY does not affirm. It challenges. Every answer is grounded in the live model data — not general advice.
   If your estimate is optimistic, CASEY will say so. If your risk register is weak, CASEY will name the weakness.
   The advisor uses the same adversarial intelligence as an IPA reviewer or hostile investment committee.
@@ -4205,6 +4398,9 @@ const HELP_ARTICLES = [
   {id:'gate',cat:'Intelligence',icon:'🚦',title:'What is the Gate Review assessment?',body:'CASEY maps your programme to IPA gateway readiness (G0-G4). G0 = strategic definition. G1 = business justification. G2 = delivery strategy. G3 = investment decision. G4 = readiness for service. The gate verdict (READY / CONDITIONAL / NOT READY) comes from confidence level and estimate class. The Evidence Gaps tab names what is missing before any gate can complete.',tags:['gate','ipa','gateway','g2','g3','readiness','evidence','conditional']},
   {id:'challenge',cat:'Intelligence',icon:'🔴',title:'How to use Challenge Mode',body:'Click the red CHALLENGE MY PROGRAMME button on the Overview tab after running any project. CASEY becomes the hostile examiner — it challenges your estimate class, OBA disclosure, P80 reserve, risk register quality, governing constraint, schedule basis and benchmark evidence. Each challenge includes what CASEY would need to accept the position. Works for every sector and country.',tags:['challenge','hostile','examiner','oba','p80','risk register','benchmark']},
   {id:'sector',cat:'Intelligence',icon:'⚠',title:'What is the Sector Failure Pattern?',body:'Every sector has a primary failure mode. Rail = systems integration deferred (civil complete but railway cannot run). Nuclear = first-of-kind design changes post-FCD. Space = mission assurance burden underestimated. Data centre = grid connection not on critical path. Airport = baggage and fire safety systems integration. Mining = social licence failure at near-completion. The Challenge tab names which historical programme failure your programme most resembles.',tags:['sector failure','mortality','cancel','crossrail','vogtle','artemis','pattern']},
+  {id:'free-limits',cat:'Access & Pricing',icon:'🔓',title:'What is free? What requires a subscription?',body:'CASEY has a generous free tier that covers the core intelligence experience. ALWAYS FREE — unlimited: Earth Demo (run as many times as you like, any sector, any scenario), Space Demo (same — full space programme intelligence, unlimited), Showcase Library (137 named real programmes from HS2 to JWST, unlimited browsing and loading), Open Crawl intelligence (live World Bank, GDELT, Wikipedia, SpaceX, FX and climate data on every run). FREE ONCE: 1 project run — your own Free Run where you type a custom programme description. 1 comparison run. After your 1 free run, you will see the upgrade screen. Earth Demo and Space Demo are never limited. PROFESSIONAL (£99/mo, coming soon): unlimited project runs, all exports (PDF board pack, Excel workbook, risk register, QCRA/QSRA, P6 XER), Advisor (Claude and GPT-4o), Digital Twin, file ingestion, Programme Memory. TEAM (£349/mo, coming soon): 5 seats, everything in Professional, priority support, white-label PDF exports.',tags:['free','pricing','limits','subscription','demo','project run','upgrade']},
+  {id:'opencrawl',cat:'Open Crawl',icon:'🌐',title:'What is Open Crawl intelligence?',body:'CASEY uses Open Crawl — a system of free, open data APIs — to fetch real-time global intelligence for every programme run. No paid subscription required. Sources: NewsAPI (free tier, 80,000+ news sources including Reuters, Bloomberg, New Civil Engineer, Engineering News-Record, Infrastructure Intelligence — full article headlines and descriptions from the last 30 days, set NEWS_API_KEY in Render environment to activate), GDELT Project (global news database, updated every 15 minutes, 100+ countries, 65 languages), World Bank Open Data (217 countries, GDP growth, inflation, infrastructure investment), Wikipedia (programme intelligence), SpaceX API (live launch manifest for space programmes), Open-Meteo (7-day climate signals for construction risk), Open Exchange Rates (live FX for 170 currencies). When ANTHROPIC_API_KEY or OPENAI_API_KEY is set in the server environment, the raw data is additionally processed through AI for a richer narrative — but the underlying data is always free.',tags:['open crawl','live','intelligence','real-time','world bank','wikipedia','spacex','nasa','free','global']},
+  {id:'opencrawl-how',cat:'Open Crawl',icon:'🌐',title:'How Open Crawl works in CASEY',body:'Every time you run a project — Free Run, Earth Demo, Space Demo or Showcase Library — CASEY immediately starts fetching live data in the background. It takes up to 6 seconds. You will see a pulsing green dot and the text OPEN CRAWL or LIVE INTEL appear in the navigation bar once data arrives. The intelligence appears in the Overview tab as a green-bordered panel above the main analysis. It also appears in the PDF Board Pack (final page) and the QCRA/QSRA workbook. For UK, France, Nigeria or any of 217 countries: inflation data, GDP growth and infrastructure investment signals. For space programmes: live SpaceX launch manifest and current mission data. The data informs the confidence calibration and is passed to the Advisor so it can reference current conditions.',tags:['open crawl','how it works','navigation','green dot','overview','pdf','exports','advisor','background']},
   {id:'twin-guide',cat:'Digital Twin',icon:'⚡',title:'Complete guide to the Digital Twin',body:'Step 1: Run any project (Free Run or Showcase Library) to establish baseline. Step 2: Click the Twin tab. Step 3: Either (a) upload your real XER and Excel files using the Build Twin From Files section, or (b) load a demo scenario to see what the twin produces, or (c) fill in the fields manually. Step 4: Click Update Twin. You get: forecast-at-completion, confidence score, CPI, governing constraint, board defensibility score, failure pattern match, recovery options (3 paths), board questions and executive narrative.',tags:['twin','digital twin','update','upload','files','xer','excel','how to']},
   {id:'location',cat:'Intelligence',icon:'🌍',title:'How does location affect the model?',body:'CASEY has 70+ country profiles: cost multipliers, regulatory frameworks, approval bodies, financing context and OBA notes. UK programmes show £ currency, IPA/DLUHC/ORR/ONR as approval bodies, and 1.2× cost multiplier. Nigerian programmes show NGN currency, federal regulatory framework and higher governance risk note. Australian programmes show A$ currency and Infrastructure Australia context. Simply include the country in your description — CASEY detects it automatically.',tags:['location','country','currency','uk','australia','nigeria','nigeria','framework','regulatory']},
 ];
