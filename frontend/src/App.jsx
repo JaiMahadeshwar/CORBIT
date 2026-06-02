@@ -511,7 +511,13 @@ const REAL_BENCHMARKS = [
   { name:'Jansen Potash Mine (Canada)', sector:'Mining / Metals Infrastructure', mode:'Earth', cost_bn:5.7, cost_growth_pct:0, schedule_slip_months:0, failure_mode:'On schedule — strong project controls, single-owner BHP, definitive feasibility', lesson:'Single-owner mega-mine with completed definitive feasibility study and no joint venture complexity —', prompt:'Jansen Potash Mine (Canada) real programme Mining / Metals Infrastructure actual outturn $5.7B +0% cost growth +0 months slip failure mode: On schedule — strong project controls, single-owner BHP, definitive feasibility' },
   { name:'AUKUS Submarine Programme (Australia/UK/USA)', sector:'Defence / Secure Infrastructure', mode:'Earth', cost_bn:268.0, cost_growth_pct:0, schedule_slip_months:0, failure_mode:'FOAK nuclear-powered submarine in Australia — no comparable. Workforce, regulato', lesson:'No reference class exists for AUKUS — it is simultaneously a FOAK submarine programme, FOAK nuclear ', prompt:'AUKUS Submarine Programme (Australia/UK/USA) real programme Defence / Secure Infrastructure actual outturn $268.0B +0% cost growth +0 months slip failure mode: FOAK nuclear-powered submarine in Australia — no comparable. Workforce, regulatory, industrial base all new.' },
   { name:'Chandrayaan-3 (India Lunar)', sector:'Space / Mission Assurance', mode:'Space', cost_bn:0.075, cost_growth_pct:0, schedule_slip_months:0, failure_mode:'Chandrayaan-2 lander failed — software bug in braking sequence. Chandrayaan-3 co', lesson:'Lunar landing requires exhaustive failure mode simulation — Chandrayaan-3 cost 10x less than Apollo ', prompt:'Chandrayaan-3 (India Lunar) real programme Space / Mission Assurance actual outturn $0.075B +0% cost growth +0 months slip failure mode: Chandrayaan-2 lander failed — software bug in braking sequence. Chandrayaan-3 corrected and succeeded.' },
-  { name:'Starlink Constellation (SpaceX)', sector:'Space / Mission Assurance', mode:'Space', cost_bn:30.0, cost_growth_pct:0, schedule_slip_months:0, failure_mode:'Successfully scaled — reusable launch, vertical integration, iterative design', lesson:'Vertical integration (own launch + own satellite) is the only structure that achieves constellation ', prompt:'Starlink Constellation (SpaceX) real programme Space / Mission Assurance actual outturn $30.0B +0% cost growth +0 months slip failure mode: Successfully scaled — reusable launch, vertical integration, iterative design' }
+  { name:'Starlink Constellation (SpaceX)', sector:'Space / Mission Assurance', mode:'Space', cost_bn:30.0, cost_growth_pct:0, schedule_slip_months:0, failure_mode:'Successfully scaled — reusable launch, vertical integration, iterative design', lesson:'Vertical integration (own launch + own satellite) is the only structure that achieves constellation ', prompt:'Starlink Constellation (SpaceX) real programme Space / Mission Assurance actual outturn $30.0B +0% cost growth +0 months slip failure mode: Successfully scaled — reusable launch, vertical integration, iterative design' },
+  { name:'STACK Infrastructure Denver (COL01)', sector:'Data Centre / Digital', mode:'Earth', cost_bn:3.2, cost_growth_pct:15, schedule_slip_months:12, failure_mode:'Grid interconnection delays for 960MW campus expansion', lesson:'Grid is the governing constraint. Power procurement must be secured 3-4 years before go-live.', prompt:'STACK Infrastructure Denver Campus data centre 960MW hyperscale colocation power infrastructure grid connection', region:'Denver, Colorado, USA', client:'STACK Infrastructure COL01', title:'STACK Denver Campus', icon:'Data Centre', confidence:'Grid connection and power procurement' },
+  { name:'STACK Infrastructure Northern Virginia (VA01)', sector:'Data Centre / Digital', mode:'Earth', cost_bn:2.8, cost_growth_pct:18, schedule_slip_months:10, failure_mode:'Loudoun County planning moratorium 2023 — power availability constraints', lesson:'Northern Virginia moratorium risk: LPAs now require dedicated grid upgrades before permits issue.', prompt:'STACK Infrastructure Northern Virginia data centre campus hyperscale colocation power', region:'Northern Virginia, USA', client:'STACK Infrastructure VA01', title:'STACK Northern Virginia', icon:'Data Centre', confidence:'Planning consent and grid' },
+  { name:'STACK Infrastructure Frankfurt (FRA01)', sector:'Data Centre / Digital', mode:'Earth', cost_bn:1.4, cost_growth_pct:20, schedule_slip_months:14, failure_mode:'German regulatory and grid upgrade delays', lesson:'EU data centre permitting requires heat reuse plans — adds 6-12 months to planning.', prompt:'STACK Infrastructure Frankfurt Germany European campus data centre hyperscale power', region:'Frankfurt, Germany', client:'STACK Infrastructure FRA01', title:'STACK Frankfurt Campus', icon:'Data Centre', confidence:'EU permitting and grid' },
+  { name:'STACK Infrastructure Warsaw (WAW01)', sector:'Data Centre / Digital', mode:'Earth', cost_bn:4.5, cost_growth_pct:22, schedule_slip_months:12, failure_mode:'EU energy transition and grid capacity constraints Poland', lesson:'Poland grid decarbonisation creates power procurement uncertainty. PPA availability is the critical path item.', prompt:'STACK Infrastructure Warsaw Poland campus data centre hyperscale European', region:'Warsaw, Poland', client:'STACK Infrastructure WAW01', title:'STACK Warsaw Campus', icon:'Data Centre', confidence:'Power procurement and grid' },
+  { name:'STACK Infrastructure Singapore (SIN01)', sector:'Data Centre / Digital', mode:'Earth', cost_bn:2.4, cost_growth_pct:8, schedule_slip_months:8, failure_mode:'Government moratorium 2019-2022 delayed entry', lesson:'Singapore lifted moratorium with 30% renewable energy requirement. Regulatory compliance is a licence condition.', prompt:'STACK Infrastructure Singapore campus data centre hyperscale colocation Asia Pacific', region:'Singapore', client:'STACK Infrastructure SIN01', title:'STACK Singapore Campus', icon:'Data Centre', confidence:'Renewable energy compliance' },
+  { name:'STACK Infrastructure Tokyo (TYO01)', sector:'Data Centre / Digital', mode:'Earth', cost_bn:2.0, cost_growth_pct:14, schedule_slip_months:10, failure_mode:'Seismic compliance requirements and limited grid capacity', lesson:'Japan seismic requirements add 15-25% to structural costs. Must be in baseline not contingency.', prompt:'STACK Infrastructure Tokyo Japan campus data centre hyperscale Asia Pacific seismic', region:'Tokyo, Japan', client:'STACK Infrastructure TYO01', title:'STACK Tokyo Campus', icon:'Data Centre', confidence:'Seismic compliance and grid' }
 ];
 
 
@@ -3707,6 +3713,50 @@ function parseMoneyLocal(v) {
             </div>
           </Card>
         </section>}
+        {tab === 'defence' && <div style={{padding:'0 2px'}}>
+          <div style={{background:'rgba(14,116,144,0.08)',border:'1px solid rgba(14,116,144,0.2)',borderRadius:6,padding:'14px 18px',marginBottom:12}}>
+            <div style={{fontSize:'11px',fontWeight:'800',color:'#0e7490',letterSpacing:'.12em',marginBottom:6}}>⚡ CASEY DEFENCE — WHY EVERY NUMBER</div>
+            <div style={{fontSize:'11px',color:'#94a3b8'}}>Every number defends itself. The question shifts from "did AI make this up?" to "do we agree with CASEY's assumptions?"</div>
+          </div>
+          <div style={{background:'rgba(239,68,68,0.08)',border:'2px solid rgba(239,68,68,0.35)',borderRadius:6,padding:'14px 18px',marginBottom:12}}>
+            <div style={{fontSize:'9px',fontWeight:'800',color:'#ef4444',letterSpacing:'.15em',marginBottom:6}}>GOVERNING CONSTRAINT</div>
+            <div style={{fontSize:'14px',fontWeight:'700',color:'#fff',lineHeight:'1.4'}}>{model?.casey_defence?.governing_constraint_display||model?.governing_constraint||'—'}</div>
+            <div style={{fontSize:'10px',color:'#94a3b8',marginTop:4}}>Resolve this first. Everything else is secondary.</div>
+          </div>
+          {[
+            ['WHY '+(model?.cost_p50||'P50'), model?.casey_defence?.why_cost||[]],
+            ['WHY '+(model?.schedule_months||'—')+' MONTHS', model?.casey_defence?.why_schedule||[]],
+            ['WHY '+(model?.confidence_pct||'—')+'% CONFIDENCE', model?.casey_defence?.why_confidence||[]],
+            ['WHY P80 = '+(model?.cost_p80||'—'), model?.casey_defence?.why_p80||[]],
+          ].map(([heading, points])=>(
+            <div key={heading} style={{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:6,padding:'12px 16px',marginBottom:8}}>
+              <div style={{fontSize:'9px',fontWeight:'800',color:'#06b6d4',letterSpacing:'.1em',marginBottom:6}}>{heading}</div>
+              {points.map((p,i)=><div key={i} style={{display:'flex',gap:6,marginBottom:3}}><span style={{color:'#0e7490',fontSize:'10px',flexShrink:0}}>→</span><span style={{fontSize:'11px',color:'#cbd5e1',lineHeight:'1.5'}}>{p}</span></div>)}
+            </div>
+          ))}
+          <div style={{background:'rgba(245,158,11,0.06)',border:'1px solid rgba(245,158,11,0.2)',borderRadius:6,padding:'12px 16px',marginBottom:8}}>
+            <div style={{fontSize:'9px',fontWeight:'800',color:'#f59e0b',letterSpacing:'.1em',marginBottom:6}}>WHAT WOULD CHANGE THE ANSWER</div>
+            {(model?.casey_defence?.what_changes_answer||[]).map((p,i)=><div key={i} style={{display:'flex',gap:6,marginBottom:3}}><span style={{color:'#f59e0b',fontSize:'10px',flexShrink:0}}>→</span><span style={{fontSize:'11px',color:'#cbd5e1',lineHeight:'1.5'}}>{p}</span></div>)}
+          </div>
+          {model?.xer_qa&&<div style={{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:6,padding:'12px 16px',marginBottom:8}}>
+            <div style={{fontSize:'9px',fontWeight:'800',color:'#06b6d4',letterSpacing:'.1em',marginBottom:8}}>XER SCHEDULE QA</div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:6}}>
+              {[['Activities',model.xer_qa.total_activities],['Milestones',model.xer_qa.milestone_count],['Logic Density',model.xer_qa.logic_density],['Open Ends',model.xer_qa.open_ends],['Critical Path',model.xer_qa.critical_path_pct+'%'],['QA Score',model.xer_qa.qa_score+'%']].map(([l,v])=>(
+                <div key={l} style={{background:'rgba(255,255,255,0.03)',borderRadius:4,padding:'7px 10px'}}>
+                  <div style={{fontSize:'9px',color:'#64748b',marginBottom:2}}>{l}</div>
+                  <div style={{fontSize:'13px',fontWeight:'700',color:'#fff'}}>{v}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{marginTop:6,fontSize:'10px',color:'#94a3b8'}}>Duration: {model.xer_qa.duration_flag}</div>
+          </div>}
+          {model?.casey_defence?.total_risks_identified>0&&<div style={{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:6,padding:'12px 16px'}}>
+            <div style={{fontSize:'9px',fontWeight:'800',color:'#06b6d4',letterSpacing:'.1em',marginBottom:4}}>RISK REGISTER SUMMARY</div>
+            <div style={{fontSize:'11px',color:'#cbd5e1'}}>
+              Total identified: <b style={{color:'#fff'}}>{model.casey_defence.total_risks_identified}</b> risks · EMV quantified: <b style={{color:'#fff'}}>{model.casey_defence.risks_with_emv}</b> · Top {Math.min(10,model.casey_defence.total_risks_identified)} shown in Risk tab and Risk Register export.
+            </div>
+          </div>}
+        </div>}
       </>}
     </main>
   {(loading || exportingLabel) && <div className="simOverlay">
