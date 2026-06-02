@@ -6478,13 +6478,13 @@ def export_workbook(model:Dict[str,Any]):
 @app.post("/export/risk-register")
 def export_risk(model:Dict[str,Any]):
     try:
-        return stream(risk_register_workbook_bytes(_m),"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","CASEY_Risk_Register_Pro.xlsx")
+        return stream(risk_register_workbook_bytes(model),"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","CASEY_Risk_Register_Pro.xlsx")
     except Exception as _ex:
         return stream_error("Risk register export failed: "+str(_ex)[:100])
 @app.post("/export/xer")
 def export_xer(model:Dict[str,Any]):
     try:
-        return stream(xer_bytes(_m),"application/octet-stream","CASEY_TITAN_X_v26_P6_Schedule.xer")
+        return stream(xer_bytes(model),"application/octet-stream","CASEY_TITAN_X_v26_P6_Schedule.xer")
     except Exception as _ex:
         return stream_error("XER export failed: "+str(_ex)[:100])
 @app.post("/export/word")
@@ -6496,7 +6496,7 @@ def export_word(model:Dict[str,Any]):
 @app.post("/export/pdf")
 def export_pdf(model:Dict[str,Any]):
     try:
-        return stream(pdf_bytes(_m),"application/pdf","CASEY_Board_Intelligence_Pack.pdf")
+        return stream(pdf_bytes(model),"application/pdf","CASEY_Board_Intelligence_Pack.pdf")
     except Exception as _ex:
         return stream_error("PDF export failed: "+str(_ex)[:100])
 @app.post("/export/pptx")
@@ -8213,7 +8213,7 @@ except Exception:
     pass
 # Alias our working functions to the v107 names expected by the for-loop exports
 _v107_cost_workbook_bytes = workbook_bytes
-_v107_risk_workbook_bytes = risk_csv_bytes
+_v107_risk_workbook_bytes = risk_register_workbook_bytes
 _v107_xer_bytes = xer_bytes
 _v107_schedule_csv_bytes = risk_csv_bytes  # fallback
 _v107_model_json_bytes = lambda m: json.dumps(m, default=str).encode()
