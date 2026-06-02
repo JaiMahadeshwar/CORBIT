@@ -8500,6 +8500,7 @@ CURRENCY_SYMBOLS = {
     'Kazakhstan': 'KZT ', 'Caspian': 'KZT ', 'Uzbekistan': 'UZS ',
     'Pakistan': 'PKR ', 'Bangladesh': 'BDT ',
     'International': '$', 'Global': '$', 'Space': '$', 'Lunar': '$', 'Mars': '$',
+    'European': '€', 'Europe': '€', 'EU': '€',
 }
 
 # Unit rate labels by sector/mode
@@ -8573,6 +8574,28 @@ def get_currency_symbol(location, prompt: str = ''):
     """Get currency symbol for a location. Falls back to raw prompt search.
     Uses longest-key-match to ensure Vietnam wins over China etc."""
     search_str = (str(location or '') + ' ' + str(prompt or '')).lower()
+    
+    # Hard-coded programme-to-currency mappings (overrides generic detection)
+    _prog_currency = [
+        (['hs2 high speed rail', 'hs2 high-speed', 'transpennine', 'east west rail',
+          'crossrail', 'elizabeth line', 'hinkley point', 'sizewell',
+          'small modular reactor', 'smr nuclear rollout',
+          'thames tideway', 'lower thames', 'gatwick', 'heathrow'], '£'),
+        (['aukus', 'aukus industrial', 'aukus submarine'], 'A$'),
+        (['grand paris', 'stuttgart 21', 'flamanville', 'olkiluoto',
+          'fehmarnbelt', 'brenner', 'rail baltica',
+          'ariane 6', 'ariane rocket', 'esa ariane', 'arianespace'], '€'),
+        (['inland rail', 'snowy 2.0', 'sydney metro', 'western sydney',
+          'melbourne metro', 'bruce highway'], 'A$'),
+        (['riyadh metro', 'neom', 'the line'], 'SAR '),
+        (['dangote', 'lagos'], 'NGN '),
+        (['mumbai ahmedabad', 'mumbai-ahmedabad', 'delhi meerut'], '₹'),
+    ]
+    p_lower = (prompt or '').lower()
+    for patterns, curr_sym in _prog_currency:
+        if any(pat in p_lower for pat in patterns):
+            return curr_sym
+    
     if not search_str.strip():
         return '$'
     # Longest key wins (Vietnam beats China, South Korea beats Korea)
@@ -8615,30 +8638,73 @@ def money_lc(v: float, curr: str = '$') -> str:
     return f"{cs}{local*1000:.0f}M"
 
 KNOWN_PROGRAMME_COSTS = {
-    "california high speed rail": 110.0, "ca hsr": 110.0,
-    "hs2 phase 1": 45.0, "hs2 phase 2": 88.0,
+    # Rail — US
+    "california high speed rail": 110.0, "california high-speed rail": 110.0,
+    "ca hsr": 110.0, "cahsr": 110.0,
+    "gateway hudson": 16.0, "gateway hudson tunnel": 16.0,
+    "brightline west": 3.5,
+    "honolulu rail": 10.0,
+    "purple line": 6.0,
+    # Rail — UK
+    "hs2 phase 1": 45.0, "hs2 phase 2": 88.0, "hs2 high speed rail": 75.0,
+    "hs2 high-speed rail": 75.0,
     "crossrail": 19.0, "elizabeth line": 19.0,
-    "grand paris express": 38.0, "grand paris": 38.0,
-    "riyadh metro": 22.5, "sydney metro west": 12.0,
-    "honolulu rail": 10.0, "stuttgart 21": 9.5,
-    "fehmarnbelt": 7.4, "inland rail": 31.0,
+    "transpennine route upgrade": 11.5,
+    "east west rail": 5.0,
+    # Rail — Europe
+    "grand paris express": 38.0, "grand paris metro": 38.0,
+    "stuttgart 21": 9.5,
+    "rail baltica": 5.8,
+    "fehmarnbelt": 7.4,
+    "lyon-turin": 26.0, "lyon turin": 26.0,
+    # Rail — Asia/Middle East/Australia
+    "riyadh metro": 22.5,
+    "sydney metro west": 12.0, "sydney metro expansion": 12.0,
+    "toronto ontario line": 14.0,
     "mumbai ahmedabad": 14.0, "mumbai-ahmedabad": 14.0,
-    "hinkley point c": 31.0, "sizewell c": 20.0,
-    "vogtle": 35.0, "flamanville": 13.2, "olkiluoto 3": 11.0,
-    "barakah": 24.4, "f-35": 428.0, "f35": 428.0,
-    "f-35 lightning": 428.0, "joint strike fighter": 428.0,
-    "columbia class": 110.0, "dangote": 19.0, "dangote refinery": 19.0,
-    "snowy 2.0": 12.0, "mozambique lng": 24.0,
-    "neom": 300.0, "the line": 300.0,
+    "mumbai ahmedabad high speed rail": 14.0,
+    "inland rail": 31.0,
+    "neom the line": 300.0, "neom": 300.0, "the line": 300.0,
+    "etihad rail": 11.0,
+    # Nuclear
+    "hinkley point c": 31.0, "hinkley point": 28.0,
+    "sizewell c": 20.0,
+    "vogtle": 35.0, "vogtle units": 35.0,
+    "flamanville": 13.2,
+    "olkiluoto 3": 11.0, "olkiluoto": 11.0,
+    "barakah": 24.4,
+    "small modular reactor": 4.0,
+    # Defence
+    "f-35": 428.0, "f35": 428.0, "f-35 lightning": 428.0,
+    "f35 lightning": 428.0, "joint strike fighter": 428.0,
+    "columbia class": 110.0,
+    "aukus": 240.0, "aukus industrial": 240.0, "aukus submarine": 240.0,
+    # Energy / Resources
+    "dangote": 19.0, "dangote refinery": 19.0,
+    "snowy 2.0": 12.0,
+    "mozambique lng": 24.0, "lng export terminal": 12.0,
+    "offshore wind mega": 8.0,
+    # Space
     "lunar gateway": 8.0, "lunar base": 90.0,
+    "artemis": 23.0, "artemis sls": 23.0,
+    # Infrastructure
+    "changi airport expansion": 10.0, "changi": 10.0,
 }
 
 def get_programme_anchor(prompt: str) -> float:
-    pl = (prompt or '').lower()
+    """Match prompt against known programme costs — hyphen/space agnostic."""
+    # Normalise: lowercase, collapse hyphens/dashes to space, strip extra whitespace
+    def _norm(s):
+        return re.sub(r'[-–—]+', ' ', (s or '').lower()).strip()
+    pl = _norm(prompt)
+    best_cost = 0.0
+    best_len = 0
     for name, cost in KNOWN_PROGRAMME_COSTS.items():
-        if name in pl:
-            return cost
-    return 0.0
+        n = _norm(name)
+        if n in pl and len(n) > best_len:
+            best_cost = cost
+            best_len = len(n)
+    return best_cost
 
 
 def get_unit_rate_label(subsector):
@@ -10085,14 +10151,16 @@ KNOWN_PROGRAMME_COSTS = {
 }
 
 def get_programme_anchor(prompt: str) -> float:
-    """Return a known anchor cost (USD-B) if prompt matches a named programme, else 0."""
-    pl = (prompt or '').lower()
-    best = 0.0
+    """Return anchor cost (USD-B) — normalised matching, hyphen-agnostic."""
+    def _norm(s):
+        return re.sub(r'[-\u2013\u2014]+', ' ', (s or '').lower()).strip()
+    pl = _norm(prompt)
+    best_cost = 0.0; best_len = 0
     for name, cost in KNOWN_PROGRAMME_COSTS.items():
-        if name in pl:
-            best = cost
-            break
-    return best
+        n = _norm(name)
+        if n in pl and len(n) > best_len:
+            best_cost = cost; best_len = len(n)
+    return best_cost
 
 
 
@@ -10156,17 +10224,25 @@ def build_self_challenge(model: dict) -> dict:
     from functools import lru_cache
     KNOWN_COSTS_USD = {
         "california high speed rail": 110.0,
+        "ca hsr": 110.0,
         "hs2 phase 1": 45.0, "hs2 phase 2": 88.0,
         "crossrail": 19.0, "elizabeth line": 19.0,
-        "grand paris express": 38.0, "grand paris": 38.0,
+        "grand paris express": 38.0, "grand paris metro": 38.0,
         "hinkley point c": 31.0, "vogtle": 35.0,
-        "f-35": 428.0, "dangote": 19.0,
-        "riyadh metro": 22.5, "neom": 300.0,
-        "mumbai ahmedabad": 14.0, "mumbai-ahmedabad": 14.0,
+        "f-35": 428.0, "f35 lightning": 428.0,
+        "dangote": 19.0, "riyadh metro": 22.5,
+        "neom": 300.0, "the line": 300.0,
+        "mumbai ahmedabad": 14.0,
         "artemis": 23.0, "lunar gateway": 8.0,
+        "hs2 high speed rail": 75.0,
+        "gateway hudson": 16.0,
     }
+    def _sc_norm(s):
+        return re.sub(r'[-\u2013\u2014]+', ' ', (s or '').lower()).strip()
+    _prompt_norm = _sc_norm(prompt)
     for name, known_usd in KNOWN_COSTS_USD.items():
-        if name in prompt:
+        _name_norm = _sc_norm(name)
+        if _name_norm in _prompt_norm:
             fx = 1.0
             if curr and curr != '$':
                 try: fx = get_fx_rate(curr)
@@ -10317,6 +10393,12 @@ def build_self_challenge(model: dict) -> dict:
         risk_score -= 15
         risk_issues.append(f"Only {len(risks_with_emv)}/{len(risks)} risks have quantified EMV — board will ask for full quantification.")
     
+    # Add GDELT live news signals as additional risk flags
+    gdelt_signals = model.get('live_intel_gdelt_signals', [])
+    if gdelt_signals:
+        risk_score = min(risk_score, 88)  # cap at 88 if live news shows active risks
+        for sig in gdelt_signals[:2]:
+            risk_issues.append(f"LIVE NEWS SIGNAL: {sig}")
     risk_score = max(10, min(100, risk_score))
     
     # ════════════════════════════════════════
@@ -10415,6 +10497,395 @@ def build_self_challenge(model: dict) -> dict:
     }
 
 
+
+def _auto_correct_model(model: dict) -> dict:
+    """
+    CASEY auto-corrector. Reads the self_challenge scores and fixes what it can:
+    - Cost: rebases P50/P80/P90/breakdown to known benchmark or OBA floor
+    - OBA: applies correct uplift if missing/undercooked
+    - Risks: adds missing sector-specific risks
+    - Schedule: floors to sector minimum if too short
+    Returns corrected model with 'auto_corrections' list.
+    """
+    sc = model.get('self_challenge', {})
+    if not sc or sc.get('overall_score', 100) >= 92:
+        return model  # already great, skip
+
+    dims = sc.get('dimensions', {})
+    corrections = []
+    curr = str(model.get('currency_symbol') or '$').strip()
+    fx = get_fx_rate(curr)
+    subsect = str(model.get('subsector') or '').lower()
+    prompt = str(model.get('prompt') or '').lower()
+
+    def _parse_local(v):
+        s = str(v or '0')
+        ns = re.findall(r'[\d.]+', s)
+        n = float(ns[0]) if ns else 0.0
+        if 'T' in s and not re.match(r'[A-Z]{2,}T', s): n *= 1000
+        return n
+
+    def _usd_eq(local_bn):
+        return local_bn / fx if fx > 0 else local_bn
+
+    def _to_local(usd_bn):
+        return usd_bn * fx
+
+    # ── 1. COST CORRECTION ─────────────────────────────────────────────────
+    cost_dim = dims.get('cost_realism', {})
+    if cost_dim.get('score', 100) < 72:
+        old_p50_local = _parse_local(model.get('cost_p50', 0))
+        old_p50_usd = _usd_eq(old_p50_local)
+        target_usd = 0.0
+
+        # Extract benchmark value from challenge issue text
+        for issue in cost_dim.get('issues', []):
+            m_bench = re.search(r'benchmark of [A-Z$£€¥₹][^\s]*?([\d.]+)B', issue)
+            if m_bench:
+                try: target_usd = float(m_bench.group(1)); break
+                except: pass
+            # Try "benchmark of $XXB" pattern
+            m2 = re.search(r'benchmark.*?\$([\d.]+)B', issue)
+            if m2:
+                try: target_usd = float(m2.group(1)); break
+                except: pass
+
+        # If no benchmark extracted, try direct anchor lookup
+        if target_usd <= 0:
+            target_usd = get_programme_anchor(prompt)
+
+        # Apply OBA floor: if no benchmark, at least apply reference class floor
+        if target_usd <= 0 and old_p50_usd > 0:
+            oba_floors = {
+                'nuclear': 3.5, 'rail': 1.8, 'space': 2.5, 'defence': 2.2,
+                'road': 1.5, 'airport': 1.8, 'data centre': 1.3, 'mining': 1.6,
+            }
+            for sec, floor_mult in oba_floors.items():
+                if sec in subsect and old_p50_usd < 0.5:
+                    target_usd = old_p50_usd * floor_mult
+                    break
+
+        if target_usd > 0 and abs(target_usd - old_p50_usd) / max(old_p50_usd, 0.01) > 0.15:
+            # Scale all costs proportionally
+            scale = target_usd / max(old_p50_usd, 0.01)
+            target_local = _to_local(target_usd)
+
+            # Recalculate P10/P50/P80/P90
+            old_p10 = _parse_local(model.get('cost_p10', 0))
+            old_p80 = _parse_local(model.get('cost_p80', 0))
+            old_p90 = _parse_local(model.get('cost_p90', 0))
+
+            new_p50 = target_local
+            new_p10 = old_p10 * scale if old_p10 > 0 else target_local * 0.8
+            new_p80 = old_p80 * scale if old_p80 > 0 else target_local * 1.2
+            new_p90 = old_p90 * scale if old_p90 > 0 else target_local * 1.35
+
+            model['cost_p10'] = money_lc(target_usd * (new_p10/target_local) if target_local > 0 else target_usd * 0.8, curr)
+            model['cost_p50'] = money_lc(target_usd, curr)
+            model['cost_p80'] = money_lc(target_usd * (new_p80/target_local) if target_local > 0 else target_usd * 1.2, curr)
+            model['cost_p90'] = money_lc(target_usd * (new_p90/target_local) if target_local > 0 else target_usd * 1.35, curr)
+            model['cost_range'] = f"{model['cost_p10']}-{model['cost_p90']}"
+
+            # Scale direct/indirect/reserves
+            for field in ['direct_cost', 'indirect_cost', 'risk_reserve']:
+                old_v = _parse_local(model.get(field, 0))
+                if old_v > 0:
+                    model[field] = money_lc(_usd_eq(old_v * scale), curr)
+
+            # Scale cost breakdown lines
+            for line in model.get('cost_breakdown', model.get('cost_lines', [])):
+                for col in ['p10_bn', 'p50_bn', 'p80_bn', 'p90_bn']:
+                    v = line.get(col)
+                    if v is not None:
+                        try: line[col] = round(float(v) * scale, 3)
+                        except: pass
+                for col in ['p10', 'p50', 'p80', 'p90']:
+                    raw = line.get(col)
+                    if raw:
+                        old_v = _parse_local(raw)
+                        if old_v > 0:
+                            line[col] = money_lc(_usd_eq(old_v * scale), curr)
+
+            # Scale monte carlo curve
+            mc = model.get('monte_carlo', {})
+            if mc:
+                for pt in mc.get('curve', []):
+                    for k in ['cost']:
+                        v = pt.get(k)
+                        if v is not None:
+                            try: pt[k] = round(float(v) * scale, 2)
+                            except: pass
+                qcra = mc.get('qcra', {})
+                for k in ['p50', 'p80', 'p90']:
+                    v = qcra.get(k)
+                    if v is not None:
+                        try: qcra[k] = round(float(v) * scale, 2)
+                        except: pass
+
+            # Update OBA
+            oba = model.get('optimism_bias_assessment')
+            if isinstance(oba, dict):
+                oba_old = _parse_local(oba.get('oba_adjusted_p50', 0))
+                if oba_old > 0:
+                    oba['oba_adjusted_p50'] = money_lc(_usd_eq(oba_old * scale), curr)
+
+            corrections.append(
+                f"Cost rebased: {money_lc(old_p50_usd, curr)} → {model['cost_p50']} "
+                f"(benchmark correction ×{scale:.1f})"
+            )
+
+    # ── 2. OBA CORRECTION ──────────────────────────────────────────────────
+    oba_dim = dims.get('oba_calibration', {})
+    if oba_dim.get('score', 100) < 70:
+        oba = model.get('optimism_bias_assessment')
+        if isinstance(oba, dict):
+            p50_local = _parse_local(model.get('cost_p50', 0))
+            p50_usd = _usd_eq(p50_local)
+            # Reference class OBA by sector (Flyvbjerg 2022)
+            sector_oba = {
+                'nuclear': 0.55, 'rail': 0.44, 'space': 0.60,
+                'defence': 0.40, 'road': 0.30, 'airport': 0.35,
+                'data centre': 0.18, 'mining': 0.38, 'energy': 0.25,
+                'water': 0.30,
+            }
+            uplift = 0.35  # default
+            for sec, u in sector_oba.items():
+                if sec in subsect:
+                    uplift = u; break
+            if p50_usd > 0:
+                oba_p50_usd = p50_usd * (1 + uplift)
+                oba['oba_adjusted_p50'] = money_lc(oba_p50_usd, curr)
+                oba['oba_uplift_pct'] = round(uplift * 100)
+                corrections.append(
+                    f"OBA calibrated: {round(uplift*100)}% uplift applied "
+                    f"(Flyvbjerg {subsect} reference class)"
+                )
+
+    # ── 3. RISK COMPLETENESS ───────────────────────────────────────────────
+    risk_dim = dims.get('risk_completeness', {})
+    if risk_dim.get('score', 100) < 72:
+        risks = model.get('risks', [])
+        risk_titles_lower = ' '.join(str(r.get('title','') or r.get('name','')).lower() for r in risks)
+        p50_usd_for_risk = _usd_eq(_parse_local(model.get('cost_p50', 0)))
+
+        # Sector-specific risks to add if missing
+        sector_missing_risks = {
+            'rail': [
+                ('Planning & land acquisition', 'rail', 'Delay in planning consent or land acquisition. Common governing constraint on rail mega-programmes.', 0.06),
+                ('Possession availability', 'rail', 'Insufficient possession windows to complete civil and systems works within required timescales.', 0.04),
+                ('Systems integration', 'rail', 'Interface between civils, track, signalling and rolling stock creates risk of deferred commissioning.', 0.05),
+            ],
+            'nuclear': [
+                ('Regulatory hold-point', 'nuclear', 'First-of-kind regulatory inspection hold-points cause schedule overrun — typical on EPR and SMR programmes.', 0.08),
+                ('First-of-kind weld quality', 'nuclear', 'Novel weld procedures require qualification and may require remediation — Flamanville precedent.', 0.07),
+                ('Workforce skills availability', 'nuclear', 'Nuclear-qualified workforce is scarce globally — pipeline must be established 5+ years before peak.', 0.05),
+            ],
+            'data centre': [
+                ('Grid connection delay', 'digital', 'DNO/TSO energisation delays of 12-24 months beyond plan are standard across hyperscale campus programmes.', 0.06),
+                ('Equipment supply chain', 'digital', 'Transformer and switchgear lead times exceed 24 months post-2022 — must be procured at FID.', 0.05),
+                ('Planning moratorium', 'digital', 'Local authority data centre moratoriums (e.g. Loudoun County, Singapore) can halt permitting.', 0.04),
+            ],
+            'space': [
+                ('Launch vehicle availability', 'space', 'Mission critical path depends on launch manifest — delays propagate directly to programme schedule.', 0.08),
+                ('Radiation & thermal environment', 'space', 'Anomalous space environment can damage hardware beyond design specification.', 0.06),
+                ('Software & GNC complexity', 'space', 'Flight software integration and guidance navigation control are routinely on critical path.', 0.07),
+            ],
+            'defence': [
+                ('Requirements instability', 'defence', 'Late requirements changes are the primary cost driver on defence programmes — GAO finding across 40+ programmes.', 0.09),
+                ('Cyber security classification', 'defence', 'Classified system security requirements add cost and schedule that cannot be transferred to commercial supply chain.', 0.05),
+                ('Export control ITAR/EAR', 'defence', 'Export control restrictions limit supply chain options and add compliance overhead.', 0.04),
+            ],
+            'mining': [
+                ('Geotechnical uncertainty', 'mining', 'Ground conditions in underground mine differ from feasibility study — always underestimated at Class 5.', 0.08),
+                ('Community social licence', 'mining', 'Indigenous land rights or community opposition can halt programme — Quellaveco, Resolution Copper precedents.', 0.07),
+                ('Commodity price & offtake', 'mining', 'Financing and project viability dependent on commodity price — offtake agreement must be secured.', 0.05),
+            ],
+            'energy': [
+                ('Grid connection & curtailment', 'energy', 'Grid reinforcement required before commercial operation — DNO timelines are outside developer control.', 0.06),
+                ('Planning & environmental consent', 'energy', 'Environmental impact assessment and planning consent are the governing constraint for energy infrastructure.', 0.05),
+                ('Supply chain bottleneck', 'energy', 'Turbine, transformer and cable supply constrained globally — lead times 2-4 years at peak demand.', 0.05),
+            ],
+        }
+
+        added = 0
+        for sec_key, risk_list in sector_missing_risks.items():
+            if sec_key in subsect:
+                for rtitle, rtag, rdesc, remv_frac in risk_list:
+                    if rtag not in risk_titles_lower and rtitle.lower().split()[0] not in risk_titles_lower:
+                        emv_val = round(p50_usd_for_risk * remv_frac * fx, 3)
+                        risks.append({
+                            'id': f'AC-{len(risks)+1:03d}',
+                            'title': rtitle,
+                            'category': sec_key.title(),
+                            'probability': 0.35,
+                            'impact': 'High',
+                            'cost_emv_bn': emv_val,
+                            'schedule_emv_months': 6,
+                            'description': rdesc,
+                            'mitigation': 'Early contractor engagement and detailed baseline review required.',
+                            'owner': 'Programme Director',
+                            'status': 'Open',
+                            'auto_added': True,
+                        })
+                        added += 1
+                break
+
+        if added > 0:
+            model['risks'] = risks
+            corrections.append(f"Risk register: {added} sector-specific risk(s) added automatically")
+
+    # ── 4. SCHEDULE CORRECTION ─────────────────────────────────────────────
+    sched_dim = dims.get('schedule_realism', {})
+    if sched_dim.get('score', 100) < 70:
+        dur = float(model.get('schedule_months') or 0)
+        sector_min_months = {
+            'nuclear': 144, 'rail': 72, 'space': 60, 'defence': 60,
+            'airport': 48, 'data centre': 24, 'road': 24, 'mining': 48,
+            'energy': 36,
+        }
+        for sec_key, min_mo in sector_min_months.items():
+            if sec_key in subsect and dur < min_mo * 0.5:
+                old_dur = dur
+                model['schedule_months'] = min_mo
+                # Scale QSRA
+                mc = model.get('monte_carlo', {})
+                if mc and mc.get('qsra'):
+                    mc['qsra']['p50'] = min_mo
+                    mc['qsra']['p80'] = round(min_mo * 1.2)
+                    mc['qsra']['p90'] = round(min_mo * 1.35)
+                corrections.append(
+                    f"Schedule floored: {old_dur:.0f} → {min_mo} months "
+                    f"({sec_key} sector minimum)"
+                )
+                break
+
+    if corrections:
+        model['auto_corrections'] = corrections
+        model['auto_corrected'] = True
+
+    return model
+
+
+
+def _extract_cost_bn_from_text(text: str) -> float:
+    """Pull the most credible cost figure (USD-B) from Wikipedia/news text."""
+    if not text: return 0.0
+    patterns = [
+        (r'US\$\s*([\d,.]+)\s*billion', 1.0),
+        (r'\$\s*([\d,.]+)\s*billion', 1.0),
+        (r'\$([\d,.]+)B\b', 1.0),
+        (r'([\d,.]+)\s*billion.*?(?:US\s*dollar|dollar|USD)', 1.0),
+        (r'£\s*([\d,.]+)\s*billion', 0.79),
+        (r'€\s*([\d,.]+)\s*billion', 0.92),
+        (r'A\$\s*([\d,.]+)\s*billion', 1.53),
+    ]
+    best = 0.0
+    for pat, fx in patterns:
+        try:
+            m = re.search(pat, text, re.IGNORECASE)
+            if m:
+                v_str = m.group(1).replace(',','')
+                v = float(v_str) / fx  # convert to USD
+                if 0.05 < v < 10000:  # sanity range
+                    best = max(best, v)
+        except Exception:
+            pass
+    return best
+
+
+def _wb_inflation_factor(wb_data: dict) -> float:
+    """Convert World Bank inflation to cost risk multiplier (>1 = higher cost risk)."""
+    try:
+        inflation = float(wb_data.get('inflation') or 3.0)
+        if float(inflation) > 30: return 1.35
+        if inflation > 15: return 1.20
+        if inflation > 8:  return 1.12
+        if inflation > 5:  return 1.06
+        return 1.0
+    except Exception:
+        return 1.0
+
+
+def _crawl_quick_anchor(prompt: str, curr: str, timeout: float = 2.5) -> dict:
+    """
+    Quick synchronous crawl (2.5s timeout) that runs BEFORE model generation.
+    Returns: {cost_usd: float, fx_rate: float, wb_factor: float, news_signals: list}
+    Free sources only — Wikipedia, Open Exchange Rates, World Bank.
+    """
+    import threading, os as _os
+
+    result = {'cost_usd': 0.0, 'fx_rate': 0.0, 'wb_factor': 1.0, 'news_signals': []}
+
+    # 1. Wikipedia cost lookup for named programme
+    if prompt and len(prompt) > 6:
+        wiki_q = ' '.join(prompt.split()[:5]) + ' cost billion programme'
+        def _wiki():
+            try:
+                wiki = _wiki_fetch(wiki_q)
+                text = wiki.get('text','')
+                v = _extract_cost_bn_from_text(text)
+                if v > 0: result['cost_usd'] = v
+            except Exception: pass
+
+        # 2. Live FX rate
+        def _fx():
+            try:
+                fx_data = _fx_fetch(curr)
+                rate = fx_data.get('rate', 0)
+                if rate and float(rate) > 0:
+                    result['fx_rate'] = float(rate)
+            except Exception: pass
+
+        # 3. World Bank — for non-USD locations
+        def _wb():
+            try:
+                iso = _get_iso(prompt[:50])
+                if iso and iso != 'US':
+                    wb = _wb_fetch(iso)
+                    result['wb_factor'] = _wb_inflation_factor(wb)
+            except Exception: pass
+
+        threads = [
+            threading.Thread(target=_wiki, daemon=True),
+            threading.Thread(target=_fx, daemon=True),
+            threading.Thread(target=_wb, daemon=True),
+        ]
+        for t in threads: t.start()
+        for t in threads: t.join(timeout=timeout)
+
+    return result
+
+
+def _gdelt_risk_signals(gdelt_data: dict, sector: str, location: str) -> list:
+    """
+    Extract risk signals from GDELT news data to inject into self-challenge.
+    Returns list of (issue_text, severity) tuples.
+    """
+    signals = []
+    if not gdelt_data: return signals
+
+    articles = gdelt_data.get('articles', [])
+    all_text = ' '.join(str(a.get('title','') or '') + ' ' + str(a.get('summary','') or '')
+                        for a in articles[:10]).lower()
+
+    risk_patterns = [
+        ('cost overrun', 'Cost overrun reported in current news for this sector/region — budget pressure signal.'),
+        ('delay', 'Schedule delay reported in current news — programme timing risk elevated.'),
+        ('contractor default', 'Contractor default in news — procurement risk signal for this sector.'),
+        ('inflation', 'Inflationary pressure reported — cost escalation risk above static benchmarks.'),
+        ('supply chain', 'Supply chain disruption in news — procurement schedule risk elevated.'),
+        ('planning refused', 'Planning refusal in news — consent risk signal for this location.'),
+        ('workforce shortage', 'Labour shortage reported — execution risk elevated for this sector.'),
+        ('cancelled', 'Programme cancellation in news — demand/financing risk signal.'),
+    ]
+
+    for keyword, message in risk_patterns:
+        if keyword in all_text:
+            signals.append(message)
+
+    return signals[:3]  # max 3 live signals per run
+
+
 def build_model(prompt: str='', client: str='', class_level: int=3, schedule_level: int=4, scenario: str='base'):
     prompt = str(prompt or '').strip()
     client = str(client or '').strip()
@@ -10480,8 +10951,31 @@ def build_model(prompt: str='', client: str='', class_level: int=3, schedule_lev
     # ── Named programme anchor: override p50 with known real-world cost ──
     # Anchor values are in USD billions. p50 is also in USD-equivalent internally.
     # money_lc() applies FX at display time, so we just set p50 = USD value here.
-    # ── Named programme anchor (preserves scenario multiplier) ────────────
+    # ── Named programme anchor + live Open Crawl anchor ─────────────────
     _anchor_usd = get_programme_anchor(prompt)
+    # Quick live crawl (2.5s) to get Wikipedia cost + live FX + WB inflation
+    _lc_pre = get_currency_symbol(loc_name, prompt)
+    try:
+        _crawl_result = _crawl_quick_anchor(prompt, _lc_pre, timeout=2.5)
+        # Override anchor if Wikipedia found a more current cost figure
+        _wiki_cost = float(_crawl_result.get('cost_usd') or 0)
+        if _wiki_cost > 0 and (_anchor_usd <= 0 or abs(_wiki_cost/_anchor_usd - 1) < 2.0):
+            if _anchor_usd <= 0:
+                _anchor_usd = _wiki_cost  # use Wikipedia as primary anchor if none set
+            # If wiki gives a 20-200% figure vs our static anchor, trust wiki (more current)
+            elif 0.2 < _wiki_cost / _anchor_usd < 5.0:
+                _anchor_usd = _wiki_cost
+        # Apply live FX rate if available (overrides hardcoded CURRENCY_FX_RATES for this run)
+        _live_fx = float(_crawl_result.get('fx_rate') or 0)
+        if _live_fx > 0 and _lc_pre and _lc_pre != '$':
+            CURRENCY_FX_RATES[_lc_pre] = _live_fx
+        # Apply World Bank inflation factor to base cost
+        _wb_factor = float(_crawl_result.get('wb_factor') or 1.0)
+        if _wb_factor > 1.05:
+            cal_cost = float(cal_cost) * _wb_factor
+    except Exception:
+        _crawl_result = {}
+    _anchor_usd = get_programme_anchor(prompt)  # re-check after potential wiki update
     if _anchor_usd > 0:
         # p50 at this point already has scenario cost_mult applied
         # Compute what base p50 would be (dividing out the multiplier)
@@ -11017,9 +11511,20 @@ def build_model(prompt: str='', client: str='', class_level: int=3, schedule_lev
     except Exception:
         pass
 
-    # ── CASEY Self-Challenge (runs on every output) ────────────────────
+    # ── CASEY Self-Challenge + Auto-Correction loop ──────────────────────
     try:
         model['self_challenge'] = build_self_challenge(model)
+        # Auto-correct issues the challenge found
+        _initial_score = model['self_challenge'].get('overall_score', 100)
+        if _initial_score < 92:
+            model = _auto_correct_model(model)
+            # Re-score after corrections
+            model['self_challenge'] = build_self_challenge(model)
+            _final_score = model['self_challenge'].get('overall_score', 100)
+            if model.get('auto_corrections'):
+                model['self_challenge']['corrections_applied'] = model['auto_corrections']
+                model['self_challenge']['score_before'] = _initial_score
+                model['self_challenge']['score_after'] = _final_score
     except Exception as _sc_err:
         model['self_challenge'] = {"overall_score": 75, "overall_traffic": "amber",
             "verdict": "Self-challenge unavailable.", "dimensions": {}, "total_issues": 0}
