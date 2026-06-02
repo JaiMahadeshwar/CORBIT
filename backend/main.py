@@ -7972,6 +7972,10 @@ def export_all_v50(model:Dict[str,Any]):
 
 
 
+# v106 aliases — functions referenced below were never defined
+_v106_qcra_qsra_workbook_bytes = qcra_qsra_bytes
+_v106_stamp_model = lambda m: m  # passthrough; v107 stamping used elsewhere
+
 @app.post('/export/qcra-qsra')
 def export_qcra_qsra_v106(model: Dict[str, Any]):
     return stream(_v106_qcra_qsra_workbook_bytes(model), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'CASEY_DEMO_QCRA_QSRA_Pack.xlsx')
