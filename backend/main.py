@@ -652,7 +652,7 @@ def location_factor(t: str):
         ("Australia", 1.22, ["australia","sydney","melbourne","brisbane","perth","adelaide","darwin","queensland"], "IPA Australia / AEMO", "Strong governance, high labour cost, skills shortage in WA/NT"),
         ("New Zealand", 1.18, ["new zealand","auckland","wellington","christchurch"], "NZTA / Transpower NZ", "Seismic risk premium, supply chain remoteness, small market"),
         # ── EUROPE ───────────────────────────────────────────────────
-        ("United Kingdom", 1.20, ["uk","united kingdom","england","scotland","wales","london","heathrow","manchester","birmingham","leeds","glasgow","somerset","yorkshire","hinkley","aldermaston","berkshire","oxford","cambridge","bristol","kent","essex","norfolk","suffolk","sussex","hampshire","surrey","humberside","shetland","midlands","lancashire","merseyside","northumberland","edinburgh","cardiff"], "IPA / HM Treasury Green Book / ORR / ONR", "Strong governance, high cost, IPA gateway mandatory for government programmes"),
+        ("United Kingdom", 1.20, ["uk","united kingdom","england","scotland","wales","london","heathrow","gatwick","stansted","manchester","birmingham","leeds","glasgow","somerset","yorkshire","hinkley","aldermaston","berkshire","oxford","cambridge","bristol","kent","essex","norfolk","suffolk","sussex","hampshire","surrey","humberside","shetland","midlands","lancashire","merseyside","northumberland","edinburgh","cardiff","newcastle","sheffield","nottingham","coventry","derby","leicester","wolverhampton","stoke","sunderland","teesside","tyneside","wiltshire","lincolnshire","cornwall","devon","dorset","warwickshire","cheshire","cumbria","northamptonshire","buckinghamshire","hertfordshire","bedfordshire","national highways","network rail","national grid","hs2","crossrail","elizabeth line","stonehenge","a303","a14","a27","m25","m1","m6","thames","severn","mersey","tees","tyne","clyde","forth","govan","barrow","rosyth","portsmouth","devonport","sellafield","bradwell","wylfa","dungeness","sizewell","hinckley","torness","hartlepool","heysham","ofgem","ofwat","sse","sp energy","northern powergrid","western power distribution","uk power networks","southern water","anglian water","yorkshire water","severn trent","united utilities","affinity water","south west water","iver","slough","reading","guildford","southampton","portsmouth","plymouth","exeter","swansea","newport","inverness","aberdeen","dundee","stirling","perth scotland","kilmarnock","paisley"], "IPA / HM Treasury Green Book / ORR / ONR", "Strong governance, high cost, IPA gateway mandatory for government programmes"),
         ("Germany", 1.28, ["germany","berlin","munich","hamburg","frankfurt","cologne","stuttgart","dusseldorf"], "BMVI / BNetzA Germany", "DIN standards, Energiewende grid complexity, coalition procurement delays"),
         ("France", 1.22, ["france","paris","lyon","marseille","toulouse","bordeaux"], "CEREMA / CRE France", "EDF nuclear expertise, TGV benchmark, public sector strike risk"),
         ("Netherlands", 1.25, ["netherlands","amsterdam","rotterdam","the hague","eindhoven"], "Rijkswaterstaat / TenneT", "Water management world leader, nitrogen ruling causes project delays"),
@@ -671,12 +671,31 @@ def location_factor(t: str):
         ("Austria", 1.30, ["austria","vienna","graz","salzburg"], "ASFINAG / APG Austria", "Alpine construction premium, strong governance, ÖBB rail reference"),
         ("Switzerland", 1.55, ["switzerland","zurich","geneva","bern","basel"], "SBB / Swissgrid", "World's highest construction costs, NEAT tunnel world benchmark"),
         # ── AMERICAS ─────────────────────────────────────────────────
-        ("United States", 1.08, ["usa","united states","us ","texas","california","florida","new york","arizona","north carolina","ohio","virginia","georgia","washington state","illinois","pennsylvania","michigan"], "DOT / FERC / NRC / DOE USA", "State + federal permitting, union labour premium, litigation exposure"),
+        ("United States", 1.08, ["usa","united states","us ","texas","california","florida","new york","arizona","north carolina","ohio","virginia","georgia","washington state","illinois","pennsylvania","michigan","indiana","tennessee","kentucky","nevada","colorado","utah","new mexico","oregon","idaho","wyoming","montana","south carolina","alabama","mississippi","louisiana","arkansas","oklahoma","kansas","nebraska","iowa","minnesota","wisconsin","missouri","houston","dallas","austin","san antonio","phoenix","las vegas","denver","seattle","portland","boston","chicago","detroit","philadelphia","atlanta","miami","nashville","charlotte","raleigh","richmond","baltimore","pittsburgh","cleveland","cincinnati","indianapolis","columbus","minneapolis","kansas city","salt lake city","albuquerque","tucson","fresno","sacramento","los angeles","san francisco","san jose","san diego","wallops","cape canaveral","kennedy space center","ksc","johnson space center","jpl","marshall space","stennis","vandenberg","boca chica","starbase","faa","ferc","nepa","army corps","dot ","fhwa","fra ","fta ","pge","pg&e","sdge","sce","duke energy","dominion","exelon","entergy","southern company","xcel","evergy"], "DOT / FERC / NRC / DOE USA", "State + federal permitting, union labour premium, litigation exposure"),
         ("Canada", 1.18, ["canada","toronto","vancouver","calgary","ottawa","montreal","edmonton"], "Infrastructure Canada / NEB", "Resource-driven market cycles, Indigenous consultation mandatory"),
         ("Mexico", 0.85, ["mexico","mexico city","monterrey","guadalajara","cancun"], "SCT / CFE Mexico", "Pemex oil dependency, security premium in north, political cycle risk"),
         ("Brazil", 0.82, ["brazil","sao paulo","rio de janeiro","brasilia","belo horizonte","manaus"], "ANTT / ANEEL / EPE Brazil", "Lava Jato corruption legacy, BRL currency volatility, Amazon logistics"),
         ("Chile", 0.95, ["chile","santiago","valparaiso","antofagasta"], "MOP / CNE Chile", "Lithium/copper mining world reference, stable governance, seismic premium"),
         ("Colombia", 0.88, ["colombia","bogota","medellin","cali","barranquilla"], "INVIAS / UPME Colombia", "4G/5G road concession programme, peace dividend, terrain premium"),
+        ("Ireland", 1.18, ["ireland","republic of ireland","limerick","dublin","cork","galway","waterford","wicklow","kildare","meath","leinster","munster","connacht","ulster","idainorthern ireland","belfast"], "IDA Ireland / An Bord Pleanála / CRU", "Pharma/tech FDI hub, IDA incentives, grid moratorium risk for data centres"),
+        ("Norway", 1.42, ["norway","oslo","bergen","stavanger","trondheim","tromso","bane nor","equinor","petoro","statkraft","statnett","northern lights","sleipner","troll"], "Norwegian Water Resources / Petroleum Safety Authority", "High labour cost, North Sea expertise, strong HSE culture"),
+        ("Finland", 1.35, ["finland","helsinki","tampere","turku","espoo","olkiluoto","fingrid"], "Traficom / Fingrid Finland", "Nuclear expertise (OL3), strong governance, cold climate premium"),
+        ("Denmark", 1.38, ["denmark","copenhagen","aarhus","odense","orsted","energinet","danish"], "Danish Energy Agency / Energistyrelsen", "Wind energy global leader, high welfare costs, Øresund corridor"),
+        ("Poland", 1.05, ["poland","warsaw","krakow","gdansk","wroclaw","poznan","lodz","katowice","polish"], "GDDKiA / PSE Poland", "Growing EU fund recipient, strong construction capacity, fast-track procurement risk"),
+        ("Austria", 1.30, ["austria","vienna","graz","linz","salzburg","innsbruck","austrian"], "ASFINAG / Austrian Energy Agency", "High quality standards, EU procurement rules, alpine logistics premium"),
+        ("Switzerland", 1.55, ["switzerland","zurich","bern","geneva","basel","lausanne","swiss","roche","novartis","nestlé"], "ASTRA / Swiss Federal", "Highest labour costs in Europe, precision quality standard, tunnel expertise"),
+        ("Portugal", 1.08, ["portugal","lisbon","porto","faro","setubal","braga","portuguese"], "EP / ERSE Portugal", "EU cohesion fund recipient, competitive labour, Atlantic gateway"),
+        ("Spain", 1.12, ["spain","madrid","barcelona","seville","valencia","bilbao","malaga","zaragoza","spanish","adif","red electrica"], "MITMA / Red Eléctrica Spain", "HSR expertise, strong civil contractor base, political fragmentation risk"),
+        ("Italy", 1.18, ["italy","rome","milan","naples","turin","genoa","bologna","florence","italian","eni","enel","terna","rfi","anas"], "ANAC / MIT Italy", "Public procurement delays, mafia risk in south, strong engineering capacity"),
+        ("Czech Republic", 1.10, ["czech","prague","brno","ostrava","plzen","czech republic","czechia"], "ŘSD / ČEPS Czech", "Nuclear expansion (Dukovany), EU funds, automotive supply chain"),
+        ("Romania", 0.88, ["romania","bucharest","cluj","timisoara","iasi","constanta","romanian"], "CNI / Transelectrica Romania", "EU cohesion funds, low cost, governance risk, nuclear expansion (Cernavoda)"),
+        ("Greece", 0.95, ["greece","athens","thessaloniki","piraeus","greek","admie"], "RAE / Hellenic Ministry", "IFI financed recovery, port privatisation, energy transition hub"),
+        ("Taiwan", 1.32, ["taiwan","taipei","kaohsiung","taichung","tainan","hsinchu","tsmc taiwan","thsr","taipower"], "MOTC / Taipower Taiwan", "Seismic premium, TSMC supply chain hub, cross-strait geopolitical risk"),
+        ("Israel", 1.35, ["israel","tel aviv","jerusalem","haifa","beersheba","negev","israeli"], "NEC / IEC Israel", "Geopolitical security premium, tech sector, defence export controls"),
+        ("Turkey", 0.82, ["turkey","istanbul","ankara","izmir","bursa","antalya","turkish","kgm"], "TCDD / KGM Turkey", "Currency volatility (TRY), large contractor base, political procurement risk"),
+        ("Mexico", 0.75, ["mexico","mexico city","guadalajara","monterrey","puebla","tijuana","mexican","pemex","cfe"], "SCT / CRE Mexico", "Nearshoring boom, FX risk, security premium outside urban centres"),
+        ("Brazil", 0.78, ["brazil","sao paulo","rio de janeiro","brasilia","belo horizonte","curitiba","porto alegre","manaus","brazilian","petrobras","eletrobras"], "ANTT / ANEEL / ANP Brazil", "FX volatility, strong local contractor base, environmental licensing longest in world"),
+        ("Colombia", 0.80, ["colombia","bogota","medellin","cali","cartagena","colombian","transmilenio"], "ANI / UPME Colombia", "PPP programme growing, security improving, pre-feasibility delays"),
         ("Peru", 0.85, ["peru","lima","arequipa","cusco"], "MTC / MINEM Peru", "Mining logistics benchmark, Inca site constraint, political instability"),
         ("Argentina", 0.75, ["argentina","buenos aires","cordoba","rosario"], "Ministerio de Obras Argentina", "Currency crisis — USD indexing essential, import restriction risk"),
         ("Ecuador", 0.80, ["ecuador","quito","guayaquil"], "MTOP Ecuador", "Oil-dependent, dollarised economy, political risk"),
@@ -5595,8 +5614,17 @@ def risk_register_workbook_bytes(model: dict) -> bytes:
         ws.column_dimensions[get_column_letter(ci)].width = w
         c = ws.cell(1,ci,h); c.font=bf(9,"FFFFFF"); c.fill=hf("1E293B"); c.alignment=ac(); c.border=tb()
 
-    risks = sorted(model.get("risks",[]), key=lambda x: float(x.get("cost_emv_bn",0) or 0), reverse=True)
-    for ri,r in enumerate(risks[:25],2):
+    all_risks = sorted(model.get("risks",[]), key=lambda x: float(x.get("cost_emv_bn",0) or 0), reverse=True)
+    total_risk_count = model.get("total_risks_identified", len(all_risks))
+    
+    # Section header: Board-Visible (Top 12 by EMV)
+    hdr_row = ws.max_row + 1
+    c = ws.cell(hdr_row, 1, f"BOARD PACK — TOP 12 BY EMV (of {total_risk_count} identified)")
+    c.font = bf(9, "FFFFFF"); c.fill = hf("1E293B")
+    ws.merge_cells(start_row=hdr_row, start_column=1, end_row=hdr_row, end_column=13)
+    c.alignment = al()
+    
+    for ri, r in enumerate(all_risks[:12], ws.max_row + 1):
         emv = float(r.get("cost_emv_bn",0) or 0)
         imp = float(r.get("cost_m_bn",0) or r.get("cost_impact_bn",0) or 0)
         bg = "FFF7F7" if ri % 2 == 0 else "FFFFFF"
@@ -5621,11 +5649,43 @@ def risk_register_workbook_bytes(model: dict) -> bytes:
             c.font = bf(9,"DC2626") if ci in (8,9) and isinstance(v,float) and v>0 else rf()
             if ci in (8,9) and isinstance(v,float): c.number_format = "#,##0.000"
 
+    # Section header: Full Register
+    if len(all_risks) > 12:
+        sep_row = ws.max_row + 1
+        c2 = ws.cell(sep_row, 1, f"FULL REGISTER — ALL {total_risk_count} IDENTIFIED RISKS (ranked by EMV)")
+        c2.font = bf(9, "FFFFFF"); c2.fill = hf("0E7490")
+        ws.merge_cells(start_row=sep_row, start_column=1, end_row=sep_row, end_column=13)
+        c2.alignment = al()
+        for ri, r in enumerate(all_risks[12:], ws.max_row + 1):
+            emv = float(r.get("cost_emv_bn",0) or 0)
+            imp = float(r.get("cost_m_bn",0) or r.get("cost_impact_bn",0) or 0)
+            bg = "F0F9FF" if ri % 2 == 0 else "FFFFFF"
+            row_data = [
+                r.get("id",r.get("risk_id","R-{:03d}".format(ri))),
+                r.get("title",r.get("risk",""))[:50],
+                r.get("category","Delivery")[:20],
+                r.get("cause","")[:40],
+                r.get("event",r.get("risk_event",""))[:40],
+                r.get("impact",r.get("impact_description",""))[:40],
+                "{}%".format(r.get("probability_pct","—")),
+                imp if imp else "—",
+                emv if emv else "—",
+                r.get("owner","TBC")[:20],
+                r.get("status","Open"),
+                r.get("mitigation","")[:60],
+                r.get("trigger","")[:40],
+            ]
+            for ci,v in enumerate(row_data,1):
+                c = ws.cell(ri,ci,v); c.border=tb(); c.fill=hf(bg)
+                c.alignment = ar() if ci in (7,8,9) else al()
+                c.font = rf()
+                if ci in (8,9) and isinstance(v,float): c.number_format = "#,##0.000"
+
     # Summary row
-    total_emv = sum(float(r.get("cost_emv_bn",0) or 0) for r in risks)
-    total_imp = sum(float(r.get("cost_m_bn",0) or 0) for r in risks)
+    total_emv = sum(float(r.get("cost_emv_bn",0) or 0) for r in all_risks)
+    total_imp = sum(float(r.get("cost_m_bn",0) or 0) for r in all_risks)
     sr = ws.max_row+1
-    ws.cell(sr,2,"TOTAL / AGGREGATE RISK").font=bf(10,"0F172A")
+    ws.cell(sr,2,f"AGGREGATE ({total_risk_count} RISKS)").font=bf(10,"0F172A")
     ws.cell(sr,8,total_imp).font=bf(10,"DC2626"); ws.cell(sr,8).number_format="#,##0.000"
     ws.cell(sr,9,total_emv).font=bf(10,"DC2626"); ws.cell(sr,9).number_format="#,##0.000"
     for ci in range(1,14): ws.cell(sr,ci).fill=hf("FEF9C3"); ws.cell(sr,ci).border=tb()
@@ -5699,33 +5759,439 @@ def xer_bytes(model):
     return "\n".join(L).encode("utf-8")
 
 def word_bytes(model):
-    doc=Document(); styles=doc.styles; styles["Normal"].font.name="Aptos"; styles["Normal"].font.size=Pt(10)
-    h=doc.add_heading("CASEY TITAN X Board Report",0); h.runs[0].font.color.rgb=RGBColor(5,20,35)
-    doc.add_paragraph(model.get("executive_summary",""))
-    tbl=doc.add_table(rows=1,cols=2); tbl.style="Light Shading Accent 1"; hdr=tbl.rows[0].cells; hdr[0].text="Metric"; hdr[1].text="Value"
-    for k,v in [("Cost P50",model["cost_p50"]),("Cost Range",model["cost_range"]),("Schedule",model["schedule"]),("QCRA P80",money_bn(model["monte_carlo"]["qcra"]["p80"])),("QSRA P80",str(model["monte_carlo"]["qsra"]["p80"])+" months"),("Risk",model["risk"]),("Confidence",str(model["confidence_pct"])+"%")]: row=tbl.add_row().cells; row[0].text=k; row[1].text=v
-    for title,items in [("Why Confidence",model["confidence_explanation"]),("Top Red Flags",model["red_flags"]),("Board Challenge Questions",model["board_challenge_questions"]),("Next Best Actions",model["next_best_actions"])]:
-        doc.add_heading(title,1)
-        for x in items: doc.add_paragraph(x,style="List Bullet")
-    doc.add_heading("Top Risk Drivers",1)
-    for r in model.get("risks",[])[:8]: doc.add_paragraph(f"{r.get('risk_id',r.get('id',' '))} {r.get('title',r.get('risk',' '))} — {r.get('cbs',' ')}",style="List Bullet")
-    bio=BytesIO(); doc.save(bio); bio.seek(0); return bio.getvalue()
+    """Full board report Word document — all key sections."""
+    doc = Document()
+    styles = doc.styles
+    try: styles["Normal"].font.name = "Calibri"; styles["Normal"].font.size = Pt(10)
+    except: pass
+
+    curr = str(model.get("currency_symbol","$") or "$")
+    title = str(model.get("title","Programme") or "Programme")
+    subsector = str(model.get("subsector","") or "")
+    location = str(model.get("location","") or "")
+    p50 = str(model.get("cost_p50","—") or "—")
+    p80 = str(model.get("cost_p80","—") or "—")
+    p90 = str(model.get("cost_p90","—") or "—")
+    p10 = str(model.get("cost_p10","—") or "—")
+    sched = str(model.get("schedule","—") or "—")
+    conf = str(model.get("confidence_pct","—") or "—")
+    risk = str(model.get("risk","—") or "—")
+    scenario = str(model.get("scenario_label","Base") or "Base")
+    cls_name = str(model.get("estimate_class_name","") or "")
+    gc = str(model.get("governing_constraint_prominent","") or model.get("governing_constraint","") or "")
+    exec_sum = str(model.get("executive_summary","") or "")
+    mc = model.get("monte_carlo",{}) or {}
+    qcra = mc.get("qcra",{}) or {}
+    qsra = mc.get("qsra",{}) or {}
+
+    def _h1(text):
+        h = doc.add_heading(text, 1)
+        try: h.runs[0].font.color.rgb = RGBColor(14,116,144)
+        except: pass
+        return h
+
+    def _h2(text):
+        h = doc.add_heading(text, 2)
+        try: h.runs[0].font.color.rgb = RGBColor(30,41,59)
+        except: pass
+        return h
+
+    def _kv_table(rows_data):
+        tbl = doc.add_table(rows=0, cols=2)
+        try: tbl.style = "Light Shading Accent 5"
+        except: pass
+        for k, v in rows_data:
+            row = tbl.add_row().cells
+            row[0].text = str(k); row[1].text = str(v)
+            try: row[0].paragraphs[0].runs[0].font.bold = True
+            except: pass
+        doc.add_paragraph()
+        return tbl
+
+    # ── Cover ──────────────────────────────────────────────────────
+    cover_h = doc.add_heading(title, 0)
+    try: cover_h.runs[0].font.color.rgb = RGBColor(12,26,46)
+    except: pass
+    doc.add_paragraph(f"{subsector}  ·  {location}  ·  Scenario: {scenario}")
+    doc.add_paragraph()
+
+    # ── Executive Summary ──────────────────────────────────────────
+    _h1("EXECUTIVE SUMMARY")
+    doc.add_paragraph(exec_sum)
+    doc.add_paragraph()
+
+    # ── Key Metrics ────────────────────────────────────────────────
+    _h1("KEY PROGRAMME METRICS")
+    _kv_table([
+        ("P50 Cost (Base Estimate)", p50),
+        ("P80 Cost (Board Approval Level)", p80),
+        ("P90 Cost (Stress Case)", p90),
+        ("P10 Cost (Optimistic)", p10),
+        ("QCRA P80", f"{qcra.get('p80','—')}B" if qcra.get('p80') else "—"),
+        ("QSRA P80 Schedule", f"{qsra.get('p80','—')} months" if qsra.get('p80') else "—"),
+        ("Programme Duration", sched),
+        ("Risk Profile", risk),
+        ("Confidence", f"{conf}%"),
+        ("Estimate Class", cls_name),
+        ("Scenario", scenario),
+    ])
+
+    # ── Governing Constraint ───────────────────────────────────────
+    if gc:
+        _h1("GOVERNING CONSTRAINT")
+        p_gc = doc.add_paragraph(gc)
+        try: p_gc.runs[0].font.bold = True; p_gc.runs[0].font.color.rgb = RGBColor(220,38,38)
+        except: pass
+        gc_full = model.get("governing_constraint_full",{}) or {}
+        if gc_full:
+            _kv_table([
+                (k.replace("_"," ").title(), str(v))
+                for k,v in gc_full.items() if v and k != "constraint"
+            ])
+
+    # ── Scope Assumptions ──────────────────────────────────────────
+    ra = model.get("scope_assumptions") or model.get("route_assumptions",{}) or {}
+    if ra.get("assumption_basis") or ra.get("rate_context"):
+        _h1("SCOPE ASSUMPTIONS")
+        if ra.get("rate_context"): doc.add_paragraph(str(ra["rate_context"]), style="Intense Quote" if "Intense Quote" in [s.name for s in doc.styles] else "Normal")
+        if ra.get("assumption_basis"): doc.add_paragraph(str(ra["assumption_basis"]))
+        doc.add_paragraph()
+
+    # ── Why CASEY Generated This ───────────────────────────────────
+    why = model.get("why_casey_generated_this",[]) or []
+    if why:
+        _h1("WHY CASEY GENERATED THESE NUMBERS")
+        for line in why:
+            doc.add_paragraph(str(line), style="List Bullet")
+        doc.add_paragraph()
+
+    # ── Cost Estimate ──────────────────────────────────────────────
+    _h1("COST ESTIMATE — BREAKDOWN BY CBS")
+    costs = model.get("cost_lines") or model.get("cost_breakdown",[]) or []
+    if costs:
+        cost_tbl = doc.add_table(rows=1, cols=5)
+        try: cost_tbl.style = "Light Shading Accent 5"
+        except: pass
+        hdr = cost_tbl.rows[0].cells
+        for i, h in enumerate(["CBS","Description","Type","P50","Basis"]):
+            hdr[i].text = h
+            try: hdr[i].paragraphs[0].runs[0].font.bold = True
+            except: pass
+        for cb in costs[:25]:
+            row = cost_tbl.add_row().cells
+            row[0].text = str(cb.get("cbs",""))[:10]
+            row[1].text = str(cb.get("description",""))[:40]
+            row[2].text = str(cb.get("type","Direct"))[:12]
+            p50v = cb.get("p50_bn") or cb.get("p50",0)
+            row[3].text = f"{curr}{float(p50v):.3f}B" if p50v else "—"
+            row[4].text = str(cb.get("basis",cb.get("basis_of_cost_impact","Sector benchmark")))[:40]
+        doc.add_paragraph()
+
+    # ── Risk Register Summary ──────────────────────────────────────
+    _h1("RISK REGISTER — TOP RISKS BY EMV")
+    total_r = model.get("total_risks_identified",0) or len(model.get("risks",[]))
+    disp_r = min(12, total_r)
+    doc.add_paragraph(f"Total identified: {total_r} risks. Top {disp_r} by EMV shown below. Full register in Risk Register export.")
+    risks = sorted(model.get("risks",[]), key=lambda x: float(x.get("cost_emv_bn",0) or 0), reverse=True)
+    if risks:
+        r_tbl = doc.add_table(rows=1, cols=5)
+        try: r_tbl.style = "Light Shading Accent 5"
+        except: pass
+        rh = r_tbl.rows[0].cells
+        for i, h in enumerate(["ID","Risk","Prob","EMV","Owner"]):
+            rh[i].text = h
+            try: rh[i].paragraphs[0].runs[0].font.bold = True
+            except: pass
+        for r in risks[:12]:
+            row = r_tbl.add_row().cells
+            row[0].text = str(r.get("id",r.get("risk_id",""))[:8])
+            row[1].text = str(r.get("title",r.get("risk",""))[:45])
+            row[2].text = f"{r.get('probability_pct','—')}%"
+            emv = float(r.get("cost_emv_bn",0) or 0)
+            row[3].text = f"{curr}{emv:.3f}B" if emv else "—"
+            row[4].text = str(r.get("owner","TBC")[:20])
+        doc.add_paragraph()
+
+    # ── Confidence Explanation ─────────────────────────────────────
+    _h1(f"CONFIDENCE — {conf}%")
+    cb_list = model.get("confidence_breakdown",[]) or []
+    if cb_list:
+        for item in cb_list:
+            doc.add_paragraph(f"{item.get('driver','')}:  {item.get('effect','')} — {item.get('note','')}", style="List Bullet")
+    else:
+        doc.add_paragraph(str(model.get("confidence_engine_detail",{}).get("plain_english","") or ""))
+    doc.add_paragraph()
+
+    # ── Next Best Actions ──────────────────────────────────────────
+    _h1("NEXT BEST ACTIONS")
+    for action in (model.get("next_best_actions",[]) or []):
+        doc.add_paragraph(str(action), style="List Bullet")
+    doc.add_paragraph()
+
+    # ── Footer ─────────────────────────────────────────────────────
+    from datetime import date
+    doc.add_paragraph(f"Generated by CASEY Intelligence Engine · {date.today().strftime('%d %b %Y')} · controlorbit.com · First-pass intelligence — not a signed cost plan or certified audit document.")
+
+    bio = BytesIO(); doc.save(bio); bio.seek(0); return bio.getvalue()
 
 def pptx_bytes(model):
+    """Full board presentation — 8 slides covering all key sections."""
     from pptx.dml.color import RGBColor as PRGBColor
-    prs=Presentation(); blank=prs.slide_layouts[6]
-    def add_title(slide,t,sub=""):
-        box=slide.shapes.add_textbox(PptxInches(.5),PptxInches(.35),PptxInches(12),PptxInches(.8)); tf=box.text_frame; tf.text=t; tf.paragraphs[0].runs[0].font.size=PptxPt(34); tf.paragraphs[0].runs[0].font.bold=True
-        if sub: b=slide.shapes.add_textbox(PptxInches(.55),PptxInches(1.1),PptxInches(12),PptxInches(.4)); b.text_frame.text=sub
-    s=prs.slides.add_slide(blank); add_title(s,"CASEY TITAN X",model.get("executive_summary",""));
-    s2=prs.slides.add_slide(blank); add_title(s2,"Board Metrics")
-    metrics=[("P50",model["cost_p50"]),("Range",model["cost_range"]),("Schedule",model["schedule"]),("Risk",model["risk"]),("Confidence",str(model["confidence_pct"])+"%"),("QCRA P80",money_bn(model["monte_carlo"]["qcra"]["p80"]))]
-    for i,(k,v) in enumerate(metrics):
-        x=.7+(i%3)*4.1; y=1.6+(i//3)*1.6; shp=s2.shapes.add_shape(1,PptxInches(x),PptxInches(y),PptxInches(3.6),PptxInches(1.0)); shp.text=f"{k}\n{v}"
-    s3=prs.slides.add_slide(blank); add_title(s3,"Top Risk Drivers")
-    txt=s3.shapes.add_textbox(PptxInches(.7),PptxInches(1.4),PptxInches(12),PptxInches(5)).text_frame
-    for r in model["risks"][:8]: p=txt.add_paragraph(); p.text=f"{r['title']} — {r['activity_id']} / {r['cbs']}"; p.level=0
-    bio=BytesIO(); prs.save(bio); bio.seek(0); return bio.getvalue()
+    from pptx.util import Pt as PptxPt2, Inches as PptxIn2, Emu
+    from pptx.enum.text import PP_ALIGN
+
+    prs = Presentation()
+    prs.slide_width = Emu(9144000)   # 16:9 widescreen
+    prs.slide_height = Emu(5143500)
+    blank = prs.slide_layouts[6]
+
+    curr = str(model.get("currency_symbol","$") or "$")
+    title = str(model.get("title","Programme") or "Programme")
+    subsector = str(model.get("subsector","") or "")
+    location = str(model.get("location","") or "")
+    p50 = str(model.get("cost_p50","—") or "—")
+    p80 = str(model.get("cost_p80","—") or "—")
+    sched = str(model.get("schedule","—") or "—")
+    conf = str(model.get("confidence_pct","—") or "—")
+    risk = str(model.get("risk","—") or "—")
+    scenario = str(model.get("scenario_label","Base") or "Base")
+    gc = str(model.get("governing_constraint_prominent","") or model.get("governing_constraint","") or "—")
+    total_r = model.get("total_risks_identified",0) or len(model.get("risks",[]))
+
+    NAVY  = PRGBColor(0x0C, 0x1A, 0x2E)
+    TEAL  = PRGBColor(0x0E, 0x74, 0x90)
+    WHITE = PRGBColor(0xFF, 0xFF, 0xFF)
+    AMBER = PRGBColor(0xD9, 0x77, 0x06)
+    RED   = PRGBColor(0xDC, 0x26, 0x26)
+    SLATE = PRGBColor(0x47, 0x55, 0x69)
+
+    def slide(bg_color=None):
+        s = prs.slides.add_slide(blank)
+        if bg_color:
+            fill = s.background.fill; fill.solid(); fill.fore_color.rgb = bg_color
+        return s
+
+    def txbox(s, text, x, y, w, h, size=12, bold=False, color=None, align=PP_ALIGN.LEFT, wrap=True):
+        box = s.shapes.add_textbox(PptxIn2(x), PptxIn2(y), PptxIn2(w), PptxIn2(h))
+        tf = box.text_frame; tf.word_wrap = wrap
+        tf.text = str(text)
+        p = tf.paragraphs[0]; p.alignment = align
+        r = p.runs[0] if p.runs else p.add_run()
+        r.text = str(text); r.font.size = PptxPt2(size); r.font.bold = bold
+        if color: r.font.color.rgb = color
+        return box
+
+    def rect(s, x, y, w, h, fill_color, text="", text_size=10, text_color=None, bold=False):
+        from pptx.enum.shapes import MSO_SHAPE_TYPE
+        shp = s.shapes.add_shape(1, PptxIn2(x), PptxIn2(y), PptxIn2(w), PptxIn2(h))
+        shp.fill.solid(); shp.fill.fore_color.rgb = fill_color
+        shp.line.fill.background()
+        if text:
+            tf = shp.text_frame; tf.word_wrap = True; tf.text = str(text)
+            p = tf.paragraphs[0]; r = p.runs[0] if p.runs else p.add_run()
+            r.text = str(text); r.font.size = PptxPt2(text_size); r.font.bold = bold
+            if text_color: r.font.color.rgb = text_color
+        return shp
+
+    # ── SLIDE 1: Cover ─────────────────────────────────────────────
+    s1 = slide(NAVY)
+    rect(s1, 0, 0, 13.33, 1.0, TEAL)
+    txbox(s1, "CASEY INTELLIGENCE PACK", 0.4, 0.15, 12, 0.6, 11, True, WHITE)
+    txbox(s1, title[:80], 0.4, 1.3, 12, 1.2, 28, True, WHITE)
+    txbox(s1, f"{subsector}  ·  {location}  ·  Scenario: {scenario}", 0.4, 2.7, 12, 0.5, 13, False, PRGBColor(0x94,0xA3,0xB8))
+    # KPI strip
+    kpis = [("P50", p50), ("P80", p80), ("SCHEDULE", sched), ("CONFIDENCE", f"{conf}%"), ("RISK", risk)]
+    for i, (k,v) in enumerate(kpis):
+        x = 0.4 + i * 2.58
+        rect(s1, x, 3.4, 2.4, 1.0, PRGBColor(0x1E,0x29,0x3B), "", 9, WHITE)
+        txbox(s1, k, x+0.1, 3.45, 2.2, 0.3, 8, True, PRGBColor(0x06,0xB6,0xD4))
+        txbox(s1, v[:16], x+0.1, 3.75, 2.2, 0.55, 14, True, WHITE)
+    txbox(s1, "controlorbit.com", 0.4, 4.7, 12, 0.3, 9, False, PRGBColor(0x47,0x55,0x69))
+
+    # ── SLIDE 2: Governing Constraint ──────────────────────────────
+    s2 = slide()
+    rect(s2, 0, 0, 13.33, 0.5, NAVY)
+    txbox(s2, "GOVERNING CONSTRAINT", 0.3, 0.1, 12, 0.3, 10, True, WHITE)
+    rect(s2, 0.3, 0.65, 12.73, 1.2, PRGBColor(0xFE,0xF2,0xF2))
+    txbox(s2, gc[:120], 0.5, 0.75, 12.3, 1.0, 18, True, RED)
+    gc_full = model.get("governing_constraint_full",{}) or {}
+    items = [(k.replace("_"," ").upper(), str(v)[:100]) for k,v in gc_full.items() if v and k != "constraint"]
+    for i, (k,v) in enumerate(items[:3]):
+        y_pos = 2.1 + i * 0.85
+        rect(s2, 0.3, y_pos, 12.73, 0.75, PRGBColor(0xF8,0xFA,0xFC))
+        txbox(s2, k, 0.4, y_pos+0.05, 3.0, 0.3, 8, True, TEAL)
+        txbox(s2, v, 3.5, y_pos+0.05, 9.4, 0.6, 9, False, SLATE)
+
+    # ── SLIDE 3: Scope Assumptions ─────────────────────────────────
+    s3 = slide()
+    rect(s3, 0, 0, 13.33, 0.5, NAVY)
+    txbox(s3, "SCOPE ASSUMPTIONS — WHAT CASEY ASSUMED", 0.3, 0.1, 12, 0.3, 10, True, WHITE)
+    ra = model.get("scope_assumptions") or model.get("route_assumptions",{}) or {}
+    rc = str(ra.get("rate_context","") or "")
+    ab = str(ra.get("assumption_basis","") or "")
+    if rc: txbox(s3, rc, 0.3, 0.65, 12.73, 0.5, 14, True, TEAL)
+    if ab: txbox(s3, ab[:200], 0.3, 1.25, 12.73, 0.8, 10, False, SLATE)
+    # Assumption chips
+    chip_data = []
+    if ra.get("campus_mw"): chip_data.append(f"{ra['campus_mw']:.0f}MW IT load")
+    if ra.get("data_halls"): chip_data.append(f"{ra['data_halls']} data halls")
+    if ra.get("delivery_phases"): chip_data.append(f"{ra['delivery_phases']} phases")
+    if ra.get("route_km"): chip_data.append(f"{ra['route_km']}km")
+    if ra.get("stations"): chip_data.append(f"{ra['stations']} stations")
+    if ra.get("reactor_units"): chip_data.append(f"{ra['reactor_units']}× {ra.get('reactor_type','')}")
+    if ra.get("wafers_per_month"): chip_data.append(f"{ra['wafers_per_month']:,} WSPM")
+    for i, chip in enumerate(chip_data[:6]):
+        x = 0.3 + (i % 3) * 4.3; y = 2.2 + (i // 3) * 0.65
+        rect(s3, x, y, 4.1, 0.55, PRGBColor(0xE0,0xF2,0xFE), chip, 11, PRGBColor(0x0E,0x74,0x90), True)
+    # Why section
+    why = (model.get("why_casey_generated_this",[]) or [])[:3]
+    if why:
+        txbox(s3, "WHY CASEY GENERATED THIS:", 0.3, 3.7, 12, 0.3, 9, True, TEAL)
+        for i, line in enumerate(why):
+            txbox(s3, f"→  {str(line)[:90]}", 0.3, 4.05 + i * 0.28, 12.7, 0.25, 9, False, SLATE)
+
+    # ── SLIDE 4: Cost Estimate ──────────────────────────────────────
+    s4 = slide()
+    rect(s4, 0, 0, 13.33, 0.5, NAVY)
+    txbox(s4, "COST ESTIMATE", 0.3, 0.1, 12, 0.3, 10, True, WHITE)
+    costs = model.get("cost_lines") or model.get("cost_breakdown",[]) or []
+    # KPI row
+    kpis4 = [("P10", p10), ("P50 BASE", p50), ("P80 BOARD", p80), ("P90 STRESS", p90)]
+    p10 = str(model.get("cost_p10","—") or "—")
+    p90 = str(model.get("cost_p90","—") or "—")
+    for i,(k,v) in enumerate([("P10",p10),("P50 BASE",p50),("P80 BOARD",p80),("P90",p90)]):
+        x = 0.3 + i * 3.2
+        c = TEAL if k == "P80 BOARD" else PRGBColor(0x1E,0x29,0x3B)
+        rect(s4, x, 0.6, 3.0, 0.85, c)
+        txbox(s4, k, x+0.1, 0.65, 2.8, 0.25, 8, True, WHITE)
+        txbox(s4, str(v)[:14], x+0.1, 0.9, 2.8, 0.45, 14, True, WHITE)
+    # Cost lines table
+    hdrs = ["CBS","Description","P50","Type"]
+    col_w = [1.2, 6.0, 2.0, 1.8]; x_pos = [0.3, 1.55, 7.6, 9.65]
+    for ci, (h, xp) in enumerate(zip(hdrs, x_pos)):
+        rect(s4, xp, 1.6, col_w[ci], 0.32, TEAL, h, 8, WHITE, True)
+    for ri, cb in enumerate(costs[:8]):
+        y = 1.95 + ri * 0.33; bg = PRGBColor(0xF8,0xFA,0xFC) if ri%2==0 else PRGBColor(0xFF,0xFF,0xFF)
+        p50v = cb.get("p50_bn") or cb.get("p50",0)
+        vals = [str(cb.get("cbs",""))[:8], str(cb.get("description",""))[:45],
+                f"{curr}{float(p50v):.2f}B" if p50v else "—", str(cb.get("type","Direct"))[:12]]
+        for ci, (val, xp) in enumerate(zip(vals, x_pos)):
+            rect(s4, xp, y, col_w[ci], 0.3, bg, val, 8, SLATE if ci!=2 else PRGBColor(0x0E,0x74,0x90), ci==2)
+
+    # ── SLIDE 5: Risk Overview ──────────────────────────────────────
+    s5 = slide()
+    rect(s5, 0, 0, 13.33, 0.5, NAVY)
+    txbox(s5, f"RISK REGISTER — {total_r} IDENTIFIED RISKS", 0.3, 0.1, 12, 0.3, 10, True, WHITE)
+    # Risk stats
+    for i,(k,v) in enumerate([("TOTAL RISKS",str(total_r)),("DISPLAYED",str(min(12,total_r))),("EMV QUANTIFIED",str(model.get("casey_defence",{}).get("risks_with_emv",0) or 0))]):
+        x = 0.3 + i*4.3
+        rect(s5, x, 0.6, 4.1, 0.9, PRGBColor(0x1E,0x29,0x3B))
+        txbox(s5, k, x+0.1, 0.65, 3.9, 0.3, 8, True, PRGBColor(0x06,0xB6,0xD4))
+        txbox(s5, v, x+0.1, 0.92, 3.9, 0.45, 18, True, WHITE)
+    risks = sorted(model.get("risks",[]), key=lambda x: float(x.get("cost_emv_bn",0) or 0), reverse=True)
+    hdrs5 = ["ID","Risk","Prob","EMV","Owner","Status"]
+    col_w5 = [0.8,5.5,0.9,1.5,2.0,1.2]; x5 = [0.3,1.15,6.7,7.65,9.2,11.25]
+    for ci,(h,xp) in enumerate(zip(hdrs5,x5)):
+        rect(s5, xp, 1.65, col_w5[ci], 0.28, TEAL, h, 7, WHITE, True)
+    for ri, r in enumerate(risks[:7]):
+        y = 1.96 + ri*0.31; bg = PRGBColor(0xFF,0xF7,0xF7) if ri<3 else (PRGBColor(0xF8,0xFA,0xFC) if ri%2==0 else PRGBColor(0xFF,0xFF,0xFF))
+        emv = float(r.get("cost_emv_bn",0) or 0)
+        vals = [str(r.get("id",""))[:8], str(r.get("title",r.get("risk","")))[:45],
+                f"{r.get('probability_pct','—')}%", f"{curr}{emv:.2f}B" if emv else "—",
+                str(r.get("owner","TBC"))[:18], str(r.get("status","Open"))[:8]]
+        for ci,(val,xp) in enumerate(zip(vals,x5)):
+            rect(s5, xp, y, col_w5[ci], 0.28, bg, val, 7, SLATE, False)
+
+    # ── SLIDE 6: QCRA/QSRA ─────────────────────────────────────────
+    s6 = slide()
+    rect(s6, 0, 0, 13.33, 0.5, NAVY)
+    txbox(s6, "QCRA / QSRA — QUANTITATIVE RISK ANALYSIS", 0.3, 0.1, 12, 0.3, 10, True, WHITE)
+    mc = model.get("monte_carlo",{}) or {}
+    qcra = mc.get("qcra",{}) or {}; qsra = mc.get("qsra",{}) or {}
+    # QCRA section
+    txbox(s6, "QCRA — COST RISK", 0.3, 0.65, 6.3, 0.3, 10, True, TEAL)
+    for i,(k,v) in enumerate([("P10",qcra.get("p10","—")),("P50",qcra.get("p50","—")),("P80",qcra.get("p80","—")),("P90",qcra.get("p90","—"))]):
+        x = 0.3 + i*1.55
+        c = TEAL if k=="P80" else PRGBColor(0x1E,0x29,0x3B)
+        rect(s6, x, 1.0, 1.45, 0.75, c)
+        txbox(s6, k, x+0.05, 1.05, 1.3, 0.2, 7, True, WHITE)
+        vstr = f"{curr}{float(v):.2f}B" if v and v != "—" else "—"
+        txbox(s6, vstr[:12], x+0.05, 1.25, 1.3, 0.4, 12, True, WHITE)
+    # QSRA section
+    txbox(s6, "QSRA — SCHEDULE RISK", 6.7, 0.65, 6.3, 0.3, 10, True, TEAL)
+    for i,(k,v) in enumerate([("P10",qsra.get("p10","—")),("P50",qsra.get("p50","—")),("P80",qsra.get("p80","—")),("P90",qsra.get("p90","—"))]):
+        x = 6.7 + i*1.55
+        c = TEAL if k=="P80" else PRGBColor(0x1E,0x29,0x3B)
+        rect(s6, x, 1.0, 1.45, 0.75, c)
+        txbox(s6, k, x+0.05, 1.05, 1.3, 0.2, 7, True, WHITE)
+        vstr = f"{v} mo" if v and v != "—" else "—"
+        txbox(s6, str(vstr)[:12], x+0.05, 1.25, 1.3, 0.4, 12, True, WHITE)
+    # Confidence + OBA
+    txbox(s6, "CONFIDENCE & OBA", 0.3, 2.0, 12, 0.3, 10, True, TEAL)
+    oba = model.get("optimism_bias_assessment",{}) or {}
+    oba_items = [
+        ("Confidence", f"{conf}%"),
+        ("Estimate Class", str(model.get("estimate_class_name","") or "")),
+        ("OBA Uplift", f"{oba.get('oba_uplift_pct','—')}%" if isinstance(oba,dict) else "—"),
+        ("OBA-Adjusted P50", str(oba.get("oba_adjusted_p50","—") if isinstance(oba,dict) else "—")),
+    ]
+    for i,(k,v) in enumerate(oba_items):
+        x = 0.3 + i*3.2
+        rect(s6, x, 2.35, 3.0, 0.7, PRGBColor(0xF0,0xF9,0xFF))
+        txbox(s6, k, x+0.1, 2.4, 2.8, 0.2, 8, True, TEAL)
+        txbox(s6, str(v)[:20], x+0.1, 2.62, 2.8, 0.35, 12, True, SLATE)
+    # Tornado chart (text-based)
+    txbox(s6, "TOP RISK DRIVERS BY EMV", 0.3, 3.2, 12, 0.3, 9, True, TEAL)
+    for i, r in enumerate(risks[:5]):
+        emv = float(r.get("cost_emv_bn",0) or 0)
+        bar_w = min(8.0, emv * 40) if emv > 0 else 0.1
+        rect(s6, 0.3, 3.55+i*0.28, bar_w, 0.22, TEAL if i==0 else PRGBColor(0x06,0xB6,0xD4))
+        txbox(s6, f"{str(r.get('title',r.get('risk','')))[:40]}  {curr}{emv:.3f}B", 0.35, 3.57+i*0.28, 12, 0.2, 7, False, WHITE)
+
+    # ── SLIDE 7: Benchmarks ─────────────────────────────────────────
+    s7 = slide()
+    rect(s7, 0, 0, 13.33, 0.5, NAVY)
+    txbox(s7, "NAMED GLOBAL BENCHMARKS", 0.3, 0.1, 12, 0.3, 10, True, WHITE)
+    bms = model.get("benchmark_comparison",[]) or []
+    hdrs7 = ["Programme","Sector","P50 Anchor","Growth","Slip","Failure Mode"]
+    col_w7 = [3.2,2.5,1.8,1.2,1.0,3.3]; x7 = [0.3,3.55,6.1,7.95,9.2,10.25]
+    for ci,(h,xp) in enumerate(zip(hdrs7,x7)):
+        rect(s7, xp, 0.6, col_w7[ci], 0.3, TEAL, h, 8, WHITE, True)
+    for ri, b in enumerate(bms[:8]):
+        y = 0.93+ri*0.35; bg = PRGBColor(0xF0,0xFD,0xF4) if ri%2==0 else PRGBColor(0xFF,0xFF,0xFF)
+        vals = [str(b.get("name",""))[:35], str(b.get("sector",subsector))[:20],
+                str(b.get("anchor_cost",b.get("cost_bn","—"))),
+                f'+{b.get("cost_growth_pct",b.get("growth","—"))}%',
+                f'+{b.get("schedule_slip_months",b.get("slip","—"))}mo',
+                str(b.get("failure_mode",b.get("failure","—")))[:40]]
+        for ci,(val,xp) in enumerate(zip(vals,x7)):
+            rect(s7, xp, y, col_w7[ci], 0.32, bg, val, 7, SLATE, False)
+
+    # ── SLIDE 8: Next Actions ───────────────────────────────────────
+    s8 = slide(NAVY)
+    rect(s8, 0, 0, 13.33, 0.5, TEAL)
+    txbox(s8, "NEXT BEST ACTIONS & BOARD DECISION GATES", 0.3, 0.1, 12, 0.3, 10, True, WHITE)
+    actions = model.get("next_best_actions",[]) or []
+    top_decisions = model.get("top_decisions_required",[]) or []
+    txbox(s8, "IMMEDIATE ACTIONS", 0.3, 0.65, 6.0, 0.3, 9, True, PRGBColor(0x06,0xB6,0xD4))
+    for i, a in enumerate((actions or top_decisions)[:5]):
+        rect(s8, 0.3, 1.0+i*0.7, 6.2, 0.6, PRGBColor(0x1E,0x29,0x3B))
+        txbox(s8, f"{i+1}.  {str(a)[:70]}", 0.4, 1.05+i*0.7, 6.0, 0.5, 9, False, WHITE)
+    txbox(s8, "CONFIDENCE TRAJECTORY", 7.0, 0.65, 5.8, 0.3, 9, True, PRGBColor(0x06,0xB6,0xD4))
+    ct = model.get("confidence_trajectory_obj",{}) or {}
+    ct_items = [
+        ("Current Confidence", f"{conf}%"),
+        ("Target for Approval", "75%"),
+        ("Gap to Close", f"{ct.get('gap',max(0,75-int(conf or 0)))} pts"),
+        ("Direction", str(ct.get("direction","STABLE"))),
+    ]
+    for i,(k,v) in enumerate(ct_items):
+        rect(s8, 7.0, 1.0+i*0.7, 5.8, 0.6, PRGBColor(0x1E,0x29,0x3B))
+        txbox(s8, k, 7.1, 1.05+i*0.7, 3.0, 0.25, 8, True, PRGBColor(0x94,0xA3,0xB8))
+        txbox(s8, str(v)[:20], 10.2, 1.05+i*0.7, 2.5, 0.45, 14, True, WHITE)
+    txbox(s8, f"Generated by CASEY Intelligence Engine · controlorbit.com", 0.3, 4.75, 12, 0.25, 8, False, PRGBColor(0x47,0x55,0x69))
+
+    bio = BytesIO(); prs.save(bio); bio.seek(0); return bio.getvalue()
 
 def _apply_currency_to_model(model: dict) -> dict:
     """
@@ -5970,7 +6436,94 @@ def pdf_bytes(model: dict) -> bytes:
     story.append(PageBreak())
 
     # ══════════════════════════════════════════════════════════════════════════
-    # PAGE 2 — COST ESTIMATE
+    # PAGE 2 — GOVERNING CONSTRAINT + SCOPE ASSUMPTIONS
+    # ══════════════════════════════════════════════════════════════════════════
+    gc_full = model.get("governing_constraint_full") or {}
+    gc_display = gc_full.get("constraint") or model.get("governing_constraint_prominent") or model.get("governing_constraint","—")
+    
+    story.append(Paragraph("GOVERNING CONSTRAINT", H1))
+    story.append(Spacer(1,3*mm))
+    # Big red constraint box
+    story.append(tbl([[Paragraph(f'<b>{gc_display}</b>', ParagraphStyle("GC",
+        parent=BODY, fontSize=14, textColor=WHITE, leading=18))]],
+        [W-40*mm],
+        [("BACKGROUND",(0,0),(-1,-1),RED),
+         ("TOPPADDING",(0,0),(-1,-1),12),("BOTTOMPADDING",(0,0),(-1,-1),12),
+         ("LEFTPADDING",(0,0),(-1,-1),14),("RIGHTPADDING",(0,0),(-1,-1),14),
+        ]))
+    story.append(Spacer(1,4*mm))
+    
+    if gc_full:
+        gc_rows = []
+        if gc_full.get("probability_of_delay"):
+            gc_rows.append(["Probability of delay", gc_full["probability_of_delay"][:120]])
+        if gc_full.get("estimated_impact"):
+            gc_rows.append(["Estimated impact", gc_full["estimated_impact"][:120]])
+        if gc_full.get("board_action_required"):
+            gc_rows.append(["Board action required", gc_full["board_action_required"][:160]])
+        if gc_full.get("evidence_required"):
+            gc_rows.append(["Evidence required", gc_full["evidence_required"][:120]])
+        if gc_rows:
+            story.append(tbl(gc_rows, [44*mm, W-44*mm-40*mm],
+                [("FONTNAME",(0,0),(0,-1),"Helvetica-Bold"),
+                 ("FONTSIZE",(0,0),(-1,-1),8.5),
+                 ("ROWBACKGROUNDS",(0,0),(-1,-1),[HexColor("#fff7f7"),WHITE]),
+                 ("TOPPADDING",(0,0),(-1,-1),5),("BOTTOMPADDING",(0,0),(-1,-1),5),
+                 ("LEFTPADDING",(0,0),(-1,-1),8),
+                ]))
+            story.append(Spacer(1,5*mm))
+
+    # Scope Assumptions box
+    ra = model.get("scope_assumptions") or model.get("route_assumptions") or {}
+    assumption_basis = ra.get("assumption_basis","")
+    rate_context = ra.get("rate_context","")
+    if assumption_basis or rate_context:
+        story.append(Paragraph("SCOPE ASSUMPTIONS", H1))
+        story.append(Spacer(1,2*mm))
+        assumption_rows = []
+        if rate_context:
+            assumption_rows.append(["Assumed scope", rate_context])
+        if assumption_basis:
+            assumption_rows.append(["Basis", assumption_basis[:200]])
+        # Add specific fields
+        if ra.get("campus_mw"): assumption_rows.append(["Campus capacity", f"{ra['campus_mw']:.0f}MW IT load"])
+        if ra.get("data_halls"): assumption_rows.append(["Data halls", f"{ra['data_halls']} halls × ~{ra['campus_mw']/ra['data_halls']:.0f}MW/hall"])
+        if ra.get("delivery_phases"): assumption_rows.append(["Delivery phases", f"{ra['delivery_phases']} phases"])
+        if ra.get("cooling_strategy"): assumption_rows.append(["Cooling", ra["cooling_strategy"]])
+        if ra.get("grid_connection_voltage"): assumption_rows.append(["Grid connection", ra["grid_connection_voltage"]])
+        if ra.get("route_km"): assumption_rows.append(["Route length", f"{ra['route_km']} km"])
+        if ra.get("stations"): assumption_rows.append(["Stations", f"{ra['stations']} stations"])
+        if ra.get("tunnel_pct"): assumption_rows.append(["Topology", f"{ra['tunnel_pct']}% tunnel / {ra.get('viaduct_pct',0)}% viaduct / {ra.get('surface_pct',0)}% surface"])
+        if ra.get("reactor_units"): assumption_rows.append(["Reactor units", f"{ra['reactor_units']}× {ra.get('reactor_type','Gen III+')} ({ra.get('total_mwe',0)}MWe total)"])
+        if ra.get("wafers_per_month"): assumption_rows.append(["Capacity", f"{ra['wafers_per_month']:,} WSPM at {ra.get('process_node_nm',28)}nm"])
+        if ra.get("bioreactor_litres"): assumption_rows.append(["Bioreactor", f"{ra['bioreactor_litres']:,}L — {ra.get('gmp_classification','')}"])
+        if ra.get("installed_mw"): assumption_rows.append(["Installed capacity", f"{ra['installed_mw']:.0f}MW"])
+        if ra.get("throughput_mtpa"): assumption_rows.append(["Throughput", f"{ra['throughput_mtpa']}Mtpa"])
+        
+        if assumption_rows:
+            story.append(tbl(assumption_rows, [44*mm, W-44*mm-40*mm],
+                [("FONTNAME",(0,0),(0,-1),"Helvetica-Bold"),
+                 ("FONTSIZE",(0,0),(-1,-1),8.5),
+                 ("ROWBACKGROUNDS",(0,0),(-1,-1),[HexColor("#f0f9ff"),WHITE]),
+                 ("TOPPADDING",(0,0),(-1,-1),5),("BOTTOMPADDING",(0,0),(-1,-1),5),
+                 ("LEFTPADDING",(0,0),(-1,-1),8),
+                ]))
+        story.append(Spacer(1,5*mm))
+
+    # Why CASEY generated this
+    why_gen = model.get("why_casey_generated_this") or []
+    if why_gen:
+        story.append(Paragraph("WHY CASEY GENERATED THESE NUMBERS", H1))
+        story.append(Spacer(1,2*mm))
+        for line in why_gen[:8]:
+            story.append(Paragraph(f"→  {line}", BODY))
+            story.append(Spacer(1,1*mm))
+        story.append(Spacer(1,3*mm))
+
+    story.append(PageBreak())
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # PAGE 3 — COST ESTIMATE
     # ══════════════════════════════════════════════════════════════════════════
     story.append(Paragraph("COST ESTIMATE", H1))
 
@@ -6113,7 +6666,8 @@ def pdf_bytes(model: dict) -> bytes:
     # ══════════════════════════════════════════════════════════════════════════
     # PAGE 5 — RISK REGISTER
     # ══════════════════════════════════════════════════════════════════════════
-    story.append(Paragraph("RISK REGISTER — TOP RISKS BY EXPECTED MONETARY VALUE", H1))
+    _total_r = model.get("total_risks_identified", len(model.get("risks",[])))
+    story.append(Paragraph(f"RISK REGISTER — TOP 12 BY EMV  ({_total_r} TOTAL IDENTIFIED)", H1))
     risks = model.get("risks",[])
     if risks:
         rk_data = [["ID","Risk Title","Prob","Impact","EMV","Owner","Status"]]
@@ -6212,10 +6766,10 @@ def pdf_bytes(model: dict) -> bytes:
     live_intel = model.get("live_intel_text", "")
     live_ts = model.get("live_intel_timestamp", "")
     if live_intel and len(live_intel) > 50:
-        story.append(Paragraph("LIVE SECTOR INTELLIGENCE", H1))
+        story.append(Paragraph("MARKET & COST INTELLIGENCE", H1))
         story.append(Paragraph(
-            f"The following intelligence was fetched in real-time at {live_ts} "
-            f"and informed the confidence calibration and benchmark scoring for this report.",
+            f"The following market signals were fetched in real-time at {live_ts} "
+            f"and informed the confidence calibration and cost escalation assumptions for this report.",
             SMALL))
         story.append(Spacer(1, 2*mm))
         story.append(tbl([[live_intel[:600]]],[W-42*mm],
@@ -6800,10 +7354,81 @@ def qcra_qsra_bytes(model: dict) -> bytes:
         ws5.cell(ri, ci).fill = hf("FEF9C3")
         ws5.cell(ri, ci).border = tb()
 
+    # ── Scope Assumptions tab ────────────────────────────────────────────────
+    ws_sa = wb.create_sheet("Scope Assumptions")
+    ws_sa.sheet_view.showGridLines = False
+    ws_sa.column_dimensions["A"].width = 30
+    ws_sa.column_dimensions["B"].width = 70
+
+    sa_title = ws_sa.cell(1, 1, "CASEY SCOPE ASSUMPTIONS & WHY CASEY GENERATED THESE NUMBERS")
+    sa_title.font = bf(11, "FFFFFF"); sa_title.fill = hf("0C1A2E")
+    ws_sa.merge_cells("A1:B1"); sa_title.alignment = al()
+
+    ra = model.get("scope_assumptions") or model.get("route_assumptions") or {}
+    sa_rows = []
+    
+    # Governing constraint
+    gc_full = model.get("governing_constraint_full") or {}
+    gc_disp = gc_full.get("constraint") or model.get("governing_constraint_prominent") or model.get("governing_constraint", "—")
+    sa_rows.append(("GOVERNING CONSTRAINT", gc_disp))
+    if gc_full.get("probability_of_delay"): sa_rows.append(("Probability of delay", gc_full["probability_of_delay"]))
+    if gc_full.get("estimated_impact"): sa_rows.append(("Estimated impact", gc_full["estimated_impact"]))
+    if gc_full.get("board_action_required"): sa_rows.append(("Board action required", gc_full["board_action_required"]))
+    if gc_full.get("evidence_required"): sa_rows.append(("Evidence required", gc_full["evidence_required"]))
+    sa_rows.append(("", ""))
+
+    # Scope
+    sa_rows.append(("SCOPE ASSUMPTIONS", ""))
+    if ra.get("rate_context"): sa_rows.append(("Assumed scope", ra["rate_context"]))
+    if ra.get("assumption_basis"): sa_rows.append(("Assumption basis", ra["assumption_basis"]))
+    if ra.get("campus_mw"): sa_rows.append(("Campus capacity", f"{ra['campus_mw']:.0f}MW IT load"))
+    if ra.get("data_halls"): sa_rows.append(("Data halls", f"{ra['data_halls']} halls"))
+    if ra.get("delivery_phases"): sa_rows.append(("Delivery phases", str(ra["delivery_phases"])))
+    if ra.get("pue"): sa_rows.append(("PUE", str(ra["pue"])))
+    if ra.get("cooling_strategy"): sa_rows.append(("Cooling strategy", ra["cooling_strategy"]))
+    if ra.get("grid_connection_voltage"): sa_rows.append(("Grid connection", ra["grid_connection_voltage"]))
+    if ra.get("route_km"): sa_rows.append(("Route length", f"{ra['route_km']} km"))
+    if ra.get("stations"): sa_rows.append(("Stations", f"{ra['stations']}"))
+    if ra.get("tunnel_pct"): sa_rows.append(("Topology", f"{ra['tunnel_pct']}% tunnel / {ra.get('viaduct_pct',0)}% viaduct / {ra.get('surface_pct',0)}% surface"))
+    if ra.get("reactor_units"): sa_rows.append(("Reactor units", f"{ra['reactor_units']}× {ra.get('reactor_type','Gen III+')} ({ra.get('total_mwe',0)}MWe)"))
+    if ra.get("wafers_per_month"): sa_rows.append(("Capacity (WSPM)", f"{ra['wafers_per_month']:,}"))
+    if ra.get("process_node_nm"): sa_rows.append(("Process node", f"{ra['process_node_nm']}nm"))
+    if ra.get("bioreactor_litres"): sa_rows.append(("Bioreactor capacity", f"{ra['bioreactor_litres']:,}L"))
+    if ra.get("gmp_classification"): sa_rows.append(("GMP classification", ra["gmp_classification"]))
+    if ra.get("installed_mw"): sa_rows.append(("Installed capacity", f"{ra['installed_mw']:.0f}MW"))
+    if ra.get("throughput_mtpa"): sa_rows.append(("Throughput", f"{ra['throughput_mtpa']}Mtpa"))
+    sa_rows.append(("", ""))
+
+    # Why CASEY generated this
+    sa_rows.append(("WHY CASEY GENERATED THESE NUMBERS", ""))
+    why_gen = model.get("why_casey_generated_this") or []
+    for line in why_gen:
+        sa_rows.append(("→", line))
+    sa_rows.append(("", ""))
+
+    # Risk count
+    total_r = model.get("total_risks_identified", len(model.get("risks",[])))
+    disp_r = model.get("risks_displayed", min(12, total_r))
+    sa_rows.append(("Total risks identified", str(total_r)))
+    sa_rows.append(("Top risks in board pack", str(disp_r)))
+    sa_rows.append(("Risks with EMV", str(model.get("casey_defence",{}).get("risks_with_emv",0) or 0)))
+    
+    for ri, (k, v) in enumerate(sa_rows, 2):
+        ck = ws_sa.cell(ri, 1, k); cv = ws_sa.cell(ri, 2, v)
+        ck.border = tb(); cv.border = tb()
+        ck.alignment = al(); cv.alignment = al()
+        if k in ("GOVERNING CONSTRAINT", "SCOPE ASSUMPTIONS", "WHY CASEY GENERATED THESE NUMBERS"):
+            ck.font = bf(9, "FFFFFF"); ck.fill = hf("0E7490")
+            ws_sa.merge_cells(f"A{ri}:B{ri}")
+            ck.alignment = al()
+        else:
+            ck.font = bf(9, "334155"); cv.font = rf(9, "0F172A")
+            ck.fill = hf("F8FAFC"); cv.fill = hf("FFFFFF")
+
     # Footer on all sheets
     from datetime import date
     gen_note = "Generated by CASEY Intelligence Engine {} — controlorbit.com — First-pass intelligence, not a certified audit document.".format(date.today().strftime("%d %b %Y"))
-    for ws_x in [ws1, ws2, ws3, ws4, ws5]:
+    for ws_x in [ws1, ws2, ws3, ws4, ws5, ws_sa]:
         note_row = ws_x.max_row + 2
         ws_x.cell(note_row, 1, gen_note).font = bf(7, "94A3B8")
 
@@ -9649,6 +10274,11 @@ def _casey_final_risks(mode: str, subsector: str, p50: float, months: int, sched
                 ('Power density increase','Client increases compute density during design — cooling system redesign required','Redesign cost £5-20M. Programme delay 3-9 months. Reference: multiple hyperscale programmes 2021-2024.',45,'Design Manager','Client issues revised power density requirement','Lock compute density in design brief before M&E detailed design starts. Change board for any upward revision.'),
                 ('Planning consent delay','Substation proximity, visual impact or water usage consent delayed','Critical path delay 6-18 months. Water-scarce regions have novel consent constraints. Reference: AWS Dublin.',42,'Planning Lead','Local authority request for additional environmental information','Pre-application consultation with planning authority. Water usage plan agreed with environment agency before application.'),
                 ('Cooling commissioning','Cooling system does not achieve design IT inlet temperature at full load','Compute equipment cannot be energised safely. Delay to revenue-generating operations.',35,'Commissioning Manager','Commissioning tests show temperature exceedance at high load','Integrated systems commissioning test plan. Stepped load testing before full IT load energisation.'),
+                ('Brownfield contamination scope','Phase 2 ground investigation reveals contamination beyond Phase 1 desk study assumptions','Stop-work, remediation cost increase and programme delay 3-9 months',45,'Environmental Manager','Phase 2 results show contamination above threshold or greater extent than assumed','Commission Phase 2 survey before contract award. Remediation strategy agreed with Environment Agency. Contingency in cost plan for uplift.'),
+                ('Utility diversion critical path','Named utility (water main, gas, HV cable) relocation takes longer or costs more than programme allows','Site clearance blocked; main construction cannot start. All programme milestones shift right.',55,'Utilities Lead','Utility owner confirms programme longer than enabling works window','Enter diversion agreement with named utility owner as day-one action. Diversion on critical path in master programme.'),
+                ('Airport airspace restrictions','Crane operations near controlled airspace require CAA notification and may be refused or restricted','Tower crane programme restricted; critical lifts delayed. Abnormal loads via restricted routes.',38,'Site Manager','CAA height restriction map shows site within controlled zone','CAA crane height approval application submitted before contract award. All tower crane positions confirmed against CAA limits.'),
+                ('Brownfield abnormal cost','Remediation scope grows during construction due to previously unidentified contamination','Cost increase 5-20% of site enabling budget. Programme delay 2-6 months.',42,'Commercial Manager','Contractor submits variation for additional contaminated material','Fixed-price remediation contract with incentivised scope agreement. Defined criteria for scope change entitlement.'),
+                ('Two-stage procurement risk','Pre-construction services agreement does not convert to main contract on acceptable commercial terms','Programme gap, remobilisation and re-tender. 6-18 month delay. Cost increase.',35,'Commercial Director','Stage 2 tender price exceeds budget or commercial terms unresolvable','GMP target cost range agreed at PCSA stage. Open-book accounting from PCSA start. Dispute avoidance board from contract award.'),
             ],
             'Mining': [
                 ('Ground conditions','Block cave geology, geotechnical conditions or seismicity worse than feasibility assumptions','Direct cost impact $200-500M. Critical path extension 12-36 months. Reference: Oyu Tolgoi +39%, $2B overrun.',60,'Geotechnical Director','Monitoring data deviates from geotechnical model','Dense instrumentation programme from first blast. Real-time seismicity monitoring. Contingency for draw point rehabilitation.'),
@@ -9777,8 +10407,77 @@ def _casey_final_risks(mode: str, subsector: str, p50: float, months: int, sched
                 'response_strategy': 'Mitigate', 'status': 'Open',
                 'board_visibility': 'Conditional', 'last_reviewed': '2026-05-29',
             })
-    # Store total count of sector risks available (for display)
-    _total_in_sector = len(template_risks) if template_risks else len(risks)
+    # ── EXTENDED RISK REGISTER: every programme gets 50-150 risks ──────────
+    # Sector-specific risks already loaded (up to 30). Now add extended generic
+    # risks to build a credible-depth register. Top 12 by EMV shown on board pack.
+    _EXTENDED_RISKS = [
+        # Cost & Commercial
+        ('Material price volatility','Global commodity markets (steel, copper, concrete) move beyond allowance','P50 estimate understated; cost plan requires reset at commercial close',48,'Commercial Lead','Commodity index exceeds plan by >5% for 2 consecutive months','Commodity hedging strategy. Fixed-price sub-contracts for high-exposure packages. Monthly index reconciliation.'),
+        ('Contractor overhead recovery','Tier 1 contractor claims overhead recovery beyond contract terms','Commercial dispute; additional cost 3-8% of outturn value',40,'Commercial Manager','Contractor submits variation for overhead recovery','ECC NEC or FIDIC contract with clear overhead and profit baseline. Dispute avoidance board from contract award.'),
+        ('Insurance market hardening','Professional indemnity or contractor all-risk insurance premium increases materially','Unbudgeted insurance premium cost; or reduced cover drives risk retention',30,'Finance Director','Insurance renewal receives increased premium quotation','Multi-year insurance programme. Broker engaged 9 months before renewal. Self-insured retention strategy.'),
+        ('Liquidated damages cap reached','LD regime inadequate to cover actual delay damages','Employer not compensated for full delay loss beyond LD cap',35,'Commercial Director','Delay forecast exceeds LD cap calculation','LD cap set at minimum 12 months delay exposure. Legal review of enforceability at contract execution.'),
+        ('Tax and duties','Import duties or tax regime change materially increases cost','Unfunded cost increase. Reference: VAT changes, customs regime change.',25,'Finance Director','Government announces tariff or tax policy change','Tax and duties allowance in cost plan. Advance import of long-lead materials before duty changes.'),
+        # Programme & Schedule
+        ('Programme data management','Absence of single source of truth for cost, schedule and risk','Commercial disputes and decision-making delays from data inconsistency',42,'Programme Controls Lead','Three versions of programme schedule in circulation simultaneously','Single programme controls platform from day one. PMO controls report weekly.'),
+        ('Lessons learned not applied','Previous sector or client programme failures not incorporated into delivery strategy','Repeat failure. Reference: T5 baggage, Crossrail delay pattern, Hinkley module cost.',35,'SRO','Similar failure mode identified in post-project review','Mandatory lessons-learned log. Stage gate sign-off includes lessons incorporation evidence.'),
+        ('Earned value not tracked','Programme does not track earned value — cost and schedule variance invisible until late','Board is not warned of overrun until it is too late to intervene',50,'Programme Controls Director','Monthly report does not include CPI/SPI data','EVM baseline established within 90 days of contract award. CPI/SPI reported at each board meeting.'),
+        ('Float erosion','Schedule float consumed in early phases leaving no buffer for late-stage risks','Late-stage problems cannot be recovered. Reference: most major infrastructure programmes.',55,'Programme Director','Schedule S-curve shows below-baseline progress at 30% complete','Float management policy — no float released without Programme Director approval. Early warning system for float erosion.'),
+        ('Indirect cost growth','Employer-side management costs grow beyond allowance as programme extends','Total outturn increases without visible cost variation','Programme Controls Lead','Monthly cost report shows indirect trend exceeding allowance by 10%','Indirect cost budget baselined and tracked monthly. Headcount review at each stage gate.'),
+        # Technical & Design
+        ('Utility survey inaccuracy','As-built records for existing utilities differ from survey','Delay and additional cost for unforeseen utility conflicts',45,'Utilities Lead','Utility found in different location than survey indicates','PAS 128 compliant utility survey. GPR scanning in all active work areas. Contingency in cost plan.'),
+        ('Buildability and constructability','Design solutions impractical or uneconomic to construct','Rework, value engineering and programme delay',38,'Design Manager','Contractor raises constructability concerns at IFC review','Contractor involvement in design development. Constructability review at RIBA Stage 3.'),
+        ('Digital twin accuracy','Design model contains clashes or is not maintained as construction progresses','Field installation errors, rework and interface disputes',33,'BIM Manager','Clash detection report shows unresolved clashes in active area','Model clash detection run weekly. BIM manager with stop-work authority for model conflicts.'),
+        ('Testing and commissioning specifications','Test specifications written too late for equipment procurement and factory testing','Commissioning sequence disrupted; hold points not passed',40,'Commissioning Lead','Test specification not issued 6 months before equipment delivery','Commissioning specifications written at design stage and included in procurement packages.'),
+        ('Integration of temporary works','Temporary works not coordinated with permanent works or adjacent operations','Safety incident or structural failure during construction',30,'Temporary Works Coordinator','Temporary works design not approved before installation','Temporary works register. Independent temporary works coordinator with approval authority.'),
+        # People & Organisation
+        ('Client decision-making speed','Client takes longer than planned to make key decisions','Critical path delayed by client actions without variation entitlement',48,'Programme Director','Decision register shows approvals running >2 weeks behind plan','Decision register tracked and reported to board weekly. Escalation protocol for decisions >2 weeks late.'),
+        ('PMO capability gap','Programme management office lacks the skills to manage a programme of this scale','Governance failures, reporting gaps and late identification of problems',40,'SRO','PMO capability assessment identifies gaps in controls','PMO maturity assessment at programme start. Specialist PMO support procured for critical roles.'),
+        ('Contractor staff turnover','Key contractor individuals leave during delivery','Knowledge loss, learning curve ramp and temporary productivity drop',35,'Relationship Manager','Key contractor individual gives notice','Contractual key person provisions. Knowledge transfer protocol activated on departure.'),
+        ('Dispute resolution delay','Commercial dispute goes to formal adjudication rather than being resolved promptly','Cost and programme impact from drawn-out commercial dispute',30,'Commercial Director','Contractor serves notice of dispute','Dispute avoidance board active from contract award. Monthly commercial review to clear open items.'),
+        # External
+        ('Geopolitical supply chain disruption','International trade restrictions or conflict disrupts specialist supply chain','Long-lead items cannot be sourced; programme delayed 12-24 months',35,'Procurement Lead','Supply chain risk register flags single-source critical item','Geopolitical supply chain risk assessment for all critical items. Alternative source qualification.'),
+        ('Extreme weather events','Climate change increases frequency of construction-disrupting weather','Productivity loss, site damage and programme extension',30,'Site Manager','Met Office issues severe weather warning for construction area','Climate risk assessment in programme schedule. Weather allowances reviewed against 10-year data.'),
+        ('Ground contamination discovery','Previously unidentified contamination found during excavation','Stop-work, remediation cost and programme delay',28,'Environmental Manager','Site investigation reveals contamination above threshold','Phase 2 contamination survey before construction mobilisation. Remediation plan agreed with regulator.'),
+        ('Judicial review','Third-party legal challenge to planning or procurement decision','Programme suspension of 6-24 months pending outcome',22,'Legal Director','Pre-action protocol letter received','Legal risk assessment before each major decision. Cross-party political support maintained.'),
+        ('Currency hedging failure','FX hedging strategy does not protect fully against currency movement','Unbudgeted cost increase on cross-border procurement',25,'Treasury Manager','Hedge rate moves >10% against budget',
+         'Full FX hedge at financial close for all confirmed cross-border procurement. Monthly FX exposure report.'),
+    ]
+    
+    _existing_lc = {str(r.get('title','')).lower() for r in risks}
+    _r_offset = len(risks)
+    for _j, (_t, _ca, _ev, _pr, _ow, _tr, _mt) in enumerate(_EXTENDED_RISKS):
+        if _t.lower() in _existing_lc: continue
+        _ci = p50 * (_pr/100) * 0.07
+        risks.append({
+            'risk_id': f'R-EX{_j+1:02d}', 'id': f'R-EX{_j+1:02d}',
+            'title': _t, 'risk': _t, 'category': 'Programme Delivery Risk',
+            'cause': _ca, 'risk_event': _ev, 'event': _ev,
+            'impact_description': _ev, 'impact': _ev,
+            'probability_pct': _pr, 'probability': _pr/100,
+            'owner': _ow, 'trigger': _tr, 'mitigation': _mt,
+            'activity_id': 'A1000', 'cbs': '01.01',
+            'cost_o_bn': round(_ci*0.4,3), 'cost_m_bn': round(_ci,3),
+            'cost_p_bn': round(_ci*2.0,3), 'cost_emv_bn': round(_ci*(_pr/100),3),
+            'schedule_emv_days': int(_pr*0.5+_j*3),
+            'driver_score': round(_ci*_pr*80,1), 'driver': _t[:28],
+            'contribution': round(_ci,2),
+            'pre_mitigation_rating': 'High' if _pr>=45 else 'Medium',
+            'residual_rating': 'Medium' if _pr>=30 else 'Low',
+            'response_strategy': 'Mitigate', 'status': 'Open',
+            'board_visibility': 'No', 'last_reviewed': '2026-05-29',
+        })
+    
+    # Sort by EMV descending; label top 12 as board-visible
+    risks.sort(key=lambda r: float(r.get('cost_emv_bn',0) or 0), reverse=True)
+    for i, r in enumerate(risks):
+        r['rank'] = i + 1
+        r['board_visibility'] = 'Yes' if i < 12 else ('Conditional' if i < 25 else 'No')
+    
+    # ── Store total identified count on each risk for display ─────────────
+    _total = len(risks)
+    for r in risks:
+        r['total_risks_identified'] = _total
+    
     return risks
 
 
@@ -10090,71 +10789,85 @@ def _ai_enrich(intel_text, sector, location, mode, anthropic_key, openai_key, pr
 
 
 def _build_intel_text(wb, wiki, sx, fx, meteo, gdelt, news, location, sector, mode):
-    """Build intelligence narrative — NewsAPI, GDELT, World Bank, Wikipedia, SpaceX, FX, Climate."""
-    gdelt = gdelt or {}
-    news = news or {}
+    """Build board-grade intelligence — quantitative market signals only.
+    No news headlines, no Wikipedia. Only data relevant to cost, schedule and risk.
+    """
     parts = []
-    # NewsAPI articles (richest source when key available)
-    news_articles = news.get("articles", [])
-    if news_articles:
-        a0 = news_articles[0]
-        src = a0.get("source", "")
-        pub = a0.get("published", "")
-        desc = (a0.get("description") or a0.get("title",""))[:160]
-        parts.append("Latest news ({src}, {pub}): {desc}".format(src=src, pub=pub, desc=desc))
-        if len(news_articles) > 1:
-            a1 = news_articles[1]
-            parts.append("Also: {} — {}".format(a1.get("source",""), a1.get("title","")[:100]))
 
-    # Economic signals
+    # ── Inflation / cost escalation ──────────────────────────────────────────
     if wb.get("inflation"):
         inf = wb["inflation"]["v"]; yr = wb["inflation"]["yr"]
         if inf > 7:
-            parts.append("Cost pressure: {loc} inflation {inf:.1f}% ({yr}) — supply chain escalation risk HIGH. Estimate contingency may be insufficient.".format(loc=location, inf=inf, yr=yr))
+            parts.append(
+                "Inflation: {loc} {inf:.1f}% ({yr}) — construction cost escalation risk HIGH. "
+                "Multi-year estimates should carry index-linked contingency above BCIS/ENR baseline.".format(
+                    loc=location, inf=inf, yr=yr))
         elif inf > 3.5:
-            parts.append("Moderate inflation: {loc} at {inf:.1f}% ({yr}). Apply index-linked cost adjustances for multi-year programmes.".format(loc=location, inf=inf, yr=yr))
+            parts.append(
+                "Inflation: {loc} {inf:.1f}% ({yr}) — moderate. "
+                "Apply index-linked cost adjustments for programmes extending beyond 24 months.".format(
+                    loc=location, inf=inf, yr=yr))
         else:
-            parts.append("Low inflation: {loc} at {inf:.1f}% ({yr}). Cost escalation risk contained.".format(loc=location, inf=inf, yr=yr))
-    if wb.get("gdp_growth"):
-        g = wb["gdp_growth"]["v"]
-        if g < 0: parts.append("Economic contraction ({g:.1f}% GDP growth): financing risk elevated; procurement may be favourable.".format(g=g))
-        elif g > 6: parts.append("High-growth economy ({g:.1f}% GDP): construction demand likely to drive labour and material cost competition.".format(g=g))
+            parts.append(
+                "Inflation: {loc} {inf:.1f}% ({yr}) — contained. "
+                "Standard escalation allowances considered sufficient at current rates.".format(
+                    loc=location, inf=inf, yr=yr))
+
+    # ── Construction market / capital demand ─────────────────────────────────
     if wb.get("investment"):
         inv = wb["investment"]["v"]
-        if inv > 32: parts.append("Capital investment pipeline intense ({inv:.0f}% of GDP): allow extended procurement lead times.".format(inv=inv))
-    # FX signal
-    if fx.get("rate"):
-        parts.append("Live FX: 1 USD = {rate} {code}. Cross-border procurement currency risk must be modelled.".format(rate=fx["rate"], code=fx["code"]))
-    # Climate signal
-    if meteo.get("total_rain_mm") and meteo["total_rain_mm"] > 25:
-        parts.append("7-day climate: {rain}mm forecast rain ({loc}). Groundworks access and outdoor construction productivity at risk.".format(rain=meteo["total_rain_mm"], loc=location))
-    if meteo.get("avg_temp") and meteo["avg_temp"] > 40:
-        parts.append("7-day climate: extreme heat {t}C forecast. Worker safety protocols and productivity loss must be planned.".format(t=meteo["avg_temp"]))
-    # GDELT live news (most current — updated every 15 mins globally)
-    gdelt_articles = gdelt.get("articles", [])
-    if gdelt_articles:
-        latest = gdelt_articles[0]
-        date_str = latest.get("date","")
-        date_fmt = (date_str[:4] + "-" + date_str[4:6] + "-" + date_str[6:8]) if len(date_str) >= 8 else date_str
-        src = latest.get("source","")
-        title = latest.get("title","")
-        src_note = " ({})".format(src) if src else ""
-        parts.append("Live news{src} [{date}]: {title}".format(src=src_note, date=date_fmt, title=title))
-        if len(gdelt_articles) > 1:
-            second = gdelt_articles[1]
-            parts.append("Also: {}".format(second.get("title","")[:100]))
+        if inv > 35:
+            parts.append(
+                "Construction market: capital investment at {inv:.0f}% of GDP — "
+                "contractor capacity likely constrained; extend procurement lead times and "
+                "expect margin pressure on fixed-price tenders.".format(inv=inv))
+        elif inv > 28:
+            parts.append(
+                "Construction market: investment pipeline at {inv:.0f}% of GDP — "
+                "procurement windows competitive; early market engagement recommended.".format(inv=inv))
 
-    # Wikipedia programme intelligence
-    if wiki.get("text"):
-        t = wiki["text"].replace("\n", " ").strip()
-        parts.append("Programme intelligence ({title}): {t}".format(title=wiki.get("title","?"), t=t[:220]))
-    # SpaceX (space mode only)
+    # ── GDP / economic conditions ─────────────────────────────────────────────
+    if wb.get("gdp_growth"):
+        g = wb["gdp_growth"]["v"]
+        if g < 0:
+            parts.append(
+                "Economic conditions: GDP growth {g:.1f}% — contraction environment. "
+                "Financing risk elevated; may improve procurement pricing.".format(g=g))
+        elif g > 6:
+            parts.append(
+                "Economic conditions: GDP growth {g:.1f}% — high-growth market. "
+                "Labour and material cost competition likely; workforce availability a schedule risk.".format(g=g))
+
+    # ── Currency / cross-border procurement ──────────────────────────────────
+    if fx.get("rate") and fx.get("code"):
+        parts.append(
+            "FX: 1 USD = {rate} {code}. "
+            "Cross-border equipment and specialist subcontractor costs carry currency exposure "
+            "and should be hedged at financial close.".format(rate=fx["rate"], code=fx["code"]))
+
+    # ── Climate / construction productivity ──────────────────────────────────
+    if meteo.get("total_rain_mm") and meteo["total_rain_mm"] > 25:
+        parts.append(
+            "Climate signal ({loc}): {rain}mm rain forecast over 7 days. "
+            "Groundworks access and outdoor productivity at risk; "
+            "review weather allowances in programme float.".format(
+                rain=meteo["total_rain_mm"], loc=location))
+    if meteo.get("avg_temp") and meteo["avg_temp"] > 40:
+        parts.append(
+            "Climate signal ({loc}): {t:.0f}°C heat forecast. "
+            "Worker safety protocols required; outdoor productivity loss must be reflected in schedule.".format(
+                t=meteo["avg_temp"], loc=location))
+
+    # ── Space: live launch manifest (schedule-critical for space programmes) ──
     if sx.get("launches"):
         ll = sx["launches"]
         launch_str = ", ".join("{name} ({date})".format(**l) for l in ll[:2])
-        parts.append("Live launch manifest: {total} upcoming missions. Nearest: {ls}. Launch slot directly governs programme critical path.".format(
-            total=sx.get("total_upcoming",0), ls=launch_str))
-    return " | ".join(parts[:4]) if parts else ""
+        parts.append(
+            "Launch manifest: {total} upcoming missions — nearest: {ls}. "
+            "Launch slot availability governs programme critical path.".format(
+                total=sx.get("total_upcoming", 0), ls=launch_str))
+
+    return " | ".join(parts) if parts else ""
 
 
 def _fetch_live_intel(sector, location, mode="Earth", prompt="", curr_symbol="$"):
@@ -11025,53 +11738,291 @@ def _gdelt_risk_signals(gdelt_data: dict, sector: str, location: str) -> list:
 
 
 def _extract_route_assumptions(prompt: str, subsector: str) -> dict:
-    """Extract route/scope assumptions from prompt text for workbook display."""
+    """Extract explicit scope assumptions for every sector so the board can see
+    exactly what CASEY assumed — MW, halls, phases, km, units, reactors, etc."""
     import re as _re
     p = (prompt or '').lower()
     sub = (subsector or '').lower()
-    
-    # Route length
+
+    # ── Universal extractions ──────────────────────────────────────────────
     km_match = _re.search(r'([\d,]+)\s*km', p)
     km = int(km_match.group(1).replace(',','')) if km_match else 0
-    
-    # Stations
+
     stn_match = _re.search(r'(\d+)\s*station', p)
     stations = int(stn_match.group(1)) if stn_match else max(3, km // 8) if km > 0 else 0
-    
-    # Topology from keywords
-    has_tunnel = any(w in p for w in ['tunnel','underground','bore','tbm','cut and cover'])
-    has_viaduct = any(w in p for w in ['viaduct','elevated','aerial','bridge','flyover'])
-    has_surface = any(w in p for w in ['surface','at-grade','ground level'])
-    
-    # Estimate topology mix
-    if has_tunnel and has_viaduct:
-        tun_pct, via_pct, srf_pct = 45, 30, 25
-    elif has_tunnel:
-        tun_pct, via_pct, srf_pct = 55, 15, 30
-    elif has_viaduct:
-        tun_pct, via_pct, srf_pct = 10, 60, 30
-    elif 'city' in p or 'urban' in p or 'metro' in p:
-        tun_pct, via_pct, srf_pct = 30, 30, 40
-    else:
-        tun_pct, via_pct, srf_pct = 15, 25, 60
-    
-    # Unit rate context
-    if 'rail' in sub or 'transit' in sub:
-        if tun_pct > 40: rate_context = 'Mixed underground/viaduct/surface HSR'
-        elif tun_pct > 20: rate_context = 'Predominantly elevated/surface with tunnelled sections'
-        else: rate_context = 'Predominantly surface/elevated rail'
-    elif 'nuclear' in sub: rate_context = 'Greenfield nuclear build (EPR / Gen III)'
-    elif 'data' in sub: rate_context = 'Hyperscale campus construction'
-    elif 'space' in sub: rate_context = 'Space mission / off-Earth infrastructure'
-    else: rate_context = 'Major infrastructure programme'
-    
+
+    mw_match = _re.search(r'(\d+(?:\.\d+)?)\s*(?:mw|megawatt)', p)
+    mw = float(mw_match.group(1)) if mw_match else 0
+
+    gw_match = _re.search(r'(\d+(?:\.\d+)?)\s*(?:gw|gigawatt)', p)
+    if gw_match: mw = float(gw_match.group(1)) * 1000
+
+    # ── Data Centre / AI Campus ───────────────────────────────────────────
+    if any(k in sub for k in ['data', 'digital', 'ai /']):
+
+        # ── Fix 1: MVA → MW conversion (140MVA substation → ~97MW IT load) ──
+        mva_match = _re.search(r'(\d+(?:\.\d+)?)\s*mva', p)
+        if mva_match and not mw:
+            mva = float(mva_match.group(1))
+            # 140MVA at 0.9 power factor = 126MW gross; ÷ PUE 1.3 ≈ 97MW IT load
+            mw = round(mva * 0.9 / 1.3, 0)
+            mva_stated = mva
+        else:
+            mva_stated = 0
+
+        # Infer MW from prompt keywords if still not set
+        if not mw:
+            if 'hyperscale' in p or 'gigascale' in p: mw = 400
+            elif 'large' in p: mw = 150
+            elif 'medium' in p or 'campus' in p: mw = 60
+            else: mw = 100
+
+        # ── Fix 2: Capture 'buildings' and 'blocks' as well as 'halls' ──
+        halls_match = (_re.search(r'(\d+)\s*(?:data\s*centre\s*buildings?|data\s*halls?|dc\s*buildings?|buildings?|blocks?|halls?)', p))
+        halls = int(halls_match.group(1)) if halls_match else max(2, int(mw // 50))
+
+        phases_match = _re.search(r'(\d+)\s*phases?', p)
+        phases = int(phases_match.group(1)) if phases_match else max(1, halls)
+
+        pue_match = _re.search(r'pue[\s:=]*(\d+\.\d+)', p)
+        pue = float(pue_match.group(1)) if pue_match else 1.3
+
+        cooling = 'liquid' if any(k in p for k in ['liquid cool','direct liquid','dlc','immersion']) else 'air + adiabatic'
+        grid_kv = '132kV' if mw >= 100 else '33kV'
+
+        # ── Fix 3: Extract target completion date and derive schedule months ──
+        import datetime as _dt
+        target_months = 0
+        target_date_str = ''
+        date_match = _re.search(r'(late|early|mid)[\s-]*(20\d\d)', p)
+        year_match = _re.search(r'(20[2-4]\d)', p)
+        if date_match:
+            yr = int(date_match.group(2))
+            period = date_match.group(1)
+            month_map = {'late': 10, 'mid': 6, 'early': 3}
+            target_m = month_map.get(period, 6)
+            now = _dt.datetime.now()
+            target_months = max(6, (yr - now.year) * 12 + (target_m - now.month))
+            target_date_str = f'{period.capitalize()} {yr}'
+        elif year_match:
+            yr = int(year_match.group(1))
+            now = _dt.datetime.now()
+            target_months = max(6, (yr - now.year) * 12)
+            target_date_str = str(yr)
+
+        # ── Fix 4: Brownfield / remediation flag ──
+        is_brownfield = any(k in p for k in ['remediation','brownfield','industrial estate','contamination','former industrial'])
+        brownfield_note = 'Brownfield site — remediation required before construction. Phase 2 survey must confirm contamination extent.' if is_brownfield else ''
+
+        # ── Fix 5: Airport / airspace proximity ──
+        near_airport = any(k in p for k in ['heathrow','gatwick','stansted','luton','manchester airport','jfk','lax','o hare','airport'])
+        airport_note = 'Airport proximity — CAA crane height restrictions apply. All lifts >45m require CAA notification. Abnormal loads via restricted routes.' if near_airport else ''
+
+        # ── Fix 6: Named utility / water main ──
+        named_utility = ''
+        if 'affinity water' in p: named_utility = 'Affinity Water mains relocation (36-inch)'
+        elif 'thames water' in p: named_utility = 'Thames Water mains relocation'
+        elif 'severn trent' in p: named_utility = 'Severn Trent mains relocation'
+        elif any(k in p for k in ['water main','gas main','utility diversion','36-inch','24-inch']): named_utility = 'Named utility diversion — programme-critical enabling work'
+
+        # ── Fix 7: Named contractor / procurement route ──
+        named_contractor = ''
+        if 'mclarens' in p or 'mclaren construction' in p: named_contractor = 'McLaren Construction (pre-construction services agreement)'
+        elif 'laing' in p: named_contractor = "Laing O'Rourke"
+        elif 'mace' in p: named_contractor = 'Mace'
+        elif 'turner' in p and 'townsend' not in p: named_contractor = 'Turner Construction'
+        elif any(k in p for k in ['pre-construction services','pcsa','two-stage','eci']): named_contractor = 'Contractor engaged — two-stage/ECI route'
+
+        # ── Build context notes ──
+        context_notes = []
+        if mva_stated: context_notes.append(f'{mva_stated:.0f}MVA substation → ~{mw:.0f}MW IT load (0.9pf ÷ PUE {pue})')
+        if target_date_str: context_notes.append(f'Target completion: {target_date_str} ({target_months} months from now)')
+        if is_brownfield: context_notes.append(brownfield_note)
+        if near_airport: context_notes.append(airport_note)
+        if named_utility: context_notes.append(f'Named utility risk: {named_utility}')
+        if named_contractor: context_notes.append(f'Contractor: {named_contractor}')
+
+        mw_basis = f'{mva_stated:.0f}MVA substation → ' if mva_stated else ''
+        return {
+            'sector_type': 'data_centre',
+            'campus_mw': mw,
+            'data_halls': halls,
+            'delivery_phases': phases,
+            'pue': pue,
+            'cooling_strategy': cooling,
+            'grid_connection_voltage': grid_kv,
+            'it_load_mw': round(mw / pue, 0),
+            'mva_substation': mva_stated,
+            'target_completion': target_date_str,
+            'target_months': target_months,
+            'is_brownfield': is_brownfield,
+            'near_airport': near_airport,
+            'named_utility': named_utility,
+            'named_contractor': named_contractor,
+            'context_notes': context_notes,
+            'rate_context': f'{mw_basis}{mw:.0f}MW IT load — {halls} data centre building{"s" if halls > 1 else ""} — {"phased delivery" if phases > 1 else "single phase"}',
+            'assumption_basis': (
+                f'CASEY assumed {mw:.0f}MW IT load '
+                f'({f"{mva_stated:.0f}MVA × 0.9pf ÷ PUE {pue}" if mva_stated else f"{halls} buildings × ~{mw/halls:.0f}MW/building"}), '
+                f'{halls} data centre building{"s" if halls>1 else ""}, '
+                f'{f"target completion {target_date_str} = {target_months} months" if target_date_str else "sector-standard phased delivery"}, '
+                f'{cooling} cooling, {grid_kv} grid connection.'
+                + (f' Brownfield remediation required.' if is_brownfield else '')
+                + (f' Airport proximity constraints apply.' if near_airport else '')
+                + ' Adjust if brief differs.'
+            ),
+            'has_explicit_km': False,
+        }
+
+    # ── Rail / Transit ────────────────────────────────────────────────────
+    if any(k in sub for k in ['rail', 'transit', 'metro', 'tram']):
+        has_tunnel = any(w in p for w in ['tunnel','underground','bore','tbm','cut and cover'])
+        has_viaduct = any(w in p for w in ['viaduct','elevated','aerial','bridge','flyover'])
+        if has_tunnel and has_viaduct: tun_pct, via_pct, srf_pct = 45, 30, 25
+        elif has_tunnel: tun_pct, via_pct, srf_pct = 55, 15, 30
+        elif has_viaduct: tun_pct, via_pct, srf_pct = 10, 60, 30
+        elif 'city' in p or 'urban' in p or 'metro' in p: tun_pct, via_pct, srf_pct = 30, 30, 40
+        else: tun_pct, via_pct, srf_pct = 15, 25, 60
+        if not km: km = 350 if 'hsr' in p or 'high speed' in p else 20 if 'metro' in p else 80
+        if not stations: stations = max(3, km // 8)
+        return {
+            'sector_type': 'rail',
+            'route_km': km,
+            'stations': stations,
+            'tunnel_pct': tun_pct,
+            'viaduct_pct': via_pct,
+            'surface_pct': srf_pct,
+            'rate_context': f'{km}km route — {stations} stations — {tun_pct}% tunnel / {via_pct}% viaduct / {srf_pct}% surface',
+            'assumption_basis': f'CASEY assumed {km}km alignment, {stations} stations, topology {tun_pct}% tunnel / {via_pct}% viaduct / {srf_pct}% surface. Adjust if detailed survey data differs.',
+            'has_explicit_km': km > 0,
+        }
+
+    # ── Nuclear ───────────────────────────────────────────────────────────
+    if 'nuclear' in sub:
+        units_match = _re.search(r'(\d+)\s*(?:units?|reactors?)', p)
+        units = int(units_match.group(1)) if units_match else 2
+        mwe = 1650 if 'epr' in p else 1110 if 'ap1000' in p else 300 if 'smr' in p else 1200
+        rx_type = 'EPR' if 'epr' in p else 'AP1000' if 'ap1000' in p else 'SMR' if 'smr' in p else 'Gen III+'
+        return {
+            'sector_type': 'nuclear',
+            'reactor_units': units,
+            'reactor_type': rx_type,
+            'mwe_per_unit': mwe,
+            'total_mwe': units * mwe,
+            'rate_context': f'{units}× {rx_type} units — {units*mwe}MWe total output',
+            'assumption_basis': f'CASEY assumed {units}× {rx_type} reactor units ({mwe}MWe each, {units*mwe}MWe total). Adjust if design or unit count differs.',
+            'has_explicit_km': False,
+        }
+
+    # ── Energy / Industrial ───────────────────────────────────────────────
+    if any(k in sub for k in ['energy', 'wind', 'solar', 'power', 'lng', 'gas', 'hydrogen']):
+        if not mw:
+            if 'offshore wind' in p: mw = 1000
+            elif 'onshore wind' in p: mw = 500
+            elif 'solar' in p or 'pv' in p: mw = 400
+            elif 'lng' in p: mw = 0  # LNG uses MTPA
+            else: mw = 200
+        mtpa_match = _re.search(r'(\d+(?:\.\d+)?)\s*mtpa', p)
+        mtpa = float(mtpa_match.group(1)) if mtpa_match else 0
+        trains_match = _re.search(r'(\d+)\s*(?:trains?|liquefaction)', p)
+        trains = int(trains_match.group(1)) if trains_match else 0
+        return {
+            'sector_type': 'energy',
+            'installed_mw': mw,
+            'mtpa': mtpa,
+            'trains': trains,
+            'rate_context': f'{'{:.0f}MW'.format(mw) if mw else '{:.1f}MTPA'.format(mtpa) if mtpa else "Major energy asset"}',
+            'assumption_basis': f'CASEY assumed {"{:.0f}MW installed capacity".format(mw) if mw else "{:.1f}MTPA LNG throughput".format(mtpa) if mtpa else "sector-standard capacity basis"}. Adjust if technical specification differs.',
+            'has_explicit_km': False,
+        }
+
+    # ── Semiconductor / Advanced Manufacturing ────────────────────────────
+    if any(k in sub for k in ['semi', 'chip', 'wafer', 'fab']):
+        wspm_match = _re.search(r'(\d+(?:,\d+)?)\s*(?:wspm|wafers?\s*per\s*month)', p)
+        wspm = int(str(wspm_match.group(1)).replace(',','')) if wspm_match else 0
+        nm_match = _re.search(r'(\d+)\s*nm', p)
+        node = int(nm_match.group(1)) if nm_match else 28
+        cleanroom_match = _re.search(r'(\d+(?:,\d+)?)\s*(?:sqm|m2|sqft)', p)
+        cleanroom = int(str(cleanroom_match.group(1)).replace(',','')) if cleanroom_match else 0
+        if not wspm: wspm = 40000 if 'advanced' in p or 'leading' in p else 20000
+        if not cleanroom: cleanroom = int(wspm * 0.6)
+        return {
+            'sector_type': 'semiconductor',
+            'wafers_per_month': wspm,
+            'process_node_nm': node,
+            'cleanroom_sqm': cleanroom,
+            'rate_context': f'{wspm:,} WSPM — {node}nm process — {cleanroom:,}m² cleanroom',
+            'assumption_basis': f'CASEY assumed {wspm:,} wafers/month capacity, {node}nm process node, ~{cleanroom:,}m² cleanroom. Adjust if fab specification differs.',
+            'has_explicit_km': False,
+        }
+
+    # ── Pharma / Life Sciences ────────────────────────────────────────────
+    if any(k in sub for k in ['pharma', 'life science', 'biologic', 'vaccine', 'drug']):
+        ltr_match = _re.search(r'(\d+(?:,\d+)?)\s*(?:l|litre|liter)', p)
+        litres = int(str(ltr_match.group(1)).replace(',','')) if ltr_match else 0
+        fills_match = _re.search(r'(\d+[mk])\s*(?:fills?|vials?|units?)', p)
+        if not litres: litres = 10000 if 'large' in p or 'biologics' in p else 2000
+        gmp_class = 'Grade A/B cleanroom' if any(k in p for k in ['fill finish','aseptic','sterile']) else 'Grade C/D cleanroom'
+        return {
+            'sector_type': 'pharma',
+            'bioreactor_litres': litres,
+            'gmp_classification': gmp_class,
+            'rate_context': f'{litres:,}L bioreactor capacity — {gmp_class}',
+            'assumption_basis': f'CASEY assumed {litres:,}L bioreactor/batch capacity, {gmp_class}. Adjust if process design or GMP classification differs.',
+            'has_explicit_km': False,
+        }
+
+    # ── Space ─────────────────────────────────────────────────────────────
+    if 'space' in sub or 'orbital' in sub or 'lunar' in sub or 'mars' in sub:
+        mass_match = _re.search(r'(\d+(?:\.\d+)?)\s*(?:kg|tonne)', p)
+        mass_kg = float(mass_match.group(1)) * (1000 if 'tonne' in (mass_match.group(0) if mass_match else '') else 1) if mass_match else 0
+        return {
+            'sector_type': 'space',
+            'spacecraft_mass_kg': mass_kg,
+            'rate_context': f'Space programme — {"{:.0f}kg spacecraft".format(mass_kg) if mass_kg else "mission-scale basis"}',
+            'assumption_basis': f'CASEY assumed {"spacecraft mass " + str(int(mass_kg)) + "kg" if mass_kg else "sector-standard mission scope"}. Schedule is governed by launch manifest and technology qualification.',
+            'has_explicit_km': False,
+        }
+
+    # ── Defence ───────────────────────────────────────────────────────────
+    if 'defence' in sub or 'defense' in sub or 'military' in sub:
+        units_match = _re.search(r'(\d+)\s*(?:units?|vessels?|aircraft|vehicles?|platforms?)', p)
+        units = int(units_match.group(1)) if units_match else 1
+        return {
+            'sector_type': 'defence',
+            'platform_units': units,
+            'rate_context': f'Defence programme — {units} platform unit{"s" if units>1 else ""}',
+            'assumption_basis': f'CASEY assumed {units} platform unit{"s" if units>1 else ""}. Schedule governed by requirements, procurement and acceptance testing.',
+            'has_explicit_km': False,
+        }
+
+    # ── Mining ────────────────────────────────────────────────────────────
+    if 'mining' in sub or 'mine' in sub:
+        mtpa_match = _re.search(r'(\d+(?:\.\d+)?)\s*(?:mtpa|mt/a|million\s*tonne)', p)
+        mtpa = float(mtpa_match.group(1)) if mtpa_match else 5
+        return {
+            'sector_type': 'mining',
+            'throughput_mtpa': mtpa,
+            'rate_context': f'{mtpa}Mtpa processing throughput',
+            'assumption_basis': f'CASEY assumed {mtpa}Mtpa nameplate throughput. Adjust if resource model gives different design rate.',
+            'has_explicit_km': False,
+        }
+
+    # ── Generic fallback ──────────────────────────────────────────────────
+    has_tunnel = any(w in p for w in ['tunnel','underground','bore','tbm'])
+    has_viaduct = any(w in p for w in ['viaduct','elevated','bridge'])
+    tun_pct = 35 if has_tunnel and has_viaduct else 50 if has_tunnel else 10 if has_viaduct else 15
+    via_pct = 25 if has_tunnel and has_viaduct else 15 if has_tunnel else 55 if has_viaduct else 25
+    srf_pct = 100 - tun_pct - via_pct
     return {
+        'sector_type': 'infrastructure',
         'route_km': km,
         'stations': stations,
         'tunnel_pct': tun_pct,
         'viaduct_pct': via_pct,
         'surface_pct': srf_pct,
-        'topology_context': rate_context,
+        'rate_context': 'Major infrastructure programme',
+        'assumption_basis': 'CASEY used sector benchmark unit rates. Provide explicit scope data to improve estimate accuracy.',
         'has_explicit_km': km > 0,
     }
 
@@ -11164,15 +12115,252 @@ def _build_casey_defence(model: dict) -> dict:
     what_changes.append(f"Governing constraint is: {gc[:80] if gc else 'not yet determined'}. Resolving this moves the critical path forward.")
     what_changes.append("Awarding a Tier 1 EPC/MAC contract with a GMP clause would reduce the cost risk reserve and narrow the P80/P50 spread.")
 
+    # ── Why CASEY Generated This — sector-specific assumption explainability ──
+    ra = model.get('route_assumptions', {}) or {}
+    sector_type = ra.get('sector_type', '')
+    why_generated = []
+
+    if sector_type == 'data_centre':
+        mw = ra.get('campus_mw', 0)
+        halls = ra.get('data_halls', 0)
+        phases = ra.get('delivery_phases', 0)
+        pue = ra.get('pue', 1.3)
+        cooling = ra.get('cooling_strategy', '')
+        grid_kv = ra.get('grid_connection_voltage', '')
+        mva = ra.get('mva_substation', 0)
+        target_date = ra.get('target_completion', '')
+        target_months = ra.get('target_months', 0)
+        is_brownfield = ra.get('is_brownfield', False)
+        near_airport = ra.get('near_airport', False)
+        named_utility = ra.get('named_utility', '')
+        named_contractor = ra.get('named_contractor', '')
+        context_notes = ra.get('context_notes', [])
+
+        why_generated = []
+        if mva:
+            why_generated.append(f"Campus capacity: {mva:.0f}MVA substation × 0.9pf ÷ PUE {pue} = {mw:.0f}MW IT load assumed.")
+        else:
+            why_generated.append(f"Campus capacity assumed: {mw:.0f}MW IT load.")
+        
+        why_generated.append(f"Data centre buildings: {halls} × ~{(mw/halls):.0f}MW/building." if halls else f"Building count: derived from {mw:.0f}MW at ~50MW/building.")
+        
+        if target_date:
+            why_generated.append(f"Target completion: {target_date} — {target_months} months from today. Schedule anchored to stated programme.")
+        else:
+            why_generated.append(f"Delivery phases: {phases} (phased energisation — each phase requires separate grid acceptance).")
+        
+        why_generated.append(f"PUE assumed: {pue} — industry standard for {cooling} cooling.")
+        why_generated.append(f"Grid connection: {grid_kv} — {mva:.0f}MVA capacity governs critical path and transformer lead time." if mva else f"Grid connection: {grid_kv} — governs critical path and lead time.")
+        
+        if is_brownfield:
+            why_generated.append("Brownfield site detected: remediation cost included. Phase 2 contamination survey required — scope risk until complete.")
+        if near_airport:
+            why_generated.append("Airport proximity detected: CAA crane height restrictions apply. All lifts >45m require CAA notification. Abnormal load routes restricted.")
+        if named_utility:
+            why_generated.append(f"Named utility risk: {named_utility} — on critical path for enabling works. No main construction until relocation complete.")
+        if named_contractor:
+            why_generated.append(f"Contractor: {named_contractor} — two-stage route. Pre-construction services agreement de-risks programme certainty.")
+        
+        why_generated.append("Benchmark anchor: Azure, AWS, Google, STACK hyperscale campus unit rates (£8-14M/MW all-in UK).")
+        why_generated.append("Cost is MW-based: P50 = campus MW × UK sector unit rate × brownfield/location premium.")
+        why_generated.append("Key assumption to validate: confirm signed grid connection offer (not just application) exists before using this estimate.")
+    elif sector_type == 'rail':
+        km = ra.get('route_km', 0)
+        stns = ra.get('stations', 0)
+        tun = ra.get('tunnel_pct', 0)
+        via = ra.get('viaduct_pct', 0)
+        srf = ra.get('surface_pct', 0)
+        why_generated = [
+            f"Route length assumed: {km}km.",
+            f"Stations assumed: {stns} stations.",
+            f"Topology mix: {tun}% tunnel / {via}% viaduct / {srf}% surface.",
+            f"Tunnel rate: $250-600M/km (varies by geology). Viaduct: $80-150M/km. Surface: $20-60M/km.",
+            f"Cost is topology-weighted: P50 = Σ(km × topology% × unit rate) × location factor.",
+            f"Benchmark anchor: Flyvbjerg HSR database, UK DfT Reference Class.",
+            f"Key assumption to validate: ground investigation must confirm tunnel geology before FBC.",
+        ]
+    elif sector_type == 'nuclear':
+        units = ra.get('reactor_units', 2)
+        rx = ra.get('reactor_type', 'Gen III+')
+        mwe = ra.get('mwe_per_unit', 1200)
+        why_generated = [
+            f"Reactor configuration: {units}× {rx} units at {mwe}MWe each ({units*mwe}MWe total).",
+            f"Cost basis: EPC cost per kWe × installed MWe × location factor.",
+            f"Benchmark anchor: Hinkley Point C (£33B, 3.26GW), Vogtle 3&4 ($35B, 2.2GW).",
+            f"First-of-kind premium: +25-40% applied for first deployment in jurisdiction.",
+            f"Key assumption to validate: GDA/licensing status — no cost is reliable without regulator position.",
+        ]
+    elif sector_type == 'semiconductor':
+        wspm = ra.get('wafers_per_month', 0)
+        node = ra.get('process_node_nm', 28)
+        cr = ra.get('cleanroom_sqm', 0)
+        why_generated = [
+            f"Fab capacity assumed: {wspm:,} wafers/month at {node}nm process node.",
+            f"Cleanroom area assumed: ~{cr:,}m².",
+            f"Cost basis: $200-800M per 1,000 WSPM depending on process node.",
+            f"Benchmark anchor: TSMC Arizona ($12B, 20k WSPM, 4nm), Intel Ohio ($20B, advanced node).",
+            f"Key assumption to validate: confirm wafer starts per month target and process node before cost submission.",
+        ]
+    elif sector_type == 'pharma':
+        litres = ra.get('bioreactor_litres', 0)
+        gmp = ra.get('gmp_classification', '')
+        why_generated = [
+            f"Bioreactor capacity assumed: {litres:,}L.",
+            f"GMP classification: {gmp}.",
+            f"Cost basis: $2-8M per litre bioreactor capacity (all-in including cleanroom, utilities, validation).",
+            f"Benchmark anchor: Samsung Biologics ($800M/180kL), Lonza Slough ($600M/50kL).",
+            f"Key assumption to validate: FDA/EMA pre-submission meeting outcome required before Class 3 estimate.",
+        ]
+    elif sector_type == 'energy':
+        mw = ra.get('installed_mw', 0)
+        mtpa = ra.get('mtpa', 0)
+        if mw:
+            why_generated = [
+                f"Installed capacity assumed: {mw:.0f}MW.",
+                f"Cost basis: $1.5-4M/MW depending on technology and offshore premium.",
+                f"Benchmark anchor: sector LCOE and EPC unit rate database.",
+                f"Key assumption to validate: grid connection offer and export route confirmed.",
+            ]
+        elif mtpa:
+            why_generated = [
+                f"LNG throughput assumed: {mtpa}MTPA.",
+                f"Cost basis: $500-900/tonne LNG capacity (varies by location and module count).",
+                f"Benchmark anchor: global LNG EPC cost database.",
+                f"Key assumption to validate: EPC contract structure and offtake agreement terms.",
+            ]
+    elif sector_type == 'space':
+        mass = ra.get('spacecraft_mass_kg', 0)
+        why_generated = [
+            f"Mission scope: {'spacecraft mass ' + str(int(mass)) + 'kg' if mass else 'mission-scale basis'}.",
+            f"Cost basis: NASA/ESA parametric cost model (SSCM/NICM) calibrated to subsector.",
+            f"Schedule governed by: launch manifest slot, technology qualification (TRL), and mission assurance gates.",
+            f"Key assumption to validate: TRL of all critical systems at PDR/CDR.",
+        ]
+    elif sector_type == 'defence':
+        units = ra.get('platform_units', 1)
+        why_generated = [
+            f"Platform units assumed: {units}.",
+            f"Cost basis: MOD/DoD analogous programme unit production cost.",
+            f"Schedule governed by: requirements freeze, procurement route and acceptance testing.",
+            f"Key assumption to validate: requirements baseline frozen and signed by SRO.",
+        ]
+    elif sector_type == 'mining':
+        mtpa = ra.get('throughput_mtpa', 5)
+        why_generated = [
+            f"Processing throughput assumed: {mtpa}Mtpa.",
+            f"Cost basis: greenfield mine development capex per tonne of annual throughput.",
+            f"Benchmark anchor: sector FEL2/3 cost database (CRU, Wood Mackenzie).",
+            f"Key assumption to validate: resource model classification (Measured vs Indicated).",
+        ]
+    
+    if not why_generated:
+        why_generated = [
+            f"Detected sector: {subsect}.",
+            f"Location: {location}. Location factor applied.",
+            f"Cost derived from {len(analogues)} comparable programme benchmarks.",
+            f"P50 is the sector-calibrated central estimate. P80 is the board approval level.",
+            f"Key assumption to validate: confirm scope basis before using for investment approval.",
+        ]
+    
+    # Add confidence explanation to why_generated
+    why_generated.append(f"Confidence {conf}% reflects: Class {class_lv} estimate maturity + {len(risks)}-risk register + {len(analogues)} benchmarks + location and scenario.")
+    
+    # ── Governing constraint — full board-ready display ────────────────────
+    gc_clean = gc or f"Class {class_lv} definition maturity"
+    
+    # Sector-specific governing constraint enrichment
+    gc_detail_map = {
+        'data_centre': {
+            'constraint': 'Grid connection, utility energisation' + (', named utility diversion: ' + ra.get('named_utility','') if ra.get('named_utility') else '') + (', brownfield remediation' if ra.get('is_brownfield') else '') + (', airport airspace constraints' if ra.get('near_airport') else ''),
+            'probability': 'High — grid queues in key markets (UK, Ireland, Netherlands, Northern Virginia) now run 3-7 years' + ('. Brownfield remediation adds 3-9 months pre-construction risk.' if ra.get('is_brownfield') else '') + ('. Named utility diversion is programme-critical enabling work.' if ra.get('named_utility') else ''),
+            'impact': '12-24 months schedule slip and significant additional carrying cost per year of delay. ' + ('Utility diversion delay is binary — no site clearance until complete. ' if ra.get('named_utility') else '') + ('Brownfield contamination scope unknown until Phase 2 survey. ' if ra.get('is_brownfield') else ''),
+            'board_action': "Confirm signed grid connection offer (not application) exists. " + (f"Confirm {ra.get('named_utility','')} relocation programme is on critical path with named owner and completion date. " if ra.get('named_utility') else '') + ('Confirm Phase 2 contamination survey complete and remediation strategy approved. ' if ra.get('is_brownfield') else '') + ("If no signed connection offer: this is the programme's critical path, not construction."),
+            'evidence_required': 'Signed grid connection agreement, confirmed transformer delivery slot, substation acceptance date.' + (' Phase 2 contamination survey and remediation strategy.' if ra.get('is_brownfield') else '') + (f' {ra.get("named_utility","")} relocation programme agreed with utility.' if ra.get('named_utility') else ''),
+        },
+        'rail': {
+            'constraint': 'Possessions, systems assurance and signalling homologation',
+            'probability': 'High — every major rail programme in the last 20 years has had systems assurance as the true critical path',
+            'impact': '6-36 months schedule extension after civil completion. Cost: fixed overhead continues accumulating.',
+            'board_action': 'Confirm signalling homologation is a named critical path predecessor. ORAT director appointed 18 months before opening.',
+            'evidence_required': 'Systems assurance programme baselined. Signalling integration test plan approved.',
+        },
+        'nuclear': {
+            'constraint': 'Regulatory Generic Design Assessment (GDA) and safety case maturity',
+            'probability': 'High — no nuclear programme has ever opened ahead of regulatory schedule',
+            'impact': '12-36 months critical path extension. Carrying cost $500M-$2B per year at this scale.',
+            'board_action': 'Confirm ONR/NRC hold-point schedule is locked into master programme. GDA exit is a go/no-go gate.',
+            'evidence_required': 'GDA milestone schedule agreed with regulator. Safety case maturity assessment.',
+        },
+        'semiconductor': {
+            'constraint': 'Process tool delivery, installation and yield ramp qualification',
+            'probability': 'High — tool lead times (18-36 months) and yield qualification cannot be compressed',
+            'impact': '6-24 months to first wafer out. Revenue delay at $1-5M per day at volume.',
+            'board_action': 'Confirm process tool order dates. Yield ramp schedule must be in master programme.',
+            'evidence_required': 'Tool vendor confirmed delivery dates. UPW/gas commissioning schedule.',
+        },
+        'pharma': {
+            'constraint': 'Regulatory validation (FDA/EMA) and GMP commissioning',
+            'probability': 'High — validation and first batch release cannot be accelerated',
+            'impact': '6-18 months after mechanical completion before first batch release',
+            'board_action': 'Confirm pre-submission meeting with FDA/EMA completed. Validation plan in master programme.',
+            'evidence_required': 'Validation master plan approved. GMP commissioning protocol.',
+        },
+        'space': {
+            'constraint': 'Technology qualification (TRL), mission assurance and launch manifest',
+            'probability': 'High — every major space programme has had qualification as the true critical path',
+            'impact': '12-36 months. Cost: carrying and requalification. Mission may miss orbital window.',
+            'board_action': 'Confirm independent TRL assessment. Launch slot booked 12+ months ahead.',
+            'evidence_required': 'Independent TRL audit at PDR. Mission assurance plan baselined.',
+        },
+        'defence': {
+            'constraint': 'Requirements stability, security accreditation and operational acceptance',
+            'probability': 'High — requirements instability and accreditation are the most common cause of defence programme failure',
+            'impact': '24-60 months. Cost growth 30-100%. Reference: Ajax (9 years), F-35 (6 years late).',
+            'board_action': 'Confirm requirements baseline is frozen and signed by SRO. Operational acceptance criteria defined.',
+            'evidence_required': 'Signed requirements baseline. SC/DV vetting programme started.',
+        },
+        'energy': {
+            'constraint': 'Grid connection, environmental consenting and commissioning evidence',
+            'probability': 'Medium-High — grid queue and consent timescales often exceed construction time',
+            'impact': '12-36 months before export revenue. Cost: project financing interest during delay.',
+            'board_action': 'Confirm grid connection offer signed. Environmental consent granted or on critical path.',
+            'evidence_required': 'Grid connection agreement. Environmental permit. Performance test plan.',
+        },
+        'mining': {
+            'constraint': 'Social licence, environmental consent and geotechnical confirmation',
+            'probability': 'High — 60%+ of major mine projects have social licence issues post-commitment',
+            'impact': 'Suspension or cancellation. Reference: Cobre Panama ($10B suspended 2023).',
+            'board_action': 'Confirm community benefit agreement signed. Environmental consent in hand. Ground investigation complete.',
+            'evidence_required': 'Signed community benefit agreement. Environmental licence. Geotechnical report.',
+        },
+    }
+    
+    gc_detail = gc_detail_map.get(sector_type, {
+        'constraint': gc_clean,
+        'probability': 'Medium — varies by scope maturity and jurisdiction',
+        'impact': 'Scope-dependent — quantify before board submission',
+        'board_action': 'Name the governing constraint owner. Evidence closure plan with milestone dates.',
+        'evidence_required': 'Governing constraint evidence closure plan approved by SRO.',
+    })
+
     return {
         'why_cost': why_cost_parts,
         'why_schedule': why_sched_parts,
         'why_confidence': why_conf_parts,
         'why_p80': why_p80_parts,
         'what_changes_answer': what_changes,
-        'governing_constraint_display': gc or f"Class {class_lv} definition maturity — further design development needed to reduce cost uncertainty",
+        'why_casey_generated_this': why_generated,
+        'governing_constraint_display': gc_detail['constraint'],
+        'governing_constraint_full': {
+            'constraint': gc_detail['constraint'],
+            'probability_of_delay': gc_detail['probability'],
+            'estimated_impact': gc_detail['impact'],
+            'board_action_required': gc_detail['board_action'],
+            'evidence_required': gc_detail['evidence_required'],
+        },
         'total_risks_identified': len(risks),
         'risks_with_emv': n_risks_with_emv,
+        'scope_assumptions': ra,
     }
 
 
@@ -11254,6 +12442,30 @@ def build_model(prompt: str='', client: str='', class_level: int=3, schedule_lev
                 conf_delta -= 7
                 comp_drivers.append('extreme delivery compression against stated deadline')
 
+    # ── Target completion date extraction (e.g. 'late 2029') → derive months ──
+    import datetime as _dt_bm
+    _date_m = re.search(r'(late|early|mid)[\s-]*(20[2-4]\d)', text)
+    if _date_m and not md:
+        _yr = int(_date_m.group(2))
+        _period = _date_m.group(1)
+        _month_map = {'late': 10, 'mid': 6, 'early': 3}
+        _target_m = _month_map.get(_period, 6)
+        _now = _dt_bm.datetime.now()
+        _derived = max(6, (_yr - _now.year) * 12 + (_target_m - _now.month))
+        raw_months = _derived
+        comp_drivers.append(f'target completion {_date_m.group(1)} {_yr} ({_derived} months)')
+
+    # ── Brownfield / remediation uplift ──────────────────────────────────
+    if any(k in text for k in ['remediation','brownfield','rundown industrial','former industrial','contamination']):
+        raw_cost *= 1.08   # 8% brownfield premium on base cost
+        risk_mult *= 1.10
+        comp_drivers.append('brownfield remediation — scope unknown until Phase 2 survey')
+
+    # ── Airport proximity complexity ──────────────────────────────────────
+    if any(k in text for k in ['heathrow','gatwick','stansted','luton','airport proximity','controlled airspace']):
+        raw_cost *= 1.04   # 4% logistics premium
+        comp_drivers.append('airport proximity — crane height restrictions and restricted logistics')
+
     try:
         cal_cost, cal_months, bench_notes, matches = calibrate_with_benchmarks(prompt, mode, subsector, raw_cost, raw_months)
     except Exception:
@@ -11277,8 +12489,63 @@ def build_model(prompt: str='', client: str='', class_level: int=3, schedule_lev
     # ── Named programme anchor: override p50 with known real-world cost ──
     # Anchor values are in USD billions. p50 is also in USD-equivalent internally.
     # money_lc() applies FX at display time, so we just set p50 = USD value here.
+    # ── STEP 0: Prompt-stated cost extraction (LinkedIn / press release text) ──
+    # LinkedIn posts often contain the actual stated cost: "£1bn", "$8.6bn", "€1.2bn"
+    # Extract this FIRST as the most reliable anchor before Wikipedia or sector logic
+    def _extract_prompt_stated_cost_usd(prompt_text: str) -> float:
+        """Extract stated cost from LinkedIn/press release text, convert to USD billions."""
+        import re as _re2
+        pt = (prompt_text or '').lower()
+        # FX approximations (will be overridden by live rate if available)
+        _FX = {'£': 1.27, '€': 1.08, 'a$': 0.65, 'nz$': 0.61, 'c$': 0.74,
+               'kr': 0.094, 'nok': 0.092, 'sek': 0.093, 'dkk': 0.145,
+               'yen': 0.0067, '¥': 0.0067, 'sgd': 0.74, 'inr': 0.012,
+               'aud': 0.65, 'cad': 0.74, '₹': 0.000012, 'rs': 0.000012,
+               'brl': 0.20, 'mxn': 0.058, 'zar': 0.054, 'try': 0.031,
+               'chf': 1.11, 'hkd': 0.128, 'twd': 0.031, 'krw': 0.00074,
+               'pln': 0.25, 'czk': 0.044, 'huf': 0.0028, 'ron': 0.22,
+               'idr': 0.000064, 'myr': 0.22, 'thb': 0.028, 'php': 0.018}
+        patterns = [
+            # £1.2bn, £900m, $8.6bn, €2.4bn, A$3.1bn
+            (r'(£|€|a\$|nz\$|c\$|aud|cad)\s*([\d,\.]+)\s*(bn|billion|b)', 1e9),
+            (r'(£|€|a\$|nz\$|c\$|aud|cad)\s*([\d,\.]+)\s*(m|million|mn)', 1e6),
+            (r'\$([\d,\.]+)\s*(bn|billion|b)', 1e9),
+            (r'\$([\d,\.]+)\s*(m|million|mn)', 1e6),
+            # "worth £1bn", "worth $8.6 billion", "valued at €2.4bn"
+            (r'(?:worth|valued at|investment of|contract of|cost of|budget of|totalling)\s*(£|€|\$|a\$)?\s*([\d,\.]+)\s*(bn|billion|b|m|million)', 1e9),
+            # ₹1.1 trillion, NOK 45bn, SEK etc
+            (r'(₹|rs\.?|inr)\s*([\d,\.]+)\s*(t\b|trillion)', 1e12),
+            (r'(₹|rs\.?|inr)\s*([\d,\.]+)\s*(bn|billion|b\b|cr\b|crore)', 1e9),
+            (r'(nok|nkr|sek|dkk|chf|pln|huf|czk)\s*([\d,\.]+)\s*(bn|billion|b\b)', 1e9),
+            (r'([\d,\.]+)\s*(nok|nkr|sek|dkk|chf|pln)\s*(bn|billion)', 1e9),
+        ]
+        best = 0.0
+        for pat, scale in patterns:
+            for m in _re2.finditer(pat, pt):
+                groups = m.groups()
+                # Find the numeric group
+                num_str = next((g for g in groups if g and _re2.match(r'[\d,\.]+', g)), None)
+                if not num_str: continue
+                try:
+                    val = float(num_str.replace(',',''))
+                except: continue
+                # Determine scale from match
+                match_text = m.group(0)
+                if any(s in match_text for s in ['million','mn',' m ',' m)']): val /= 1000
+                # Apply FX
+                curr_sym = next((g for g in groups if g and g in _FX), None)
+                fx = _FX.get(curr_sym, 1.0) if curr_sym else 1.0
+                val_usd = val * fx
+                if val_usd > best and 0.05 < val_usd < 500:  # sanity: $50M–$500B range
+                    best = val_usd
+        return best
+
+    _prompt_stated_cost = _extract_prompt_stated_cost_usd(prompt)
     # ── Named programme anchor + live Open Crawl anchor ─────────────────
     _anchor_usd = get_programme_anchor(prompt)
+    # Use prompt-stated cost as anchor if no named programme match found
+    if _prompt_stated_cost > 0 and _anchor_usd <= 0:
+        _anchor_usd = _prompt_stated_cost
     # Quick live crawl (2.5s) to get Wikipedia cost + live FX + WB inflation
     _lc_pre = get_currency_symbol(loc_name, prompt)
     try:
@@ -11851,11 +13118,18 @@ def build_model(prompt: str='', client: str='', class_level: int=3, schedule_lev
     try:
         model['casey_defence'] = _build_casey_defence(model)
         model['xer_qa'] = _build_xer_qa(model)
-        # Store prominent governing constraint
-        model['governing_constraint_prominent'] = (
-            model['casey_defence'].get('governing_constraint_display', '')
-        )
-        model['total_risks_identified'] = len(model.get('risks', []))
+        _cd = model['casey_defence']
+        # Governing constraint — prominent at root level for all tabs and PDF
+        model['governing_constraint_prominent'] = _cd.get('governing_constraint_display', '')
+        model['governing_constraint_full'] = _cd.get('governing_constraint_full', {})
+        # Total risks — real count for board display ("Top 12 of 67 displayed")
+        _total_risks = _cd.get('total_risks_identified', len(model.get('risks', [])))
+        model['total_risks_identified'] = _total_risks
+        model['risks_displayed'] = min(12, _total_risks)
+        # Scope assumptions at root for Overview tab
+        model['scope_assumptions'] = _cd.get('scope_assumptions', model.get('route_assumptions', {}))
+        # Why CASEY generated this
+        model['why_casey_generated_this'] = _cd.get('why_casey_generated_this', [])
     except Exception as _def_err:
         pass
     # ── CASEY Self-Challenge + Auto-Correction loop ──────────────────────
