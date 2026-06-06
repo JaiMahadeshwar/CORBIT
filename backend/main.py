@@ -32,7 +32,7 @@ DEMO_LIMIT_PER_IP = int(os.environ.get("CASEY_DEMO_LIMIT_PER_IP", "1"))
 PUBLIC_DEMO_LIMIT = int(os.environ.get("CASEY_PUBLIC_DEMO_LIMIT", "1"))
 ADMIN_TOKEN = os.environ.get("CASEY_ADMIN_TOKEN", "")
 
-app = FastAPI(title=APP_VERSION, version="26.0-revenue-machine")
+app = FastAPI(title=APP_VERSION, version="26.0-V224")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=False, allow_methods=["*"], allow_headers=["*"], expose_headers=["Content-Disposition", "Content-Type"])
 
 class GenerateRequest(BaseModel):
