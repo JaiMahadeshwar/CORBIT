@@ -2516,7 +2516,7 @@ function App() {
     setScheduleLevel(4);
     // Trigger generate with health signal context
     setTimeout(() => {
-      generate('base', prog.caseySignal.prompt, null, { healthCheck: true, programme: prog.name });
+      generate('base', prog.caseySignal.prompt, null, prog.name || 'Reference case', { healthCheck: true, isShowcase: true, isDemo: true });
       setTab('assurance');
     }, 100);
   }, []);
@@ -3093,20 +3093,9 @@ function parseMoneyLocal(v) {
     setLoading(true); setTab(nextScenario !== 'base' ? 'compare' : 'overview');
     // Demo gate — fires only for brand-new project runs from the main console
     // NEVER fires for: showcase library, earth/space demo, scenario switching on existing model
-    // Only gate genuinely new project runs — never gate scenario switches, showcase, or demos
+    // Gate is handled by checkAndGate() on the Generate button before generate() is called.
+    // generate() itself never blocks — showcase, demos, scenarios, and health checks all flow through freely.
     const isNewProjectRun = !activeContext && !opts.isShowcase && !opts.isDemo && !opts.healthCheck;
-    const isGated = !isAdminUser && demoUsed && isNewProjectRun;
-    if (isGated) {
-      setLoading(false); setPropagating(false);
-      setError(JSON.stringify({
-        message: "You've used your one free CASEY intelligence run.",
-        sub: "Browse the Showcase Library (200 free reference cases), run the Earth or Space demos, or get in touch for full access.",
-        email: "deepa@caseai.co.uk",
-        linkedin: "https://www.linkedin.com/company/caseai"
-      }));
-      setTab('pricing');
-      return;
-    }
     try {
       const payload = {
         prompt: canonicalPrompt,
