@@ -715,19 +715,41 @@ async function get(path) {
   return r.json();
 }
 async function download(path, model, name, setExportingLabel) {
-  // Uses apiFetch which handles URL retry logic and CORS correctly
-  try {
-    if (setExportingLabel) setExportingLabel('Generating export…');
+  // Slim payload: strip heavy fields that cause Render payload rejection
+  const STRIP = ['all_schedule_levels','schedules_by_level','risk_detail','cost_detail','self_challenge','raw_crawl'];
+  const slim = Object.fromEntries(Object.entries(model || {}).filter(([k]) => !STRIP.includes(k)));
+
+  const attempt = async (label) => {
+    if (setExportingLabel) setExportingLabel(label);
     const resp = await apiFetch(path, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(model || {})
+      body: JSON.stringify(slim)
     });
+    return resp;
+  };
+
+  try {
+    if (setExportingLabel) setExportingLabel('Generating export…');
+    let resp = await attempt('Generating export…');
+
+    // If backend is waking up (502/503/504) retry once after 8 seconds
+    if ([502, 503, 504].includes(resp?.status) || !resp?.ok && resp?.status >= 500) {
+      if (setExportingLabel) setExportingLabel('Backend waking up — retrying in 8s…');
+      await new Promise(r => setTimeout(r, 8000));
+      resp = await attempt('Retrying export…');
+    }
+
     if (!resp.ok) {
       const txt = await resp.text();
       let msg = txt;
       try { msg = JSON.parse(txt)?.detail?.message || JSON.parse(txt)?.message || txt; } catch (_) {}
-      alert('Export failed: ' + msg);
+      // Friendly message for common errors
+      if (resp.status === 502 || resp.status === 503) {
+        alert('The server is still starting up. Wait 20 seconds and try the export again — this only happens after a period of inactivity.');
+      } else {
+        alert('Export failed: ' + String(msg).slice(0, 200));
+      }
       if (setExportingLabel) setExportingLabel('');
       return;
     }
@@ -741,7 +763,23 @@ async function download(path, model, name, setExportingLabel) {
     setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 2000);
     if (setExportingLabel) setTimeout(() => setExportingLabel(''), 1500);
   } catch (err) {
-    alert('Export failed. Please try again in a few seconds.');
+    // Network error — likely cold start
+    if (setExportingLabel) setExportingLabel('Retrying…');
+    try {
+      await new Promise(r => setTimeout(r, 8000));
+      const resp2 = await attempt('Retrying export…');
+      if (resp2.ok) {
+        const blob = await resp2.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = name;
+        document.body.appendChild(a); a.click();
+        setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 2000);
+        if (setExportingLabel) setTimeout(() => setExportingLabel(''), 1500);
+        return;
+      }
+    } catch (_) {}
+    alert('Export failed — the server may still be starting up. Wait 20 seconds and try again.');
     if (setExportingLabel) setExportingLabel('');
   }
 }
@@ -2546,6 +2584,22 @@ useEffect(() => {
       setBackendStatus('down');
     };
     checkBackend();
+
+    // Keep-alive ping every 9 minutes — prevents Render free tier sleeping
+    // Render sleeps after 15 minutes of inactivity; 9min interval keeps it warm
+    const keepAlive = setInterval(async () => {
+      try {
+        await fetch((window.CASEY_API || window.location.origin) + '/health', {
+          method: 'GET', credentials: 'omit',
+          signal: AbortSignal.timeout ? AbortSignal.timeout(5000) : undefined
+        });
+        setBackendStatus('ok');
+      } catch (_) {
+        // Silent — don't show error for background keep-alive
+      }
+    }, 9 * 60 * 1000); // 9 minutes
+
+    return () => clearInterval(keepAlive);
   }, []);
   
 const scenarioInsightMap95 = {
@@ -3392,9 +3446,7 @@ function parseMoneyLocal(v) {
               </div>
               </div>
               <p style={{fontSize:'10px',color:'#94a3b8',lineHeight:'1.6',margin:0}}>{model.live_intel_text?.slice(0,600)}</p>
-              {model.live_intel_sources?.includes('NewsAPI') && <div style={{marginTop:'4px',fontSize:'9px',color:'#10b981',fontWeight:'600'}}>
-                Includes live trade press articles — Reuters, NCE, ENR, Infrastructure Intelligence
-              </div>}
+
             </div>
           </section>}
           {model.executive_shock_insight && <section className="layout one"><Card className="shockCard"><h2>⚡ Live model update</h2><p>{model.executive_shock_insight}</p></Card></section>}
