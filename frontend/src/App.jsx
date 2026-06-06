@@ -3279,7 +3279,7 @@ function parseMoneyLocal(v) {
       {model?.live_intel_active && <div style={{display:'flex',alignItems:'center',gap:'5px',padding:'3px 9px',background:'rgba(16,185,129,0.08)',border:'1px solid rgba(16,185,129,0.2)',borderRadius:'4px'}}>
         <div style={{width:'6px',height:'6px',borderRadius:'50%',background:'#10b981',animation:'pulse 1.5s infinite',flexShrink:0}}/>
         <span style={{fontSize:'9px',fontWeight:'800',color:'#10b981',letterSpacing:'.06em'}}>
-            {model.live_intel_mode === 'AI-enriched' ? '⚡ LIVE INTEL (AI)' : '🌐 OPEN CRAWL'}
+            {model.live_intel_mode === 'AI-enriched' ? '⚡ MARKET INTEL (AI)' : '📊 MARKET INTEL'}
           </span>
           <span style={{fontSize:'8px',color:'#334155'}}>{(model.live_intel_sources||'').includes('GDELT') ? '🌐 Live news' : ''} {(model.live_intel_timestamp||'').split(' ').slice(0,3).join(' ')}</span>
       </div>}
@@ -3386,7 +3386,7 @@ function parseMoneyLocal(v) {
                 <div style={{width:'7px',height:'7px',borderRadius:'50%',background:'#10b981',animation:'pulse 1.5s infinite',flexShrink:0}}/>
                 <div style={{display:'flex',flexDirection:'column',gap:'1px'}}>
                 <span style={{fontSize:'9px',fontWeight:'900',color:'#10b981',letterSpacing:'.08em'}}>
-                  {model.live_intel_mode === 'AI-enriched' ? '⚡ AI-ENRICHED INTELLIGENCE' : '🌐 OPEN CRAWL INTELLIGENCE'} — {model.live_intel_timestamp}
+                  {model.live_intel_mode === 'AI-enriched' ? '⚡ MARKET & COST INTELLIGENCE' : '📊 MARKET & COST INTELLIGENCE'} — {model.live_intel_timestamp}
                 </span>
                 <span style={{fontSize:'8px',color:'#334155'}}>Sources: {model.live_intel_sources}</span>
               </div>
@@ -3874,15 +3874,66 @@ function parseMoneyLocal(v) {
           </Card>
         </section>}
         {tab === 'defence' && <div style={{padding:'0 2px'}}>
+          {/* Header */}
           <div style={{background:'rgba(14,116,144,0.08)',border:'1px solid rgba(14,116,144,0.2)',borderRadius:6,padding:'14px 18px',marginBottom:12}}>
-            <div style={{fontSize:'11px',fontWeight:'800',color:'#0e7490',letterSpacing:'.12em',marginBottom:6}}>⚡ CASEY DEFENCE — WHY EVERY NUMBER</div>
+            <div style={{fontSize:'11px',fontWeight:'800',color:'#0e7490',letterSpacing:'.12em',marginBottom:4}}>⚡ CASEY DEFENCE — WHY EVERY NUMBER</div>
             <div style={{fontSize:'11px',color:'#94a3b8'}}>Every number defends itself. The question shifts from "did AI make this up?" to "do we agree with CASEY's assumptions?"</div>
           </div>
-          <div style={{background:'rgba(239,68,68,0.08)',border:'2px solid rgba(239,68,68,0.35)',borderRadius:6,padding:'14px 18px',marginBottom:12}}>
-            <div style={{fontSize:'9px',fontWeight:'800',color:'#ef4444',letterSpacing:'.15em',marginBottom:6}}>GOVERNING CONSTRAINT</div>
-            <div style={{fontSize:'14px',fontWeight:'700',color:'#fff',lineHeight:'1.4'}}>{model?.casey_defence?.governing_constraint_display||model?.governing_constraint||'—'}</div>
-            <div style={{fontSize:'10px',color:'#94a3b8',marginTop:4}}>Resolve this first. Everything else is secondary.</div>
-          </div>
+
+          {/* GOVERNING CONSTRAINT — dominates the page */}
+          {(()=>{const gc=model?.governing_constraint_full||{};const display=gc.constraint||model?.casey_defence?.governing_constraint_display||model?.governing_constraint||'—';return(
+          <div style={{background:'rgba(239,68,68,0.10)',border:'2px solid rgba(239,68,68,0.5)',borderRadius:8,padding:'18px 20px',marginBottom:14}}>
+            <div style={{fontSize:'9px',fontWeight:'800',color:'#ef4444',letterSpacing:'.18em',marginBottom:8}}>⛔ GOVERNING CONSTRAINT — BOARD ACTION REQUIRED</div>
+            <div style={{fontSize:'17px',fontWeight:'800',color:'#fff',lineHeight:'1.3',marginBottom:12}}>{display}</div>
+            {gc.probability_of_delay&&<div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:10}}>
+              <div style={{background:'rgba(239,68,68,0.08)',borderRadius:5,padding:'10px 12px'}}>
+                <div style={{fontSize:'8px',fontWeight:'700',color:'#ef4444',letterSpacing:'.1em',marginBottom:3}}>PROBABILITY OF DELAY</div>
+                <div style={{fontSize:'11px',color:'#fca5a5',lineHeight:'1.4'}}>{gc.probability_of_delay}</div>
+              </div>
+              <div style={{background:'rgba(239,68,68,0.08)',borderRadius:5,padding:'10px 12px'}}>
+                <div style={{fontSize:'8px',fontWeight:'700',color:'#ef4444',letterSpacing:'.1em',marginBottom:3}}>ESTIMATED IMPACT</div>
+                <div style={{fontSize:'11px',color:'#fca5a5',lineHeight:'1.4'}}>{gc.estimated_impact}</div>
+              </div>
+            </div>}
+            {gc.board_action_required&&<div style={{background:'rgba(239,68,68,0.12)',border:'1px solid rgba(239,68,68,0.3)',borderRadius:5,padding:'10px 14px',marginBottom:8}}>
+              <div style={{fontSize:'8px',fontWeight:'800',color:'#ef4444',letterSpacing:'.1em',marginBottom:4}}>BOARD ACTION REQUIRED</div>
+              <div style={{fontSize:'12px',color:'#fff',fontWeight:'600',lineHeight:'1.5'}}>{gc.board_action_required}</div>
+            </div>}
+            {gc.evidence_required&&<div style={{fontSize:'10px',color:'#94a3b8',marginTop:4}}>Evidence required: {gc.evidence_required}</div>}
+            {!gc.probability_of_delay&&<div style={{fontSize:'10px',color:'#94a3b8',marginTop:4}}>Resolve this first. Everything else is secondary.</div>}
+          </div>)})()}
+
+          {/* SCOPE ASSUMPTIONS — what CASEY assumed */}
+          {(()=>{const ra=model?.scope_assumptions||model?.route_assumptions||{};const ab=ra.assumption_basis;const rc=ra.rate_context;if(!ab&&!rc)return null;return(
+          <div style={{background:'rgba(6,182,212,0.06)',border:'1px solid rgba(6,182,212,0.2)',borderRadius:6,padding:'14px 18px',marginBottom:12}}>
+            <div style={{fontSize:'9px',fontWeight:'800',color:'#06b6d4',letterSpacing:'.12em',marginBottom:8}}>📐 SCOPE ASSUMPTIONS — WHAT CASEY ASSUMED</div>
+            {rc&&<div style={{fontSize:'13px',fontWeight:'700',color:'#fff',marginBottom:8}}>{rc}</div>}
+            {ab&&<div style={{fontSize:'11px',color:'#94a3b8',lineHeight:'1.6',marginBottom:8}}>{ab}</div>}
+            <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
+              {ra.campus_mw>0&&<span style={{background:'rgba(6,182,212,0.12)',border:'1px solid rgba(6,182,212,0.25)',borderRadius:4,padding:'3px 8px',fontSize:'10px',color:'#67e8f9'}}>{ra.campus_mw}MW campus</span>}
+              {ra.data_halls>0&&<span style={{background:'rgba(6,182,212,0.12)',border:'1px solid rgba(6,182,212,0.25)',borderRadius:4,padding:'3px 8px',fontSize:'10px',color:'#67e8f9'}}>{ra.data_halls} data halls</span>}
+              {ra.delivery_phases>0&&<span style={{background:'rgba(6,182,212,0.12)',border:'1px solid rgba(6,182,212,0.25)',borderRadius:4,padding:'3px 8px',fontSize:'10px',color:'#67e8f9'}}>{ra.delivery_phases} phases</span>}
+              {ra.pue>0&&<span style={{background:'rgba(6,182,212,0.12)',border:'1px solid rgba(6,182,212,0.25)',borderRadius:4,padding:'3px 8px',fontSize:'10px',color:'#67e8f9'}}>PUE {ra.pue}</span>}
+              {ra.cooling_strategy&&<span style={{background:'rgba(6,182,212,0.12)',border:'1px solid rgba(6,182,212,0.25)',borderRadius:4,padding:'3px 8px',fontSize:'10px',color:'#67e8f9'}}>{ra.cooling_strategy}</span>}
+              {ra.grid_connection_voltage&&<span style={{background:'rgba(6,182,212,0.12)',border:'1px solid rgba(6,182,212,0.25)',borderRadius:4,padding:'3px 8px',fontSize:'10px',color:'#67e8f9'}}>{ra.grid_connection_voltage} grid</span>}
+              {ra.route_km>0&&<span style={{background:'rgba(6,182,212,0.12)',border:'1px solid rgba(6,182,212,0.25)',borderRadius:4,padding:'3px 8px',fontSize:'10px',color:'#67e8f9'}}>{ra.route_km}km route</span>}
+              {ra.stations>0&&<span style={{background:'rgba(6,182,212,0.12)',border:'1px solid rgba(6,182,212,0.25)',borderRadius:4,padding:'3px 8px',fontSize:'10px',color:'#67e8f9'}}>{ra.stations} stations</span>}
+              {ra.reactor_units>0&&<span style={{background:'rgba(6,182,212,0.12)',border:'1px solid rgba(6,182,212,0.25)',borderRadius:4,padding:'3px 8px',fontSize:'10px',color:'#67e8f9'}}>{ra.reactor_units}× {ra.reactor_type}</span>}
+              {ra.total_mwe>0&&<span style={{background:'rgba(6,182,212,0.12)',border:'1px solid rgba(6,182,212,0.25)',borderRadius:4,padding:'3px 8px',fontSize:'10px',color:'#67e8f9'}}>{ra.total_mwe}MWe</span>}
+              {ra.wafers_per_month>0&&<span style={{background:'rgba(6,182,212,0.12)',border:'1px solid rgba(6,182,212,0.25)',borderRadius:4,padding:'3px 8px',fontSize:'10px',color:'#67e8f9'}}>{ra.wafers_per_month.toLocaleString()} WSPM</span>}
+              {ra.process_node_nm>0&&<span style={{background:'rgba(6,182,212,0.12)',border:'1px solid rgba(6,182,212,0.25)',borderRadius:4,padding:'3px 8px',fontSize:'10px',color:'#67e8f9'}}>{ra.process_node_nm}nm node</span>}
+              {ra.installed_mw>0&&<span style={{background:'rgba(6,182,212,0.12)',border:'1px solid rgba(6,182,212,0.25)',borderRadius:4,padding:'3px 8px',fontSize:'10px',color:'#67e8f9'}}>{ra.installed_mw}MW installed</span>}
+              {ra.throughput_mtpa>0&&<span style={{background:'rgba(6,182,212,0.12)',border:'1px solid rgba(6,182,212,0.25)',borderRadius:4,padding:'3px 8px',fontSize:'10px',color:'#67e8f9'}}>{ra.throughput_mtpa}Mtpa throughput</span>}
+            </div>
+          </div>)})()}
+
+          {/* WHY CASEY GENERATED THIS */}
+          {(model?.why_casey_generated_this||model?.casey_defence?.why_casey_generated_this||[]).length>0&&<div style={{background:'rgba(16,185,129,0.06)',border:'1px solid rgba(16,185,129,0.2)',borderRadius:6,padding:'12px 16px',marginBottom:10}}>
+            <div style={{fontSize:'9px',fontWeight:'800',color:'#10b981',letterSpacing:'.12em',marginBottom:8}}>🧠 WHY CASEY GENERATED THIS</div>
+            {(model?.why_casey_generated_this||model?.casey_defence?.why_casey_generated_this||[]).map((p,i)=><div key={i} style={{display:'flex',gap:6,marginBottom:4}}><span style={{color:'#10b981',fontSize:'10px',flexShrink:0}}>→</span><span style={{fontSize:'11px',color:'#cbd5e1',lineHeight:'1.5'}}>{p}</span></div>)}
+          </div>}
+
+          {/* WHY EACH NUMBER */}
           {[
             ['WHY '+(model?.cost_p50||'P50'), model?.casey_defence?.why_cost||[]],
             ['WHY '+(model?.schedule_months||'—')+' MONTHS', model?.casey_defence?.why_schedule||[]],
@@ -3891,13 +3942,28 @@ function parseMoneyLocal(v) {
           ].map(([heading, points])=>(
             <div key={heading} style={{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:6,padding:'12px 16px',marginBottom:8}}>
               <div style={{fontSize:'9px',fontWeight:'800',color:'#06b6d4',letterSpacing:'.1em',marginBottom:6}}>{heading}</div>
-              {points.map((p,i)=><div key={i} style={{display:'flex',gap:6,marginBottom:3}}><span style={{color:'#0e7490',fontSize:'10px',flexShrink:0}}>→</span><span style={{fontSize:'11px',color:'#cbd5e1',lineHeight:'1.5'}}>{p}</span></div>)}
+              {(points||[]).map((p,i)=><div key={i} style={{display:'flex',gap:6,marginBottom:3}}><span style={{color:'#0e7490',fontSize:'10px',flexShrink:0}}>→</span><span style={{fontSize:'11px',color:'#cbd5e1',lineHeight:'1.5'}}>{p}</span></div>)}
             </div>
           ))}
+
+          {/* RISK REGISTER DEPTH */}
+          {model?.total_risks_identified>0&&<div style={{background:'rgba(245,158,11,0.06)',border:'1px solid rgba(245,158,11,0.2)',borderRadius:6,padding:'12px 16px',marginBottom:8}}>
+            <div style={{fontSize:'9px',fontWeight:'800',color:'#f59e0b',letterSpacing:'.1em',marginBottom:6}}>📋 RISK REGISTER DEPTH</div>
+            <div style={{display:'flex',gap:16,alignItems:'center',flexWrap:'wrap'}}>
+              <div style={{textAlign:'center'}}><div style={{fontSize:'28px',fontWeight:'800',color:'#fff',lineHeight:1}}>{model.total_risks_identified}</div><div style={{fontSize:'9px',color:'#64748b',marginTop:2}}>TOTAL RISKS</div></div>
+              <div style={{textAlign:'center'}}><div style={{fontSize:'28px',fontWeight:'800',color:'#f59e0b',lineHeight:1}}>{model?.risks_displayed||Math.min(12,model.total_risks_identified)}</div><div style={{fontSize:'9px',color:'#64748b',marginTop:2}}>TOP BY EMV SHOWN</div></div>
+              <div style={{textAlign:'center'}}><div style={{fontSize:'28px',fontWeight:'800',color:'#10b981',lineHeight:1}}>{model?.casey_defence?.risks_with_emv||0}</div><div style={{fontSize:'9px',color:'#64748b',marginTop:2}}>EMV QUANTIFIED</div></div>
+              <div style={{flex:1,minWidth:160,fontSize:'10px',color:'#94a3b8',lineHeight:'1.5'}}>Full register (all {model.total_risks_identified} risks) exported to Risk Register workbook. Top 12 by EMV displayed in Risk tab and board pack.</div>
+            </div>
+          </div>}
+
+          {/* WHAT WOULD CHANGE THE ANSWER */}
           <div style={{background:'rgba(245,158,11,0.06)',border:'1px solid rgba(245,158,11,0.2)',borderRadius:6,padding:'12px 16px',marginBottom:8}}>
             <div style={{fontSize:'9px',fontWeight:'800',color:'#f59e0b',letterSpacing:'.1em',marginBottom:6}}>WHAT WOULD CHANGE THE ANSWER</div>
             {(model?.casey_defence?.what_changes_answer||[]).map((p,i)=><div key={i} style={{display:'flex',gap:6,marginBottom:3}}><span style={{color:'#f59e0b',fontSize:'10px',flexShrink:0}}>→</span><span style={{fontSize:'11px',color:'#cbd5e1',lineHeight:'1.5'}}>{p}</span></div>)}
           </div>
+
+          {/* XER QA */}
           {model?.xer_qa&&<div style={{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:6,padding:'12px 16px',marginBottom:8}}>
             <div style={{fontSize:'9px',fontWeight:'800',color:'#06b6d4',letterSpacing:'.1em',marginBottom:8}}>XER SCHEDULE QA</div>
             <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:6}}>
@@ -3909,12 +3975,6 @@ function parseMoneyLocal(v) {
               ))}
             </div>
             <div style={{marginTop:6,fontSize:'10px',color:'#94a3b8'}}>Duration: {model.xer_qa.duration_flag}</div>
-          </div>}
-          {model?.casey_defence?.total_risks_identified>0&&<div style={{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:6,padding:'12px 16px'}}>
-            <div style={{fontSize:'9px',fontWeight:'800',color:'#06b6d4',letterSpacing:'.1em',marginBottom:4}}>RISK REGISTER SUMMARY</div>
-            <div style={{fontSize:'11px',color:'#cbd5e1'}}>
-              Total identified: <b style={{color:'#fff'}}>{model.casey_defence.total_risks_identified}</b> risks · EMV quantified: <b style={{color:'#fff'}}>{model.casey_defence.risks_with_emv}</b> · Top {Math.min(10,model.casey_defence.total_risks_identified)} shown in Risk tab and Risk Register export.
-            </div>
           </div>}
         </div>}
       </>}
