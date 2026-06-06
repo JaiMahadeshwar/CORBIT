@@ -1,0 +1,44 @@
+{
+  "AI_Data_Centres": [
+    "Microsoft AI Supercluster",
+    "AWS Global Region Expansion",
+    "Meta AI Compute Network",
+    "Google TPU Infrastructure",
+    "Oracle Sovereign AI Cloud",
+    "NVIDIA Ecosystem Infrastructure"
+  ],
+  "Rail": [
+    "California High-Speed Rail",
+    "HS2",
+    "Gateway Program",
+    "Brightline West",
+    "Crossrail",
+    "Rail Baltica",
+    "Sydney Metro",
+    "Ontario Line"
+  ],
+  "Space": [
+    "Starship Industrialization",
+    "Lunar Habitat Infrastructure",
+    "Mars Cargo Logistics Network",
+    "Amazon Kuiper",
+    "AST SpaceMobile",
+    "Orbital Data Centres"
+  ],
+  "Energy": [
+    "SMR Nuclear Rollout",
+    "LNG Export Terminals",
+    "Offshore Wind Mega-Hubs",
+    "Hydrogen Export Corridors"
+  ],
+  "Pharma": [
+    "Eli Lilly Manufacturing Expansion",
+    "Novo Nordisk Capacity Expansion",
+    "Moderna Biosecurity Facilities"
+  ],
+  "Defence": [
+    "AUKUS Industrial Base",
+    "Missile Defence Modernization",
+    "Autonomous Drone Swarms"
+  ]
+}

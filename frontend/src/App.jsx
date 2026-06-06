@@ -347,7 +347,7 @@ class CaseyErrorBoundary extends React.Component {
         <div style={{marginBottom:'48px'}}>
           <div style={{fontSize:'10px',fontWeight:'800',color:'#22d3ee',letterSpacing:'.14em',marginBottom:'14px'}}>PRICING</div>
           <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'10px',maxWidth:'680px'}}>
-            {[{t:'Free',p:'£0',b:'Earth Demo · Space Demo · 137-programme Showcase · 1 free project run',cta:'Start free',go:true},
+            {[{t:'Free',p:'£0',b:'Earth Demo · Space Demo · 200-programme Showcase · 1 free project run',cta:'Start free',go:true},
               {t:'Professional',p:'£99 / mo',b:'Unlimited runs · All exports · Advisor · Digital Twin · File ingestion',cta:'Join waitlist →',go:false,hi:true},
               {t:'Team',p:'£349 / mo',b:'5 seats · White-label PDF · Priority support · Everything in Pro',cta:'Join waitlist →',go:false}
             ].map(({t,p,b,cta,go,hi})=><div key={t} style={{background:hi?'rgba(14,116,144,0.1)':'rgba(255,255,255,0.03)',border:hi?'1px solid #0e7490':'1px solid rgba(255,255,255,0.07)',borderRadius:'5px',padding:'16px',display:'flex',flexDirection:'column',gap:'7px'}}>
@@ -2284,7 +2284,7 @@ function ShowcaseLibrary({ onRun, onBack }) {
 
 function GatedMessage({ raw, onDismiss, onShowcase, onEarth, onSpace }) {
   let msg = "You have used your one free CASEY intelligence run.";
-  let sub = "You can still browse 40 free reference cases in the Showcase Library and run the Earth or Space demos for free. For unlimited projects, get in touch.";
+  let sub = "You can still browse 200 free reference cases in the Showcase Library and run the Earth or Space demos for free. For unlimited projects, get in touch.";
   let email = "deepa@caseai.co.uk";
   let linkedin = "https://www.linkedin.com/company/caseai";
   let isStartingUp = false;
@@ -2337,7 +2337,7 @@ function GatedMessage({ raw, onDismiss, onShowcase, onEarth, onSpace }) {
         ) : (
           <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
             {onShowcase && <button onClick={onShowcase} style={{width:'100%',background:'rgba(141,247,255,0.1)',border:'1px solid rgba(141,247,255,0.3)',color:'#8df7ff',cursor:'pointer',padding:'11px',borderRadius:'5px',fontSize:'13px',fontWeight:'700',textAlign:'left'}}>
-              Browse Showcase Library — 40 free reference cases →
+              Browse Showcase Library — 200 free reference cases →
             </button>}
             <div style={{display:'flex',gap:'8px',flexWrap:'wrap'}}>
               {onEarth && <button onClick={onEarth} style={{flex:1,background:'rgba(16,185,129,0.08)',border:'1px solid rgba(16,185,129,0.2)',color:'#10b981',cursor:'pointer',padding:'9px',borderRadius:'5px',fontSize:'12px',fontWeight:'700'}}>🚄 Earth Demo</button>}
@@ -3098,7 +3098,7 @@ function parseMoneyLocal(v) {
       setLoading(false); setPropagating(false);
       setError(JSON.stringify({
         message: "You've used your one free CASEY intelligence run.",
-        sub: "Browse the Showcase Library (40 free reference cases), run the Earth or Space demos, or get in touch for full access.",
+        sub: "Browse the Showcase Library (200 free reference cases), run the Earth or Space demos, or get in touch for full access.",
         email: "deepa@caseai.co.uk",
         linkedin: "https://www.linkedin.com/company/caseai"
       }));
@@ -3356,7 +3356,7 @@ function parseMoneyLocal(v) {
         <p style={{fontSize:'13px',color:'#94a3b8',lineHeight:'1.6',marginBottom:'24px'}}>Earth Demo and Space Demo are always free — run them as many times as you like. For unlimited project runs, exports and advisor: upgrade to Professional.</p>
         <div style={{background:'rgba(14,116,144,0.1)',border:'1px solid #0e7490',borderRadius:'6px',padding:'20px',marginBottom:'20px'}}>
           <div style={{fontSize:'11px',fontWeight:'800',color:'#22d3ee',marginBottom:'6px'}}>ALWAYS FREE</div>
-          <p style={{fontSize:'12px',color:'#94a3b8'}}>Earth Demo · Space Demo · Showcase Library (137 programmes) · Open Crawl intelligence</p>
+          <p style={{fontSize:'12px',color:'#94a3b8'}}>Earth Demo · Space Demo · Showcase Library (200 programmes, all sectors) · Open Crawl intelligence</p>
         </div>
         <div style={{display:'flex',gap:'10px',justifyContent:'center'}}>
           <button onClick={() => runEarth()} style={{padding:'10px 20px',background:'#0e7490',color:'#fff',border:'none',borderRadius:'4px',fontWeight:'700',cursor:'pointer'}}>Try Earth Demo free</button>
@@ -3370,7 +3370,7 @@ function parseMoneyLocal(v) {
         <p style={{fontSize:'13px',color:'#94a3b8',lineHeight:'1.6',marginBottom:'20px'}}>Earth Demo and Space Demo are always free — run them as many times as you like, any sector, any scenario. For unlimited project runs and all exports, Professional is coming soon.</p>
         <div style={{background:'rgba(14,116,144,0.08)',border:'1px solid rgba(14,116,144,0.2)',borderRadius:'6px',padding:'18px',marginBottom:'18px'}}>
           <div style={{fontSize:'10px',fontWeight:'800',color:'#22d3ee',marginBottom:'6px'}}>ALWAYS FREE — NO LIMIT</div>
-          <p style={{fontSize:'12px',color:'#94a3b8'}}>Earth Demo · Space Demo · Showcase Library (137 programmes) · Open Crawl intelligence</p>
+          <p style={{fontSize:'12px',color:'#94a3b8'}}>Earth Demo · Space Demo · Showcase Library (200 programmes, all sectors) · Open Crawl intelligence</p>
         </div>
         <div style={{display:'flex',gap:'10px',justifyContent:'center',marginBottom:'16px'}}>
           <button onClick={()=>runEarth()} style={{padding:'10px 20px',background:'#0e7490',color:'#fff',border:'none',borderRadius:'4px',fontWeight:'700',cursor:'pointer',fontSize:'12px'}}>Earth Demo →</button>

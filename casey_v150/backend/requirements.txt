@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+pydantic
+numpy
+openpyxl
+python-docx
+python-pptx
+reportlab
+python-multipart
+XlsxWriter>=3.2.0

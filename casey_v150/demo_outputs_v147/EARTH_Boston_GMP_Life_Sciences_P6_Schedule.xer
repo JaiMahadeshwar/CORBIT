@@ -1,0 +1,57 @@
+ERMHDR	8.0	2026-05-24	Project	CASEY	CASEY	dbxDatabaseNoName	Project Management	USD
+%T	CURRTYPE
+%F	curr_id	decimal_digit_cnt	curr_symbol	decimal_symbol	digit_group_symbol	pos_curr_fmt_type	neg_curr_fmt_type	curr_type	curr_short_name	group_digit_cnt	base_exch_rate
+%R	1	2	$	.	,	#1.1	(#1.1)	US Dollar	USD	3	1
+%T	PROJECT
+%F	proj_id	fy_start_month_num	name_sep_char	proj_short_name	plan_start_date	last_recalc_date	clndr_id	def_duration_type	def_qty_type	def_rate_type	def_task_type	critical_path_type
+%R	3338	1	.	CASEY	2026-05-24 08:00	2026-05-24 08:00	3892	DT_FixedDUR2	QT_Hour	COST_PER_QTY	TT_Task	CT_DrivPath
+%T	CALENDAR
+%F	clndr_id	default_flag	clndr_name	proj_id	base_clndr_id	clndr_type	day_hr_cnt	week_hr_cnt	month_hr_cnt	year_hr_cnt	rsrc_private	clndr_data
+%R	3892	Y	Standard	3338		CA_Project	8	40	172	2000	N	(0||CalendarData()())
+%T	PROJWBS
+%F	wbs_id	proj_id	obs_id	seq_num	wbs_short_name	wbs_name	parent_wbs_id
+%R	5000	3338	565	1	CASEY	CASEY Generated Schedule	
+%T	TASK
+%F	task_id	proj_id	wbs_id	clndr_id	task_code	task_name	task_type	duration_type	status_code	target_drtn_hr_cnt	remain_drtn_hr_cnt	phys_complete_pct	target_start_date	target_end_date	early_start_date	early_end_date	late_start_date	late_end_date	guid
+%R	1	3338	5000	3892	A1000	Project initiation / controls setup	TT_Task	DT_FixedDUR2	TK_NotStart	344	344	0	2026-05-24 08:00		2026-05-24 08:00				CASEY00000000000000000
+%R	2	3338	5000	3892	A1100	Strategic brief, funding and approval	TT_Task	DT_FixedDUR2	TK_NotStart	688	688	0	2026-05-24 08:00		2026-05-24 08:00				CASEY00000000000000000
+%R	3	3338	5000	3892	A1200	Requirements definition and scope freeze	TT_Task	DT_FixedDUR2	TK_NotStart	688	688	0	2026-05-24 08:00		2026-05-24 08:00				CASEY00000000000000000
+%R	4	3338	5000	3892	A1300	Concept / reference architecture	TT_Task	DT_FixedDUR2	TK_NotStart	1032	1032	0	2026-05-24 08:00		2026-05-24 08:00				CASEY00000000000000000
+%R	5	3338	5000	3892	A1400	Planning, regulatory and stakeholder approvals	TT_Task	DT_FixedDUR2	TK_NotStart	1204	1204	0	2026-05-24 08:00		2026-05-24 08:00				CASEY00000000000000000
+%R	6	3338	5000	3892	A1500	Procurement strategy and tender packaging	TT_Task	DT_FixedDUR2	TK_NotStart	688	688	0	2026-05-24 08:00		2026-05-24 08:00				CASEY00000000000000000
+%R	7	3338	5000	3892	A1600	Detailed design / IFC development	TT_Task	DT_FixedDUR2	TK_NotStart	1204	1204	0	2026-05-24 08:00		2026-05-24 08:00				CASEY00000000000000000
+%R	8	3338	5000	3892	A1700	Long-lead procurement	TT_Task	DT_FixedDUR2	TK_NotStart	1204	1204	0	2026-05-24 08:00		2026-05-24 08:00				CASEY00000000000000000
+%R	9	3338	5000	3892	A1800	Site / launch integration readiness	TT_Task	DT_FixedDUR2	TK_NotStart	860	860	0	2026-05-24 08:00		2026-05-24 08:00				CASEY00000000000000000
+%R	10	3338	5000	3892	A1900	Main construction / fabrication / assembly	TT_Task	DT_FixedDUR2	TK_NotStart	2752	2752	0	2026-05-24 08:00		2026-05-24 08:00				CASEY00000000000000000
+%R	11	3338	5000	3892	A2000	Systems integration and testing	TT_Task	DT_FixedDUR2	TK_NotStart	1204	1204	0	2026-05-24 08:00		2026-05-24 08:00				CASEY00000000000000000
+%R	12	3338	5000	3892	A2100	Commissioning, operations readiness and closeout	TT_Task	DT_FixedDUR2	TK_NotStart	688	688	0	2026-05-24 08:00		2026-05-24 08:00				CASEY00000000000000000
+%R	13	3338	5000	3892	P1000	Civil / structural package	TT_Task	DT_FixedDUR2	TK_NotStart	516	516	0	2026-05-24 08:00		2026-05-24 08:00				CASEY00000000000000000
+%R	14	3338	5000	3892	P2000	MEP / systems package	TT_Task	DT_FixedDUR2	TK_NotStart	516	516	0	2026-05-24 08:00		2026-05-24 08:00				CASEY00000000000000000
+%R	15	3338	5000	3892	P3000	Specialist equipment package	TT_Task	DT_FixedDUR2	TK_NotStart	516	516	0	2026-05-24 08:00		2026-05-24 08:00				CASEY00000000000000000
+%R	16	3338	5000	3892	P4000	Utilities / interfaces package	TT_Task	DT_FixedDUR2	TK_NotStart	516	516	0	2026-05-24 08:00		2026-05-24 08:00				CASEY00000000000000000
+%R	17	3338	5000	3892	P5000	Testing and commissioning package	TT_Task	DT_FixedDUR2	TK_NotStart	516	516	0	2026-05-24 08:00		2026-05-24 08:00				CASEY00000000000000000
+%T	TASKPRED
+%F	task_pred_id	task_id	pred_task_id	pred_type	lag_hr_cnt
+%R	1	2	1	PR_FS	0
+%R	2	3	2	PR_FS	0
+%R	3	4	3	PR_FS	0
+%R	4	5	3	PR_FS	0
+%R	5	6	4	PR_FS	0
+%R	6	7	4	PR_FS	0
+%R	7	8	6	PR_FS	0
+%R	8	9	5	PR_FS	0
+%R	9	9	6	PR_FS	0
+%R	10	10	7	PR_FS	0
+%R	11	10	8	PR_FS	0
+%R	12	10	9	PR_FS	0
+%R	13	11	10	PR_FS	0
+%R	14	12	11	PR_FS	0
+%R	15	13	10	PR_FS	0
+%R	16	14	13	PR_FS	0
+%R	17	15	14	PR_FS	0
+%R	18	16	15	PR_FS	0
+%R	19	17	16	PR_FS	0
+%T	UDFTYPE
+%F	udf_type_id	table_name	udf_type_name	udf_type_label	logical_data_type	super_flag
+%R	329	TASK	CASEY_Risk_Most_Likely	Likely	FT_TEXT	N
+%E

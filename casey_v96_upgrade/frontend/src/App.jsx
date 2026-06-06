@@ -70,7 +70,7 @@ function Hero({ onBriefing, onEarth, onSpace, onConsole, onTryDemo }) {
   return <section className="v50TakeoverHero">
     <video className="v50HeroVideo" src="https://corbit.b-cdn.net/casey_hero_film.mp4" autoPlay muted loop playsInline preload="auto" />
     <div className="v50HeroShade" />
-    <div className="v50TopBar"><Logo/><div className="v50TopActions"><button onClick={onBriefing}><Play size={15}/> Watch briefing</button><button onClick={onEarth}>Run Earth model</button><button onClick={onSpace}>Run Space model</button><button className="tryTopBtn" onClick={onTryDemo}>Try one free run</button><button onClick={onConsole}>Open console</button><a className="topBuyLink" href="mailto:hello@casey.ai?subject=CASEY%20Access%20Request">Request access</a></div></div>
+    <div className="v50TopBar"><Logo/><div className="v50TopActions"><button onClick={onBriefing}><Play size={15}/> Watch briefing</button><button onClick={onEarth}>Run Earth model</button><button onClick={onSpace}>Run Space model</button><button className="tryTopBtn" onClick={onTryDemo}>Try one free run</button><button onClick={onConsole}>Open console</button><a className="topBuyLink" href="mailto:deepa@caseai.co.uk?subject=CASEY%20Access%20Request">Request access</a></div></div>
     <motion.div className="v50HeroCenter" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .7 }}>
       <Logo large />
       <p className="v50HeroLine">Cost · Schedule · Risk · Delivery</p>
@@ -415,7 +415,7 @@ function scenarioAdjustedModel(currentModel, nextScenario) {
     `P50 Cost: ${model.cost_p50}`, `Cost Range: ${model.cost_range}`, `Schedule: ${model.schedule}`,
     `Risk / Confidence: ${model.risk} / ${model.confidence_pct}%`
   ].join('\n') : 'Please send me CASEY access.';
-  const emailLink = `mailto:hello@casey.ai?subject=${encodeURIComponent('CASEY project review')}&body=${encodeURIComponent(emailBody)}`;
+  const emailLink = `mailto:deepa@caseai.co.uk?subject=${encodeURIComponent('CASEY project review')}&body=${encodeURIComponent(emailBody)}`;
 
   return <div className="app v50EliteApp">
     <Briefing open={briefing} onClose={() => setBriefing(false)} onEarth={runEarth} onSpace={runSpace}/>
@@ -434,7 +434,7 @@ function scenarioAdjustedModel(currentModel, nextScenario) {
           {model.executive_shock_insight && <section className="layout one"><Card className="shockCard"><h2>Executive shock insight</h2><p>{model.executive_shock_insight}</p></Card></section>}
           <section className="layout two">
             <Card><h2>Executive intelligence summary</h2><p className="big">{model.executive_summary || `${model.title} has been classified as ${model.subsector}. CASEY generated a first-pass cost, schedule, risk and confidence model for the selected scenario.`}</p><div className="miniMetrics"><b><span>Direct cost</span>{fmt(direct)}</b><b><span>Indirect cost</span>{fmt(indirect)}</b><b><span>Risk / reserve</span>{fmt(reserves)}</b></div><h3>Recommendation</h3>{(model.next_best_actions || []).slice(0,5).map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card>
-            <Card><h2>Board briefing</h2>{(model.board_briefing || model.board_challenge_questions || []).slice(0,5).map((x,i)=><div className="reason" key={String(x)}><span>{i+1}</span>{x}</div>)}<h3>CASEY thinking</h3><p className="caseyThinking">{model.casey_thinking || 'CASEY interprets this as a system-of-systems infrastructure programme requiring cost, schedule, risk and decision intelligence.'}</p></Card>
+            <Card><h2>Board briefing</h2>{(model.board_briefing || model.board_challenge_questions || []).slice(0,5).map((x,i)=><div className="reason" key={String(x)}><span>{i+1}</span>{x}</div>)}<h3>CASEY thinking</h3><p className="caseyThinking">{safeRender(model.casey_thinking || 'CASEY interprets this as a system-of-systems infrastructure programme requiring cost, schedule, risk and decision intelligence.')}</p></Card>
           </section>
           {baseVs?.base && <section className="layout two">
             <Card className="shockCard"><h2>Scenario vs Base</h2><p>{baseVs.plain_english}</p><div className="miniMetrics"><b><span>Base P50</span>{baseVs.base.cost_p50}<small>{baseVs.base.schedule_months} mo · {baseVs.base.confidence_pct}%</small></b><b><span>{baseVs.selected.scenario} P50</span>{baseVs.selected.cost_p50}<small>{baseVs.selected.schedule_months} mo · {baseVs.selected.confidence_pct}%</small></b><b><span>Delta</span>{baseVs.delta.cost_direction === 'same' ? 'No cost move' : `${baseVs.delta.cost} ${baseVs.delta.cost_direction}`}<small>{baseVs.delta.months} mo · {baseVs.delta.confidence_pts} pts</small></b></div></Card>

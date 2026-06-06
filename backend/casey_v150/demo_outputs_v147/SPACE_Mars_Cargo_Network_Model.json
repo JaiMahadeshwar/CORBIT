@@ -1,0 +1,3836 @@
+{
+  "version": "CASEY V146 Display Reconciliation Lock",
+  "id": "CASEY-643887",
+  "title": "Life Sciences Manufacturing Campus",
+  "prompt": "Mars cargo logistics network, 3 landing sites, ISRU propellant production, autonomous cargo landers, communication relay, concern: radiation, dust storms, ISRU qualification and launch windows",
+  "client": "QA",
+  "mode": "Earth",
+  "subsector": "Life Sciences / Biologics Manufacturing",
+  "location": "Mars",
+  "scale": "Project",
+  "scenario": "base",
+  "scenario_label": "Base",
+  "scenario_why": "Balanced reference case.",
+  "estimate_class": 3,
+  "estimate_class_name": "Class 3 Budget Authorization",
+  "estimate_maturity": "10-40% definition maturity",
+  "schedule_level": 4,
+  "cost_p10": "$6.4B",
+  "cost_p50": "$7.6B",
+  "cost_p90": "$11.2B",
+  "cost_range": "$6.4B - $11.2B",
+  "schedule": "75 months",
+  "risk": "Medium-High",
+  "risk_score": 50.0,
+  "confidence_pct": 60,
+  "executive_summary": "Space / Lunar / Orbital Infrastructure scenario view: Base. CASEY indicates $7.6B P50 exposure, $6.4B - $11.2B range, 75 months baseline, Medium-High risk and 60% confidence. Confidence is governed by qualification, thermal-power balance, launch logistics and autonomous recovery. Trade-off: Balanced cost, time and evidence posture.",
+  "confidence_explanation": [
+    "Class 3 Budget Authorization: 10-40% definition maturity drives the starting confidence level.",
+    "Schedule Level 4: more detailed schedule logic improves QSRA traceability.",
+    "Base: Balanced reference case.",
+    "Location/space factor: Mars applies a 3.80 delivery premium.",
+    "Sector realism envelope applied for Life Sciences / Biologics Manufacturing: cost and schedule constrained to credible early-stage range.",
+    "Benchmark memory matched Energy / Utilities with similarity score 4.",
+    "Cost calibrated by blending CASEY template output with benchmark anchor $5.2B.",
+    "Schedule calibrated against benchmark duration 66 months.",
+    "autonomous systems",
+    "radiation hardening"
+  ],
+  "benchmark_memory": [
+    {
+      "sector": "Energy / Utilities",
+      "mode": "Earth",
+      "keywords": [
+        "hydrogen",
+        "wind",
+        "solar",
+        "grid",
+        "battery",
+        "energy"
+      ],
+      "cost_bn": 5.2,
+      "months": 66,
+      "risks": [
+        "Grid connection delay",
+        "Equipment lead times",
+        "Permitting constraints",
+        "Commodity escalation"
+      ],
+      "similarity_score": 4
+    },
+    {
+      "sector": "ISRU/Mining/Propellant",
+      "mode": "Space",
+      "keywords": [
+        "isru",
+        "propellant",
+        "oxygen",
+        "methane",
+        "mining",
+        "depot"
+      ],
+      "cost_bn": 22.0,
+      "months": 168,
+      "risks": [
+        "Cryogenic reliability",
+        "Autonomous transfer",
+        "Technology readiness",
+        "Launch cadence"
+      ],
+      "similarity_score": 4
+    },
+    {
+      "sector": "Digital Infrastructure / Hyperscale Data Centre",
+      "mode": "Earth",
+      "keywords": [
+        "data centre",
+        "data center",
+        "hyperscale",
+        "ai campus",
+        "gpu"
+      ],
+      "cost_bn": 3.8,
+      "months": 46,
+      "risks": [
+        "Grid connection delay",
+        "Cooling capacity constraint",
+        "Long-lead electrical equipment",
+        "Commissioning load-bank failure"
+      ],
+      "similarity_score": 2
+    },
+    {
+      "sector": "Semiconductor / Advanced Manufacturing",
+      "mode": "Earth",
+      "keywords": [
+        "semiconductor",
+        "fab",
+        "wafer",
+        "upw",
+        "chip"
+      ],
+      "cost_bn": 18.0,
+      "months": 78,
+      "risks": [
+        "Tool delivery slippage",
+        "UPW and chemicals interface",
+        "Cleanroom validation delay",
+        "Utility demand escalation"
+      ],
+      "similarity_score": 2
+    },
+    {
+      "sector": "Airport / Aviation",
+      "mode": "Earth",
+      "keywords": [
+        "airport",
+        "terminal",
+        "runway",
+        "systems"
+      ],
+      "cost_bn": 9.0,
+      "months": 84,
+      "risks": [
+        "Live operations phasing",
+        "Security and systems integration",
+        "Airside possession constraints",
+        "Stakeholder approvals"
+      ],
+      "similarity_score": 2
+    }
+  ],
+  "estimate_quality_index": {
+    "score": 61,
+    "band": "Medium",
+    "maturity_score": 70,
+    "schedule_quality": 78,
+    "benchmark_quality": 68,
+    "risk_penalty": 12.5,
+    "meaning": "Confidence index reflects estimate class, schedule level, benchmark similarity, input quality and risk exposure."
+  },
+  "procurement_heatmap": [
+    {
+      "package": "Long-lead equipment",
+      "exposure": "High",
+      "reason": "Procurement path drives cost and schedule confidence."
+    },
+    {
+      "package": "Utilities / enabling works",
+      "exposure": "High",
+      "reason": "Utility readiness controls commissioning and phasing."
+    },
+    {
+      "package": "Systems integration",
+      "exposure": "High",
+      "reason": "Integration maturity is a common late-stage failure mode."
+    },
+    {
+      "package": "Specialist suppliers",
+      "exposure": "Medium-High",
+      "reason": "Limited supplier base increases price and schedule volatility."
+    }
+  ],
+  "critical_path_narrative": [
+    "Critical path is likely governed by definition maturity, procurement release and systems commissioning.",
+    "Early schedule confidence depends on locking scope, approvals and long-lead package strategy.",
+    "First schedule control focus should be: Requirements definition and scope freeze."
+  ],
+  "board_briefing": [
+    "Launch alone is not the real constraint; qualification, thermal-power balance and autonomous recovery determine mission survivability.",
+    "Base scenario is selected; all cards, narratives, QCRA/QSRA and exports are stamped from this scenario payload.",
+    "Base scenario: $7.6B P50, $6.4B - $11.2B range, 75 months baseline and 60% confidence.",
+    "Confidence is governed by qualification, thermal-power balance, launch logistics and autonomous recovery.",
+    "Board position: Board challenge likely."
+  ],
+  "uncertainty_narrative": {
+    "estimate_maturity": "Class 3 maturity is suitable for budget authorization, but procurement and design assumptions still need challenge.",
+    "schedule_maturity": "Schedule Level 4 gives stronger logic and QSRA traceability.",
+    "interpretation": "Live calibration is weighting mission assurance, launch logistics, qualification evidence and autonomous recovery into the QSRA/QCRA tail."
+  },
+  "mission_control_cards": [
+    {
+      "label": "Live calibration",
+      "signal": "Current sector conditions are being applied to confidence, contingency and delivery-tail exposure.",
+      "severity": "Active"
+    },
+    {
+      "label": "Launch reliability volatility",
+      "signal": "Launch cadence, range access and manifest priority affect schedule certainty.",
+      "severity": "Active"
+    },
+    {
+      "label": "Mission assurance burden",
+      "signal": "Qualification and redundancy evidence govern board defensibility.",
+      "severity": "Active"
+    },
+    {
+      "label": "Thermal-power balance",
+      "signal": "Power storage and thermal rejection shape survivability.",
+      "severity": "Watch"
+    },
+    {
+      "label": "Regulatory and range availability",
+      "signal": "Flight approvals, range windows and orbital operations create schedule tails.",
+      "severity": "Watch"
+    }
+  ],
+  "casey_thinking": "CASEY has re-cut the programme as a Base scenario inside the Space / Lunar / Orbital Infrastructure delivery environment. The governing consequence is: confidence is governed by qualification, thermal-power balance, launch logistics and autonomous recovery. QCRA/QSRA curves, cost basis, risk probabilities and schedule logic are locked to this scenario.",
+  "benchmark_comparison": [
+    {
+      "archetype": "Orbital / Lunar Infrastructure",
+      "anchor_cost": "$8B\u2013$95B",
+      "anchor_duration_months": "72-216"
+    },
+    {
+      "archetype": "Launch and Payload Integration",
+      "anchor_cost": "$1B\u2013$14B",
+      "anchor_duration_months": "36-108"
+    },
+    {
+      "archetype": "Deep-Space Mission Systems",
+      "anchor_cost": "$4B\u2013$35B",
+      "anchor_duration_months": "60-144"
+    },
+    {
+      "archetype": "Autonomous Operations Platform",
+      "anchor_cost": "$2B\u2013$20B",
+      "anchor_duration_months": "36-96"
+    }
+  ],
+  "calibration_notes": [
+    "Sector realism envelope applied for Life Sciences / Biologics Manufacturing: cost and schedule constrained to credible early-stage range.",
+    "Benchmark memory matched Energy / Utilities with similarity score 4.",
+    "Cost calibrated by blending CASEY template output with benchmark anchor $5.2B.",
+    "Schedule calibrated against benchmark duration 66 months."
+  ],
+  "cost_lines": [
+    {
+      "cbs": "01.01",
+      "description": "Site, enabling and controlled utilities",
+      "type": "Direct",
+      "basis": "Base basis: balanced reference case using sector benchmark, location, scale and complexity factors.",
+      "p10_bn": 0.402,
+      "p50_bn": 0.49,
+      "p90_bn": 0.637,
+      "impact_basis": "Site, enabling and controlled utilities priced as 7.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+      "most_likely_p50": "$517M",
+      "low_p10": "$404M",
+      "high_p90": "$641M"
+    },
+    {
+      "cbs": "01.02",
+      "description": "GMP cleanrooms and classified areas",
+      "type": "Direct",
+      "basis": "Base basis: balanced reference case using sector benchmark, location, scale and complexity factors.",
+      "p10_bn": 0.976,
+      "p50_bn": 1.19,
+      "p90_bn": 1.547,
+      "impact_basis": "GMP cleanrooms and classified areas priced as 17.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+      "most_likely_p50": "$1.2B",
+      "low_p10": "$982M",
+      "high_p90": "$1.5B"
+    },
+    {
+      "cbs": "01.03",
+      "description": "Process equipment and fill-finish lines",
+      "type": "Direct",
+      "basis": "Base basis: balanced reference case using sector benchmark, location, scale and complexity factors.",
+      "p10_bn": 1.263,
+      "p50_bn": 1.54,
+      "p90_bn": 2.002,
+      "impact_basis": "Process equipment and fill-finish lines priced as 22.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+      "most_likely_p50": "$1.5B",
+      "low_p10": "$1.3B",
+      "high_p90": "$2.0B"
+    },
+    {
+      "cbs": "01.04",
+      "description": "Clean utilities",
+      "type": "Direct",
+      "basis": "Base basis: balanced reference case using sector benchmark, location, scale and complexity factors.",
+      "p10_bn": 0.804,
+      "p50_bn": 0.98,
+      "p90_bn": 1.274,
+      "impact_basis": "Clean utilities priced as 14.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+      "most_likely_p50": "$986M",
+      "low_p10": "$809M",
+      "high_p90": "$1.3B"
+    },
+    {
+      "cbs": "01.05",
+      "description": "Automation, MES and digital validation",
+      "type": "Direct",
+      "basis": "Base basis: balanced reference case using sector benchmark, location, scale and complexity factors.",
+      "p10_bn": 0.459,
+      "p50_bn": 0.56,
+      "p90_bn": 0.728,
+      "impact_basis": "Automation, MES and digital validation priced as 8.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+      "most_likely_p50": "$563M",
+      "low_p10": "$462M",
+      "high_p90": "$732M"
+    },
+    {
+      "cbs": "01.06",
+      "description": "Cold-chain and automated logistics",
+      "type": "Direct",
+      "basis": "Base basis: balanced reference case using sector benchmark, location, scale and complexity factors.",
+      "p10_bn": 0.459,
+      "p50_bn": 0.56,
+      "p90_bn": 0.728,
+      "impact_basis": "Cold-chain and automated logistics priced as 8.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+      "most_likely_p50": "$563M",
+      "low_p10": "$462M",
+      "high_p90": "$732M"
+    },
+    {
+      "cbs": "02.01",
+      "description": "commissioning validation / qualification",
+      "type": "Indirect",
+      "basis": "Base basis: balanced reference case using sector benchmark, location, scale and complexity factors.",
+      "p10_bn": 0.358,
+      "p50_bn": 0.448,
+      "p90_bn": 0.609,
+      "impact_basis": "commissioning validation / qualification priced as 8.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+      "most_likely_p50": "$451M",
+      "low_p10": "$360M",
+      "high_p90": "$613M"
+    },
+    {
+      "cbs": "02.02",
+      "description": "Regulatory readiness and quality systems",
+      "type": "Indirect",
+      "basis": "Base basis: balanced reference case using sector benchmark, location, scale and complexity factors.",
+      "p10_bn": 0.224,
+      "p50_bn": 0.28,
+      "p90_bn": 0.381,
+      "impact_basis": "Regulatory readiness and quality systems priced as 5.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+      "most_likely_p50": "$282M",
+      "low_p10": "$225M",
+      "high_p90": "$383M"
+    },
+    {
+      "cbs": "02.03",
+      "description": "Programme management and operational readiness",
+      "type": "Indirect",
+      "basis": "Base basis: balanced reference case using sector benchmark, location, scale and complexity factors.",
+      "p10_bn": 0.269,
+      "p50_bn": 0.336,
+      "p90_bn": 0.457,
+      "impact_basis": "Programme management and operational readiness priced as 6.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+      "most_likely_p50": "$338M",
+      "low_p10": "$271M",
+      "high_p90": "$460M"
+    },
+    {
+      "cbs": "03.01",
+      "description": "Risk reserve",
+      "type": "Reserve",
+      "basis": "Base basis: balanced reference case using sector benchmark, location, scale and complexity factors.",
+      "p10_bn": 0.705,
+      "p50_bn": 1.216,
+      "p90_bn": 2.25,
+      "impact_basis": "Risk reserve priced as 5.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+      "most_likely_p50": "$1.2B",
+      "low_p10": "$709M",
+      "high_p90": "$2.2B"
+    }
+  ],
+  "schedules_by_level": {
+    "1": [
+      {
+        "activity_id": "M100",
+        "phase": "Milestone",
+        "activity": "Investment approval",
+        "predecessor": "",
+        "duration_months": 4,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "M200",
+        "phase": "Milestone",
+        "activity": "Design complete",
+        "predecessor": "M100",
+        "duration_months": 15,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "M300",
+        "phase": "Milestone",
+        "activity": "Procurement complete",
+        "predecessor": "M200",
+        "duration_months": 11,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "M400",
+        "phase": "Milestone",
+        "activity": "Delivery complete",
+        "predecessor": "M300",
+        "duration_months": 30,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "M500",
+        "phase": "Milestone",
+        "activity": "Ready for operations",
+        "predecessor": "M400",
+        "duration_months": 11,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "M600",
+        "phase": "Milestone",
+        "activity": "Handover",
+        "predecessor": "M500",
+        "duration_months": 4,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      }
+    ],
+    "2": [
+      {
+        "activity_id": "A1000",
+        "phase": "Governance",
+        "activity": "Project initiation / controls setup",
+        "predecessor": "",
+        "duration_months": 2,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1100",
+        "phase": "Business Case",
+        "activity": "Strategic brief, funding and approval",
+        "predecessor": "A1000",
+        "duration_months": 4,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1200",
+        "phase": "Scope",
+        "activity": "Requirements definition and scope freeze",
+        "predecessor": "A1100",
+        "duration_months": 4,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1300",
+        "phase": "Design",
+        "activity": "Concept / reference architecture",
+        "predecessor": "A1200",
+        "duration_months": 6,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1400",
+        "phase": "Consents",
+        "activity": "Planning, regulatory and stakeholder approvals",
+        "predecessor": "A1200",
+        "duration_months": 7,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1500",
+        "phase": "Procurement",
+        "activity": "Procurement strategy and tender packaging",
+        "predecessor": "A1300",
+        "duration_months": 4,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1600",
+        "phase": "Design",
+        "activity": "Detailed design / IFC development",
+        "predecessor": "A1300",
+        "duration_months": 8,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1700",
+        "phase": "Procurement",
+        "activity": "Long-lead procurement",
+        "predecessor": "A1500",
+        "duration_months": 7,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1800",
+        "phase": "Enabling",
+        "activity": "Site / launch integration readiness",
+        "predecessor": "A1400;A1500",
+        "duration_months": 5,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1900",
+        "phase": "Delivery",
+        "activity": "Main construction / fabrication / assembly",
+        "predecessor": "A1600;A1700;A1800",
+        "duration_months": 16,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A2000",
+        "phase": "Integration",
+        "activity": "Systems integration and testing",
+        "predecessor": "A1900",
+        "duration_months": 8,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A2100",
+        "phase": "Handover",
+        "activity": "Commissioning, operations readiness and closeout",
+        "predecessor": "A2000",
+        "duration_months": 4,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      }
+    ],
+    "3": [
+      {
+        "activity_id": "A1000",
+        "phase": "Governance",
+        "activity": "Project initiation / controls setup",
+        "predecessor": "",
+        "duration_months": 2,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1100",
+        "phase": "Business Case",
+        "activity": "Strategic brief, funding and approval",
+        "predecessor": "A1000",
+        "duration_months": 4,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1200",
+        "phase": "Scope",
+        "activity": "Requirements definition and scope freeze",
+        "predecessor": "A1100",
+        "duration_months": 4,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1300",
+        "phase": "Design",
+        "activity": "Concept / reference architecture",
+        "predecessor": "A1200",
+        "duration_months": 6,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1400",
+        "phase": "Consents",
+        "activity": "Planning, regulatory and stakeholder approvals",
+        "predecessor": "A1200",
+        "duration_months": 7,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1500",
+        "phase": "Procurement",
+        "activity": "Procurement strategy and tender packaging",
+        "predecessor": "A1300",
+        "duration_months": 4,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1600",
+        "phase": "Design",
+        "activity": "Detailed design / IFC development",
+        "predecessor": "A1300",
+        "duration_months": 8,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1700",
+        "phase": "Procurement",
+        "activity": "Long-lead procurement",
+        "predecessor": "A1500",
+        "duration_months": 7,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1800",
+        "phase": "Enabling",
+        "activity": "Site / launch integration readiness",
+        "predecessor": "A1400;A1500",
+        "duration_months": 5,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1900",
+        "phase": "Delivery",
+        "activity": "Main construction / fabrication / assembly",
+        "predecessor": "A1600;A1700;A1800",
+        "duration_months": 16,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A2000",
+        "phase": "Integration",
+        "activity": "Systems integration and testing",
+        "predecessor": "A1900",
+        "duration_months": 8,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A2100",
+        "phase": "Handover",
+        "activity": "Commissioning, operations readiness and closeout",
+        "predecessor": "A2000",
+        "duration_months": 4,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      }
+    ],
+    "4": [
+      {
+        "activity_id": "A1000",
+        "phase": "Governance",
+        "activity": "Project initiation / controls setup",
+        "predecessor": "",
+        "duration_months": 2,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, duration reflects commissioning validation sequencing, clean-utility validation, media-fill readiness and phased batch ramp-up rather than simple building completion.."
+      },
+      {
+        "activity_id": "A1100",
+        "phase": "Business Case",
+        "activity": "Strategic brief, funding and approval",
+        "predecessor": "A1000",
+        "duration_months": 4,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, duration reflects commissioning validation sequencing, clean-utility validation, media-fill readiness and phased batch ramp-up rather than simple building completion.."
+      },
+      {
+        "activity_id": "A1200",
+        "phase": "Scope",
+        "activity": "Requirements definition and scope freeze",
+        "predecessor": "A1100",
+        "duration_months": 4,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, duration reflects commissioning validation sequencing, clean-utility validation, media-fill readiness and phased batch ramp-up rather than simple building completion.."
+      },
+      {
+        "activity_id": "A1300",
+        "phase": "Design",
+        "activity": "Concept / reference architecture",
+        "predecessor": "A1200",
+        "duration_months": 6,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, duration reflects commissioning validation sequencing, clean-utility validation, media-fill readiness and phased batch ramp-up rather than simple building completion.."
+      },
+      {
+        "activity_id": "A1400",
+        "phase": "Consents",
+        "activity": "Planning, regulatory and stakeholder approvals",
+        "predecessor": "A1200",
+        "duration_months": 7,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, duration reflects commissioning validation sequencing, clean-utility validation, media-fill readiness and phased batch ramp-up rather than simple building completion.."
+      },
+      {
+        "activity_id": "A1500",
+        "phase": "Procurement",
+        "activity": "Procurement strategy and tender packaging",
+        "predecessor": "A1300",
+        "duration_months": 4,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, duration reflects commissioning validation sequencing, clean-utility validation, media-fill readiness and phased batch ramp-up rather than simple building completion.."
+      },
+      {
+        "activity_id": "A1600",
+        "phase": "Design",
+        "activity": "Detailed design / IFC development",
+        "predecessor": "A1300",
+        "duration_months": 8,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, duration reflects commissioning validation sequencing, clean-utility validation, media-fill readiness and phased batch ramp-up rather than simple building completion.."
+      },
+      {
+        "activity_id": "A1700",
+        "phase": "Procurement",
+        "activity": "Long-lead procurement",
+        "predecessor": "A1500",
+        "duration_months": 7,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, duration reflects commissioning validation sequencing, clean-utility validation, media-fill readiness and phased batch ramp-up rather than simple building completion.."
+      },
+      {
+        "activity_id": "A1800",
+        "phase": "Enabling",
+        "activity": "Site / launch integration readiness",
+        "predecessor": "A1400;A1500",
+        "duration_months": 5,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, duration reflects commissioning validation sequencing, clean-utility validation, media-fill readiness and phased batch ramp-up rather than simple building completion.."
+      },
+      {
+        "activity_id": "A1900",
+        "phase": "Delivery",
+        "activity": "Main construction / fabrication / assembly",
+        "predecessor": "A1600;A1700;A1800",
+        "duration_months": 16,
+        "critical": "Yes",
+        "basis": "Duration reflects commissioning validation, GMP turnover, validation evidence and batch-readiness sequencing."
+      },
+      {
+        "activity_id": "A2000",
+        "phase": "Integration",
+        "activity": "Systems integration and testing",
+        "predecessor": "A1900",
+        "duration_months": 8,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, duration reflects commissioning validation sequencing, clean-utility validation, media-fill readiness and phased batch ramp-up rather than simple building completion.."
+      },
+      {
+        "activity_id": "A2100",
+        "phase": "Handover",
+        "activity": "Commissioning, operations readiness and closeout",
+        "predecessor": "A2000",
+        "duration_months": 4,
+        "critical": "Yes",
+        "basis": "Duration reflects commissioning validation, GMP turnover, validation evidence and batch-readiness sequencing."
+      },
+      {
+        "activity_id": "P1000",
+        "phase": "Package",
+        "activity": "Civil / structural package",
+        "predecessor": "A1900",
+        "duration_months": 3,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, duration reflects commissioning validation sequencing, clean-utility validation, media-fill readiness and phased batch ramp-up rather than simple building completion.."
+      },
+      {
+        "activity_id": "P2000",
+        "phase": "Package",
+        "activity": "MEP / systems package",
+        "predecessor": "P1000",
+        "duration_months": 3,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, duration reflects commissioning validation sequencing, clean-utility validation, media-fill readiness and phased batch ramp-up rather than simple building completion.."
+      },
+      {
+        "activity_id": "P3000",
+        "phase": "Package",
+        "activity": "Specialist equipment package",
+        "predecessor": "P2000",
+        "duration_months": 3,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, duration reflects commissioning validation sequencing, clean-utility validation, media-fill readiness and phased batch ramp-up rather than simple building completion.."
+      },
+      {
+        "activity_id": "P4000",
+        "phase": "Package",
+        "activity": "Utilities / interfaces package",
+        "predecessor": "P3000",
+        "duration_months": 3,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, duration reflects commissioning validation sequencing, clean-utility validation, media-fill readiness and phased batch ramp-up rather than simple building completion.."
+      },
+      {
+        "activity_id": "P5000",
+        "phase": "Package",
+        "activity": "Testing and commissioning package",
+        "predecessor": "P4000",
+        "duration_months": 3,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, duration reflects commissioning validation sequencing, clean-utility validation, media-fill readiness and phased batch ramp-up rather than simple building completion.."
+      }
+    ],
+    "5": [
+      {
+        "activity_id": "A1000",
+        "phase": "Governance",
+        "activity": "Project initiation / controls setup",
+        "predecessor": "",
+        "duration_months": 2,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1100",
+        "phase": "Business Case",
+        "activity": "Strategic brief, funding and approval",
+        "predecessor": "A1000",
+        "duration_months": 4,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1200",
+        "phase": "Scope",
+        "activity": "Requirements definition and scope freeze",
+        "predecessor": "A1100",
+        "duration_months": 4,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1300",
+        "phase": "Design",
+        "activity": "Concept / reference architecture",
+        "predecessor": "A1200",
+        "duration_months": 6,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1400",
+        "phase": "Consents",
+        "activity": "Planning, regulatory and stakeholder approvals",
+        "predecessor": "A1200",
+        "duration_months": 7,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1500",
+        "phase": "Procurement",
+        "activity": "Procurement strategy and tender packaging",
+        "predecessor": "A1300",
+        "duration_months": 4,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1600",
+        "phase": "Design",
+        "activity": "Detailed design / IFC development",
+        "predecessor": "A1300",
+        "duration_months": 8,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1700",
+        "phase": "Procurement",
+        "activity": "Long-lead procurement",
+        "predecessor": "A1500",
+        "duration_months": 7,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1800",
+        "phase": "Enabling",
+        "activity": "Site / launch integration readiness",
+        "predecessor": "A1400;A1500",
+        "duration_months": 5,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A1900",
+        "phase": "Delivery",
+        "activity": "Main construction / fabrication / assembly",
+        "predecessor": "A1600;A1700;A1800",
+        "duration_months": 16,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A2000",
+        "phase": "Integration",
+        "activity": "Systems integration and testing",
+        "predecessor": "A1900",
+        "duration_months": 8,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "A2100",
+        "phase": "Handover",
+        "activity": "Commissioning, operations readiness and closeout",
+        "predecessor": "A2000",
+        "duration_months": 4,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "P1000",
+        "phase": "Package",
+        "activity": "Civil / structural package",
+        "predecessor": "A1900",
+        "duration_months": 3,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "P1100",
+        "phase": "Activity",
+        "activity": "Civil / structural package - mobilise / method",
+        "predecessor": "A1900",
+        "duration_months": 1,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "P1200",
+        "phase": "Activity",
+        "activity": "Civil / structural package - execute works",
+        "predecessor": "P1100",
+        "duration_months": 2,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "P1300",
+        "phase": "Activity",
+        "activity": "Civil / structural package - inspect / closeout",
+        "predecessor": "P1200",
+        "duration_months": 1,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "P2000",
+        "phase": "Package",
+        "activity": "MEP / systems package",
+        "predecessor": "P1000",
+        "duration_months": 3,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "P2100",
+        "phase": "Activity",
+        "activity": "MEP / systems package - mobilise / method",
+        "predecessor": "P1000",
+        "duration_months": 1,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "P2200",
+        "phase": "Activity",
+        "activity": "MEP / systems package - execute works",
+        "predecessor": "P2100",
+        "duration_months": 2,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "P2300",
+        "phase": "Activity",
+        "activity": "MEP / systems package - inspect / closeout",
+        "predecessor": "P2200",
+        "duration_months": 1,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "P3000",
+        "phase": "Package",
+        "activity": "Specialist equipment package",
+        "predecessor": "P2000",
+        "duration_months": 3,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "P3100",
+        "phase": "Activity",
+        "activity": "Specialist equipment package - mobilise / method",
+        "predecessor": "P2000",
+        "duration_months": 1,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "P3200",
+        "phase": "Activity",
+        "activity": "Specialist equipment package - execute works",
+        "predecessor": "P3100",
+        "duration_months": 2,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "P3300",
+        "phase": "Activity",
+        "activity": "Specialist equipment package - inspect / closeout",
+        "predecessor": "P3200",
+        "duration_months": 1,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "P4000",
+        "phase": "Package",
+        "activity": "Utilities / interfaces package",
+        "predecessor": "P3000",
+        "duration_months": 3,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "P4100",
+        "phase": "Activity",
+        "activity": "Utilities / interfaces package - mobilise / method",
+        "predecessor": "P3000",
+        "duration_months": 1,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "P4200",
+        "phase": "Activity",
+        "activity": "Utilities / interfaces package - execute works",
+        "predecessor": "P4100",
+        "duration_months": 2,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "P4300",
+        "phase": "Activity",
+        "activity": "Utilities / interfaces package - inspect / closeout",
+        "predecessor": "P4200",
+        "duration_months": 1,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "P5000",
+        "phase": "Package",
+        "activity": "Testing and commissioning package",
+        "predecessor": "P4000",
+        "duration_months": 3,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "P5100",
+        "phase": "Activity",
+        "activity": "Testing and commissioning package - mobilise / method",
+        "predecessor": "P4000",
+        "duration_months": 1,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "P5200",
+        "phase": "Activity",
+        "activity": "Testing and commissioning package - execute works",
+        "predecessor": "P5100",
+        "duration_months": 2,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      },
+      {
+        "activity_id": "P5300",
+        "phase": "Activity",
+        "activity": "Testing and commissioning package - inspect / closeout",
+        "predecessor": "P5200",
+        "duration_months": 1,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, selected schedule level and scenario compression/buffer logic."
+      }
+    ]
+  },
+  "schedule_rows": [
+    {
+      "activity_id": "A1000",
+      "phase": "Governance",
+      "activity": "Project initiation / controls setup",
+      "predecessor": "",
+      "duration_months": 2,
+      "critical": "No",
+      "basis": "Base logic: balanced critical path with standard sector sequencing and benchmark duration."
+    },
+    {
+      "activity_id": "A1100",
+      "phase": "Business Case",
+      "activity": "Strategic brief, funding and approval",
+      "predecessor": "A1000",
+      "duration_months": 4,
+      "critical": "No",
+      "basis": "Base logic: balanced critical path with standard sector sequencing and benchmark duration."
+    },
+    {
+      "activity_id": "A1200",
+      "phase": "Scope",
+      "activity": "Requirements definition and scope freeze",
+      "predecessor": "A1100",
+      "duration_months": 4,
+      "critical": "No",
+      "basis": "Base logic: balanced critical path with standard sector sequencing and benchmark duration."
+    },
+    {
+      "activity_id": "A1300",
+      "phase": "Design",
+      "activity": "Concept / reference architecture",
+      "predecessor": "A1200",
+      "duration_months": 6,
+      "critical": "No",
+      "basis": "Base logic: balanced critical path with standard sector sequencing and benchmark duration."
+    },
+    {
+      "activity_id": "A1400",
+      "phase": "Consents",
+      "activity": "Planning, regulatory and stakeholder approvals",
+      "predecessor": "A1200",
+      "duration_months": 7,
+      "critical": "Yes",
+      "basis": "Base logic: balanced critical path with standard sector sequencing and benchmark duration."
+    },
+    {
+      "activity_id": "A1500",
+      "phase": "Procurement",
+      "activity": "Procurement strategy and tender packaging",
+      "predecessor": "A1300",
+      "duration_months": 4,
+      "critical": "No",
+      "basis": "Base logic: balanced critical path with standard sector sequencing and benchmark duration."
+    },
+    {
+      "activity_id": "A1600",
+      "phase": "Design",
+      "activity": "Detailed design / IFC development",
+      "predecessor": "A1300",
+      "duration_months": 8,
+      "critical": "No",
+      "basis": "Base logic: balanced critical path with standard sector sequencing and benchmark duration."
+    },
+    {
+      "activity_id": "A1700",
+      "phase": "Procurement",
+      "activity": "Long-lead procurement",
+      "predecessor": "A1500",
+      "duration_months": 7,
+      "critical": "Yes",
+      "basis": "Base logic: balanced critical path with standard sector sequencing and benchmark duration."
+    },
+    {
+      "activity_id": "A1800",
+      "phase": "Enabling",
+      "activity": "Site / launch integration readiness",
+      "predecessor": "A1400;A1500",
+      "duration_months": 5,
+      "critical": "No",
+      "basis": "Base logic: balanced critical path with standard sector sequencing and benchmark duration."
+    },
+    {
+      "activity_id": "A1900",
+      "phase": "Delivery",
+      "activity": "Main construction / fabrication / assembly",
+      "predecessor": "A1600;A1700;A1800",
+      "duration_months": 16,
+      "critical": "Yes",
+      "basis": "Base logic: balanced critical path with standard sector sequencing and benchmark duration."
+    },
+    {
+      "activity_id": "A2000",
+      "phase": "Integration",
+      "activity": "Systems integration and testing",
+      "predecessor": "A1900",
+      "duration_months": 8,
+      "critical": "Yes",
+      "basis": "Base logic: balanced critical path with standard sector sequencing and benchmark duration."
+    },
+    {
+      "activity_id": "A2100",
+      "phase": "Handover",
+      "activity": "Commissioning, operations readiness and closeout",
+      "predecessor": "A2000",
+      "duration_months": 4,
+      "critical": "Yes",
+      "basis": "Base logic: balanced critical path with standard sector sequencing and benchmark duration."
+    },
+    {
+      "activity_id": "P1000",
+      "phase": "Package",
+      "activity": "Civil / structural package",
+      "predecessor": "A1900",
+      "duration_months": 3,
+      "critical": "Yes",
+      "basis": "Base logic: balanced critical path with standard sector sequencing and benchmark duration."
+    },
+    {
+      "activity_id": "P2000",
+      "phase": "Package",
+      "activity": "MEP / systems package",
+      "predecessor": "P1000",
+      "duration_months": 3,
+      "critical": "Yes",
+      "basis": "Base logic: balanced critical path with standard sector sequencing and benchmark duration."
+    },
+    {
+      "activity_id": "P3000",
+      "phase": "Package",
+      "activity": "Specialist equipment package",
+      "predecessor": "P2000",
+      "duration_months": 3,
+      "critical": "Yes",
+      "basis": "Base logic: balanced critical path with standard sector sequencing and benchmark duration."
+    },
+    {
+      "activity_id": "P4000",
+      "phase": "Package",
+      "activity": "Utilities / interfaces package",
+      "predecessor": "P3000",
+      "duration_months": 3,
+      "critical": "Yes",
+      "basis": "Base logic: balanced critical path with standard sector sequencing and benchmark duration."
+    },
+    {
+      "activity_id": "P5000",
+      "phase": "Package",
+      "activity": "Testing and commissioning package",
+      "predecessor": "P4000",
+      "duration_months": 3,
+      "critical": "Yes",
+      "basis": "Base logic: balanced critical path with standard sector sequencing and benchmark duration."
+    }
+  ],
+  "risks": [
+    {
+      "risk_id": "R-002",
+      "title": "Market escalation",
+      "category": "Commercial",
+      "cause": "Supplier market tightness, inflation, FX and long procurement window",
+      "risk_event": "Rates exceed assumed escalation profile",
+      "impact_description": "P50 cost becomes understated; commercial approvals or procurement strategy may need reset",
+      "description": "Rates exceed assumed escalation profile",
+      "impact_area": "Cost",
+      "probability_pct": 45,
+      "pre_mitigation_rating": "Medium",
+      "activity_id": "A1500",
+      "activity_name": "Procurement strategy and tender packaging",
+      "cbs": "01.05",
+      "cbs_name": "Automation, MES and digital validation",
+      "schedule_o_days": 0,
+      "schedule_m_days": 0,
+      "schedule_p_days": 0,
+      "cost_o_bn": 0.303,
+      "cost_m_bn": 0.758,
+      "cost_p_bn": 1.515,
+      "cost_emv_bn": 0.341,
+      "schedule_emv_days": 0.0,
+      "owner": "Commercial Lead",
+      "trigger": "Index exceeds allowance by 3%",
+      "mitigation": "Early procurement, index-linked allowances, market testing, FX strategy",
+      "response_strategy": "Mitigate",
+      "residual_rating": "Low",
+      "status": "Open",
+      "last_reviewed": "2026-05-24",
+      "board_visibility": "Yes",
+      "basis_of_cost_impact": "O/M/P cost impact equals $303M / $758M / $1.5B based on scenario-adjusted exposure to CBS 01.05 Automation, MES and digital validation.",
+      "basis_of_schedule_impact": "O/M/P schedule impact equals 0/0/0 days mapped to activity A1500 Procurement strategy and tender packaging.",
+      "driver_score": 34.09
+    },
+    {
+      "risk_id": "R-004",
+      "title": "Design maturity gap",
+      "category": "Technical",
+      "cause": "Estimate is based on immature design, incomplete surveys or unresolved interfaces",
+      "risk_event": "Design basis changes during detailed design",
+      "impact_description": "Cost growth, quantity movement, rework and schedule resequencing",
+      "description": "Design basis changes during detailed design",
+      "impact_area": "Both",
+      "probability_pct": 38,
+      "pre_mitigation_rating": "Medium",
+      "activity_id": "A1700",
+      "activity_name": "Long-lead procurement",
+      "cbs": "02.01",
+      "cbs_name": "commissioning validation / qualification",
+      "schedule_o_days": 15,
+      "schedule_m_days": 45,
+      "schedule_p_days": 120,
+      "cost_o_bn": 0.227,
+      "cost_m_bn": 0.682,
+      "cost_p_bn": 1.364,
+      "cost_emv_bn": 0.259,
+      "schedule_emv_days": 17.1,
+      "owner": "Design Manager",
+      "trigger": "Design deliverables miss maturity gate",
+      "mitigation": "Design maturity gates, independent review, assumption register",
+      "response_strategy": "Reduce",
+      "residual_rating": "Low",
+      "status": "Open",
+      "last_reviewed": "2026-05-24",
+      "board_visibility": "Yes",
+      "basis_of_cost_impact": "O/M/P cost impact equals $227M / $682M / $1.4B based on scenario-adjusted exposure to CBS 02.01 commissioning validation / qualification.",
+      "basis_of_schedule_impact": "O/M/P schedule impact equals 15/45/120 days mapped to activity A1700 Long-lead procurement.",
+      "driver_score": 29.33
+    },
+    {
+      "risk_id": "R-001",
+      "title": "Scope growth",
+      "category": "Scope",
+      "cause": "Ambiguous requirements, immature scope freeze and late stakeholder changes",
+      "risk_event": "Approved scope expands after estimate freeze",
+      "impact_description": "Additional quantities, redesign, rework, procurement churn and board contingency drawdown",
+      "description": "Approved scope expands after estimate freeze",
+      "impact_area": "Both",
+      "probability_pct": 42,
+      "pre_mitigation_rating": "Medium",
+      "activity_id": "A1400",
+      "activity_name": "Planning, regulatory and stakeholder approvals",
+      "cbs": "01.04",
+      "cbs_name": "Clean utilities",
+      "schedule_o_days": 15,
+      "schedule_m_days": 45,
+      "schedule_p_days": 120,
+      "cost_o_bn": 0.227,
+      "cost_m_bn": 0.606,
+      "cost_p_bn": 1.212,
+      "cost_emv_bn": 0.255,
+      "schedule_emv_days": 18.9,
+      "owner": "Project Director",
+      "trigger": "Scope change rate exceeds 2% of package value",
+      "mitigation": "Freeze scope baseline, change board, value gates, client decision log",
+      "response_strategy": "Reduce",
+      "residual_rating": "Low",
+      "status": "Open",
+      "last_reviewed": "2026-05-24",
+      "board_visibility": "Yes",
+      "basis_of_cost_impact": "O/M/P cost impact equals $227M / $606M / $1.2B based on scenario-adjusted exposure to CBS 01.04 Clean utilities.",
+      "basis_of_schedule_impact": "O/M/P schedule impact equals 15/45/120 days mapped to activity A1400 Planning, regulatory and stakeholder approvals.",
+      "driver_score": 29.24
+    },
+    {
+      "risk_id": "R-006",
+      "title": "Productivity underperformance",
+      "category": "Delivery",
+      "cause": "Access constraints, poor sequencing, labour scarcity or learning curve",
+      "risk_event": "Actual production rates underperform plan",
+      "impact_description": "Extended duration, increased preliminaries and loss of float",
+      "description": "Actual production rates underperform plan",
+      "impact_area": "Both",
+      "probability_pct": 35,
+      "pre_mitigation_rating": "Medium",
+      "activity_id": "A1900",
+      "activity_name": "Main construction / fabrication / assembly",
+      "cbs": "02.03",
+      "cbs_name": "Programme management and operational readiness",
+      "schedule_o_days": 15,
+      "schedule_m_days": 50,
+      "schedule_p_days": 130,
+      "cost_o_bn": 0.227,
+      "cost_m_bn": 0.606,
+      "cost_p_bn": 1.212,
+      "cost_emv_bn": 0.212,
+      "schedule_emv_days": 17.5,
+      "owner": "Delivery Lead",
+      "trigger": "SPI/CPI deteriorates for two reporting periods",
+      "mitigation": "Package productivity controls, daily planning, earned value cadence",
+      "response_strategy": "Mitigate",
+      "residual_rating": "Low",
+      "status": "Open",
+      "last_reviewed": "2026-05-24",
+      "board_visibility": "Yes",
+      "basis_of_cost_impact": "O/M/P cost impact equals $227M / $606M / $1.2B based on scenario-adjusted exposure to CBS 02.03 Programme management and operational readiness.",
+      "basis_of_schedule_impact": "O/M/P schedule impact equals 15/50/130 days mapped to activity A1900 Main construction / fabrication / assembly.",
+      "driver_score": 24.71
+    },
+    {
+      "risk_id": "R-005",
+      "title": "Supply chain delay",
+      "category": "Procurement",
+      "cause": "Long-lead equipment, constrained suppliers or late procurement release",
+      "risk_event": "Supplier promise dates move right",
+      "impact_description": "Delayed installation, critical path movement and acceleration cost",
+      "description": "Supplier promise dates move right",
+      "impact_area": "Both",
+      "probability_pct": 40,
+      "pre_mitigation_rating": "Medium",
+      "activity_id": "A1800",
+      "activity_name": "Site / launch integration readiness",
+      "cbs": "02.02",
+      "cbs_name": "Regulatory readiness and quality systems",
+      "schedule_o_days": 10,
+      "schedule_m_days": 40,
+      "schedule_p_days": 120,
+      "cost_o_bn": 0.152,
+      "cost_m_bn": 0.53,
+      "cost_p_bn": 1.136,
+      "cost_emv_bn": 0.212,
+      "schedule_emv_days": 16.0,
+      "owner": "Procurement Lead",
+      "trigger": "Supplier promise date slips",
+      "mitigation": "Alternate suppliers, early orders, expediting, framework options",
+      "response_strategy": "Transfer / Mitigate",
+      "residual_rating": "Low",
+      "status": "Open",
+      "last_reviewed": "2026-05-24",
+      "board_visibility": "Yes",
+      "basis_of_cost_impact": "O/M/P cost impact equals $152M / $530M / $1.1B based on scenario-adjusted exposure to CBS 02.02 Regulatory readiness and quality systems.",
+      "basis_of_schedule_impact": "O/M/P schedule impact equals 10/40/120 days mapped to activity A1800 Site / launch integration readiness.",
+      "driver_score": 24.41
+    },
+    {
+      "risk_id": "R-008",
+      "title": "Interface misalignment",
+      "category": "Integration",
+      "cause": "Multiple contractors, unclear interface ownership or late design coordination",
+      "risk_event": "Package interfaces do not align during installation/integration",
+      "impact_description": "Rework, claims, delay and fragmented accountability",
+      "description": "Package interfaces do not align during installation/integration",
+      "impact_area": "Both",
+      "probability_pct": 34,
+      "pre_mitigation_rating": "Low",
+      "activity_id": "A2100",
+      "activity_name": "Commissioning, operations readiness and closeout",
+      "cbs": "03.01",
+      "cbs_name": "Risk reserve",
+      "schedule_o_days": 10,
+      "schedule_m_days": 35,
+      "schedule_p_days": 100,
+      "cost_o_bn": 0.152,
+      "cost_m_bn": 0.53,
+      "cost_p_bn": 1.061,
+      "cost_emv_bn": 0.18,
+      "schedule_emv_days": 11.9,
+      "owner": "Integration Manager",
+      "trigger": "Interface actions overdue",
+      "mitigation": "Interface control documents, weekly interface board, accountable owners",
+      "response_strategy": "Mitigate",
+      "residual_rating": "Low",
+      "status": "Open",
+      "last_reviewed": "2026-05-24",
+      "board_visibility": "Yes",
+      "basis_of_cost_impact": "O/M/P cost impact equals $152M / $530M / $1.1B based on scenario-adjusted exposure to CBS 03.01 Risk reserve.",
+      "basis_of_schedule_impact": "O/M/P schedule impact equals 10/35/100 days mapped to activity A2100 Commissioning, operations readiness and closeout.",
+      "driver_score": 20.41
+    },
+    {
+      "risk_id": "R-007",
+      "title": "Commissioning delay",
+      "category": "Handover",
+      "cause": "Incomplete readiness, software integration issues or defects during testing",
+      "risk_event": "Systems fail tests or require repeated commissioning cycles",
+      "impact_description": "Delayed handover, operational readiness slippage and liquidated damages exposure",
+      "description": "Systems fail tests or require repeated commissioning cycles",
+      "impact_area": "Both",
+      "probability_pct": 32,
+      "pre_mitigation_rating": "Low",
+      "activity_id": "A2000",
+      "activity_name": "Systems integration and testing",
+      "cbs": "03.01",
+      "cbs_name": "Risk reserve",
+      "schedule_o_days": 10,
+      "schedule_m_days": 35,
+      "schedule_p_days": 100,
+      "cost_o_bn": 0.152,
+      "cost_m_bn": 0.455,
+      "cost_p_bn": 0.909,
+      "cost_emv_bn": 0.145,
+      "schedule_emv_days": 11.2,
+      "owner": "Commissioning Lead",
+      "trigger": "Test failures trend upward",
+      "mitigation": "Commissioning readiness plan, early test packs, digital systems integration",
+      "response_strategy": "Reduce",
+      "residual_rating": "Low",
+      "status": "Open",
+      "last_reviewed": "2026-05-24",
+      "board_visibility": "Yes",
+      "basis_of_cost_impact": "O/M/P cost impact equals $152M / $455M / $909M based on scenario-adjusted exposure to CBS 03.01 Risk reserve.",
+      "basis_of_schedule_impact": "O/M/P schedule impact equals 10/35/100 days mapped to activity A2000 Systems integration and testing.",
+      "driver_score": 16.79
+    },
+    {
+      "risk_id": "R-003",
+      "title": "Permits / approvals delay",
+      "category": "Regulatory",
+      "cause": "Authority process, stakeholder objections or incomplete submissions",
+      "risk_event": "Consent milestone slips beyond baseline",
+      "impact_description": "Critical path delay, extended preliminaries and potential redesign conditions",
+      "description": "Consent milestone slips beyond baseline",
+      "impact_area": "Schedule",
+      "probability_pct": 35,
+      "pre_mitigation_rating": "Low",
+      "activity_id": "A1600",
+      "activity_name": "Detailed design / IFC development",
+      "cbs": "01.06",
+      "cbs_name": "Cold-chain and automated logistics",
+      "schedule_o_days": 20,
+      "schedule_m_days": 70,
+      "schedule_p_days": 180,
+      "cost_o_bn": 0.076,
+      "cost_m_bn": 0.303,
+      "cost_p_bn": 0.606,
+      "cost_emv_bn": 0.106,
+      "schedule_emv_days": 24.5,
+      "owner": "Consents Lead",
+      "trigger": "Consent milestone slips by 30 days",
+      "mitigation": "Authority plan, consent tracker, early submissions, stakeholder map",
+      "response_strategy": "Mitigate",
+      "residual_rating": "Low",
+      "status": "Open",
+      "last_reviewed": "2026-05-24",
+      "board_visibility": "Yes",
+      "basis_of_cost_impact": "O/M/P cost impact equals $76M / $303M / $606M based on scenario-adjusted exposure to CBS 01.06 Cold-chain and automated logistics.",
+      "basis_of_schedule_impact": "O/M/P schedule impact equals 20/70/180 days mapped to activity A1600 Detailed design / IFC development.",
+      "driver_score": 15.51
+    }
+  ],
+  "monte_carlo": {
+    "qcra": {
+      "p10": 6.4,
+      "p50": 7.6,
+      "p80": 9.9,
+      "p90": 11.2
+    },
+    "qsra": {
+      "p10": 64,
+      "p50": 75,
+      "p80": 98,
+      "p90": 110
+    },
+    "curve": [
+      {
+        "percentile": 1,
+        "cost_bn": 5.93,
+        "schedule_months": 61
+      },
+      {
+        "percentile": 5,
+        "cost_bn": 6.16,
+        "schedule_months": 63
+      },
+      {
+        "percentile": 10,
+        "cost_bn": 6.38,
+        "schedule_months": 64
+      },
+      {
+        "percentile": 20,
+        "cost_bn": 6.76,
+        "schedule_months": 68
+      },
+      {
+        "percentile": 30,
+        "cost_bn": 7.07,
+        "schedule_months": 70
+      },
+      {
+        "percentile": 40,
+        "cost_bn": 7.37,
+        "schedule_months": 73
+      },
+      {
+        "percentile": 50,
+        "cost_bn": 7.6,
+        "schedule_months": 75
+      },
+      {
+        "percentile": 60,
+        "cost_bn": 8.06,
+        "schedule_months": 80
+      },
+      {
+        "percentile": 70,
+        "cost_bn": 8.74,
+        "schedule_months": 86
+      },
+      {
+        "percentile": 80,
+        "cost_bn": 9.88,
+        "schedule_months": 98
+      },
+      {
+        "percentile": 90,
+        "cost_bn": 11.17,
+        "schedule_months": 110
+      },
+      {
+        "percentile": 95,
+        "cost_bn": 12.01,
+        "schedule_months": 118
+      },
+      {
+        "percentile": 99,
+        "cost_bn": 13.07,
+        "schedule_months": 129
+      }
+    ],
+    "curve_interpretation": "Reference curve: P50 equals the headline estimate; P80/P90 show normal board-level contingency exposure.",
+    "curve_readout": [
+      "Cost P50 reconciles to $7.6B; P80 is $9.9B; P90 is $11.2B.",
+      "Schedule P50 reconciles to 75 months; P80 is 98 months; P90 is 110 months.",
+      "Selected scenario curve is locked to the same P50/P80/P90 used by the UI and exports."
+    ],
+    "tornado": [
+      {
+        "risk_id": "R-002",
+        "title": "Market escalation",
+        "driver": "Market escalation",
+        "driver_score": 100,
+        "contribution": 100
+      },
+      {
+        "risk_id": "R-004",
+        "title": "Design maturity gap",
+        "driver": "Design maturity gap",
+        "driver_score": 93,
+        "contribution": 93
+      },
+      {
+        "risk_id": "R-001",
+        "title": "Scope growth",
+        "driver": "Scope growth",
+        "driver_score": 86,
+        "contribution": 86
+      },
+      {
+        "risk_id": "R-006",
+        "title": "Productivity underperformance",
+        "driver": "Productivity underperformance",
+        "driver_score": 79,
+        "contribution": 79
+      },
+      {
+        "risk_id": "R-005",
+        "title": "Supply chain delay",
+        "driver": "Supply chain delay",
+        "driver_score": 72,
+        "contribution": 72
+      },
+      {
+        "risk_id": "R-008",
+        "title": "Interface misalignment",
+        "driver": "Interface misalignment",
+        "driver_score": 65,
+        "contribution": 65
+      },
+      {
+        "risk_id": "R-007",
+        "title": "Commissioning delay",
+        "driver": "Commissioning delay",
+        "driver_score": 58,
+        "contribution": 58
+      },
+      {
+        "risk_id": "R-003",
+        "title": "Permits / approvals delay",
+        "driver": "Permits / approvals delay",
+        "driver_score": 51,
+        "contribution": 51
+      }
+    ]
+  },
+  "benchmarks": [
+    {
+      "metric": "Capital project benchmark",
+      "value": "Sector-adjusted range",
+      "why": "Selected based on project type, location, maturity and scale."
+    },
+    {
+      "metric": "Schedule benchmark",
+      "value": "60-97 months",
+      "why": "Derived from maturity and delivery complexity."
+    }
+  ],
+  "peer_competitors": [
+    "Relevant global peers",
+    "Regional developers",
+    "Tier-one operators",
+    "Sovereign funds",
+    "Major asset owners"
+  ],
+  "scenario_comparison": [
+    {
+      "scenario": "base",
+      "label": "Base",
+      "cost": "$16.0B",
+      "schedule_months": 96,
+      "risk": "Medium-High",
+      "confidence": 60,
+      "why": "Balanced reference case."
+    },
+    {
+      "scenario": "faster",
+      "label": "Faster",
+      "cost": "$17.7B",
+      "schedule_months": 79,
+      "risk": "Medium-High",
+      "confidence": 55,
+      "why": "Parallel design/procurement, acceleration, premium logistics and higher interface risk."
+    },
+    {
+      "scenario": "cheaper",
+      "label": "Cheaper",
+      "cost": "$14.0B",
+      "schedule_months": 104,
+      "risk": "Medium-High",
+      "confidence": 54,
+      "why": "Value engineering, tighter scope and procurement competition, with schedule/quality exposure."
+    },
+    {
+      "scenario": "lower_risk",
+      "label": "Lower Risk",
+      "cost": "$17.4B",
+      "schedule_months": 106,
+      "risk": "Medium",
+      "confidence": 73,
+      "why": "More surveys, assurance, stage gates, contingency and schedule buffers."
+    },
+    {
+      "scenario": "premium",
+      "label": "Premium",
+      "cost": "$18.4B",
+      "schedule_months": 100,
+      "risk": "Medium",
+      "confidence": 76,
+      "why": "Best assurance, independent review, early procurement and high-confidence governance."
+    },
+    {
+      "scenario": "investor",
+      "label": "Investor",
+      "cost": "$15.6B",
+      "schedule_months": 96,
+      "risk": "Medium-High",
+      "confidence": 63,
+      "why": "Investment-framing case with transparent risk and commercial challenge."
+    },
+    {
+      "scenario": "survival",
+      "label": "Survival",
+      "cost": "$12.4B",
+      "schedule_months": 115,
+      "risk": "High",
+      "confidence": 46,
+      "why": "Minimum viable scope, warning-heavy, high residual risk."
+    }
+  ],
+  "launch_demo_script": [
+    "Open with: 'Give me any project on Earth or in Space.'",
+    "Type the project into CASEY and hit Generate Full Intelligence Pack.",
+    "Show the executive dashboard: cost, schedule, risk, confidence and top drivers.",
+    "Switch to Monte Carlo: show QCRA/QSRA P-curves and tornado drivers linked to activities.",
+    "Show scenarios: Faster, Cheaper, Lower Risk and Premium with why each changed.",
+    "Open Output Centre: Excel, Risk CSV, XER, cost workbook, risk register, schedule export and full pack are ready.",
+    "Close with: 'Traditional advisory takes weeks. CASEY gives the first board-grade view in seconds.'"
+  ],
+  "red_flags": [
+    "Confidence below board-comfort threshold: improve scope definition, benchmark evidence and supplier quotes."
+  ],
+  "board_challenge_questions": [
+    "What evidence supports the P50 cost and P80 confidence?",
+    "Which five risks create most contingency?",
+    "Which activities drive the QSRA finish-date risk?",
+    "What data would increase confidence before approval?",
+    "What is the fastest credible lower-risk path?"
+  ],
+  "next_best_actions": [
+    "Run a focused evidence workshop on the dominant schedule and commissioning constraint.",
+    "Validate the top five CBS cost drivers against benchmark or supplier evidence.",
+    "Confirm the Level 3/4 schedule logic, handover gates and critical-path assumptions.",
+    "Prepare Base / Faster / Cheaper / Lower-Risk decision paper with explicit trade-offs.",
+    "Create a confidence-improvement plan targeting design maturity, procurement evidence and operational readiness."
+  ],
+  "estimates_by_class": {
+    "1": [
+      {
+        "cbs": "01.01",
+        "description": "Site, enabling and controlled utilities",
+        "type": "Direct",
+        "basis": "Site works, utility corridors and GMP-ready enabling infrastructure",
+        "p10_bn": 0.477,
+        "p50_bn": 0.53,
+        "p90_bn": 0.609,
+        "impact_basis": "Site, enabling and controlled utilities priced as 7.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 1,
+        "maturity": "65-100% definition maturity"
+      },
+      {
+        "cbs": "01.02",
+        "description": "GMP cleanrooms and classified areas",
+        "type": "Direct",
+        "basis": "Cleanroom envelope, HVAC zoning, pressure cascades and finishes",
+        "p10_bn": 1.159,
+        "p50_bn": 1.288,
+        "p90_bn": 1.481,
+        "impact_basis": "GMP cleanrooms and classified areas priced as 17.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 1,
+        "maturity": "65-100% definition maturity"
+      },
+      {
+        "cbs": "01.03",
+        "description": "Process equipment and fill-finish lines",
+        "type": "Direct",
+        "basis": "Bioreactors, formulation, aseptic fill-finish and packaging equipment",
+        "p10_bn": 1.5,
+        "p50_bn": 1.667,
+        "p90_bn": 1.917,
+        "impact_basis": "Process equipment and fill-finish lines priced as 22.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 1,
+        "maturity": "65-100% definition maturity"
+      },
+      {
+        "cbs": "01.04",
+        "description": "Clean utilities",
+        "type": "Direct",
+        "basis": "WFI, clean steam, purified water, process gases and validated utility loops",
+        "p10_bn": 0.955,
+        "p50_bn": 1.061,
+        "p90_bn": 1.22,
+        "impact_basis": "Clean utilities priced as 14.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 1,
+        "maturity": "65-100% definition maturity"
+      },
+      {
+        "cbs": "01.05",
+        "description": "Automation, MES and digital validation",
+        "type": "Direct",
+        "basis": "Automation, MES, batch records, data integrity and validation systems",
+        "p10_bn": 0.545,
+        "p50_bn": 0.606,
+        "p90_bn": 0.697,
+        "impact_basis": "Automation, MES and digital validation priced as 8.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 1,
+        "maturity": "65-100% definition maturity"
+      },
+      {
+        "cbs": "01.06",
+        "description": "Cold-chain and automated logistics",
+        "type": "Direct",
+        "basis": "Cold storage, automated warehouse, packaging and distribution infrastructure",
+        "p10_bn": 0.545,
+        "p50_bn": 0.606,
+        "p90_bn": 0.697,
+        "impact_basis": "Cold-chain and automated logistics priced as 8.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 1,
+        "maturity": "65-100% definition maturity"
+      },
+      {
+        "cbs": "02.01",
+        "description": "commissioning validation / qualification",
+        "type": "Indirect",
+        "basis": "Commissioning, qualification, validation protocols and deviation closure",
+        "p10_bn": 0.545,
+        "p50_bn": 0.606,
+        "p90_bn": 0.697,
+        "impact_basis": "commissioning validation / qualification priced as 8.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 1,
+        "maturity": "65-100% definition maturity"
+      },
+      {
+        "cbs": "02.02",
+        "description": "Regulatory readiness and quality systems",
+        "type": "Indirect",
+        "basis": "FDA/EMA readiness, QA systems, inspection preparation and documentation",
+        "p10_bn": 0.341,
+        "p50_bn": 0.379,
+        "p90_bn": 0.436,
+        "impact_basis": "Regulatory readiness and quality systems priced as 5.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 1,
+        "maturity": "65-100% definition maturity"
+      },
+      {
+        "cbs": "02.03",
+        "description": "Programme management and operational readiness",
+        "type": "Indirect",
+        "basis": "PMO, controls, staffing readiness, training and handover",
+        "p10_bn": 0.41,
+        "p50_bn": 0.455,
+        "p90_bn": 0.523,
+        "impact_basis": "Programme management and operational readiness priced as 6.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 1,
+        "maturity": "65-100% definition maturity"
+      },
+      {
+        "cbs": "03.01",
+        "description": "Risk reserve",
+        "type": "Reserve",
+        "basis": "Allowance for GMP validation, equipment lead times and regulatory uncertainty",
+        "p10_bn": 0.341,
+        "p50_bn": 0.379,
+        "p90_bn": 0.436,
+        "impact_basis": "Risk reserve priced as 5.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 1,
+        "maturity": "65-100% definition maturity"
+      }
+    ],
+    "2": [
+      {
+        "cbs": "01.01",
+        "description": "Site, enabling and controlled utilities",
+        "type": "Direct",
+        "basis": "Site works, utility corridors and GMP-ready enabling infrastructure",
+        "p10_bn": 0.451,
+        "p50_bn": 0.53,
+        "p90_bn": 0.636,
+        "impact_basis": "Site, enabling and controlled utilities priced as 7.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 2,
+        "maturity": "30-75% definition maturity"
+      },
+      {
+        "cbs": "01.02",
+        "description": "GMP cleanrooms and classified areas",
+        "type": "Direct",
+        "basis": "Cleanroom envelope, HVAC zoning, pressure cascades and finishes",
+        "p10_bn": 1.095,
+        "p50_bn": 1.288,
+        "p90_bn": 1.546,
+        "impact_basis": "GMP cleanrooms and classified areas priced as 17.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 2,
+        "maturity": "30-75% definition maturity"
+      },
+      {
+        "cbs": "01.03",
+        "description": "Process equipment and fill-finish lines",
+        "type": "Direct",
+        "basis": "Bioreactors, formulation, aseptic fill-finish and packaging equipment",
+        "p10_bn": 1.417,
+        "p50_bn": 1.667,
+        "p90_bn": 2.0,
+        "impact_basis": "Process equipment and fill-finish lines priced as 22.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 2,
+        "maturity": "30-75% definition maturity"
+      },
+      {
+        "cbs": "01.04",
+        "description": "Clean utilities",
+        "type": "Direct",
+        "basis": "WFI, clean steam, purified water, process gases and validated utility loops",
+        "p10_bn": 0.902,
+        "p50_bn": 1.061,
+        "p90_bn": 1.273,
+        "impact_basis": "Clean utilities priced as 14.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 2,
+        "maturity": "30-75% definition maturity"
+      },
+      {
+        "cbs": "01.05",
+        "description": "Automation, MES and digital validation",
+        "type": "Direct",
+        "basis": "Automation, MES, batch records, data integrity and validation systems",
+        "p10_bn": 0.515,
+        "p50_bn": 0.606,
+        "p90_bn": 0.727,
+        "impact_basis": "Automation, MES and digital validation priced as 8.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 2,
+        "maturity": "30-75% definition maturity"
+      },
+      {
+        "cbs": "01.06",
+        "description": "Cold-chain and automated logistics",
+        "type": "Direct",
+        "basis": "Cold storage, automated warehouse, packaging and distribution infrastructure",
+        "p10_bn": 0.515,
+        "p50_bn": 0.606,
+        "p90_bn": 0.727,
+        "impact_basis": "Cold-chain and automated logistics priced as 8.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 2,
+        "maturity": "30-75% definition maturity"
+      },
+      {
+        "cbs": "02.01",
+        "description": "commissioning validation / qualification",
+        "type": "Indirect",
+        "basis": "Commissioning, qualification, validation protocols and deviation closure",
+        "p10_bn": 0.515,
+        "p50_bn": 0.606,
+        "p90_bn": 0.727,
+        "impact_basis": "commissioning validation / qualification priced as 8.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 2,
+        "maturity": "30-75% definition maturity"
+      },
+      {
+        "cbs": "02.02",
+        "description": "Regulatory readiness and quality systems",
+        "type": "Indirect",
+        "basis": "FDA/EMA readiness, QA systems, inspection preparation and documentation",
+        "p10_bn": 0.322,
+        "p50_bn": 0.379,
+        "p90_bn": 0.455,
+        "impact_basis": "Regulatory readiness and quality systems priced as 5.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 2,
+        "maturity": "30-75% definition maturity"
+      },
+      {
+        "cbs": "02.03",
+        "description": "Programme management and operational readiness",
+        "type": "Indirect",
+        "basis": "PMO, controls, staffing readiness, training and handover",
+        "p10_bn": 0.387,
+        "p50_bn": 0.455,
+        "p90_bn": 0.546,
+        "impact_basis": "Programme management and operational readiness priced as 6.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 2,
+        "maturity": "30-75% definition maturity"
+      },
+      {
+        "cbs": "03.01",
+        "description": "Risk reserve",
+        "type": "Reserve",
+        "basis": "Allowance for GMP validation, equipment lead times and regulatory uncertainty",
+        "p10_bn": 0.322,
+        "p50_bn": 0.379,
+        "p90_bn": 0.455,
+        "impact_basis": "Risk reserve priced as 5.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 2,
+        "maturity": "30-75% definition maturity"
+      }
+    ],
+    "3": [
+      {
+        "cbs": "01.01",
+        "description": "Site, enabling and controlled utilities",
+        "type": "Direct",
+        "basis": "Site works, utility corridors and GMP-ready enabling infrastructure",
+        "p10_bn": 0.424,
+        "p50_bn": 0.53,
+        "p90_bn": 0.689,
+        "impact_basis": "Site, enabling and controlled utilities priced as 7.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 3,
+        "maturity": "10-40% definition maturity"
+      },
+      {
+        "cbs": "01.02",
+        "description": "GMP cleanrooms and classified areas",
+        "type": "Direct",
+        "basis": "Cleanroom envelope, HVAC zoning, pressure cascades and finishes",
+        "p10_bn": 1.03,
+        "p50_bn": 1.288,
+        "p90_bn": 1.674,
+        "impact_basis": "GMP cleanrooms and classified areas priced as 17.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 3,
+        "maturity": "10-40% definition maturity"
+      },
+      {
+        "cbs": "01.03",
+        "description": "Process equipment and fill-finish lines",
+        "type": "Direct",
+        "basis": "Bioreactors, formulation, aseptic fill-finish and packaging equipment",
+        "p10_bn": 1.334,
+        "p50_bn": 1.667,
+        "p90_bn": 2.167,
+        "impact_basis": "Process equipment and fill-finish lines priced as 22.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 3,
+        "maturity": "10-40% definition maturity"
+      },
+      {
+        "cbs": "01.04",
+        "description": "Clean utilities",
+        "type": "Direct",
+        "basis": "WFI, clean steam, purified water, process gases and validated utility loops",
+        "p10_bn": 0.849,
+        "p50_bn": 1.061,
+        "p90_bn": 1.379,
+        "impact_basis": "Clean utilities priced as 14.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 3,
+        "maturity": "10-40% definition maturity"
+      },
+      {
+        "cbs": "01.05",
+        "description": "Automation, MES and digital validation",
+        "type": "Direct",
+        "basis": "Automation, MES, batch records, data integrity and validation systems",
+        "p10_bn": 0.485,
+        "p50_bn": 0.606,
+        "p90_bn": 0.788,
+        "impact_basis": "Automation, MES and digital validation priced as 8.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 3,
+        "maturity": "10-40% definition maturity"
+      },
+      {
+        "cbs": "01.06",
+        "description": "Cold-chain and automated logistics",
+        "type": "Direct",
+        "basis": "Cold storage, automated warehouse, packaging and distribution infrastructure",
+        "p10_bn": 0.485,
+        "p50_bn": 0.606,
+        "p90_bn": 0.788,
+        "impact_basis": "Cold-chain and automated logistics priced as 8.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 3,
+        "maturity": "10-40% definition maturity"
+      },
+      {
+        "cbs": "02.01",
+        "description": "commissioning validation / qualification",
+        "type": "Indirect",
+        "basis": "Commissioning, qualification, validation protocols and deviation closure",
+        "p10_bn": 0.485,
+        "p50_bn": 0.606,
+        "p90_bn": 0.788,
+        "impact_basis": "commissioning validation / qualification priced as 8.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 3,
+        "maturity": "10-40% definition maturity"
+      },
+      {
+        "cbs": "02.02",
+        "description": "Regulatory readiness and quality systems",
+        "type": "Indirect",
+        "basis": "FDA/EMA readiness, QA systems, inspection preparation and documentation",
+        "p10_bn": 0.303,
+        "p50_bn": 0.379,
+        "p90_bn": 0.493,
+        "impact_basis": "Regulatory readiness and quality systems priced as 5.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 3,
+        "maturity": "10-40% definition maturity"
+      },
+      {
+        "cbs": "02.03",
+        "description": "Programme management and operational readiness",
+        "type": "Indirect",
+        "basis": "PMO, controls, staffing readiness, training and handover",
+        "p10_bn": 0.364,
+        "p50_bn": 0.455,
+        "p90_bn": 0.592,
+        "impact_basis": "Programme management and operational readiness priced as 6.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 3,
+        "maturity": "10-40% definition maturity"
+      },
+      {
+        "cbs": "03.01",
+        "description": "Risk reserve",
+        "type": "Reserve",
+        "basis": "Allowance for GMP validation, equipment lead times and regulatory uncertainty",
+        "p10_bn": 0.303,
+        "p50_bn": 0.379,
+        "p90_bn": 0.493,
+        "impact_basis": "Risk reserve priced as 5.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 3,
+        "maturity": "10-40% definition maturity"
+      }
+    ],
+    "4": [
+      {
+        "cbs": "01.01",
+        "description": "Site, enabling and controlled utilities",
+        "type": "Direct",
+        "basis": "Site works, utility corridors and GMP-ready enabling infrastructure",
+        "p10_bn": 0.371,
+        "p50_bn": 0.53,
+        "p90_bn": 0.795,
+        "impact_basis": "Site, enabling and controlled utilities priced as 7.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 4,
+        "maturity": "1-15% definition maturity"
+      },
+      {
+        "cbs": "01.02",
+        "description": "GMP cleanrooms and classified areas",
+        "type": "Direct",
+        "basis": "Cleanroom envelope, HVAC zoning, pressure cascades and finishes",
+        "p10_bn": 0.902,
+        "p50_bn": 1.288,
+        "p90_bn": 1.932,
+        "impact_basis": "GMP cleanrooms and classified areas priced as 17.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 4,
+        "maturity": "1-15% definition maturity"
+      },
+      {
+        "cbs": "01.03",
+        "description": "Process equipment and fill-finish lines",
+        "type": "Direct",
+        "basis": "Bioreactors, formulation, aseptic fill-finish and packaging equipment",
+        "p10_bn": 1.167,
+        "p50_bn": 1.667,
+        "p90_bn": 2.501,
+        "impact_basis": "Process equipment and fill-finish lines priced as 22.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 4,
+        "maturity": "1-15% definition maturity"
+      },
+      {
+        "cbs": "01.04",
+        "description": "Clean utilities",
+        "type": "Direct",
+        "basis": "WFI, clean steam, purified water, process gases and validated utility loops",
+        "p10_bn": 0.743,
+        "p50_bn": 1.061,
+        "p90_bn": 1.591,
+        "impact_basis": "Clean utilities priced as 14.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 4,
+        "maturity": "1-15% definition maturity"
+      },
+      {
+        "cbs": "01.05",
+        "description": "Automation, MES and digital validation",
+        "type": "Direct",
+        "basis": "Automation, MES, batch records, data integrity and validation systems",
+        "p10_bn": 0.424,
+        "p50_bn": 0.606,
+        "p90_bn": 0.909,
+        "impact_basis": "Automation, MES and digital validation priced as 8.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 4,
+        "maturity": "1-15% definition maturity"
+      },
+      {
+        "cbs": "01.06",
+        "description": "Cold-chain and automated logistics",
+        "type": "Direct",
+        "basis": "Cold storage, automated warehouse, packaging and distribution infrastructure",
+        "p10_bn": 0.424,
+        "p50_bn": 0.606,
+        "p90_bn": 0.909,
+        "impact_basis": "Cold-chain and automated logistics priced as 8.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 4,
+        "maturity": "1-15% definition maturity"
+      },
+      {
+        "cbs": "02.01",
+        "description": "commissioning validation / qualification",
+        "type": "Indirect",
+        "basis": "Commissioning, qualification, validation protocols and deviation closure",
+        "p10_bn": 0.424,
+        "p50_bn": 0.606,
+        "p90_bn": 0.909,
+        "impact_basis": "commissioning validation / qualification priced as 8.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 4,
+        "maturity": "1-15% definition maturity"
+      },
+      {
+        "cbs": "02.02",
+        "description": "Regulatory readiness and quality systems",
+        "type": "Indirect",
+        "basis": "FDA/EMA readiness, QA systems, inspection preparation and documentation",
+        "p10_bn": 0.265,
+        "p50_bn": 0.379,
+        "p90_bn": 0.569,
+        "impact_basis": "Regulatory readiness and quality systems priced as 5.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 4,
+        "maturity": "1-15% definition maturity"
+      },
+      {
+        "cbs": "02.03",
+        "description": "Programme management and operational readiness",
+        "type": "Indirect",
+        "basis": "PMO, controls, staffing readiness, training and handover",
+        "p10_bn": 0.319,
+        "p50_bn": 0.455,
+        "p90_bn": 0.682,
+        "impact_basis": "Programme management and operational readiness priced as 6.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 4,
+        "maturity": "1-15% definition maturity"
+      },
+      {
+        "cbs": "03.01",
+        "description": "Risk reserve",
+        "type": "Reserve",
+        "basis": "Allowance for GMP validation, equipment lead times and regulatory uncertainty",
+        "p10_bn": 0.265,
+        "p50_bn": 0.379,
+        "p90_bn": 0.569,
+        "impact_basis": "Risk reserve priced as 5.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 4,
+        "maturity": "1-15% definition maturity"
+      }
+    ],
+    "5": [
+      {
+        "cbs": "01.01",
+        "description": "Site, enabling and controlled utilities",
+        "type": "Direct",
+        "basis": "Site works, utility corridors and GMP-ready enabling infrastructure",
+        "p10_bn": 0.265,
+        "p50_bn": 0.53,
+        "p90_bn": 1.06,
+        "impact_basis": "Site, enabling and controlled utilities priced as 7.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 5,
+        "maturity": "0-2% definition maturity"
+      },
+      {
+        "cbs": "01.02",
+        "description": "GMP cleanrooms and classified areas",
+        "type": "Direct",
+        "basis": "Cleanroom envelope, HVAC zoning, pressure cascades and finishes",
+        "p10_bn": 0.644,
+        "p50_bn": 1.288,
+        "p90_bn": 2.576,
+        "impact_basis": "GMP cleanrooms and classified areas priced as 17.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 5,
+        "maturity": "0-2% definition maturity"
+      },
+      {
+        "cbs": "01.03",
+        "description": "Process equipment and fill-finish lines",
+        "type": "Direct",
+        "basis": "Bioreactors, formulation, aseptic fill-finish and packaging equipment",
+        "p10_bn": 0.834,
+        "p50_bn": 1.667,
+        "p90_bn": 3.334,
+        "impact_basis": "Process equipment and fill-finish lines priced as 22.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 5,
+        "maturity": "0-2% definition maturity"
+      },
+      {
+        "cbs": "01.04",
+        "description": "Clean utilities",
+        "type": "Direct",
+        "basis": "WFI, clean steam, purified water, process gases and validated utility loops",
+        "p10_bn": 0.53,
+        "p50_bn": 1.061,
+        "p90_bn": 2.122,
+        "impact_basis": "Clean utilities priced as 14.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 5,
+        "maturity": "0-2% definition maturity"
+      },
+      {
+        "cbs": "01.05",
+        "description": "Automation, MES and digital validation",
+        "type": "Direct",
+        "basis": "Automation, MES, batch records, data integrity and validation systems",
+        "p10_bn": 0.303,
+        "p50_bn": 0.606,
+        "p90_bn": 1.212,
+        "impact_basis": "Automation, MES and digital validation priced as 8.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 5,
+        "maturity": "0-2% definition maturity"
+      },
+      {
+        "cbs": "01.06",
+        "description": "Cold-chain and automated logistics",
+        "type": "Direct",
+        "basis": "Cold storage, automated warehouse, packaging and distribution infrastructure",
+        "p10_bn": 0.303,
+        "p50_bn": 0.606,
+        "p90_bn": 1.212,
+        "impact_basis": "Cold-chain and automated logistics priced as 8.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 5,
+        "maturity": "0-2% definition maturity"
+      },
+      {
+        "cbs": "02.01",
+        "description": "commissioning validation / qualification",
+        "type": "Indirect",
+        "basis": "Commissioning, qualification, validation protocols and deviation closure",
+        "p10_bn": 0.303,
+        "p50_bn": 0.606,
+        "p90_bn": 1.212,
+        "impact_basis": "commissioning validation / qualification priced as 8.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 5,
+        "maturity": "0-2% definition maturity"
+      },
+      {
+        "cbs": "02.02",
+        "description": "Regulatory readiness and quality systems",
+        "type": "Indirect",
+        "basis": "FDA/EMA readiness, QA systems, inspection preparation and documentation",
+        "p10_bn": 0.19,
+        "p50_bn": 0.379,
+        "p90_bn": 0.758,
+        "impact_basis": "Regulatory readiness and quality systems priced as 5.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 5,
+        "maturity": "0-2% definition maturity"
+      },
+      {
+        "cbs": "02.03",
+        "description": "Programme management and operational readiness",
+        "type": "Indirect",
+        "basis": "PMO, controls, staffing readiness, training and handover",
+        "p10_bn": 0.228,
+        "p50_bn": 0.455,
+        "p90_bn": 0.91,
+        "impact_basis": "Programme management and operational readiness priced as 6.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 5,
+        "maturity": "0-2% definition maturity"
+      },
+      {
+        "cbs": "03.01",
+        "description": "Risk reserve",
+        "type": "Reserve",
+        "basis": "Allowance for GMP validation, equipment lead times and regulatory uncertainty",
+        "p10_bn": 0.19,
+        "p50_bn": 0.379,
+        "p90_bn": 0.758,
+        "impact_basis": "Risk reserve priced as 5.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+        "class": 5,
+        "maturity": "0-2% definition maturity"
+      }
+    ]
+  },
+  "executive_shock_insight": "Launch alone is not the real constraint; qualification, thermal-power balance and autonomous recovery determine mission survivability.",
+  "sector_signature_behaviours": [
+    "commissioning validation path",
+    "media fill readiness",
+    "GMP turnover",
+    "batch release",
+    "inspection readiness"
+  ],
+  "sector_curve_type": "late_validation_spike",
+  "scenario_contradiction": "Acceleration may protect market-entry timing but reduces validation float and increases deviation-closure pressure.",
+  "confidence_engine_label": "Board challenge likely",
+  "confidence_engine_detail": "Benchmark + probabilistic + sector-trained reasoning",
+  "sector_confidence_drivers": [
+    "Benchmark similarity: space infrastructure archetype",
+    "Scope maturity: payload and mission architecture definition",
+    "Procurement certainty: launch, avionics and qualified hardware",
+    "Schedule maturity: launch and commissioning logic",
+    "Operational exposure: remote recovery and servicing limits"
+  ],
+  "sector_primary_cost_drivers": [
+    "Payload / habitat / mission systems",
+    "Launch and orbital logistics",
+    "Power, thermal and autonomy systems",
+    "Qualification and test campaign",
+    "Mission operations and recovery reserve"
+  ],
+  "sector_schedule_threats": [
+    "Payload qualification campaign",
+    "Launch manifest and range access",
+    "Thermal-vacuum and systems testing",
+    "Orbital/surface deployment sequence",
+    "Autonomous commissioning and recovery"
+  ],
+  "why_casey_generated_this": [
+    "CASEY detected Space / Lunar / Orbital Infrastructure from the project brief and locked the sector ontology before generating outputs.",
+    "Sector-native behaviours applied: Launch cadence, Payload integration, Thermal-power balance, Range availability, Autonomous commissioning.",
+    "Benchmark cohort, causal chain, confidence drivers and risk language were constrained to the selected sector.",
+    "The output is designed for early board challenge and scope definition, not certified pricing."
+  ],
+  "_hs_base": {
+    "cost_p50": "$7.6B",
+    "schedule_months": 75,
+    "confidence": 60,
+    "risk": "Medium-High",
+    "cost_lines": [
+      {
+        "cbs": "01.01",
+        "description": "Site, enabling and controlled utilities",
+        "type": "Direct",
+        "basis": "Site works, utility corridors and GMP-ready enabling infrastructure",
+        "p10_bn": 0.424,
+        "p50_bn": 0.53,
+        "p90_bn": 0.689,
+        "impact_basis": "Site, enabling and controlled utilities priced as 7.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50."
+      },
+      {
+        "cbs": "01.02",
+        "description": "GMP cleanrooms and classified areas",
+        "type": "Direct",
+        "basis": "Cleanroom envelope, HVAC zoning, pressure cascades and finishes",
+        "p10_bn": 1.03,
+        "p50_bn": 1.288,
+        "p90_bn": 1.674,
+        "impact_basis": "GMP cleanrooms and classified areas priced as 17.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50."
+      },
+      {
+        "cbs": "01.03",
+        "description": "Process equipment and fill-finish lines",
+        "type": "Direct",
+        "basis": "Bioreactors, formulation, aseptic fill-finish and packaging equipment",
+        "p10_bn": 1.333,
+        "p50_bn": 1.667,
+        "p90_bn": 2.167,
+        "impact_basis": "Process equipment and fill-finish lines priced as 22.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50."
+      },
+      {
+        "cbs": "01.04",
+        "description": "Clean utilities",
+        "type": "Direct",
+        "basis": "WFI, clean steam, purified water, process gases and validated utility loops",
+        "p10_bn": 0.849,
+        "p50_bn": 1.061,
+        "p90_bn": 1.379,
+        "impact_basis": "Clean utilities priced as 14.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50."
+      },
+      {
+        "cbs": "01.05",
+        "description": "Automation, MES and digital validation",
+        "type": "Direct",
+        "basis": "Automation, MES, batch records, data integrity and validation systems",
+        "p10_bn": 0.485,
+        "p50_bn": 0.606,
+        "p90_bn": 0.788,
+        "impact_basis": "Automation, MES and digital validation priced as 8.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50."
+      },
+      {
+        "cbs": "01.06",
+        "description": "Cold-chain and automated logistics",
+        "type": "Direct",
+        "basis": "Cold storage, automated warehouse, packaging and distribution infrastructure",
+        "p10_bn": 0.485,
+        "p50_bn": 0.606,
+        "p90_bn": 0.788,
+        "impact_basis": "Cold-chain and automated logistics priced as 8.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50."
+      },
+      {
+        "cbs": "02.01",
+        "description": "commissioning validation / qualification",
+        "type": "Indirect",
+        "basis": "Commissioning, qualification, validation protocols and deviation closure",
+        "p10_bn": 0.485,
+        "p50_bn": 0.606,
+        "p90_bn": 0.788,
+        "impact_basis": "commissioning validation / qualification priced as 8.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50."
+      },
+      {
+        "cbs": "02.02",
+        "description": "Regulatory readiness and quality systems",
+        "type": "Indirect",
+        "basis": "FDA/EMA readiness, QA systems, inspection preparation and documentation",
+        "p10_bn": 0.303,
+        "p50_bn": 0.379,
+        "p90_bn": 0.492,
+        "impact_basis": "Regulatory readiness and quality systems priced as 5.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50."
+      },
+      {
+        "cbs": "02.03",
+        "description": "Programme management and operational readiness",
+        "type": "Indirect",
+        "basis": "PMO, controls, staffing readiness, training and handover",
+        "p10_bn": 0.364,
+        "p50_bn": 0.455,
+        "p90_bn": 0.591,
+        "impact_basis": "Programme management and operational readiness priced as 6.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50."
+      },
+      {
+        "cbs": "03.01",
+        "description": "Risk reserve",
+        "type": "Reserve",
+        "basis": "Allowance for GMP validation, equipment lead times and regulatory uncertainty",
+        "p10_bn": 0.303,
+        "p50_bn": 0.379,
+        "p90_bn": 0.492,
+        "impact_basis": "Risk reserve priced as 5.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50."
+      }
+    ],
+    "risks": [
+      {
+        "risk_id": "R-002",
+        "title": "Market escalation",
+        "category": "Commercial",
+        "cause": "Supplier market tightness, inflation, FX and long procurement window",
+        "risk_event": "Rates exceed assumed escalation profile",
+        "impact_description": "P50 cost becomes understated; commercial approvals or procurement strategy may need reset",
+        "description": "Rates exceed assumed escalation profile",
+        "impact_area": "Cost",
+        "probability_pct": 45,
+        "pre_mitigation_rating": "Medium",
+        "activity_id": "A1500",
+        "activity_name": "Procurement strategy and tender packaging",
+        "cbs": "01.05",
+        "cbs_name": "Automation, MES and digital validation",
+        "schedule_o_days": 0,
+        "schedule_m_days": 0,
+        "schedule_p_days": 0,
+        "cost_o_bn": 0.303,
+        "cost_m_bn": 0.758,
+        "cost_p_bn": 1.515,
+        "cost_emv_bn": 0.341,
+        "schedule_emv_days": 0.0,
+        "owner": "Commercial Lead",
+        "trigger": "Index exceeds allowance by 3%",
+        "mitigation": "Early procurement, index-linked allowances, market testing, FX strategy",
+        "response_strategy": "Mitigate",
+        "residual_rating": "Low",
+        "status": "Open",
+        "last_reviewed": "2026-05-24",
+        "board_visibility": "Yes",
+        "basis_of_cost_impact": "O/M/P cost impact equals $303M / $758M / $1.5B based on scenario-adjusted exposure to CBS 01.05 Automation, MES and digital validation.",
+        "basis_of_schedule_impact": "O/M/P schedule impact equals 0/0/0 days mapped to activity A1500 Procurement strategy and tender packaging.",
+        "driver_score": 34.09
+      },
+      {
+        "risk_id": "R-004",
+        "title": "Design maturity gap",
+        "category": "Technical",
+        "cause": "Estimate is based on immature design, incomplete surveys or unresolved interfaces",
+        "risk_event": "Design basis changes during detailed design",
+        "impact_description": "Cost growth, quantity movement, rework and schedule resequencing",
+        "description": "Design basis changes during detailed design",
+        "impact_area": "Both",
+        "probability_pct": 38,
+        "pre_mitigation_rating": "Medium",
+        "activity_id": "A1700",
+        "activity_name": "Long-lead procurement",
+        "cbs": "02.01",
+        "cbs_name": "commissioning validation / qualification",
+        "schedule_o_days": 15,
+        "schedule_m_days": 45,
+        "schedule_p_days": 120,
+        "cost_o_bn": 0.227,
+        "cost_m_bn": 0.682,
+        "cost_p_bn": 1.364,
+        "cost_emv_bn": 0.259,
+        "schedule_emv_days": 17.1,
+        "owner": "Design Manager",
+        "trigger": "Design deliverables miss maturity gate",
+        "mitigation": "Design maturity gates, independent review, assumption register",
+        "response_strategy": "Reduce",
+        "residual_rating": "Low",
+        "status": "Open",
+        "last_reviewed": "2026-05-24",
+        "board_visibility": "Yes",
+        "basis_of_cost_impact": "O/M/P cost impact equals $227M / $682M / $1.4B based on scenario-adjusted exposure to CBS 02.01 commissioning validation / qualification.",
+        "basis_of_schedule_impact": "O/M/P schedule impact equals 15/45/120 days mapped to activity A1700 Long-lead procurement.",
+        "driver_score": 29.33
+      },
+      {
+        "risk_id": "R-001",
+        "title": "Scope growth",
+        "category": "Scope",
+        "cause": "Ambiguous requirements, immature scope freeze and late stakeholder changes",
+        "risk_event": "Approved scope expands after estimate freeze",
+        "impact_description": "Additional quantities, redesign, rework, procurement churn and board contingency drawdown",
+        "description": "Approved scope expands after estimate freeze",
+        "impact_area": "Both",
+        "probability_pct": 42,
+        "pre_mitigation_rating": "Medium",
+        "activity_id": "A1400",
+        "activity_name": "Planning, regulatory and stakeholder approvals",
+        "cbs": "01.04",
+        "cbs_name": "Clean utilities",
+        "schedule_o_days": 15,
+        "schedule_m_days": 45,
+        "schedule_p_days": 120,
+        "cost_o_bn": 0.227,
+        "cost_m_bn": 0.606,
+        "cost_p_bn": 1.212,
+        "cost_emv_bn": 0.255,
+        "schedule_emv_days": 18.9,
+        "owner": "Project Director",
+        "trigger": "Scope change rate exceeds 2% of package value",
+        "mitigation": "Freeze scope baseline, change board, value gates, client decision log",
+        "response_strategy": "Reduce",
+        "residual_rating": "Low",
+        "status": "Open",
+        "last_reviewed": "2026-05-24",
+        "board_visibility": "Yes",
+        "basis_of_cost_impact": "O/M/P cost impact equals $227M / $606M / $1.2B based on scenario-adjusted exposure to CBS 01.04 Clean utilities.",
+        "basis_of_schedule_impact": "O/M/P schedule impact equals 15/45/120 days mapped to activity A1400 Planning, regulatory and stakeholder approvals.",
+        "driver_score": 29.24
+      },
+      {
+        "risk_id": "R-006",
+        "title": "Productivity underperformance",
+        "category": "Delivery",
+        "cause": "Access constraints, poor sequencing, labour scarcity or learning curve",
+        "risk_event": "Actual production rates underperform plan",
+        "impact_description": "Extended duration, increased preliminaries and loss of float",
+        "description": "Actual production rates underperform plan",
+        "impact_area": "Both",
+        "probability_pct": 35,
+        "pre_mitigation_rating": "Medium",
+        "activity_id": "A1900",
+        "activity_name": "Main construction / fabrication / assembly",
+        "cbs": "02.03",
+        "cbs_name": "Programme management and operational readiness",
+        "schedule_o_days": 15,
+        "schedule_m_days": 50,
+        "schedule_p_days": 130,
+        "cost_o_bn": 0.227,
+        "cost_m_bn": 0.606,
+        "cost_p_bn": 1.212,
+        "cost_emv_bn": 0.212,
+        "schedule_emv_days": 17.5,
+        "owner": "Delivery Lead",
+        "trigger": "SPI/CPI deteriorates for two reporting periods",
+        "mitigation": "Package productivity controls, daily planning, earned value cadence",
+        "response_strategy": "Mitigate",
+        "residual_rating": "Low",
+        "status": "Open",
+        "last_reviewed": "2026-05-24",
+        "board_visibility": "Yes",
+        "basis_of_cost_impact": "O/M/P cost impact equals $227M / $606M / $1.2B based on scenario-adjusted exposure to CBS 02.03 Programme management and operational readiness.",
+        "basis_of_schedule_impact": "O/M/P schedule impact equals 15/50/130 days mapped to activity A1900 Main construction / fabrication / assembly.",
+        "driver_score": 24.71
+      },
+      {
+        "risk_id": "R-005",
+        "title": "Supply chain delay",
+        "category": "Procurement",
+        "cause": "Long-lead equipment, constrained suppliers or late procurement release",
+        "risk_event": "Supplier promise dates move right",
+        "impact_description": "Delayed installation, critical path movement and acceleration cost",
+        "description": "Supplier promise dates move right",
+        "impact_area": "Both",
+        "probability_pct": 40,
+        "pre_mitigation_rating": "Medium",
+        "activity_id": "A1800",
+        "activity_name": "Site / launch integration readiness",
+        "cbs": "02.02",
+        "cbs_name": "Regulatory readiness and quality systems",
+        "schedule_o_days": 10,
+        "schedule_m_days": 40,
+        "schedule_p_days": 120,
+        "cost_o_bn": 0.152,
+        "cost_m_bn": 0.53,
+        "cost_p_bn": 1.136,
+        "cost_emv_bn": 0.212,
+        "schedule_emv_days": 16.0,
+        "owner": "Procurement Lead",
+        "trigger": "Supplier promise date slips",
+        "mitigation": "Alternate suppliers, early orders, expediting, framework options",
+        "response_strategy": "Transfer / Mitigate",
+        "residual_rating": "Low",
+        "status": "Open",
+        "last_reviewed": "2026-05-24",
+        "board_visibility": "Yes",
+        "basis_of_cost_impact": "O/M/P cost impact equals $152M / $530M / $1.1B based on scenario-adjusted exposure to CBS 02.02 Regulatory readiness and quality systems.",
+        "basis_of_schedule_impact": "O/M/P schedule impact equals 10/40/120 days mapped to activity A1800 Site / launch integration readiness.",
+        "driver_score": 24.41
+      },
+      {
+        "risk_id": "R-008",
+        "title": "Interface misalignment",
+        "category": "Integration",
+        "cause": "Multiple contractors, unclear interface ownership or late design coordination",
+        "risk_event": "Package interfaces do not align during installation/integration",
+        "impact_description": "Rework, claims, delay and fragmented accountability",
+        "description": "Package interfaces do not align during installation/integration",
+        "impact_area": "Both",
+        "probability_pct": 34,
+        "pre_mitigation_rating": "Low",
+        "activity_id": "A2100",
+        "activity_name": "Commissioning, operations readiness and closeout",
+        "cbs": "03.01",
+        "cbs_name": "Risk reserve",
+        "schedule_o_days": 10,
+        "schedule_m_days": 35,
+        "schedule_p_days": 100,
+        "cost_o_bn": 0.152,
+        "cost_m_bn": 0.53,
+        "cost_p_bn": 1.061,
+        "cost_emv_bn": 0.18,
+        "schedule_emv_days": 11.9,
+        "owner": "Integration Manager",
+        "trigger": "Interface actions overdue",
+        "mitigation": "Interface control documents, weekly interface board, accountable owners",
+        "response_strategy": "Mitigate",
+        "residual_rating": "Low",
+        "status": "Open",
+        "last_reviewed": "2026-05-24",
+        "board_visibility": "Yes",
+        "basis_of_cost_impact": "O/M/P cost impact equals $152M / $530M / $1.1B based on scenario-adjusted exposure to CBS 03.01 Risk reserve.",
+        "basis_of_schedule_impact": "O/M/P schedule impact equals 10/35/100 days mapped to activity A2100 Commissioning, operations readiness and closeout.",
+        "driver_score": 20.41
+      },
+      {
+        "risk_id": "R-007",
+        "title": "Commissioning delay",
+        "category": "Handover",
+        "cause": "Incomplete readiness, software integration issues or defects during testing",
+        "risk_event": "Systems fail tests or require repeated commissioning cycles",
+        "impact_description": "Delayed handover, operational readiness slippage and liquidated damages exposure",
+        "description": "Systems fail tests or require repeated commissioning cycles",
+        "impact_area": "Both",
+        "probability_pct": 32,
+        "pre_mitigation_rating": "Low",
+        "activity_id": "A2000",
+        "activity_name": "Systems integration and testing",
+        "cbs": "03.01",
+        "cbs_name": "Risk reserve",
+        "schedule_o_days": 10,
+        "schedule_m_days": 35,
+        "schedule_p_days": 100,
+        "cost_o_bn": 0.152,
+        "cost_m_bn": 0.455,
+        "cost_p_bn": 0.909,
+        "cost_emv_bn": 0.145,
+        "schedule_emv_days": 11.2,
+        "owner": "Commissioning Lead",
+        "trigger": "Test failures trend upward",
+        "mitigation": "Commissioning readiness plan, early test packs, digital systems integration",
+        "response_strategy": "Reduce",
+        "residual_rating": "Low",
+        "status": "Open",
+        "last_reviewed": "2026-05-24",
+        "board_visibility": "Yes",
+        "basis_of_cost_impact": "O/M/P cost impact equals $152M / $455M / $909M based on scenario-adjusted exposure to CBS 03.01 Risk reserve.",
+        "basis_of_schedule_impact": "O/M/P schedule impact equals 10/35/100 days mapped to activity A2000 Systems integration and testing.",
+        "driver_score": 16.79
+      },
+      {
+        "risk_id": "R-003",
+        "title": "Permits / approvals delay",
+        "category": "Regulatory",
+        "cause": "Authority process, stakeholder objections or incomplete submissions",
+        "risk_event": "Consent milestone slips beyond baseline",
+        "impact_description": "Critical path delay, extended preliminaries and potential redesign conditions",
+        "description": "Consent milestone slips beyond baseline",
+        "impact_area": "Schedule",
+        "probability_pct": 35,
+        "pre_mitigation_rating": "Low",
+        "activity_id": "A1600",
+        "activity_name": "Detailed design / IFC development",
+        "cbs": "01.06",
+        "cbs_name": "Cold-chain and automated logistics",
+        "schedule_o_days": 20,
+        "schedule_m_days": 70,
+        "schedule_p_days": 180,
+        "cost_o_bn": 0.076,
+        "cost_m_bn": 0.303,
+        "cost_p_bn": 0.606,
+        "cost_emv_bn": 0.106,
+        "schedule_emv_days": 24.5,
+        "owner": "Consents Lead",
+        "trigger": "Consent milestone slips by 30 days",
+        "mitigation": "Authority plan, consent tracker, early submissions, stakeholder map",
+        "response_strategy": "Mitigate",
+        "residual_rating": "Low",
+        "status": "Open",
+        "last_reviewed": "2026-05-24",
+        "board_visibility": "Yes",
+        "basis_of_cost_impact": "O/M/P cost impact equals $76M / $303M / $606M based on scenario-adjusted exposure to CBS 01.06 Cold-chain and automated logistics.",
+        "basis_of_schedule_impact": "O/M/P schedule impact equals 20/70/180 days mapped to activity A1600 Detailed design / IFC development.",
+        "driver_score": 15.51
+      }
+    ],
+    "schedule_rows": [
+      {
+        "activity_id": "A1000",
+        "phase": "Governance",
+        "activity": "Project initiation / controls setup",
+        "predecessor": "",
+        "duration_months": 2,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, duration reflects commissioning validation sequencing, clean-utility validation, media-fill readiness and phased batch ramp-up rather than simple building completion.."
+      },
+      {
+        "activity_id": "A1100",
+        "phase": "Business Case",
+        "activity": "Strategic brief, funding and approval",
+        "predecessor": "A1000",
+        "duration_months": 4,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, duration reflects commissioning validation sequencing, clean-utility validation, media-fill readiness and phased batch ramp-up rather than simple building completion.."
+      },
+      {
+        "activity_id": "A1200",
+        "phase": "Scope",
+        "activity": "Requirements definition and scope freeze",
+        "predecessor": "A1100",
+        "duration_months": 4,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, duration reflects commissioning validation sequencing, clean-utility validation, media-fill readiness and phased batch ramp-up rather than simple building completion.."
+      },
+      {
+        "activity_id": "A1300",
+        "phase": "Design",
+        "activity": "Concept / reference architecture",
+        "predecessor": "A1200",
+        "duration_months": 6,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, duration reflects commissioning validation sequencing, clean-utility validation, media-fill readiness and phased batch ramp-up rather than simple building completion.."
+      },
+      {
+        "activity_id": "A1400",
+        "phase": "Consents",
+        "activity": "Planning, regulatory and stakeholder approvals",
+        "predecessor": "A1200",
+        "duration_months": 7,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, duration reflects commissioning validation sequencing, clean-utility validation, media-fill readiness and phased batch ramp-up rather than simple building completion.."
+      },
+      {
+        "activity_id": "A1500",
+        "phase": "Procurement",
+        "activity": "Procurement strategy and tender packaging",
+        "predecessor": "A1300",
+        "duration_months": 4,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, duration reflects commissioning validation sequencing, clean-utility validation, media-fill readiness and phased batch ramp-up rather than simple building completion.."
+      },
+      {
+        "activity_id": "A1600",
+        "phase": "Design",
+        "activity": "Detailed design / IFC development",
+        "predecessor": "A1300",
+        "duration_months": 8,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, duration reflects commissioning validation sequencing, clean-utility validation, media-fill readiness and phased batch ramp-up rather than simple building completion.."
+      },
+      {
+        "activity_id": "A1700",
+        "phase": "Procurement",
+        "activity": "Long-lead procurement",
+        "predecessor": "A1500",
+        "duration_months": 7,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, duration reflects commissioning validation sequencing, clean-utility validation, media-fill readiness and phased batch ramp-up rather than simple building completion.."
+      },
+      {
+        "activity_id": "A1800",
+        "phase": "Enabling",
+        "activity": "Site / launch integration readiness",
+        "predecessor": "A1400;A1500",
+        "duration_months": 5,
+        "critical": "No",
+        "basis": "Duration derived from sector schedule model, duration reflects commissioning validation sequencing, clean-utility validation, media-fill readiness and phased batch ramp-up rather than simple building completion.."
+      },
+      {
+        "activity_id": "A1900",
+        "phase": "Delivery",
+        "activity": "Main construction / fabrication / assembly",
+        "predecessor": "A1600;A1700;A1800",
+        "duration_months": 16,
+        "critical": "Yes",
+        "basis": "Duration reflects commissioning validation, GMP turnover, validation evidence and batch-readiness sequencing."
+      },
+      {
+        "activity_id": "A2000",
+        "phase": "Integration",
+        "activity": "Systems integration and testing",
+        "predecessor": "A1900",
+        "duration_months": 8,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, duration reflects commissioning validation sequencing, clean-utility validation, media-fill readiness and phased batch ramp-up rather than simple building completion.."
+      },
+      {
+        "activity_id": "A2100",
+        "phase": "Handover",
+        "activity": "Commissioning, operations readiness and closeout",
+        "predecessor": "A2000",
+        "duration_months": 4,
+        "critical": "Yes",
+        "basis": "Duration reflects commissioning validation, GMP turnover, validation evidence and batch-readiness sequencing."
+      },
+      {
+        "activity_id": "P1000",
+        "phase": "Package",
+        "activity": "Civil / structural package",
+        "predecessor": "A1900",
+        "duration_months": 3,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, duration reflects commissioning validation sequencing, clean-utility validation, media-fill readiness and phased batch ramp-up rather than simple building completion.."
+      },
+      {
+        "activity_id": "P2000",
+        "phase": "Package",
+        "activity": "MEP / systems package",
+        "predecessor": "P1000",
+        "duration_months": 3,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, duration reflects commissioning validation sequencing, clean-utility validation, media-fill readiness and phased batch ramp-up rather than simple building completion.."
+      },
+      {
+        "activity_id": "P3000",
+        "phase": "Package",
+        "activity": "Specialist equipment package",
+        "predecessor": "P2000",
+        "duration_months": 3,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, duration reflects commissioning validation sequencing, clean-utility validation, media-fill readiness and phased batch ramp-up rather than simple building completion.."
+      },
+      {
+        "activity_id": "P4000",
+        "phase": "Package",
+        "activity": "Utilities / interfaces package",
+        "predecessor": "P3000",
+        "duration_months": 3,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, duration reflects commissioning validation sequencing, clean-utility validation, media-fill readiness and phased batch ramp-up rather than simple building completion.."
+      },
+      {
+        "activity_id": "P5000",
+        "phase": "Package",
+        "activity": "Testing and commissioning package",
+        "predecessor": "P4000",
+        "duration_months": 3,
+        "critical": "Yes",
+        "basis": "Duration derived from sector schedule model, duration reflects commissioning validation sequencing, clean-utility validation, media-fill readiness and phased batch ramp-up rather than simple building completion.."
+      }
+    ],
+    "direct_cost": null,
+    "indirect_cost": null,
+    "risk_reserve": null
+  },
+  "scenario_trade": "Balanced cost, time and evidence posture.",
+  "scenario_gain": "Maintains a credible reference case for board challenge.",
+  "scenario_loss": "Does not buy extra time certainty or capital efficiency.",
+  "direct_cost": "$5.3B",
+  "indirect_cost": "$1.1B",
+  "risk_reserve": "$1.2B",
+  "scenario_delta_intelligence": [
+    {
+      "label": "Capital movement",
+      "value": "+0%",
+      "meaning": "Balanced cost, time and evidence posture."
+    },
+    {
+      "label": "Schedule movement",
+      "value": "+0%",
+      "meaning": "Maintains a credible reference case for board challenge."
+    },
+    {
+      "label": "Confidence movement",
+      "value": "+0 pts",
+      "meaning": "Does not buy extra time certainty or capital efficiency."
+    },
+    {
+      "label": "Reserve philosophy",
+      "value": "+0% reserve shift",
+      "meaning": "Reserve is being used as a strategic choice, not a static percentage."
+    },
+    {
+      "label": "Board consequence",
+      "value": "Medium-High",
+      "meaning": "Mechanical completion is not the true finish line; validated production readiness and deviation closure are the real board decision gates."
+    }
+  ],
+  "confidence_breakdown": [
+    {
+      "driver": "Benchmark similarity",
+      "effect": "+8",
+      "note": "Comparable sector archetype identified"
+    },
+    {
+      "driver": "Scope maturity",
+      "effect": "-4",
+      "note": "Class 3 assumptions still need package evidence"
+    },
+    {
+      "driver": "Procurement certainty",
+      "effect": "-5",
+      "note": "Long-lead evidence remains incomplete"
+    },
+    {
+      "driver": "Schedule logic",
+      "effect": "+5",
+      "note": "Level 4 logic gives credible traceability"
+    },
+    {
+      "driver": "Reserve adequacy",
+      "effect": "+2",
+      "note": "Balanced contingency posture"
+    }
+  ],
+  "cost_breakdown": [
+    {
+      "cbs": "01.01",
+      "description": "Site, enabling and controlled utilities",
+      "type": "Direct",
+      "basis": "Base basis: balanced reference case using sector benchmark, location, scale and complexity factors.",
+      "p10_bn": 0.402,
+      "p50_bn": 0.49,
+      "p90_bn": 0.637,
+      "impact_basis": "Site, enabling and controlled utilities priced as 7.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+      "most_likely_p50": "$517M",
+      "low_p10": "$404M",
+      "high_p90": "$641M"
+    },
+    {
+      "cbs": "01.02",
+      "description": "GMP cleanrooms and classified areas",
+      "type": "Direct",
+      "basis": "Base basis: balanced reference case using sector benchmark, location, scale and complexity factors.",
+      "p10_bn": 0.976,
+      "p50_bn": 1.19,
+      "p90_bn": 1.547,
+      "impact_basis": "GMP cleanrooms and classified areas priced as 17.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+      "most_likely_p50": "$1.2B",
+      "low_p10": "$982M",
+      "high_p90": "$1.5B"
+    },
+    {
+      "cbs": "01.03",
+      "description": "Process equipment and fill-finish lines",
+      "type": "Direct",
+      "basis": "Base basis: balanced reference case using sector benchmark, location, scale and complexity factors.",
+      "p10_bn": 1.263,
+      "p50_bn": 1.54,
+      "p90_bn": 2.002,
+      "impact_basis": "Process equipment and fill-finish lines priced as 22.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+      "most_likely_p50": "$1.5B",
+      "low_p10": "$1.3B",
+      "high_p90": "$2.0B"
+    },
+    {
+      "cbs": "01.04",
+      "description": "Clean utilities",
+      "type": "Direct",
+      "basis": "Base basis: balanced reference case using sector benchmark, location, scale and complexity factors.",
+      "p10_bn": 0.804,
+      "p50_bn": 0.98,
+      "p90_bn": 1.274,
+      "impact_basis": "Clean utilities priced as 14.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+      "most_likely_p50": "$986M",
+      "low_p10": "$809M",
+      "high_p90": "$1.3B"
+    },
+    {
+      "cbs": "01.05",
+      "description": "Automation, MES and digital validation",
+      "type": "Direct",
+      "basis": "Base basis: balanced reference case using sector benchmark, location, scale and complexity factors.",
+      "p10_bn": 0.459,
+      "p50_bn": 0.56,
+      "p90_bn": 0.728,
+      "impact_basis": "Automation, MES and digital validation priced as 8.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+      "most_likely_p50": "$563M",
+      "low_p10": "$462M",
+      "high_p90": "$732M"
+    },
+    {
+      "cbs": "01.06",
+      "description": "Cold-chain and automated logistics",
+      "type": "Direct",
+      "basis": "Base basis: balanced reference case using sector benchmark, location, scale and complexity factors.",
+      "p10_bn": 0.459,
+      "p50_bn": 0.56,
+      "p90_bn": 0.728,
+      "impact_basis": "Cold-chain and automated logistics priced as 8.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+      "most_likely_p50": "$563M",
+      "low_p10": "$462M",
+      "high_p90": "$732M"
+    },
+    {
+      "cbs": "02.01",
+      "description": "commissioning validation / qualification",
+      "type": "Indirect",
+      "basis": "Base basis: balanced reference case using sector benchmark, location, scale and complexity factors.",
+      "p10_bn": 0.358,
+      "p50_bn": 0.448,
+      "p90_bn": 0.609,
+      "impact_basis": "commissioning validation / qualification priced as 8.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+      "most_likely_p50": "$451M",
+      "low_p10": "$360M",
+      "high_p90": "$613M"
+    },
+    {
+      "cbs": "02.02",
+      "description": "Regulatory readiness and quality systems",
+      "type": "Indirect",
+      "basis": "Base basis: balanced reference case using sector benchmark, location, scale and complexity factors.",
+      "p10_bn": 0.224,
+      "p50_bn": 0.28,
+      "p90_bn": 0.381,
+      "impact_basis": "Regulatory readiness and quality systems priced as 5.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+      "most_likely_p50": "$282M",
+      "low_p10": "$225M",
+      "high_p90": "$383M"
+    },
+    {
+      "cbs": "02.03",
+      "description": "Programme management and operational readiness",
+      "type": "Indirect",
+      "basis": "Base basis: balanced reference case using sector benchmark, location, scale and complexity factors.",
+      "p10_bn": 0.269,
+      "p50_bn": 0.336,
+      "p90_bn": 0.457,
+      "impact_basis": "Programme management and operational readiness priced as 6.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+      "most_likely_p50": "$338M",
+      "low_p10": "$271M",
+      "high_p90": "$460M"
+    },
+    {
+      "cbs": "03.01",
+      "description": "Risk reserve",
+      "type": "Reserve",
+      "basis": "Base basis: balanced reference case using sector benchmark, location, scale and complexity factors.",
+      "p10_bn": 0.705,
+      "p50_bn": 1.216,
+      "p90_bn": 2.25,
+      "impact_basis": "Risk reserve priced as 5.0% of P50 from sector template, location factor 3.80, scale factor 1.00, complexity factor 1.50.",
+      "most_likely_p50": "$1.2B",
+      "low_p10": "$709M",
+      "high_p90": "$2.2B"
+    }
+  ],
+  "risk_register": [
+    {
+      "risk_id": "R-002",
+      "title": "Market escalation",
+      "category": "Commercial",
+      "cause": "Supplier market tightness, inflation, FX and long procurement window",
+      "risk_event": "Rates exceed assumed escalation profile",
+      "impact_description": "P50 cost becomes understated; commercial approvals or procurement strategy may need reset",
+      "description": "Rates exceed assumed escalation profile",
+      "impact_area": "Cost",
+      "probability_pct": 45,
+      "pre_mitigation_rating": "Medium",
+      "activity_id": "A1500",
+      "activity_name": "Procurement strategy and tender packaging",
+      "cbs": "01.05",
+      "cbs_name": "Automation, MES and digital validation",
+      "schedule_o_days": 0,
+      "schedule_m_days": 0,
+      "schedule_p_days": 0,
+      "cost_o_bn": 0.303,
+      "cost_m_bn": 0.758,
+      "cost_p_bn": 1.515,
+      "cost_emv_bn": 0.341,
+      "schedule_emv_days": 0.0,
+      "owner": "Commercial Lead",
+      "trigger": "Index exceeds allowance by 3%",
+      "mitigation": "Early procurement, index-linked allowances, market testing, FX strategy",
+      "response_strategy": "Mitigate",
+      "residual_rating": "Low",
+      "status": "Open",
+      "last_reviewed": "2026-05-24",
+      "board_visibility": "Yes",
+      "basis_of_cost_impact": "O/M/P cost impact equals $303M / $758M / $1.5B based on scenario-adjusted exposure to CBS 01.05 Automation, MES and digital validation.",
+      "basis_of_schedule_impact": "O/M/P schedule impact equals 0/0/0 days mapped to activity A1500 Procurement strategy and tender packaging.",
+      "driver_score": 34.09
+    },
+    {
+      "risk_id": "R-004",
+      "title": "Design maturity gap",
+      "category": "Technical",
+      "cause": "Estimate is based on immature design, incomplete surveys or unresolved interfaces",
+      "risk_event": "Design basis changes during detailed design",
+      "impact_description": "Cost growth, quantity movement, rework and schedule resequencing",
+      "description": "Design basis changes during detailed design",
+      "impact_area": "Both",
+      "probability_pct": 38,
+      "pre_mitigation_rating": "Medium",
+      "activity_id": "A1700",
+      "activity_name": "Long-lead procurement",
+      "cbs": "02.01",
+      "cbs_name": "commissioning validation / qualification",
+      "schedule_o_days": 15,
+      "schedule_m_days": 45,
+      "schedule_p_days": 120,
+      "cost_o_bn": 0.227,
+      "cost_m_bn": 0.682,
+      "cost_p_bn": 1.364,
+      "cost_emv_bn": 0.259,
+      "schedule_emv_days": 17.1,
+      "owner": "Design Manager",
+      "trigger": "Design deliverables miss maturity gate",
+      "mitigation": "Design maturity gates, independent review, assumption register",
+      "response_strategy": "Reduce",
+      "residual_rating": "Low",
+      "status": "Open",
+      "last_reviewed": "2026-05-24",
+      "board_visibility": "Yes",
+      "basis_of_cost_impact": "O/M/P cost impact equals $227M / $682M / $1.4B based on scenario-adjusted exposure to CBS 02.01 commissioning validation / qualification.",
+      "basis_of_schedule_impact": "O/M/P schedule impact equals 15/45/120 days mapped to activity A1700 Long-lead procurement.",
+      "driver_score": 29.33
+    },
+    {
+      "risk_id": "R-001",
+      "title": "Scope growth",
+      "category": "Scope",
+      "cause": "Ambiguous requirements, immature scope freeze and late stakeholder changes",
+      "risk_event": "Approved scope expands after estimate freeze",
+      "impact_description": "Additional quantities, redesign, rework, procurement churn and board contingency drawdown",
+      "description": "Approved scope expands after estimate freeze",
+      "impact_area": "Both",
+      "probability_pct": 42,
+      "pre_mitigation_rating": "Medium",
+      "activity_id": "A1400",
+      "activity_name": "Planning, regulatory and stakeholder approvals",
+      "cbs": "01.04",
+      "cbs_name": "Clean utilities",
+      "schedule_o_days": 15,
+      "schedule_m_days": 45,
+      "schedule_p_days": 120,
+      "cost_o_bn": 0.227,
+      "cost_m_bn": 0.606,
+      "cost_p_bn": 1.212,
+      "cost_emv_bn": 0.255,
+      "schedule_emv_days": 18.9,
+      "owner": "Project Director",
+      "trigger": "Scope change rate exceeds 2% of package value",
+      "mitigation": "Freeze scope baseline, change board, value gates, client decision log",
+      "response_strategy": "Reduce",
+      "residual_rating": "Low",
+      "status": "Open",
+      "last_reviewed": "2026-05-24",
+      "board_visibility": "Yes",
+      "basis_of_cost_impact": "O/M/P cost impact equals $227M / $606M / $1.2B based on scenario-adjusted exposure to CBS 01.04 Clean utilities.",
+      "basis_of_schedule_impact": "O/M/P schedule impact equals 15/45/120 days mapped to activity A1400 Planning, regulatory and stakeholder approvals.",
+      "driver_score": 29.24
+    },
+    {
+      "risk_id": "R-006",
+      "title": "Productivity underperformance",
+      "category": "Delivery",
+      "cause": "Access constraints, poor sequencing, labour scarcity or learning curve",
+      "risk_event": "Actual production rates underperform plan",
+      "impact_description": "Extended duration, increased preliminaries and loss of float",
+      "description": "Actual production rates underperform plan",
+      "impact_area": "Both",
+      "probability_pct": 35,
+      "pre_mitigation_rating": "Medium",
+      "activity_id": "A1900",
+      "activity_name": "Main construction / fabrication / assembly",
+      "cbs": "02.03",
+      "cbs_name": "Programme management and operational readiness",
+      "schedule_o_days": 15,
+      "schedule_m_days": 50,
+      "schedule_p_days": 130,
+      "cost_o_bn": 0.227,
+      "cost_m_bn": 0.606,
+      "cost_p_bn": 1.212,
+      "cost_emv_bn": 0.212,
+      "schedule_emv_days": 17.5,
+      "owner": "Delivery Lead",
+      "trigger": "SPI/CPI deteriorates for two reporting periods",
+      "mitigation": "Package productivity controls, daily planning, earned value cadence",
+      "response_strategy": "Mitigate",
+      "residual_rating": "Low",
+      "status": "Open",
+      "last_reviewed": "2026-05-24",
+      "board_visibility": "Yes",
+      "basis_of_cost_impact": "O/M/P cost impact equals $227M / $606M / $1.2B based on scenario-adjusted exposure to CBS 02.03 Programme management and operational readiness.",
+      "basis_of_schedule_impact": "O/M/P schedule impact equals 15/50/130 days mapped to activity A1900 Main construction / fabrication / assembly.",
+      "driver_score": 24.71
+    },
+    {
+      "risk_id": "R-005",
+      "title": "Supply chain delay",
+      "category": "Procurement",
+      "cause": "Long-lead equipment, constrained suppliers or late procurement release",
+      "risk_event": "Supplier promise dates move right",
+      "impact_description": "Delayed installation, critical path movement and acceleration cost",
+      "description": "Supplier promise dates move right",
+      "impact_area": "Both",
+      "probability_pct": 40,
+      "pre_mitigation_rating": "Medium",
+      "activity_id": "A1800",
+      "activity_name": "Site / launch integration readiness",
+      "cbs": "02.02",
+      "cbs_name": "Regulatory readiness and quality systems",
+      "schedule_o_days": 10,
+      "schedule_m_days": 40,
+      "schedule_p_days": 120,
+      "cost_o_bn": 0.152,
+      "cost_m_bn": 0.53,
+      "cost_p_bn": 1.136,
+      "cost_emv_bn": 0.212,
+      "schedule_emv_days": 16.0,
+      "owner": "Procurement Lead",
+      "trigger": "Supplier promise date slips",
+      "mitigation": "Alternate suppliers, early orders, expediting, framework options",
+      "response_strategy": "Transfer / Mitigate",
+      "residual_rating": "Low",
+      "status": "Open",
+      "last_reviewed": "2026-05-24",
+      "board_visibility": "Yes",
+      "basis_of_cost_impact": "O/M/P cost impact equals $152M / $530M / $1.1B based on scenario-adjusted exposure to CBS 02.02 Regulatory readiness and quality systems.",
+      "basis_of_schedule_impact": "O/M/P schedule impact equals 10/40/120 days mapped to activity A1800 Site / launch integration readiness.",
+      "driver_score": 24.41
+    },
+    {
+      "risk_id": "R-008",
+      "title": "Interface misalignment",
+      "category": "Integration",
+      "cause": "Multiple contractors, unclear interface ownership or late design coordination",
+      "risk_event": "Package interfaces do not align during installation/integration",
+      "impact_description": "Rework, claims, delay and fragmented accountability",
+      "description": "Package interfaces do not align during installation/integration",
+      "impact_area": "Both",
+      "probability_pct": 34,
+      "pre_mitigation_rating": "Low",
+      "activity_id": "A2100",
+      "activity_name": "Commissioning, operations readiness and closeout",
+      "cbs": "03.01",
+      "cbs_name": "Risk reserve",
+      "schedule_o_days": 10,
+      "schedule_m_days": 35,
+      "schedule_p_days": 100,
+      "cost_o_bn": 0.152,
+      "cost_m_bn": 0.53,
+      "cost_p_bn": 1.061,
+      "cost_emv_bn": 0.18,
+      "schedule_emv_days": 11.9,
+      "owner": "Integration Manager",
+      "trigger": "Interface actions overdue",
+      "mitigation": "Interface control documents, weekly interface board, accountable owners",
+      "response_strategy": "Mitigate",
+      "residual_rating": "Low",
+      "status": "Open",
+      "last_reviewed": "2026-05-24",
+      "board_visibility": "Yes",
+      "basis_of_cost_impact": "O/M/P cost impact equals $152M / $530M / $1.1B based on scenario-adjusted exposure to CBS 03.01 Risk reserve.",
+      "basis_of_schedule_impact": "O/M/P schedule impact equals 10/35/100 days mapped to activity A2100 Commissioning, operations readiness and closeout.",
+      "driver_score": 20.41
+    },
+    {
+      "risk_id": "R-007",
+      "title": "Commissioning delay",
+      "category": "Handover",
+      "cause": "Incomplete readiness, software integration issues or defects during testing",
+      "risk_event": "Systems fail tests or require repeated commissioning cycles",
+      "impact_description": "Delayed handover, operational readiness slippage and liquidated damages exposure",
+      "description": "Systems fail tests or require repeated commissioning cycles",
+      "impact_area": "Both",
+      "probability_pct": 32,
+      "pre_mitigation_rating": "Low",
+      "activity_id": "A2000",
+      "activity_name": "Systems integration and testing",
+      "cbs": "03.01",
+      "cbs_name": "Risk reserve",
+      "schedule_o_days": 10,
+      "schedule_m_days": 35,
+      "schedule_p_days": 100,
+      "cost_o_bn": 0.152,
+      "cost_m_bn": 0.455,
+      "cost_p_bn": 0.909,
+      "cost_emv_bn": 0.145,
+      "schedule_emv_days": 11.2,
+      "owner": "Commissioning Lead",
+      "trigger": "Test failures trend upward",
+      "mitigation": "Commissioning readiness plan, early test packs, digital systems integration",
+      "response_strategy": "Reduce",
+      "residual_rating": "Low",
+      "status": "Open",
+      "last_reviewed": "2026-05-24",
+      "board_visibility": "Yes",
+      "basis_of_cost_impact": "O/M/P cost impact equals $152M / $455M / $909M based on scenario-adjusted exposure to CBS 03.01 Risk reserve.",
+      "basis_of_schedule_impact": "O/M/P schedule impact equals 10/35/100 days mapped to activity A2000 Systems integration and testing.",
+      "driver_score": 16.79
+    },
+    {
+      "risk_id": "R-003",
+      "title": "Permits / approvals delay",
+      "category": "Regulatory",
+      "cause": "Authority process, stakeholder objections or incomplete submissions",
+      "risk_event": "Consent milestone slips beyond baseline",
+      "impact_description": "Critical path delay, extended preliminaries and potential redesign conditions",
+      "description": "Consent milestone slips beyond baseline",
+      "impact_area": "Schedule",
+      "probability_pct": 35,
+      "pre_mitigation_rating": "Low",
+      "activity_id": "A1600",
+      "activity_name": "Detailed design / IFC development",
+      "cbs": "01.06",
+      "cbs_name": "Cold-chain and automated logistics",
+      "schedule_o_days": 20,
+      "schedule_m_days": 70,
+      "schedule_p_days": 180,
+      "cost_o_bn": 0.076,
+      "cost_m_bn": 0.303,
+      "cost_p_bn": 0.606,
+      "cost_emv_bn": 0.106,
+      "schedule_emv_days": 24.5,
+      "owner": "Consents Lead",
+      "trigger": "Consent milestone slips by 30 days",
+      "mitigation": "Authority plan, consent tracker, early submissions, stakeholder map",
+      "response_strategy": "Mitigate",
+      "residual_rating": "Low",
+      "status": "Open",
+      "last_reviewed": "2026-05-24",
+      "board_visibility": "Yes",
+      "basis_of_cost_impact": "O/M/P cost impact equals $76M / $303M / $606M based on scenario-adjusted exposure to CBS 01.06 Cold-chain and automated logistics.",
+      "basis_of_schedule_impact": "O/M/P schedule impact equals 20/70/180 days mapped to activity A1600 Detailed design / IFC development.",
+      "driver_score": 15.51
+    }
+  ],
+  "schedule_detail": [
+    {
+      "activity_id": "A1000",
+      "phase": "Governance",
+      "activity": "Project initiation / controls setup",
+      "predecessor": "",
+      "duration_months": 2,
+      "critical": "No",
+      "basis": "Base logic: balanced critical path with standard sector sequencing and benchmark duration."
+    },
+    {
+      "activity_id": "A1100",
+      "phase": "Business Case",
+      "activity": "Strategic brief, funding and approval",
+      "predecessor": "A1000",
+      "duration_months": 4,
+      "critical": "No",
+      "basis": "Base logic: balanced critical path with standard sector sequencing and benchmark duration."
+    },
+    {
+      "activity_id": "A1200",
+      "phase": "Scope",
+      "activity": "Requirements definition and scope freeze",
+      "predecessor": "A1100",
+      "duration_months": 4,
+      "critical": "No",
+      "basis": "Base logic: balanced critical path with standard sector sequencing and benchmark duration."
+    },
+    {
+      "activity_id": "A1300",
+      "phase": "Design",
+      "activity": "Concept / reference architecture",
+      "predecessor": "A1200",
+      "duration_months": 6,
+      "critical": "No",
+      "basis": "Base logic: balanced critical path with standard sector sequencing and benchmark duration."
+    },
+    {
+      "activity_id": "A1400",
+      "phase": "Consents",
+      "activity": "Planning, regulatory and stakeholder approvals",
+      "predecessor": "A1200",
+      "duration_months": 7,
+      "critical": "Yes",
+      "basis": "Base logic: balanced critical path with standard sector sequencing and benchmark duration."
+    },
+    {
+      "activity_id": "A1500",
+      "phase": "Procurement",
+      "activity": "Procurement strategy and tender packaging",
+      "predecessor": "A1300",
+      "duration_months": 4,
+      "critical": "No",
+      "basis": "Base logic: balanced critical path with standard sector sequencing and benchmark duration."
+    },
+    {
+      "activity_id": "A1600",
+      "phase": "Design",
+      "activity": "Detailed design / IFC development",
+      "predecessor": "A1300",
+      "duration_months": 8,
+      "critical": "No",
+      "basis": "Base logic: balanced critical path with standard sector sequencing and benchmark duration."
+    },
+    {
+      "activity_id": "A1700",
+      "phase": "Procurement",
+      "activity": "Long-lead procurement",
+      "predecessor": "A1500",
+      "duration_months": 7,
+      "critical": "Yes",
+      "basis": "Base logic: balanced critical path with standard sector sequencing and benchmark duration."
+    },
+    {
+      "activity_id": "A1800",
+      "phase": "Enabling",
+      "activity": "Site / launch integration readiness",
+      "predecessor": "A1400;A1500",
+      "duration_months": 5,
+      "critical": "No",
+      "basis": "Base logic: balanced critical path with standard sector sequencing and benchmark duration."
+    },
+    {
+      "activity_id": "A1900",
+      "phase": "Delivery",
+      "activity": "Main construction / fabrication / assembly",
+      "predecessor": "A1600;A1700;A1800",
+      "duration_months": 16,
+      "critical": "Yes",
+      "basis": "Base logic: balanced critical path with standard sector sequencing and benchmark duration."
+    },
+    {
+      "activity_id": "A2000",
+      "phase": "Integration",
+      "activity": "Systems integration and testing",
+      "predecessor": "A1900",
+      "duration_months": 8,
+      "critical": "Yes",
+      "basis": "Base logic: balanced critical path with standard sector sequencing and benchmark duration."
+    },
+    {
+      "activity_id": "A2100",
+      "phase": "Handover",
+      "activity": "Commissioning, operations readiness and closeout",
+      "predecessor": "A2000",
+      "duration_months": 4,
+      "critical": "Yes",
+      "basis": "Base logic: balanced critical path with standard sector sequencing and benchmark duration."
+    },
+    {
+      "activity_id": "P1000",
+      "phase": "Package",
+      "activity": "Civil / structural package",
+      "predecessor": "A1900",
+      "duration_months": 3,
+      "critical": "Yes",
+      "basis": "Base logic: balanced critical path with standard sector sequencing and benchmark duration."
+    },
+    {
+      "activity_id": "P2000",
+      "phase": "Package",
+      "activity": "MEP / systems package",
+      "predecessor": "P1000",
+      "duration_months": 3,
+      "critical": "Yes",
+      "basis": "Base logic: balanced critical path with standard sector sequencing and benchmark duration."
+    },
+    {
+      "activity_id": "P3000",
+      "phase": "Package",
+      "activity": "Specialist equipment package",
+      "predecessor": "P2000",
+      "duration_months": 3,
+      "critical": "Yes",
+      "basis": "Base logic: balanced critical path with standard sector sequencing and benchmark duration."
+    },
+    {
+      "activity_id": "P4000",
+      "phase": "Package",
+      "activity": "Utilities / interfaces package",
+      "predecessor": "P3000",
+      "duration_months": 3,
+      "critical": "Yes",
+      "basis": "Base logic: balanced critical path with standard sector sequencing and benchmark duration."
+    },
+    {
+      "activity_id": "P5000",
+      "phase": "Package",
+      "activity": "Testing and commissioning package",
+      "predecessor": "P4000",
+      "duration_months": 3,
+      "critical": "Yes",
+      "basis": "Base logic: balanced critical path with standard sector sequencing and benchmark duration."
+    }
+  ],
+  "scenario_comparison_vs_base": {
+    "base": {
+      "cost_p50": "$7.6B",
+      "schedule_months": 75,
+      "confidence_pct": 60,
+      "risk": "Medium-High"
+    },
+    "selected": {
+      "scenario": "base",
+      "cost_p50": "$7.6B",
+      "schedule_months": 75,
+      "confidence_pct": 60,
+      "risk": "Medium-High"
+    },
+    "plain_english": "Base versus Base: cost 7.6B to 7.6B, schedule 75 to 75 months, confidence 60% to 60%."
+  },
+  "scenario_matrix": [
+    {
+      "scenario": "base",
+      "label": "Base",
+      "cost_p50": "$7.6B",
+      "schedule_months": 75,
+      "risk": "Medium-High",
+      "confidence_pct": 60,
+      "cost_delta_pct": 0,
+      "schedule_delta_pct": 0,
+      "confidence_delta_pts": 0,
+      "why": "Balanced cost, time and evidence posture.; Maintains a credible reference case for board challenge.; Does not buy extra time certainty or capital efficiency."
+    },
+    {
+      "scenario": "faster",
+      "label": "Faster",
+      "cost_p50": "$9.0B",
+      "schedule_months": 58,
+      "risk": "High",
+      "confidence_pct": 47,
+      "cost_delta_pct": 18,
+      "schedule_delta_pct": -22,
+      "confidence_delta_pts": -13,
+      "why": "You bought time by spending money and consuming recovery float.; Earlier revenue / market-entry option and stronger strategic timing.; commissioning validation float, interface stability, procurement optionality and late-stage recovery."
+    },
+    {
+      "scenario": "cheaper",
+      "label": "Cheaper",
+      "cost_p50": "$6.5B",
+      "schedule_months": 85,
+      "risk": "High",
+      "confidence_pct": 44,
+      "cost_delta_pct": -14,
+      "schedule_delta_pct": 14,
+      "confidence_delta_pts": -16,
+      "why": "You cut capital authorization by moving risk into resilience, redundancy and start-up.; Lower initial approval number and reduced near-term capital draw.; Operational resilience, commissioning flexibility, contingency adequacy and lifecycle certainty."
+    },
+    {
+      "scenario": "lower_risk",
+      "label": "Lower Risk",
+      "cost_p50": "$8.5B",
+      "schedule_months": 87,
+      "risk": "Medium-Low",
+      "confidence_pct": 70,
+      "cost_delta_pct": 12,
+      "schedule_delta_pct": 16,
+      "confidence_delta_pts": 10,
+      "why": "You bought confidence by adding assurance, float and procurement evidence.; Reduced downside volatility and stronger approval defensibility, at the expense of market timing.; Market-entry acceleration, lean capex posture and near-term strategic timing."
+    },
+    {
+      "scenario": "premium",
+      "label": "Premium",
+      "cost_p50": "$9.7B",
+      "schedule_months": 72,
+      "risk": "Low",
+      "confidence_pct": 78,
+      "cost_delta_pct": 28,
+      "schedule_delta_pct": -4,
+      "confidence_delta_pts": 18,
+      "why": "You purchased operational separation, redundancy and downside protection capacity.; Higher mission resilience, commissioning separation and stronger downside containment.; Lean capital optics and minimum-approval positioning."
+    }
+  ],
+  "cost_waterfall_vs_base": [
+    {
+      "driver": "Base P50",
+      "value_bn": 7.6,
+      "value": "$7.6B",
+      "kind": "total"
+    },
+    {
+      "driver": "Selected scenario P50",
+      "value_bn": 7.6,
+      "value": "$7.6B",
+      "kind": "total"
+    }
+  ],
+  "schedule_waterfall_vs_base": [
+    {
+      "driver": "Base duration",
+      "months": 75,
+      "kind": "total"
+    },
+    {
+      "driver": "Selected scenario duration",
+      "months": 75,
+      "kind": "total"
+    }
+  ],
+  "outputs_board_memo": [
+    "Base is the reference case: no cost, schedule or confidence delta is applied. Use Faster, Cheaper, Lower Risk or Premium to expose the board trade-off.",
+    "Scenario trade: Balanced cost, time and evidence posture.",
+    "What you gained: Maintains a credible reference case for board challenge.",
+    "What you gave up: Does not buy extra time certainty or capital efficiency.",
+    "Board warning: Mechanical completion is not the true finish line; validated production readiness and deviation closure are the real board decision gates.",
+    "Decision rule: do not approve this scenario until the changed risk owner, reserve position and critical-path evidence are explicit."
+  ],
+  "top_decisions_required": [
+    "Accept or reject the scenario trade-off explicitly at board level.",
+    "Confirm the changed critical path and near-critical path density.",
+    "Approve the scenario-specific reserve and contingency philosophy.",
+    "Assign named owners for the new top scenario risks.",
+    "Confirm whether XER, cost workbook and risk register should be issued as scenario-controlled outputs."
+  ],
+  "export_scenario_control": {
+    "scenario": "Base",
+    "must_stamp_exports": true,
+    "xer_logic": "critical path, duration and basis changed by scenario",
+    "cost_logic": "CBS basis, reserve and uncertainty spread changed by scenario",
+    "risk_logic": "probability, mitigation and scenario-emergent risks changed by scenario"
+  },
+  "cost_bucket_split": {
+    "Direct": 0.7,
+    "Indirect": 0.14,
+    "Reserve": 0.16
+  },
+  "live_calibration_active": true,
+  "live_calibration_label": "LIVE CALIBRATION SIGNALS ACTIVE",
+  "live_calibration_summary": "Current sector conditions are being applied to confidence, contingency and delivery-tail exposure.",
+  "live_calibration_signals": [
+    {
+      "signal": "Launch reliability volatility",
+      "status": "Active",
+      "direction": "sector-locked calibration",
+      "weight": 0.12,
+      "applies_to": "confidence, QCRA/QSRA, risk register",
+      "basis": "Launch cadence, range access and manifest priority affect schedule certainty."
+    },
+    {
+      "signal": "Mission assurance burden",
+      "status": "Active",
+      "direction": "sector-locked calibration",
+      "weight": 0.12,
+      "applies_to": "confidence, QCRA/QSRA, risk register",
+      "basis": "Qualification and redundancy evidence govern board defensibility."
+    },
+    {
+      "signal": "Thermal-power balance",
+      "status": "Watch",
+      "direction": "sector-locked calibration",
+      "weight": 0.12,
+      "applies_to": "confidence, QCRA/QSRA, risk register",
+      "basis": "Power storage and thermal rejection shape survivability."
+    },
+    {
+      "signal": "Regulatory and range availability",
+      "status": "Watch",
+      "direction": "sector-locked calibration",
+      "weight": 0.12,
+      "applies_to": "confidence, QCRA/QSRA, risk register",
+      "basis": "Flight approvals, range windows and orbital operations create schedule tails."
+    }
+  ],
+  "live_calibration_strip": "Launch reliability volatility \u2022 Mission assurance burden \u2022 Thermal-power balance \u2022 Regulatory and range availability",
+  "active_context_lock": {
+    "live_calibration": true,
+    "signal_count": 5
+  },
+  "sector_ontology_key": "space",
+  "sector_ontology_label": "Space / Lunar / Orbital Infrastructure",
+  "causal_graph_nodes": [
+    "Launch cadence",
+    "Payload integration",
+    "Thermal-power balance",
+    "Range availability",
+    "Autonomous commissioning",
+    "Mission assurance",
+    "Confidence"
+  ],
+  "causal_chain": [
+    "Launch cadence",
+    "Payload integration",
+    "Thermal-power balance",
+    "Range availability",
+    "Autonomous commissioning",
+    "Mission assurance",
+    "Confidence"
+  ],
+  "audit_spine": [
+    {
+      "check": "Cost reconciliation",
+      "status": "PASS",
+      "detail": "Direct $5.3B + Indirect $1.1B + Reserve $1.2B = $7.6B"
+    },
+    {
+      "check": "Scenario lock",
+      "status": "Base",
+      "detail": "Headline, executive narrative, QCRA/QSRA, risk register and exports use the same selected-scenario payload."
+    },
+    {
+      "check": "P-tail linkage",
+      "status": "$9.9B",
+      "detail": "Cost P80 and QSRA P80 98 months are visible for board challenge."
+    },
+    {
+      "check": "Evidence gate",
+      "status": "Board challenge likely",
+      "detail": "Board posture remains tied to evidence closure, not dashboard colour."
+    }
+  ]
+}
