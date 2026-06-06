@@ -1361,7 +1361,7 @@ function OneShotDemo({ open, onClose, onComplete }) {
       setResult(r);
       onComplete?.(r.model);
       // Mark free run as used after successful OneShotDemo run
-      try { if (!['jaimahadeshwar@yahoo.com','test@yahoo.com','deepa@caseai.co.uk','admin@controlorbit.com','demo@controlorbit.com','jai@controlorbit.com'].includes((form.email||'').toLowerCase().trim())) { localStorage.setItem('casey_demo_used','1'); } } catch(e) {}
+      // demo_used is only set after a successful generate() call, not on form submit
     } catch(e) {
       let msg = String(e.message||e);
       try { const p=JSON.parse(msg); msg=typeof p.detail==='object'?(p.detail.message||JSON.stringify(p.detail)):(p.detail||msg); } catch {}
@@ -3093,7 +3093,9 @@ function parseMoneyLocal(v) {
     setLoading(true); setTab(nextScenario !== 'base' ? 'compare' : 'overview');
     // Demo gate — fires only for brand-new project runs from the main console
     // NEVER fires for: showcase library, earth/space demo, scenario switching on existing model
-    const isGated = !isAdminUser && demoUsed && !activeContext && !opts.isShowcase && !opts.isDemo;
+    // Only gate genuinely new project runs — never gate scenario switches, showcase, or demos
+    const isNewProjectRun = !activeContext && !opts.isShowcase && !opts.isDemo && !opts.healthCheck;
+    const isGated = !isAdminUser && demoUsed && isNewProjectRun;
     if (isGated) {
       setLoading(false); setPropagating(false);
       setError(JSON.stringify({
@@ -3119,7 +3121,7 @@ function parseMoneyLocal(v) {
       const nextContext = lockedProjectContext(m, canonicalPrompt);
       setModel(m); setProjectContext(nextContext); setScenario(nextScenario); setPrompt(canonicalPrompt);
       // Mark free run as used (only for real generate calls, not instant demos or showcase)
-      if (!isAdminUser && !activeContext && !opts.isShowcase && !opts.isDemo) { markDemoUsed(); }
+      if (!isAdminUser && isNewProjectRun) { markDemoUsed(); }
     } catch (e) {
       let raw = String(e.message || e);
       try {
