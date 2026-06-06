@@ -7422,7 +7422,7 @@ def qcra_qsra_bytes(model: dict) -> bytes:
             ws_sa.merge_cells(f"A{ri}:B{ri}")
             ck.alignment = al()
         else:
-            ck.font = bf(9, "334155"); cv.font = rf(9, "0F172A")
+            ck.font = bf(9, "334155"); cv.font = bf(9, "0F172A", False)
             ck.fill = hf("F8FAFC"); cv.fill = hf("FFFFFF")
 
     # Footer on all sheets
