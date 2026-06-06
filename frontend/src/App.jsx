@@ -2316,9 +2316,9 @@ function GatedMessage({ raw, onDismiss, onShowcase, onEarth, onSpace }) {
 
         <div style={{fontSize:'22px',marginBottom:'10px'}}>{isStartingUp ? '⏳' : '✦'}</div>
         <h3 style={{
-          fontSize:'17px',fontWeight:'800',color:'#e2e8f0',
+          fontSize:'17px',fontWeight:'800',color: isStartingUp ? '#f59e0b' : '#e2e8f0',
           marginBottom:'8px',paddingRight:'30px',lineHeight:'1.3'
-        }}>{msg}</h3>
+        }}>{isStartingUp ? '⏳ Server starting up — try again in 20 seconds' : msg}</h3>
         <p style={{
           fontSize:'13px',color:'#94a3b8',lineHeight:'1.6',marginBottom:'18px'
         }}>{sub}</p>
@@ -3113,6 +3113,23 @@ function parseMoneyLocal(v) {
       if (!isAdminUser && isNewProjectRun) { markDemoUsed(); }
     } catch (e) {
       let raw = String(e.message || e);
+      // Detect network/CORS/connection errors — show wake-up message, never the gate message
+      const isNetworkError = raw.includes('fetch') || raw.includes('Failed to fetch') || 
+        raw.includes('NetworkError') || raw.includes('CORS') || raw.includes('ERR_') ||
+        raw.includes('net::') || raw.includes('Connection refused') || raw.includes('502') ||
+        raw.includes('503') || raw.includes('504') || raw.includes('Load failed') ||
+        raw.includes('unreachable') || raw.includes('AbortError') || raw.includes('timeout') ||
+        raw.includes('signal') || raw.includes('aborted');
+      if (isNetworkError) {
+        setError(JSON.stringify({
+          message: 'Backend starting up — wait 20 seconds and try again.',
+          sub: 'The server is waking up after a period of inactivity. Wait 20 seconds then click Earth Demo, Space Demo or any Showcase item. These are always free.',
+          email: 'deepa@caseai.co.uk',
+          linkedin: 'https://www.linkedin.com/company/caseai'
+        }));
+        setBackendStatus('down');
+        return;
+      }
       try {
         const p = JSON.parse(raw);
         const d = p.detail || p;
