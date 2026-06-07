@@ -3040,11 +3040,12 @@ function parseMoneyLocal(v) {
     setSimulationStage('Loading ' + (type === 'earth' ? 'HS2 Phase 2b Earth Demo' : type === 'space' ? 'Lunar Base Alpha Space Demo' : 'reference case') + '…');
     try {
       // Use /generate — the same endpoint showcase and free run use (always works)
+      // Pass user's selected class_level and schedule_level so all combinations work
       const payload = {
         prompt: cfg.prompt,
         client: cfg.client,
-        class_level: 3,
-        schedule_level: 4,
+        class_level: classLevel || 3,
+        schedule_level: scheduleLevel || 4,
         scenario: 'base',
         demo: true,
         active_model: null
@@ -3418,15 +3419,15 @@ function parseMoneyLocal(v) {
           <span style={{fontSize:'11px',color:'#94a3b8'}}>Exports available below. Earth Demo, Space Demo and Showcase Library always free.</span>
           <a href="mailto:hello@controlorbit.com?subject=CASEY Full Access" style={{marginLeft:'auto',fontSize:'11px',color:'#8df7ff',fontWeight:'700',textDecoration:'none',background:'rgba(141,247,255,0.1)',padding:'4px 12px',borderRadius:'3px',border:'1px solid rgba(141,247,255,0.3)'}}>Request full access →</a>
         </div>}
-      <nav className="tabs">{[['overview','Overview'],['twin','⚡ Twin'],['compare','Scenarios'],['delta','Intel'],['causal','Causal'],['cost','Cost'],['schedule','Schedule'],['risk','Risk'],['monte','QCRA/QSRA'],['outputs','Outputs'],['assurance','Assurance'],['runtime','Stress Test'],['advisor','Advisor'],['defence','⚡ Defence'],['method','Method'],['benchmark','Benchmarks'],['pricing','Pricing']].map(x => <button key={x[0]} className={tab===x[0]?'active':''} onClick={() => setTab(x[0])}>{x[1]}</button>)}</nav>
+      <nav className="tabs">{[['overview','Overview'],['twin','⚡ Decision Twin'],['compare','Scenarios'],['delta','Intel'],['causal','Causal'],['cost','Cost'],['schedule','Schedule'],['risk','Risk'],['monte','QCRA/QSRA'],['outputs','Outputs'],['assurance','Assurance'],['runtime','Stress Test'],['advisor','Advisor'],['defence','⚡ Defence'],['method','Method'],['benchmark','Benchmarks'],['pricing','Pricing']].map(x => <button key={x[0]} className={tab===x[0]?'active':''} onClick={() => setTab(x[0])}>{x[1]}</button>)}</nav>
         {tab === 'overview' && <>
           <SelfChallenge sc={model?.self_challenge} programme={model?.title}/>
           <div style={{background:'linear-gradient(90deg,rgba(141,247,255,0.08),rgba(141,247,255,0.02))',border:'1px solid rgba(141,247,255,0.18)',borderRadius:'5px',padding:'10px 16px',marginBottom:'10px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:'12px',flexWrap:'wrap'}}>
             <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
               <span style={{fontSize:'18px'}}>⚡</span>
               <div>
-                <div style={{fontSize:'11px',fontWeight:'800',color:'#8df7ff',marginBottom:'1px'}}>DIGITAL TWIN — Update this model with real programme data</div>
-                <div style={{fontSize:'10px',color:'#64748b'}}>This is your baseline. Once the programme is live, go to the <b style={{color:'#8df7ff'}}>⚡ Twin tab</b> to feed in earned value, milestone progress and sector signals — and get a live forecast-at-completion and board alerts.</div>
+                <div style={{fontSize:'11px',fontWeight:'800',color:'#8df7ff',marginBottom:'1px'}}>⚡ PROGRAMME DECISION TWIN — Live decision engine</div>
+                <div style={{fontSize:'10px',color:'#64748b'}}>This is your decision baseline. Once live, go to the <b style={{color:'#8df7ff'}}>⚡ Twin tab</b> to feed earned value, milestone progress and signals — CASEY returns forecast-at-completion, governing constraint alerts and board decisions.</div>
               </div>
             </div>
             <button onClick={()=>setTab('twin')} style={{padding:'7px 14px',background:'rgba(141,247,255,0.1)',border:'1px solid rgba(141,247,255,0.25)',borderRadius:'4px',color:'#8df7ff',fontSize:'11px',fontWeight:'800',cursor:'pointer',flexShrink:0}}>Open Twin →</button>
@@ -3441,6 +3442,59 @@ function parseMoneyLocal(v) {
             </div>
             <ChallengeAnaloguePanel model={model} />
           </div>}
+          {/* CONFIDENCE DECOMPOSITION + MORTALITY EVENT + DECISION SIMULATOR */}
+          {model?.confidence_by_discipline && <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:10,marginBottom:12}}>
+            {/* Confidence by discipline */}
+            <div style={{background:'rgba(6,182,212,0.06)',border:'1px solid rgba(6,182,212,0.2)',borderRadius:8,padding:'14px 16px'}}>
+              <div style={{fontSize:'9px',fontWeight:'800',color:'#06b6d4',letterSpacing:'.12em',marginBottom:8}}>CONFIDENCE BY DISCIPLINE</div>
+              <div style={{fontSize:'10px',color:'#94a3b8',marginBottom:8}}>Why {model.confidence_pct}%? Here's the breakdown:</div>
+              {Object.entries(model.confidence_by_discipline).map(([disc,pct])=>(
+                <div key={disc} style={{display:'flex',alignItems:'center',gap:6,marginBottom:4}}>
+                  <div style={{flex:1,fontSize:'9px',color:'#cbd5e1'}}>{disc}</div>
+                  <div style={{width:60,height:4,background:'rgba(255,255,255,0.08)',borderRadius:2}}>
+                    <div style={{width:`${pct}%`,height:'100%',borderRadius:2,background:pct>=70?'#10b981':pct>=55?'#f59e0b':'#ef4444'}}/>
+                  </div>
+                  <div style={{fontSize:'9px',fontWeight:'700',color:pct>=70?'#10b981':pct>=55?'#f59e0b':'#ef4444',minWidth:28}}>{pct}%</div>
+                </div>
+              ))}
+            </div>
+
+            {/* THE ONE RISK — mortality event */}
+            {model?.mortality_event && <div style={{background:'rgba(239,68,68,0.08)',border:'2px solid rgba(239,68,68,0.4)',borderRadius:8,padding:'14px 16px'}}>
+              <div style={{fontSize:'9px',fontWeight:'800',color:'#ef4444',letterSpacing:'.12em',marginBottom:6}}>⚠ IF WE ARE WRONG, THIS IS WHY</div>
+              <div style={{fontSize:'12px',fontWeight:'700',color:'#fff',marginBottom:8}}>{model.mortality_event.title}</div>
+              <div style={{fontSize:'10px',color:'#fca5a5',lineHeight:'1.5',marginBottom:8,fontStyle:'italic'}}>"{model.mortality_event.terrifying_statement}"</div>
+              <div style={{fontSize:'9px',color:'#94a3b8'}}>{model.mortality_event.probability} · {model.mortality_event.exposure}</div>
+              <div style={{marginTop:8,padding:'6px 8px',background:'rgba(239,68,68,0.1)',borderRadius:4,fontSize:'9px',color:'#fca5a5',fontWeight:'600'}}>Board action: {model.mortality_event.board_action}</div>
+            </div>}
+
+            {/* DECISION SIMULATOR */}
+            {model?.decision_simulator && <div style={{background:'rgba(16,185,129,0.06)',border:'1px solid rgba(16,185,129,0.2)',borderRadius:8,padding:'14px 16px'}}>
+              <div style={{fontSize:'9px',fontWeight:'800',color:'#10b981',letterSpacing:'.12em',marginBottom:8}}>🎮 DECISION SIMULATOR</div>
+              <div style={{fontSize:'9px',color:'#94a3b8',marginBottom:8}}>What if the board asks "what does it cost to go faster?"</div>
+              {[model.decision_simulator.spend_200m, model.decision_simulator.descope_10pct, model.decision_simulator.accelerate].filter(Boolean).map((d,i)=>(
+                <div key={i} style={{marginBottom:8,padding:'8px 10px',background:'rgba(16,185,129,0.05)',borderRadius:5,border:'1px solid rgba(16,185,129,0.15)'}}>
+                  <div style={{fontSize:'10px',fontWeight:'700',color:'#10b981',marginBottom:3}}>{d.label}</div>
+                  <div style={{display:'flex',gap:8,fontSize:'9px'}}>
+                    <span style={{color:d.cost_delta_bn>0?'#ef4444':'#10b981'}}>{d.cost_delta_bn>0?'+':''}{d.cost_delta_bn?.toFixed?.(2)}B cost</span>
+                    <span style={{color:d.schedule_delta_months<0?'#10b981':'#ef4444'}}>{d.schedule_delta_months>0?'+':''}{d.schedule_delta_months}mo sched</span>
+                    <span style={{color:d.confidence_delta_pct>0?'#10b981':'#ef4444'}}>{d.confidence_delta_pct>0?'+':''}{d.confidence_delta_pct}% conf</span>
+                  </div>
+                </div>
+              ))}
+            </div>}
+          </div>}
+
+          {/* ESTIMATE BASIS — traceability chain */}
+          {model?.estimate_basis?.traceability?.length > 0 && <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:6,padding:'12px 16px',marginBottom:12}}>
+            <div style={{fontSize:'9px',fontWeight:'800',color:'#94a3b8',letterSpacing:'.12em',marginBottom:6}}>📐 ESTIMATE BASIS — FULL TRACEABILITY</div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6}}>
+              {model.estimate_basis.traceability.map((t,i)=>(
+                <div key={i} style={{fontSize:'9px',color:'#64748b',display:'flex',gap:4}}><span style={{color:'#06b6d4',flexShrink:0}}>→</span>{t}</div>
+              ))}
+            </div>
+          </div>}
+
           {/* LIVE INTELLIGENCE SIGNAL */}
           {model?.live_intel_active && model?.live_intel_text && <section className="layout one">
             <div style={{padding:'10px 16px',background:'rgba(16,185,129,0.05)',border:'1px solid rgba(16,185,129,0.2)',borderLeft:'3px solid #10b981',borderRadius:'5px',marginBottom:'10px'}}>
@@ -3627,7 +3681,35 @@ function parseMoneyLocal(v) {
             </div>}
           </div>}
           <Card><h2>Risk Register Pro</h2><p style={{fontSize:'11px',color:'#64748b',marginBottom:'8px'}}>Each risk has a cause (what triggers it), event (what happens), impact (cost/schedule consequence), probability, named owner, and mitigation. The top risks by expected monetary value drive the P80/P90 exposure in the QCRA chart.</p>{model?.stress_test_applied && <div style={{background:"rgba(239,68,68,0.08)",borderLeft:"2px solid #ef4444",padding:"6px 10px",marginBottom:"8px",fontSize:"11px",color:"#ef4444"}}>Stress test applied: risk posture has shifted. Confidence is now {model.confidence_pct}%. The risks below drove this position before the shock was applied.</div>}<Table rows={risks} cols={[['risk_id','ID'],['risk','Risk'],['cause','Cause'],['event','Event'],['impact','Impact'],['probability_pct','Prob %'],['activity_id','Activity'],['cbs','CBS'],['owner','Owner'],['mitigation','Mitigation']]}/></Card><Card><h2>Top exposure drivers</h2><ResponsiveContainer width="100%" height={380}><BarChart data={tornado} layout="vertical"><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis type="number"/><YAxis dataKey="driver" type="category" width={150}/><Tooltip/><Bar dataKey="contribution" fill="#8df7ff"/></BarChart></ResponsiveContainer></Card></section>}
-        {tab === 'monte' && <section className="layout two"><Card><h2>QCRA cost range curve</h2>{model?.stress_test_applied && <div style={{background:'rgba(245,158,11,0.08)',borderLeft:'2px solid #f59e0b',padding:'6px 10px',marginBottom:'8px',fontSize:'11px',color:'#f59e0b'}}>Stress test active: {String(model.stress_test_applied).replace(/_/g,' ')} — P50 updated to {safeRender(model.cost_p50)}. Download Export QCRA/QSRA to capture the stressed curves.</div>}<p style={{fontSize:'11px',color:'#64748b',marginBottom:'8px'}}>Probability range across 10,000+ simulations. P50 = the most likely outturn (headline number). P80 = 80% chance of coming in at this or less — this is the board's risk exposure. P90 = stress-case downside. Not a cashflow profile.</p><div className="metrics"><div>P50 headline<b>{safeRender(model.cost_p50)}</b></div><div>P80 risk exposure<b>{fmt(qcra.p80, model?.currency_symbol)}</b></div><div>P90 stress case<b>{fmt(qcra.p90, model?.currency_symbol)}</b></div></div><ResponsiveContainer width="100%" height={280}><AreaChart data={curve}><defs><linearGradient id="caseyG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#8df7ff" stopOpacity=".55"/><stop offset="1" stopColor="#8df7ff" stopOpacity="0"/></linearGradient></defs><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis dataKey="percentile"/><YAxis/><Tooltip formatter={(v) => {const curr = model?.currency_symbol || '$'; return [`${curr}${Number(v).toFixed(1)}B`, "QCRA total outturn"];}}/><ReferenceLine x={50} stroke="#ffffff88" label="P50 = headline"/><ReferenceLine x={80} stroke="#ffffff55" label="P80 = board risk"/><Area type="monotone" name="QCRA total outturn" dataKey="cost_bn" stroke="#8df7ff" fill="url(#caseyG)"/></AreaChart></ResponsiveContainer>{(model.monte_carlo?.curve_readout || []).slice(0,1).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{safeRender(x)}</div>)}<div className="reason p80Translation"><span>1/5</span>{safeRender(p80Talk.cost)}</div><div className="reason"><span>!</span>This curve is a probability distribution, not spend over time. The x-axis is confidence percentile. P50 equals the headline estimate; P80/P90 are board downside exposure.</div></Card><Card><h2>QSRA schedule range curve</h2><p className="chartCaption">P50 matches the headline duration. P80/P90 show the likely board conversation if critical path risk lands.</p><div className="metrics"><div>P50 headline<b>{qsra.p50} mo</b></div><div>P80 risk date<b>{qsra.p80} mo</b></div><div>P90 stress date<b>{qsra.p90} mo</b></div></div><ResponsiveContainer width="100%" height={280}><LineChart data={curve}><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis dataKey="percentile"/><YAxis/><Tooltip formatter={(v) => [`${v} months`, "QSRA finish date"]}/><ReferenceLine x={50} stroke="#ffffff88" label="P50 = headline"/><ReferenceLine x={80} stroke="#ffffff55" label="P80 = board risk"/><Line type="monotone" name="QSRA finish date" dataKey="schedule_months" stroke="#b18cff" strokeWidth={4}/></LineChart></ResponsiveContainer><div className="reason p80Translation"><span>1/5</span>{safeRender(p80Talk.schedule)}</div><div className="reason p80Translation"><span>!</span>{safeRender(p80Talk.board)}</div>{(model.monte_carlo?.curve_readout || []).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{safeRender(x)}</div>)}</Card></section>}
+        {tab === 'monte' && <section className="layout two">
+          {/* Confidence decomposition panel */}
+          {model?.confidence_by_discipline && <div style={{gridColumn:'1/-1',background:'rgba(6,182,212,0.06)',border:'1px solid rgba(6,182,212,0.2)',borderRadius:8,padding:'14px 18px',marginBottom:12}}>
+            <div style={{fontSize:'9px',fontWeight:'800',color:'#06b6d4',letterSpacing:'.14em',marginBottom:6}}>WHY {model.confidence_pct}% CONFIDENCE? — DECOMPOSITION BY DISCIPLINE</div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8,marginBottom:10}}>
+              {Object.entries(model.confidence_by_discipline).map(([disc,pct])=>(
+                <div key={disc} style={{background:'rgba(255,255,255,0.03)',borderRadius:5,padding:'8px 10px'}}>
+                  <div style={{fontSize:'8px',color:'#64748b',marginBottom:2}}>{disc}</div>
+                  <div style={{fontSize:'18px',fontWeight:'800',color:pct>=70?'#10b981':pct>=55?'#f59e0b':'#ef4444'}}>{pct}%</div>
+                  <div style={{width:'100%',height:3,background:'rgba(255,255,255,0.08)',borderRadius:2,marginTop:4}}>
+                    <div style={{width:`${pct}%`,height:'100%',borderRadius:2,background:pct>=70?'#10b981':pct>=55?'#f59e0b':'#ef4444'}}/>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {model?.confidence_breakdown?.length > 0 && <div>
+              <div style={{fontSize:'8px',color:'#64748b',marginBottom:4}}>CONFIDENCE DRIVERS:</div>
+              <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
+                {model.confidence_breakdown.map((cb,i)=>(
+                  <div key={i} style={{background:'rgba(255,255,255,0.03)',borderRadius:4,padding:'4px 8px',fontSize:'9px'}}>
+                    <span style={{color:'#94a3b8'}}>{cb.driver}: </span>
+                    <span style={{color:'#fff',fontWeight:'600'}}>{cb.effect}</span>
+                    {cb.delta !== undefined && cb.delta !== 0 && <span style={{color:cb.delta>0?'#10b981':'#ef4444',marginLeft:4}}>{cb.delta>0?'+':''}{cb.delta}%</span>}
+                  </div>
+                ))}
+              </div>
+            </div>}
+          </div>}
+          <Card><h2>QCRA cost range curve</h2>{model?.stress_test_applied && <div style={{background:'rgba(245,158,11,0.08)',borderLeft:'2px solid #f59e0b',padding:'6px 10px',marginBottom:'8px',fontSize:'11px',color:'#f59e0b'}}>Stress test active: {String(model.stress_test_applied).replace(/_/g,' ')} — P50 updated to {safeRender(model.cost_p50)}. Download Export QCRA/QSRA to capture the stressed curves.</div>}<p style={{fontSize:'11px',color:'#64748b',marginBottom:'8px'}}>Probability range across 10,000+ simulations. P50 = the most likely outturn (headline number). P80 = 80% chance of coming in at this or less — this is the board's risk exposure. P90 = stress-case downside. Not a cashflow profile.</p><div className="metrics"><div>P50 headline<b>{safeRender(model.cost_p50)}</b></div><div>P80 risk exposure<b>{fmt(qcra.p80, model?.currency_symbol)}</b></div><div>P90 stress case<b>{fmt(qcra.p90, model?.currency_symbol)}</b></div></div><ResponsiveContainer width="100%" height={280}><AreaChart data={curve}><defs><linearGradient id="caseyG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#8df7ff" stopOpacity=".55"/><stop offset="1" stopColor="#8df7ff" stopOpacity="0"/></linearGradient></defs><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis dataKey="percentile"/><YAxis/><Tooltip formatter={(v) => {const curr = model?.currency_symbol || '$'; return [`${curr}${Number(v).toFixed(1)}B`, "QCRA total outturn"];}}/><ReferenceLine x={50} stroke="#ffffff88" label="P50 = headline"/><ReferenceLine x={80} stroke="#ffffff55" label="P80 = board risk"/><Area type="monotone" name="QCRA total outturn" dataKey="cost_bn" stroke="#8df7ff" fill="url(#caseyG)"/></AreaChart></ResponsiveContainer>{(model.monte_carlo?.curve_readout || []).slice(0,1).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{safeRender(x)}</div>)}<div className="reason p80Translation"><span>1/5</span>{safeRender(p80Talk.cost)}</div><div className="reason"><span>!</span>This curve is a probability distribution, not spend over time. The x-axis is confidence percentile. P50 equals the headline estimate; P80/P90 are board downside exposure.</div></Card><Card><h2>QSRA schedule range curve</h2><p className="chartCaption">P50 matches the headline duration. P80/P90 show the likely board conversation if critical path risk lands.</p><div className="metrics"><div>P50 headline<b>{qsra.p50} mo</b></div><div>P80 risk date<b>{qsra.p80} mo</b></div><div>P90 stress date<b>{qsra.p90} mo</b></div></div><ResponsiveContainer width="100%" height={280}><LineChart data={curve}><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis dataKey="percentile"/><YAxis/><Tooltip formatter={(v) => [`${v} months`, "QSRA finish date"]}/><ReferenceLine x={50} stroke="#ffffff88" label="P50 = headline"/><ReferenceLine x={80} stroke="#ffffff55" label="P80 = board risk"/><Line type="monotone" name="QSRA finish date" dataKey="schedule_months" stroke="#b18cff" strokeWidth={4}/></LineChart></ResponsiveContainer><div className="reason p80Translation"><span>1/5</span>{safeRender(p80Talk.schedule)}</div><div className="reason p80Translation"><span>!</span>{safeRender(p80Talk.board)}</div>{(model.monte_carlo?.curve_readout || []).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{safeRender(x)}</div>)}</Card></section>}
         {tab === 'delta' && <section className="layout two">
           <Card><h2>Strategic Delta Intelligence</h2><p>What changed because this scenario was selected.</p>
             {(model.scenario_delta_intelligence || []).map((x,i)=><div className="reason" key={i}><span>{i+1}</span><b>{x.label}: {x.value}</b><br/>{x.meaning}</div>)}
@@ -4016,9 +4098,57 @@ function parseMoneyLocal(v) {
         {tab === 'defence' && <div style={{padding:'0 2px'}}>
           {/* Header */}
           <div style={{background:'rgba(14,116,144,0.08)',border:'1px solid rgba(14,116,144,0.2)',borderRadius:6,padding:'14px 18px',marginBottom:12}}>
-            <div style={{fontSize:'11px',fontWeight:'800',color:'#0e7490',letterSpacing:'.12em',marginBottom:4}}>⚡ CASEY DEFENCE — WHY EVERY NUMBER</div>
-            <div style={{fontSize:'11px',color:'#94a3b8'}}>Every number defends itself. The question shifts from "did AI make this up?" to "do we agree with CASEY's assumptions?"</div>
+            <div style={{fontSize:'11px',fontWeight:'800',color:'#0e7490',letterSpacing:'.12em',marginBottom:4}}>⚡ PROGRAMME DECISION TWIN — BOARD DEFENCE LAYER</div>
+            <div style={{fontSize:'11px',color:'#94a3b8'}}>Every number defends itself. The question is no longer "did AI make this up?" — it is "do we agree with CASEY's assumptions?"</div>
           </div>
+
+          {/* THE ONE RISK — terrifying insight */}
+          {model?.mortality_event && <div style={{background:'rgba(239,68,68,0.10)',border:'2px solid rgba(239,68,68,0.5)',borderRadius:8,padding:'16px 20px',marginBottom:14}}>
+            <div style={{fontSize:'9px',fontWeight:'800',color:'#ef4444',letterSpacing:'.18em',marginBottom:6}}>⚠ IF WE ARE WRONG — THE ONE RISK THAT KILLS THIS PROGRAMME</div>
+            <div style={{fontSize:'15px',fontWeight:'800',color:'#fff',lineHeight:'1.3',marginBottom:10}}>{model.mortality_event.title}</div>
+            <div style={{fontSize:'11px',color:'#fca5a5',lineHeight:'1.6',marginBottom:10,fontStyle:'italic',borderLeft:'3px solid rgba(239,68,68,0.4)',paddingLeft:12}}>"{model.mortality_event.terrifying_statement}"</div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:8}}>
+              <div style={{background:'rgba(239,68,68,0.08)',borderRadius:5,padding:'8px 12px'}}>
+                <div style={{fontSize:'8px',color:'#ef4444',fontWeight:'700',marginBottom:2}}>PROBABILITY</div>
+                <div style={{fontSize:'11px',color:'#fca5a5'}}>{model.mortality_event.probability}</div>
+              </div>
+              <div style={{background:'rgba(239,68,68,0.08)',borderRadius:5,padding:'8px 12px'}}>
+                <div style={{fontSize:'8px',color:'#ef4444',fontWeight:'700',marginBottom:2}}>EXPOSURE</div>
+                <div style={{fontSize:'11px',color:'#fca5a5'}}>{model.mortality_event.exposure}</div>
+              </div>
+            </div>
+            <div style={{background:'rgba(239,68,68,0.12)',border:'1px solid rgba(239,68,68,0.3)',borderRadius:5,padding:'10px 14px'}}>
+              <div style={{fontSize:'8px',fontWeight:'800',color:'#ef4444',marginBottom:4}}>BOARD ACTION REQUIRED</div>
+              <div style={{fontSize:'11px',color:'#fff',fontWeight:'600'}}>{model.mortality_event.board_action}</div>
+            </div>
+          </div>}
+
+          {/* DECISION SIMULATOR */}
+          {model?.decision_simulator && <div style={{background:'rgba(16,185,129,0.06)',border:'1px solid rgba(16,185,129,0.2)',borderRadius:8,padding:'14px 18px',marginBottom:14}}>
+            <div style={{fontSize:'9px',fontWeight:'800',color:'#10b981',letterSpacing:'.12em',marginBottom:6}}>🎮 DECISION SIMULATOR — WHAT IF THE BOARD ASKS?</div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8}}>
+              {[model.decision_simulator.spend_200m, model.decision_simulator.descope_10pct, model.decision_simulator.accelerate].filter(Boolean).map((d,i)=>(
+                <div key={i} style={{background:'rgba(16,185,129,0.05)',border:'1px solid rgba(16,185,129,0.15)',borderRadius:6,padding:'12px 14px'}}>
+                  <div style={{fontSize:'10px',fontWeight:'700',color:'#10b981',marginBottom:8}}>{d.label}</div>
+                  <div style={{display:'flex',flexDirection:'column',gap:4,marginBottom:8}}>
+                    <div style={{display:'flex',justifyContent:'space-between',fontSize:'10px'}}>
+                      <span style={{color:'#94a3b8'}}>Cost</span>
+                      <span style={{color:d.cost_delta_bn>0?'#ef4444':'#10b981',fontWeight:'700'}}>{d.cost_delta_bn>0?'+':''}{d.cost_delta_bn?.toFixed?.(2)}B</span>
+                    </div>
+                    <div style={{display:'flex',justifyContent:'space-between',fontSize:'10px'}}>
+                      <span style={{color:'#94a3b8'}}>Schedule</span>
+                      <span style={{color:d.schedule_delta_months<0?'#10b981':'#ef4444',fontWeight:'700'}}>{d.schedule_delta_months>0?'+':''}{d.schedule_delta_months} months</span>
+                    </div>
+                    <div style={{display:'flex',justifyContent:'space-between',fontSize:'10px'}}>
+                      <span style={{color:'#94a3b8'}}>Confidence</span>
+                      <span style={{color:d.confidence_delta_pct>0?'#10b981':'#ef4444',fontWeight:'700'}}>{d.confidence_delta_pct>0?'+':''}{d.confidence_delta_pct}%</span>
+                    </div>
+                  </div>
+                  <div style={{fontSize:'9px',color:'#64748b',lineHeight:'1.4'}}>{d.narrative}</div>
+                </div>
+              ))}
+            </div>
+          </div>}
 
           {/* GOVERNING CONSTRAINT — dominates the page */}
           {(()=>{const gc=model?.governing_constraint_full||{};const display=gc.constraint||model?.casey_defence?.governing_constraint_display||model?.governing_constraint||'—';return(
@@ -4377,7 +4507,9 @@ function TwinTab({ model, setTab }) {
           {/* File type guide */}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"4px",marginBottom:"10px"}}>
             {[["📅 XER (Primavera P6)","Schedule % complete, activities, critical path"],
-              ["📊 Excel (any format)","Cost actuals, earned value, CPI, % complete"],
+              ["📊 Excel Cost / Risk","Cost actuals, earned value, risk register"],
+              ["📄 Board Pack PDF","Monthly report, steering committee pack"],
+              ["📝 Monthly Report","Progress, costs, risks, decisions"],
               ["📋 Risk Register","Risk count, open items, EMV totals"],
               ["📝 Monthly Report (.txt/.docx/.pdf)","CPI, delay, programme status from narrative"]
             ].map(([t,d])=><div key={t} style={{padding:"5px 7px",background:"rgba(255,255,255,0.03)",borderRadius:"3px",border:"1px solid rgba(255,255,255,0.06)"}}>
