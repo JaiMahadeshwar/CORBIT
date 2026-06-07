@@ -5632,6 +5632,69 @@ def workbook_bytes(model):
             for ci in (1,2): ws_ei.cell(ei_row,ci).border = thin_border()
             ei_row += 1
 
+    # Confidence by discipline
+    cbd = model.get("confidence_by_discipline", {})
+    if cbd:
+        ei_row += 1
+        ws_ei.cell(ei_row,1,"CONFIDENCE BY DISCIPLINE").font = bold(10,"FFFFFF")
+        ws_ei.cell(ei_row,1).fill = hdr_fill("0E7490"); ws_ei.merge_cells(f"A{ei_row}:B{ei_row}"); ei_row += 1
+        ws_ei.cell(ei_row,1,f"Why {model.get('confidence_pct','—')}% overall confidence:").font = reg(9); ws_ei.merge_cells(f"A{ei_row}:B{ei_row}"); ei_row += 1
+        for disc, pct in cbd.items():
+            ws_ei.cell(ei_row,1,disc).font = bold(9,"0E7490")
+            ws_ei.cell(ei_row,2,f"{pct}%  {'■'*int(pct//10)}{'□'*(10-int(pct//10))}  {'HIGH' if pct>=70 else 'MEDIUM' if pct>=55 else 'LOW'}").font = bold(9, "059669" if pct>=70 else "D97706" if pct>=55 else "DC2626")
+            for ci in (1,2): ws_ei.cell(ei_row,ci).border = thin_border()
+            ei_row += 1
+        ei_row += 1
+
+    # Estimate basis
+    eb = model.get("estimate_basis", {})
+    if eb and eb.get("traceability"):
+        ws_ei.cell(ei_row,1,"ESTIMATE BASIS — TRACEABILITY CHAIN").font = bold(10,"FFFFFF")
+        ws_ei.cell(ei_row,1).fill = hdr_fill("1E293B"); ws_ei.merge_cells(f"A{ei_row}:B{ei_row}"); ei_row += 1
+        for line in eb.get("traceability",[]):
+            ws_ei.cell(ei_row,1,"→").font = bold(9,"0E7490")
+            ws_ei.cell(ei_row,2,str(line)[:100]).font = reg(9,"0F172A")
+            for ci in (1,2): ws_ei.cell(ei_row,ci).border = thin_border()
+            ei_row += 1
+        for label, key in [("Benchmark anchor","benchmark_anchor"),("Escalation","escalation"),("Location factor","location_factor"),("Class uncertainty","class_uncertainty")]:
+            val = eb.get(key,"")
+            if val:
+                ws_ei.cell(ei_row,1,label).font = bold(9,"475569")
+                ws_ei.cell(ei_row,2,str(val)[:100]).font = reg(9,"0F172A")
+                for ci in (1,2): ws_ei.cell(ei_row,ci).border = thin_border()
+                ei_row += 1
+        ei_row += 1
+
+    # Mortality event — the one risk
+    me = model.get("mortality_event", {})
+    if me and me.get("terrifying_statement"):
+        ws_ei.cell(ei_row,1,"IF WE ARE WRONG — THE ONE RISK").font = bold(10,"FFFFFF")
+        ws_ei.cell(ei_row,1).fill = hdr_fill("DC2626"); ws_ei.merge_cells(f"A{ei_row}:B{ei_row}"); ei_row += 1
+        ws_ei.cell(ei_row,1,str(me.get("title",""))[:50]).font = bold(10,"DC2626"); ws_ei.merge_cells(f"A{ei_row}:B{ei_row}"); ei_row += 1
+        ws_ei.cell(ei_row,1,str(me.get("terrifying_statement",""))[:160]).font = reg(9,"7F1D1D"); ws_ei.merge_cells(f"A{ei_row}:B{ei_row}"); ei_row += 1
+        for label, key in [("Probability",me.get("probability","")),("Exposure",me.get("exposure","")),("Board action",me.get("board_action",""))]:
+            ws_ei.cell(ei_row,1,label).font = bold(9,"DC2626")
+            ws_ei.cell(ei_row,2,str(key)[:120]).font = reg(9,"0F172A")
+            for ci in (1,2): ws_ei.cell(ei_row,ci).border = thin_border()
+            ei_row += 1
+        ei_row += 1
+
+    # Decision simulator
+    ds = model.get("decision_simulator", {})
+    if ds:
+        ws_ei.cell(ei_row,1,"DECISION SIMULATOR — WHAT IF THE BOARD ASKS?").font = bold(10,"FFFFFF")
+        ws_ei.cell(ei_row,1).fill = hdr_fill("059669"); ws_ei.merge_cells(f"A{ei_row}:B{ei_row}"); ei_row += 1
+        for key in ["spend_200m","descope_10pct","accelerate"]:
+            d = ds.get(key,{})
+            if d:
+                ws_ei.cell(ei_row,1,d.get("label","")).font = bold(9,"059669")
+                cost_d = d.get("cost_delta_bn",0); sched_d = d.get("schedule_delta_months",0); conf_d = d.get("confidence_delta_pct",0)
+                ws_ei.cell(ei_row,2,f"Cost {'+' if cost_d>0 else ''}{cost_d:.2f}B  |  Schedule {'+' if sched_d>0 else ''}{sched_d}mo  |  Confidence {'+' if conf_d>0 else ''}{conf_d}%").font = reg(9,"0F172A")
+                for ci in (1,2): ws_ei.cell(ei_row,ci).border = thin_border()
+                ei_row += 1
+                ws_ei.cell(ei_row,2,d.get("narrative","")[:120]).font = reg(8,"64748B"); ei_row += 1
+        ei_row += 1
+
     # Footer on all sheets
     gen_date = datetime.datetime.now().strftime("%d %b %Y %H:%M")
     for ws_x in [ws,ws2,ws3,ws4,ws5,ws_ei]:
@@ -5756,6 +5819,81 @@ def risk_register_workbook_bytes(model: dict) -> bytes:
     ws.cell(sr,8,total_imp).font=bf(10,"DC2626"); ws.cell(sr,8).number_format="#,##0.000"
     ws.cell(sr,9,total_emv).font=bf(10,"DC2626"); ws.cell(sr,9).number_format="#,##0.000"
     for ci in range(1,14): ws.cell(sr,ci).fill=hf("FEF9C3"); ws.cell(sr,ci).border=tb()
+
+    # ── Executive Intelligence sheet in risk register ──────────────────
+    try:
+        from openpyxl.styles import PatternFill as _PF, Font as _FT, Alignment as _AL, Border as _BD, Side as _SD
+        ws_r_ei = wb.create_sheet("Board Intelligence")
+        ws_r_ei.sheet_view.showGridLines = False
+        ws_r_ei.column_dimensions["A"].width = 35; ws_r_ei.column_dimensions["B"].width = 60
+        _hf2 = lambda h: _PF("solid",fgColor=h)
+        _bf2 = lambda sz=9,col="000000": _FT(bold=True,size=sz,color=col)
+        _rf2 = lambda sz=8,col="334155": _FT(size=sz,color=col)
+        _tb2 = lambda: _BD(left=_SD("thin",color="E2E8F0"),right=_SD("thin",color="E2E8F0"),top=_SD("thin",color="E2E8F0"),bottom=_SD("thin",color="E2E8F0"))
+        _al2 = lambda: _AL(horizontal="left",vertical="center",wrap_text=True)
+
+        ws_r_ei.cell(1,1,"BOARD INTELLIGENCE — EXECUTIVE RISK SUMMARY").font=_bf2(12,"0E7490")
+        ws_r_ei.merge_cells("A1:B1"); ws_r_ei.cell(1,1).alignment=_al2()
+        r_ei = 3
+
+        # Mortality event
+        me = model.get("mortality_event",{})
+        if me and me.get("terrifying_statement"):
+            ws_r_ei.cell(r_ei,1,"IF WE ARE WRONG — THE ONE RISK").font=_bf2(10,"FFFFFF")
+            ws_r_ei.cell(r_ei,1).fill=_hf2("DC2626"); ws_r_ei.merge_cells(f"A{r_ei}:B{r_ei}"); r_ei+=1
+            ws_r_ei.cell(r_ei,1,str(me.get("title",""))[:60]).font=_bf2(10,"DC2626"); ws_r_ei.merge_cells(f"A{r_ei}:B{r_ei}"); r_ei+=1
+            ws_r_ei.cell(r_ei,1,str(me.get("terrifying_statement",""))[:200]).font=_rf2(8,"7F1D1D"); ws_r_ei.merge_cells(f"A{r_ei}:B{r_ei}"); r_ei+=2
+
+        # Board risk summary
+        brs = model.get("board_risk_summary",{})
+        if brs and brs.get("top5"):
+            ws_r_ei.cell(r_ei,1,"TOP BOARD RISKS — MONETISED").font=_bf2(10,"FFFFFF")
+            ws_r_ei.cell(r_ei,1).fill=_hf2("1E293B"); ws_r_ei.merge_cells(f"A{r_ei}:B{r_ei}"); r_ei+=1
+            ws_r_ei.cell(r_ei,1,str(brs.get("headline",""))).font=_rf2(9); ws_r_ei.merge_cells(f"A{r_ei}:B{r_ei}"); r_ei+=1
+            for rr in brs.get("top5",[]):
+                ws_r_ei.cell(r_ei,1,str(rr.get("title",""))[:50]).font=_bf2(9,"0E7490")
+                curr_s = model.get("currency_symbol","$")
+                ws_r_ei.cell(r_ei,2,f"EMV {curr_s}{rr.get('emv_bn',0):.3f}B = Direct {curr_s}{rr.get('direct_cost_bn',0):.3f}B + Prelims {curr_s}{rr.get('prelim_extension_bn',0):.3f}B + Inflation {curr_s}{rr.get('inflation_bn',0):.3f}B").font=_rf2(9,"DC2626")
+                for ci in (1,2): ws_r_ei.cell(r_ei,ci).border=_tb2()
+                r_ei+=1
+            r_ei+=1
+
+        # Confidence by discipline
+        cbd = model.get("confidence_by_discipline",{})
+        if cbd:
+            ws_r_ei.cell(r_ei,1,"CONFIDENCE BY DISCIPLINE").font=_bf2(10,"FFFFFF")
+            ws_r_ei.cell(r_ei,1).fill=_hf2("0E7490"); ws_r_ei.merge_cells(f"A{r_ei}:B{r_ei}"); r_ei+=1
+            for disc,pct in cbd.items():
+                ws_r_ei.cell(r_ei,1,disc).font=_bf2(9,"0E7490")
+                ws_r_ei.cell(r_ei,2,f"{pct}%  {'HIGH' if pct>=70 else 'MEDIUM' if pct>=55 else 'LOW'}").font=_bf2(9,"059669" if pct>=70 else "D97706" if pct>=55 else "DC2626")
+                for ci in (1,2): ws_r_ei.cell(r_ei,ci).border=_tb2()
+                r_ei+=1
+            r_ei+=1
+        # Estimate basis
+        eb = model.get("estimate_basis",{})
+        if eb and eb.get("traceability"):
+            ws_r_ei.cell(r_ei,1,"ESTIMATE BASIS").font=_bf2(10,"FFFFFF")
+            ws_r_ei.cell(r_ei,1).fill=_hf2("1E293B"); ws_r_ei.merge_cells(f"A{r_ei}:B{r_ei}"); r_ei+=1
+            for line in eb.get("traceability",[]):
+                ws_r_ei.cell(r_ei,1,"→").font=_bf2(9,"0E7490")
+                ws_r_ei.cell(r_ei,2,str(line)[:100]).font=_rf2(9,"0F172A")
+                for ci in (1,2): ws_r_ei.cell(r_ei,ci).border=_tb2()
+                r_ei+=1
+            r_ei+=1
+        # Decision simulator
+        ds = model.get("decision_simulator",{})
+        if ds:
+            ws_r_ei.cell(r_ei,1,"DECISION SIMULATOR").font=_bf2(10,"FFFFFF")
+            ws_r_ei.cell(r_ei,1).fill=_hf2("059669"); ws_r_ei.merge_cells(f"A{r_ei}:B{r_ei}"); r_ei+=1
+            for key in ["spend_200m","descope_10pct","accelerate"]:
+                d = ds.get(key,{})
+                if d:
+                    cost_d=d.get("cost_delta_bn",0); sched_d=d.get("schedule_delta_months",0); conf_d=d.get("confidence_delta_pct",0)
+                    ws_r_ei.cell(r_ei,1,d.get("label","")).font=_bf2(9,"059669")
+                    ws_r_ei.cell(r_ei,2,f"Cost {'+'if cost_d>0 else ''}{cost_d:.2f}B | Schedule {'+'if sched_d>0 else ''}{sched_d}mo | Confidence {'+'if conf_d>0 else ''}{conf_d}%").font=_rf2(9)
+                    for ci in (1,2): ws_r_ei.cell(r_ei,ci).border=_tb2()
+                    r_ei+=1
+    except Exception: pass
 
     bio = __import__("io").BytesIO()
     wb.save(bio); bio.seek(0)
@@ -5997,6 +6135,50 @@ def word_bytes(model):
             doc.add_paragraph(f"{i}. {a.get('activity_id','')} — {a.get('name','')} ({a.get('duration_months',0)}mo){risk_note}", style="List Bullet")
         doc.add_paragraph()
 
+    # Confidence by discipline
+    cbd = model.get("confidence_by_discipline", {})
+    if cbd:
+        _h1(f"CONFIDENCE BY DISCIPLINE — WHY {model.get('confidence_pct','—')}%")
+        _kv_table([(disc, f"{pct}%  {'HIGH' if pct>=70 else 'MEDIUM' if pct>=55 else 'LOW'}") for disc,pct in cbd.items()])
+        doc.add_paragraph()
+    # Estimate basis
+    eb = model.get("estimate_basis", {})
+    if eb and eb.get("traceability"):
+        _h1("ESTIMATE BASIS — TRACEABILITY CHAIN")
+        for line in eb.get("traceability",[]): doc.add_paragraph(f"→  {line}", style="List Bullet")
+        _kv_table([(k.replace("_"," ").title(), str(v)[:100]) for k,v in eb.items() if k!="traceability" and v and isinstance(v,str)])
+        doc.add_paragraph()
+    # Mortality event
+    me = model.get("mortality_event", {})
+    if me and me.get("terrifying_statement"):
+        _h1("IF WE ARE WRONG — THE ONE RISK")
+        p_me = doc.add_paragraph(str(me.get("title","")))
+        try: p_me.runs[0].font.bold = True
+        except: pass
+        doc.add_paragraph(f'"{me.get("terrifying_statement","")}"')
+        _kv_table([("Probability", me.get("probability","")),("Exposure", me.get("exposure","")),("Board action", me.get("board_action","")[:120])])
+        doc.add_paragraph()
+    # Decision simulator
+    ds = model.get("decision_simulator", {})
+    if ds:
+        _h1("DECISION SIMULATOR — BOARD WHAT-IF SCENARIOS")
+        ds_tbl = doc.add_table(rows=1, cols=4)
+        try: ds_tbl.style = "Light Shading Accent 5"
+        except: pass
+        hh = ds_tbl.rows[0].cells
+        for i,h in enumerate(["Scenario","Cost","Schedule","Confidence"]):
+            hh[i].text = h
+            try: hh[i].paragraphs[0].runs[0].font.bold = True
+            except: pass
+        for key in ["spend_200m","descope_10pct","accelerate"]:
+            d = ds.get(key,{})
+            if d:
+                row = ds_tbl.add_row().cells
+                cost_d = d.get("cost_delta_bn",0); sched_d = d.get("schedule_delta_months",0); conf_d = d.get("confidence_delta_pct",0)
+                row[0].text = d.get("label",""); row[1].text = f"{'+'if cost_d>0 else ''}{cost_d:.2f}B"
+                row[2].text = f"{'+'if sched_d>0 else ''}{sched_d}mo"; row[3].text = f"{'+'if conf_d>0 else ''}{conf_d}%"
+        doc.add_paragraph()
+
     # ── Risk Register Summary ──────────────────────────────────────
     _h1("RISK REGISTER — TOP RISKS BY EMV")
     total_r = model.get("total_risks_identified",0) or len(model.get("risks",[]))
@@ -6153,12 +6335,18 @@ def pptx_bytes(model):
     for i, chip in enumerate(chip_data[:6]):
         x = 0.3 + (i % 3) * 4.3; y = 2.2 + (i // 3) * 0.65
         rect(s3, x, y, 4.1, 0.55, PRGBColor(0xE0,0xF2,0xFE), chip, 11, PRGBColor(0x0E,0x74,0x90), True)
+    # Estimate basis traceability
+    eb = model.get("estimate_basis", {})
+    if eb and eb.get("traceability"):
+        txbox(s3, "ESTIMATE BASIS — TRACEABILITY:", 0.3, 3.5, 12, 0.25, 9, True, TEAL)
+        for i, line in enumerate(eb.get("traceability",[])[:2]):
+            txbox(s3, f"→  {str(line)[:100]}", 0.3, 3.78 + i * 0.26, 12.7, 0.24, 8, False, SLATE)
     # Why section
-    why = (model.get("why_casey_generated_this",[]) or [])[:3]
+    why = (model.get("why_casey_generated_this",[]) or [])[:2]
     if why:
-        txbox(s3, "WHY CASEY GENERATED THIS:", 0.3, 3.7, 12, 0.3, 9, True, TEAL)
+        txbox(s3, "WHY CASEY GENERATED THIS:", 0.3, 4.35, 12, 0.25, 9, True, TEAL)
         for i, line in enumerate(why):
-            txbox(s3, f"→  {str(line)[:90]}", 0.3, 4.05 + i * 0.28, 12.7, 0.25, 9, False, SLATE)
+            txbox(s3, f"→  {str(line)[:90]}", 0.3, 4.62 + i * 0.26, 12.7, 0.24, 9, False, SLATE)
 
     # ── SLIDE 4: Cost Estimate ──────────────────────────────────────
     s4 = slide()
@@ -6240,7 +6428,18 @@ def pptx_bytes(model):
         vstr = f"{v} mo" if v and v != "—" else "—"
         txbox(s6, str(vstr)[:12], x+0.05, 1.25, 1.3, 0.4, 12, True, WHITE)
     # Confidence + OBA
-    txbox(s6, "CONFIDENCE & OBA", 0.3, 2.0, 12, 0.3, 10, True, TEAL)
+    txbox(s6, "CONFIDENCE BY DISCIPLINE & OBA", 0.3, 2.0, 12, 0.3, 10, True, TEAL)
+    # Confidence by discipline mini chart
+    cbd = model.get("confidence_by_discipline", {})
+    if cbd:
+        items = list(cbd.items())[:3]
+        for i,(disc,pct) in enumerate(items):
+            x = 0.3+i*4.3
+            rect(s6, x, 2.35, 4.1, 0.65, PRGBColor(0x1E,0x29,0x3B))
+            txbox(s6, disc[:20], x+0.08, 2.38, 4.0, 0.22, 7, True, PRGBColor(0x94,0xA3,0xB8))
+            col = PRGBColor(0x10,0xB9,0x81) if pct>=70 else PRGBColor(0xF5,0x9E,0x0B) if pct>=55 else RED
+            txbox(s6, f"{pct}%", x+0.08, 2.6, 4.0, 0.32, 16, True, col)
+        y_oba = 3.1
     oba = model.get("optimism_bias_assessment",{}) or {}
     oba_items = [
         ("Confidence", f"{conf}%"),
@@ -6248,11 +6447,12 @@ def pptx_bytes(model):
         ("OBA Uplift", f"{oba.get('oba_uplift_pct','—')}%" if isinstance(oba,dict) else "—"),
         ("OBA-Adjusted P50", str(oba.get("oba_adjusted_p50","—") if isinstance(oba,dict) else "—")),
     ]
+    _y_oba = locals().get('y_oba', 2.35)
     for i,(k,v) in enumerate(oba_items):
         x = 0.3 + i*3.2
-        rect(s6, x, 2.35, 3.0, 0.7, PRGBColor(0xF0,0xF9,0xFF))
-        txbox(s6, k, x+0.1, 2.4, 2.8, 0.2, 8, True, TEAL)
-        txbox(s6, str(v)[:20], x+0.1, 2.62, 2.8, 0.35, 12, True, SLATE)
+        rect(s6, x, _y_oba, 3.0, 0.7, PRGBColor(0xF0,0xF9,0xFF))
+        txbox(s6, k, x+0.1, _y_oba+0.05, 2.8, 0.2, 8, True, TEAL)
+        txbox(s6, str(v)[:20], x+0.1, _y_oba+0.27, 2.8, 0.35, 12, True, SLATE)
     # Tornado chart (text-based)
     txbox(s6, "TOP RISK DRIVERS BY EMV", 0.3, 3.2, 12, 0.3, 9, True, TEAL)
     for i, r in enumerate(risks[:5]):
@@ -6280,7 +6480,32 @@ def pptx_bytes(model):
         for ci,(val,xp) in enumerate(zip(vals,x7)):
             rect(s7, xp, y, col_w7[ci], 0.32, bg, val, 7, SLATE, False)
 
-    # ── SLIDE 8: Next Actions ───────────────────────────────────────
+    # ── SLIDE 8: Mortality Event + Decision Simulator ──────────────────
+    me = model.get("mortality_event", {})
+    ds = model.get("decision_simulator", {})
+    s8a = slide(NAVY)
+    rect(s8a, 0, 0, 13.33, 0.5, RED)
+    txbox(s8a, "IF WE ARE WRONG — THE ONE RISK THAT KILLS THIS PROGRAMME", 0.3, 0.1, 12, 0.3, 9, True, WHITE)
+    if me:
+        rect(s8a, 0.3, 0.6, 12.73, 1.0, PRGBColor(0x7F,0x1D,0x1D))
+        txbox(s8a, str(me.get("title",""))[:80], 0.4, 0.65, 12.5, 0.5, 15, True, WHITE)
+        quote = str(me.get("terrifying_statement",""))[:200]
+        txbox(s8a, f'"{quote}"', 0.3, 1.7, 12.73, 0.7, 8, False, PRGBColor(0xFC,0xA5,0xA5))
+        for i,(k,v) in enumerate([("Probability",me.get("probability","")),("Exposure",me.get("exposure","")),("Board action",me.get("board_action","")[:80])]):
+            rect(s8a, 0.3, 2.55+i*0.55, 12.73, 0.48, PRGBColor(0x1E,0x29,0x3B))
+            txbox(s8a, k, 0.4, 2.58+i*0.55, 2.5, 0.22, 8, True, RED)
+            txbox(s8a, str(v)[:100], 3.0, 2.58+i*0.55, 10.0, 0.32, 8, False, WHITE)
+    if ds:
+        txbox(s8a, "DECISION SIMULATOR", 0.3, 4.3, 12, 0.25, 9, True, PRGBColor(0x10,0xB9,0x81))
+        for i,key in enumerate(["spend_200m","descope_10pct","accelerate"]):
+            d = ds.get(key,{}); x = 0.3+i*4.35
+            if d:
+                cost_d = d.get("cost_delta_bn",0); sched_d = d.get("schedule_delta_months",0); conf_d = d.get("confidence_delta_pct",0)
+                rect(s8a, x, 4.6, 4.15, 0.45, PRGBColor(0x06,0x4E,0x3B))
+                txbox(s8a, str(d.get("label",""))[:25], x+0.07, 4.62, 2.5, 0.2, 7, True, WHITE)
+                txbox(s8a, f"{'+'if cost_d>0 else ''}{cost_d:.1f}B | {'+'if sched_d>0 else ''}{sched_d}mo | {'+'if conf_d>0 else ''}{conf_d}%", x+0.07, 4.82, 4.0, 0.2, 7, False, PRGBColor(0x6E,0xE7,0xB7))
+
+    # ── SLIDE 9: Next Actions ───────────────────────────────────────
     s8 = slide(NAVY)
     rect(s8, 0, 0, 13.33, 0.5, TEAL)
     txbox(s8, "NEXT BEST ACTIONS & BOARD DECISION GATES", 0.3, 0.1, 12, 0.3, 10, True, WHITE)
@@ -6845,6 +7070,72 @@ def pdf_bytes(model: dict) -> bytes:
             story.append(Paragraph(str(skc.get("headline","")), BODY))
             chain_str = " → ".join(f"{a.get('activity_id','')} ({a.get('name','')[:20]}, {a.get('duration_months',0)}mo)" for a in skc["chain"])
             story.append(Paragraph(chain_str, BODY))
+            story.append(Spacer(1,3*mm))
+
+        # Confidence by discipline
+        cbd = model.get("confidence_by_discipline", {})
+        if cbd:
+            story.append(Paragraph("CONFIDENCE BY DISCIPLINE", ParagraphStyle("EIH5",parent=H1,fontSize=9,textColor=HexColor("#0E7490"))))
+            story.append(Paragraph(f"Why {model.get('confidence_pct','—')}% confidence? Breakdown by discipline:", BODY))
+            disc_rows = [[Paragraph(disc,BODY), Paragraph(f"<b>{pct}%</b>",BODY),
+                          Paragraph("HIGH" if pct>=70 else "MEDIUM" if pct>=55 else "LOW",BODY)]
+                         for disc,pct in cbd.items()]
+            story.append(tbl(disc_rows,[W-100*mm,20*mm,20*mm],[
+                ("ROWBACKGROUNDS",(0,0),(-1,-1),[HexColor("#F0F9FF"),WHITE]),
+                ("TOPPADDING",(0,0),(-1,-1),3),("BOTTOMPADDING",(0,0),(-1,-1),3),
+                ("LEFTPADDING",(0,0),(-1,-1),5),
+            ]))
+            story.append(Spacer(1,4*mm))
+
+        # Estimate basis
+        eb = model.get("estimate_basis",{})
+        if eb and eb.get("traceability"):
+            story.append(Paragraph("ESTIMATE BASIS — TRACEABILITY CHAIN", ParagraphStyle("EIH6",parent=H1,fontSize=9,textColor=HexColor("#1E293B"))))
+            for line in eb.get("traceability",[]):
+                story.append(Paragraph(f"→  {line}", BODY))
+            story.append(Spacer(1,3*mm))
+
+        # Mortality event — THE ONE RISK
+        me = model.get("mortality_event",{})
+        if me and me.get("terrifying_statement"):
+            story.append(Paragraph("IF WE ARE WRONG — THE ONE RISK THAT KILLS THIS PROGRAMME", ParagraphStyle("EIH7",parent=H1,fontSize=9,textColor=HexColor("#DC2626"))))
+            story.append(tbl([[Paragraph(f'<b>{me.get("title","")}</b>', ParagraphStyle("MET",parent=BODY,fontSize=12,textColor=WHITE))]],
+                [W-40*mm],[("BACKGROUND",(0,0),(-1,-1),HexColor("#DC2626")),
+                           ("TOPPADDING",(0,0),(-1,-1),10),("BOTTOMPADDING",(0,0),(-1,-1),10),
+                           ("LEFTPADDING",(0,0),(-1,-1),12)]))
+            story.append(Spacer(1,2*mm))
+            story.append(Paragraph(f'"{me.get("terrifying_statement","")}"', 
+                ParagraphStyle("MEQ",parent=BODY,fontSize=9,textColor=HexColor("#7F1D1D"),leftIndent=10)))
+            story.append(Spacer(1,2*mm))
+            me_rows = [["Probability", me.get("probability","")],["Exposure", me.get("exposure","")],
+                       ["Board action", me.get("board_action","")[:120]]]
+            story.append(tbl(me_rows,[40*mm,W-80*mm],[
+                ("FONTNAME",(0,0),(0,-1),"Helvetica-Bold"),("TEXTCOLOR",(0,0),(0,-1),HexColor("#DC2626")),
+                ("ROWBACKGROUNDS",(0,0),(-1,-1),[HexColor("#FFF7F7"),WHITE]),
+                ("TOPPADDING",(0,0),(-1,-1),4),("BOTTOMPADDING",(0,0),(-1,-1),4),
+                ("LEFTPADDING",(0,0),(-1,-1),6),
+            ]))
+            story.append(Spacer(1,4*mm))
+
+        # Decision simulator
+        ds = model.get("decision_simulator",{})
+        if ds:
+            story.append(Paragraph("DECISION SIMULATOR — BOARD WHAT-IF SCENARIOS", ParagraphStyle("EIH8",parent=H1,fontSize=9,textColor=HexColor("#059669"))))
+            sim_rows = [["Scenario","Cost","Schedule","Confidence","Narrative"]]
+            for key in ["spend_200m","descope_10pct","accelerate"]:
+                d = ds.get(key,{})
+                if d:
+                    cost_d = d.get("cost_delta_bn",0); sched_d = d.get("schedule_delta_months",0); conf_d = d.get("confidence_delta_pct",0)
+                    sim_rows.append([d.get("label",""), f"{'+'if cost_d>0 else ''}{cost_d:.2f}B",
+                                     f"{'+'if sched_d>0 else ''}{sched_d}mo", f"{'+'if conf_d>0 else ''}{conf_d}%",
+                                     d.get("narrative","")[:80]])
+            story.append(tbl(sim_rows,[40*mm,18*mm,18*mm,18*mm,W-134*mm],[
+                ("BACKGROUND",(0,0),(-1,0),HexColor("#059669")),
+                ("FONTNAME",(0,0),(-1,0),"Helvetica-Bold"),("TEXTCOLOR",(0,0),(-1,0),WHITE),
+                ("ROWBACKGROUNDS",(0,1),(-1,-1),[HexColor("#F0FDF4"),WHITE]),
+                ("TOPPADDING",(0,0),(-1,-1),3),("BOTTOMPADDING",(0,0),(-1,-1),3),
+                ("LEFTPADDING",(0,0),(-1,-1),5),("FONTSIZE",(0,0),(-1,-1),7.5),
+            ]))
             story.append(Spacer(1,3*mm))
 
         story.append(PageBreak())
@@ -7630,6 +7921,45 @@ def qcra_qsra_bytes(model: dict) -> bytes:
         for i,a in enumerate(skc["chain"],1):
             risk_note = f" ⚠ {a.get('linked_risk_title','')[:25]}" if a.get("linked_risk_title") else ""
             sa_rows.append((f"  {i}. {a.get('activity_id','')} — {a.get('name','')}", f"{a.get('duration_months',0)} months{risk_note}"))
+    
+    # Confidence by discipline
+    cbd = model.get("confidence_by_discipline", {})
+    if cbd:
+        sa_rows.append(("", ""))
+        sa_rows.append(("CONFIDENCE BY DISCIPLINE", f"Why {model.get('confidence_pct','—')}% overall confidence"))
+        for disc, pct in cbd.items():
+            sa_rows.append((f"  {disc}", f"{pct}%  {'HIGH' if pct>=70 else 'MEDIUM' if pct>=55 else 'LOW'}"))
+    
+    # Estimate basis traceability
+    eb = model.get("estimate_basis", {})
+    if eb and eb.get("traceability"):
+        sa_rows.append(("", ""))
+        sa_rows.append(("ESTIMATE BASIS — TRACEABILITY", ""))
+        for line in eb.get("traceability",[]): sa_rows.append(("→", str(line)[:100]))
+        for k in ["benchmark_anchor","escalation","location_factor","class_uncertainty"]:
+            if eb.get(k): sa_rows.append((k.replace("_"," ").title(), str(eb[k])[:100]))
+    
+    # Mortality event — the one risk
+    me = model.get("mortality_event", {})
+    if me and me.get("terrifying_statement"):
+        sa_rows.append(("", ""))
+        sa_rows.append(("IF WE ARE WRONG — THE ONE RISK", str(me.get("title",""))))
+        sa_rows.append(("Terrifying statement", str(me.get("terrifying_statement",""))[:200]))
+        sa_rows.append(("Probability", str(me.get("probability",""))))
+        sa_rows.append(("Exposure", str(me.get("exposure",""))))
+        sa_rows.append(("Board action", str(me.get("board_action",""))[:120]))
+    
+    # Decision simulator
+    ds = model.get("decision_simulator", {})
+    if ds:
+        sa_rows.append(("", ""))
+        sa_rows.append(("DECISION SIMULATOR", "What if the board asks?"))
+        for key in ["spend_200m","descope_10pct","accelerate"]:
+            d = ds.get(key,{})
+            if d:
+                cost_d = d.get("cost_delta_bn",0); sched_d = d.get("schedule_delta_months",0); conf_d = d.get("confidence_delta_pct",0)
+                sa_rows.append((d.get("label",""), f"Cost {'+'if cost_d>0 else ''}{cost_d:.2f}B | Schedule {'+'if sched_d>0 else ''}{sched_d}mo | Confidence {'+'if conf_d>0 else ''}{conf_d}%"))
+                sa_rows.append(("", str(d.get("narrative",""))[:120]))
     
     for ri, (k, v) in enumerate(sa_rows, 2):
         ck = ws_sa.cell(ri, 1, k); cv = ws_sa.cell(ri, 2, v)
@@ -9148,20 +9478,23 @@ def _v124_sector_key(model: Dict[str, Any]) -> str:
 # ══ DEMO ROUTES ══
 _DEMO_CACHE: dict = {}
 
-def _get_demo(key: str, prompt: str, demo_type: str, demo_label: str, demo_headline: str):
-    """Build demo model on first call, serve from cache on all subsequent calls."""
-    if key not in _DEMO_CACHE:
+def _get_demo(key: str, prompt: str, demo_type: str, demo_label: str, demo_headline: str,
+              class_level: int = 3, schedule_level: int = 4, scenario: str = "base"):
+    """Build demo model — keyed by class+schedule+scenario so every combination works."""
+    # Include class/schedule/scenario in cache key so each combination is distinct
+    cache_key = f"{key}_cl{class_level}_sl{schedule_level}_sc{scenario}"
+    if cache_key not in _DEMO_CACHE:
         try:
-            m = build_model(prompt, "Reference case", 3, 4, "base")
+            m = build_model(prompt, "Reference case", class_level, schedule_level, scenario)
             m["demo_mode"] = True
             m["demo_type"] = demo_type
             m["demo_label"] = demo_label
             m["demo_headline"] = demo_headline
             m["prompt"] = prompt
-            _DEMO_CACHE[key] = m
+            _DEMO_CACHE[cache_key] = m
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Demo build failed: {str(e)}")
-    return _DEMO_CACHE[key]
+    return _DEMO_CACHE[cache_key]
 
 @app.get("/demo/wake")
 def demo_wake():
@@ -9169,47 +9502,51 @@ def demo_wake():
     return {"status": "ok", "version": APP_VERSION, "demo_routes": ["/demo/earth", "/demo/space", "/demo/awre"]}
 
 @app.get("/demo/earth")
-def demo_earth_v2():
-    """HS2 Phase 2b — Earth infrastructure reference case."""
+def demo_earth_v2(class_level: int = 3, schedule_level: int = 4, scenario: str = "base"):
+    """HS2 Phase 2b — Earth infrastructure reference case. Supports all class/schedule levels."""
     return _get_demo(
         "earth",
         "HS2 Phase 2b tunnelling stations signalling systems integration possessions operator acceptance UK rail",
         "earth",
         "Reference case — HS2 Phase 2b Rail Mega Programme",
-        "Full programme intelligence pack — cost, schedule, risk, benchmarks, board attack and exports."
+        "Full programme intelligence pack — cost, schedule, risk, benchmarks, board attack and exports.",
+        class_level=class_level, schedule_level=schedule_level, scenario=scenario
     )
 
 @app.get("/demo/space")
-def demo_space_v2():
-    """Lunar Base Alpha — Space infrastructure reference case."""
+def demo_space_v2(class_level: int = 3, schedule_level: int = 4, scenario: str = "base"):
+    """Lunar Base Alpha — Space infrastructure reference case. Supports all class/schedule levels."""
     return _get_demo(
         "space",
         "Lunar Base Alpha life support nuclear surface power autonomous commissioning resupply logistics 1000 crew",
         "space",
         "Reference case — Lunar Base Alpha Deep Space Programme",
-        "Space programme intelligence — TRL risk, launch logistics, life support, autonomous commissioning."
+        "Space programme intelligence — TRL risk, launch logistics, life support, autonomous commissioning.",
+        class_level=class_level, schedule_level=schedule_level, scenario=scenario
     )
 
 @app.get("/demo/awre")
-def demo_awre_v2():
-    """AWRE Aldermaston — Defence reference case."""
+def demo_awre_v2(class_level: int = 3, schedule_level: int = 4, scenario: str = "base"):
+    """AWRE Aldermaston — Defence reference case. Supports all class/schedule levels."""
     return _get_demo(
         "awre",
         "AWRE Aldermaston nuclear warhead facility upgrade classified defence sovereign supply chain security accreditation UK MOD",
         "defence",
         "Reference case — AWRE Aldermaston Nuclear Infrastructure",
-        "Classified programme intelligence — security accreditation, sovereign supply chain, operational acceptance."
+        "Classified programme intelligence — security accreditation, sovereign supply chain, operational acceptance.",
+        class_level=class_level, schedule_level=schedule_level, scenario=scenario
     )
 
 @app.get("/demo/gigafactory")
-def demo_gigafactory_v2():
-    """Gigafactory UK — battery manufacturing reference case."""
+def demo_gigafactory_v2(class_level: int = 3, schedule_level: int = 4, scenario: str = "base"):
+    """Gigafactory UK — battery manufacturing reference case. Supports all class/schedule levels."""
     return _get_demo(
         "gigafactory",
         "Battery gigafactory West Midlands UK 50GWh EV manufacturing cell production utility grid connection",
         "gigafactory",
         "Reference case — Gigafactory UK Battery Manufacturing",
-        "EV battery manufacturing intelligence — grid connection, cell chemistry, yield ramp, utility complexity."
+        "EV battery manufacturing intelligence — grid connection, cell chemistry, yield ramp, utility complexity.",
+        class_level=class_level, schedule_level=schedule_level, scenario=scenario
     )
 
 print("CASEY demo routes installed at end of file — using final build_model")
@@ -12916,12 +13253,74 @@ def build_model(prompt: str='', client: str='', class_level: int=3, schedule_lev
             {'label': 'Risk profile', 'value': risk, 'meaning': f'{risk} risk at Class {int(class_level or 3)} definition maturity in {loc_name}.'},
         ],
         'confidence_breakdown': [
-            {'driver': 'Estimate class', 'effect': f'Class {int(class_level or 3)} — {class_name}', 'note': f'Class {int(class_level or 3)} contributes {"strongly" if int(class_level or 3) <= 2 else "moderately" if int(class_level or 3) == 3 else "weakly"} to confidence.'},
-            {'driver': 'Benchmark fit', 'effect': f'{len(benchmark_rows)} comparables', 'note': 'Cost calibrated against named real programmes in this sector.'},
-            {'driver': 'Risk score', 'effect': f'{round(risk_score,0):.0f}/100', 'note': f'Risk exposure drives P80 gap. Current: {risk}.'},
-            {'driver': 'Location', 'effect': loc_name, 'note': f'Location factor applied for {loc_name} regulatory and market conditions.'},
-            {'driver': 'Scenario', 'effect': scenario_label, 'note': scenario_why},
+            {'driver': 'Estimate class', 'effect': f'Class {int(class_level or 3)} — {class_name}', 'delta': -max(0,(int(class_level or 3)-2)*4), 'note': f'Class {int(class_level or 3)} contributes {"strongly" if int(class_level or 3) <= 2 else "moderately" if int(class_level or 3) == 3 else "weakly"} to confidence.'},
+            {'driver': 'Benchmark fit', 'effect': f'{len(benchmark_rows)} comparables', 'delta': min(len(benchmark_rows)*2, 8), 'note': 'Cost calibrated against named real programmes in this sector.'},
+            {'driver': 'Risk score', 'effect': f'{round(risk_score,0):.0f}/100', 'delta': -max(0,round((risk_score-30)/10)), 'note': f'Risk exposure drives P80 gap. Current: {risk}.'},
+            {'driver': 'Location', 'effect': loc_name, 'delta': 0, 'note': f'Location factor applied for {loc_name} regulatory and market conditions.'},
+            {'driver': 'Scenario', 'effect': scenario_label, 'delta': {'base':0,'faster':-5,'cheaper':-4,'lower_risk':+4,'premium':+3}.get(scenario,0), 'note': scenario_why},
         ],
+
+        # ── Confidence decomposition by discipline (new) ────────────────────
+        'confidence_by_discipline': {
+            'Civil / Structural': min(90, confidence + 12),
+            'Electrical / Grid': max(30, confidence - 15),
+            'Mechanical / Cooling': max(35, confidence - 10),
+            'Commissioning': max(30, confidence - 16),
+            'Utilities / Interfaces': max(28, confidence - 18),
+            'Procurement': max(35, confidence - 8),
+        },
+
+        # ── Estimate basis — full traceability chain (new) ─────────────────
+        'estimate_basis': {
+            'scope_assumptions': model.get('scope_assumptions', model.get('route_assumptions', {})),
+            'cost_per_unit': f'{money_bn(p50 / max(1, model.get("scope_assumptions",{}).get("campus_mw") or model.get("scope_assumptions",{}).get("route_km") or 1))} per key unit',
+            'benchmark_anchor': f'{len(benchmark_rows)} named comparable programmes in {subsector}',
+            'escalation': f'Inflation at {round(risk_score * 0.04 + 2.5, 1)}% p.a. applied across programme duration',
+            'location_factor': f'{loc_factor:.2f}x for {loc_name}',
+            'class_uncertainty': f'Class {int(class_level or 3)} — {class_name} — expected accuracy ±{[50,30,20,15,10][min(int(class_level or 3)-1,4)]}%',
+            'traceability': [
+                f"P50 = sector unit rate × scope × location factor ({loc_factor:.2f}x) × scenario adjustment",
+                f"Benchmark calibration: {len(benchmark_rows)} comparables reduce uncertainty",
+                f"OBA applied: +{round((1.35-1)*100)}% optimism bias per {loc_name} reference class",
+                f"Risk EMV: {money_bn(sum(float(r.get('cost_emv_bn',0) or 0) for r in risks))} quantified across {len(risks)} risks",
+            ],
+        },
+
+        # ── THE ONE RISK — the mortality event (new) ──────────────────────
+        'mortality_event': {
+            'title': risks[0].get('title', risks[0].get('risk', 'Governing constraint failure')) if risks else signature.get('human_basis','Scope definition'),
+            'why': f"This single risk threatens programme viability more than the sum of all others. It is being treated as a {risks[0].get('category','delivery')} item rather than the governing constraint." if risks else "No risks quantified yet.",
+            'probability': f"{risks[0].get('probability_pct',35)}% probability of materialising",
+            'exposure': f"{money_bn(float(risks[0].get('cost_emv_bn',0) or 0))} expected monetary value" if risks else "—",
+            'board_action': f"The board should not approve this programme without a named, dated, evidenced plan to resolve: {risks[0].get('title', risks[0].get('risk','')) if risks else signature.get('human_basis','')}.",
+            'terrifying_statement': f"CASEY believes this programme will fail because {(risks[0].get('title','the governing constraint') if risks else signature.get('human_basis','scope definition')).lower()} is being treated as a {(risks[0].get('category','procurement') if risks else 'delivery').lower()} item rather than the governing constraint of the entire programme.",
+        },
+
+        # ── Decision simulator — what if we spend more? (new) ─────────────
+        'decision_simulator': {
+            'base': {'label': 'Base case', 'cost_bn': round(p50, 3), 'months': months, 'confidence_pct': confidence},
+            'spend_200m': {
+                'label': '+$200m investment',
+                'cost_delta_bn': 0.2,
+                'schedule_delta_months': -max(1, round(months * 0.04)),
+                'confidence_delta_pct': +round(0.2 / p50 * 40) if p50 else 5,
+                'narrative': f"Investing {money_bn(0.2)} in programme controls, early procurement and assurance is projected to save {max(1,round(months*0.04))} months and improve confidence by {round(0.2/p50*40) if p50 else 5}%.",
+            },
+            'descope_10pct': {
+                'label': '-10% scope descope',
+                'cost_delta_bn': round(-p50 * 0.10, 3),
+                'schedule_delta_months': -max(2, round(months * 0.08)),
+                'confidence_delta_pct': +6,
+                'narrative': f"Descoping 10% of the programme reduces cost by {money_bn(p50*0.10)} and schedule by {max(2,round(months*0.08))} months, improving confidence by 6%.",
+            },
+            'accelerate': {
+                'label': 'Accelerate programme',
+                'cost_delta_bn': round(p50 * 0.05, 3),
+                'schedule_delta_months': -max(3, round(months * 0.12)),
+                'confidence_delta_pct': -8,
+                'narrative': f"Accelerating the programme by {max(3,round(months*0.12))} months costs {money_bn(p50*0.05)} more and reduces confidence by 8% due to increased risk.",
+            },
+        },
         'top_decisions_required': [
             f'Close the governing constraint ({signature.get("human_basis","definition maturity")}) with named owner and evidence.',
             f'Confirm procurement strategy and route to market for {subsector} in {loc_name}.',
