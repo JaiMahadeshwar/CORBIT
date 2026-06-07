@@ -4430,7 +4430,17 @@ def generate(req: GenerateRequest, request: Request):
     locked_mode = active.get("mode")
     locked_subsector = active.get("subsector")
 
-    model=build_model(locked_prompt, req.client or "", int(req.class_level or 3), int(req.schedule_level or 3), scenario)
+    try:
+        model=build_model(locked_prompt, req.client or "", int(req.class_level or 3), int(req.schedule_level or 3), scenario)
+    except Exception as _build_err:
+        import traceback as _tb
+        _err_detail = str(_build_err)[:300]
+        _err_trace = _tb.format_exc()[-500:]
+        raise HTTPException(status_code=500, detail={
+            "message": f"Model build failed: {_err_detail}",
+            "trace": _err_trace,
+            "prompt": (locked_prompt or "")[:100],
+        })
 
     # Defensive guard: if a non-base scenario ever classifies differently from the locked
     # context, keep the model in the original project universe and flag it for audit.
