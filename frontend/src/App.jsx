@@ -2589,7 +2589,7 @@ useEffect(() => {
     // Render sleeps after 15 minutes of inactivity; 9min interval keeps it warm
     const keepAlive = setInterval(async () => {
       try {
-        await fetch((window.CASEY_API || window.location.origin) + '/health', {
+        await fetch((window._CASEY_API || window.CASEY_API || PROD_URL) + '/health', {
           method: 'GET', credentials: 'omit',
           signal: AbortSignal.timeout ? AbortSignal.timeout(5000) : undefined
         });
@@ -2600,6 +2600,24 @@ useEffect(() => {
     }, 9 * 60 * 1000); // 9 minutes
 
     return () => clearInterval(keepAlive);
+  }, []);
+
+  // Ping backend when page becomes visible (catches Render sleep after tab was inactive)
+  useEffect(() => {
+    const handleVisibility = async () => {
+      if (document.visibilityState === 'visible') {
+        try {
+          const resp = await fetch((window._CASEY_API || PROD_URL) + '/health', {
+            method: 'GET', credentials: 'omit',
+            signal: AbortSignal.timeout ? AbortSignal.timeout(5000) : undefined
+          });
+          if (resp.ok) setBackendStatus('ok');
+          else setBackendStatus('down');
+        } catch (_) { setBackendStatus('down'); }
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, []);
   
 const scenarioInsightMap95 = {
