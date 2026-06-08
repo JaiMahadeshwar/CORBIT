@@ -3460,6 +3460,20 @@ function parseMoneyLocal(v) {
             </div>
             <ChallengeAnaloguePanel model={model} />
           </div>}
+          {/* EVIDENCE MODE BANNER */}
+          {model?.evidence_mode && model?.evidence_chain?.length > 0 && <div style={{gridColumn:'1/-1',background:'rgba(16,185,129,0.08)',border:'2px solid rgba(16,185,129,0.3)',borderRadius:8,padding:'10px 16px',marginBottom:10,display:'flex',alignItems:'center',gap:12}}>
+            <span style={{fontSize:'20px'}}>🔗</span>
+            <div style={{flex:1}}>
+              <div style={{fontSize:'11px',fontWeight:'800',color:'#10b981',marginBottom:2}}>EVIDENCE MODE — Numbers derived from uploaded files, not sector assumptions</div>
+              <div style={{fontSize:'9px',color:'#6ee7b7',display:'flex',gap:12,flexWrap:'wrap'}}>
+                {model.evidence_files?.xer && <span>✅ XER Schedule ({model.xer_health?.activity_count} activities)</span>}
+                {model.evidence_files?.cost && <span>✅ Cost Workbook (P50={model.cost_p50})</span>}
+                {model.evidence_files?.risk_register && <span>✅ Risk Register ({model.total_risks_identified} risks)</span>}
+                {model.evidence_inferred?.length > 0 && <span style={{color:'#f59e0b'}}>⚙ {model.evidence_inferred.length} field{model.evidence_inferred.length>1?'s':''} inferred by CASEY (upload missing files to replace)</span>}
+              </div>
+            </div>
+          </div>}
+
           {/* CONFIDENCE DECOMPOSITION + MORTALITY EVENT + DECISION SIMULATOR */}
           {model?.confidence_by_discipline && <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:10,marginBottom:12}}>
             {/* Confidence by discipline */}
