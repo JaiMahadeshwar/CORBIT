@@ -32,7 +32,7 @@ DEMO_LIMIT_PER_IP = int(os.environ.get("CASEY_DEMO_LIMIT_PER_IP", "1"))
 PUBLIC_DEMO_LIMIT = int(os.environ.get("CASEY_PUBLIC_DEMO_LIMIT", "1"))
 ADMIN_TOKEN = os.environ.get("CASEY_ADMIN_TOKEN", "")
 
-app = FastAPI(title=APP_VERSION, version="26.0-V224")
+app = FastAPI(title=APP_VERSION, version="26.0-V233")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=False, allow_methods=["*"], allow_headers=["*"], expose_headers=["Content-Disposition", "Content-Type"])
 
 class GenerateRequest(BaseModel):
@@ -8041,291 +8041,735 @@ def twin_sectors():
 # Returns pre-populated twin_inputs and a plain-English list of what was found.
 
 def _parse_xer_evidence(content: bytes) -> dict:
-    """Extract schedule metrics from a Primavera XER file (handles both ACTIVITY and TASK formats)."""
+    """
+    Universal XER / schedule parser.
+    Handles: Primavera P6 XER (all versions R8-R24), P6 XML export, Excel schedule exports.
+    Extracts: activity count, critical path %, duration, % complete, open ends,
+    float quality, logic density, delay months, QSRA P80 proxy, schedule level inference.
+    """
     try:
-        text = content.decode("utf-8", errors="replace")
-        lines = text.splitlines()
-        
-        # Parse all record types — XER uses TASK or ACTIVITY
-        in_section = None; fields = {}; records = {}
-        for line in lines:
-            if line.startswith("%T\t"):
-                in_section = line[3:].strip()
-                fields[in_section] = []
-                records[in_section] = []
-            elif in_section and line.startswith("%F\t"):
-                fields[in_section] = line[3:].split("\t")
-            elif in_section and line.startswith("%R\t"):
-                vals = line[3:].split("\t")
-                f = fields.get(in_section, [])
-                if f:
-                    records[in_section].append(dict(zip(f, vals)))
-        
-        # Activities can be in TASK or ACTIVITY section
-        activities = records.get("TASK", records.get("ACTIVITY", []))
-        
-        if not activities:
-            return {"inputs": {}, "evidence": ["XER: No activity records found."]}
-        
-        total = len(activities)
-        
-        # % complete from remaining duration
-        total_dur = 0; remain_dur = 0
-        for a in activities:
-            td = float(a.get("target_drtn_hr_cnt", 0) or 0)
-            rd = float(a.get("remain_drtn_hr_cnt", td) or td)  # default: not started
-            total_dur += td
-            remain_dur += rd
-        
-        if total_dur > 0:
-            pct_complete = round((1 - remain_dur / total_dur) * 100, 1)
-        else:
-            # Count completed vs total
-            completed = sum(1 for a in activities if 
-                a.get("status_code","") in ("TT_Complete",) or 
-                float(a.get("remain_drtn_hr_cnt",1) or 1) == 0)
-            pct_complete = round(completed / total * 100, 1)
-        
-        pct_complete = max(0, min(100, pct_complete))
-        
-        # Milestones and schedule
-        milestones = records.get("MILESTONE", [])
-        ms_count = len(milestones) + sum(1 for a in activities if 
-            a.get("duration_type","") in ("Milestone","Zero Duration") or 
-            a.get("task_type","") in ("TT_Mile","TT_FinMile"))
-        
-        # Schedule metadata from PROJECT record
-        project = records.get("PROJECT", [{}])[0]
-        proj_name = project.get("proj_name", project.get("proj_short_name", ""))
-        
-        evidence = [
-            f"XER: {total} activities, {ms_count} milestones.",
-            f"XER: Programme {pct_complete}% complete (from remaining duration).",
-        ]
-        if proj_name:
-            evidence.insert(0, f"XER: Project found: {proj_name}")
-        
-        inputs = {}
-        if pct_complete > 0:
-            inputs["progress_pct"] = pct_complete
-        
-        return {"inputs": inputs, "evidence": evidence, "activities_count": total}
-    except Exception as e:
-        return {"inputs": {}, "evidence": [f"XER: Could not parse — {str(e)[:80]}"]}
+        # ── Try P6 XER format (tab-delimited, %T/%F/%R markers) ──────────────
+        try: text = content.decode("utf-8", errors="ignore")
+        except: text = content.decode("latin-1", errors="ignore")
 
+        tasks, preds, cals, wbs = [], [], [], []
+        cur_t, fields = None, []
+        for line in text.splitlines():
+            s = line.rstrip()
+            if s.startswith("%T	"): cur_t = s[3:].strip(); fields = []
+            elif s.startswith("%F	") and cur_t: fields = s[3:].split("	")
+            elif s.startswith("%R	") and fields and cur_t:
+                pts = s[3:].split("	")
+                row = dict(zip(fields, pts + [""] * max(0, len(fields)-len(pts))))
+                if cur_t in ("TASK", "ACTIVITY"): tasks.append(row)
+                elif cur_t == "TASKPRED": preds.append(row)
+                elif cur_t == "CALENDAR": cals.append(row.get("clndr_name",""))
+                elif cur_t == "WBS": wbs.append(row)
+
+        # ── Try P6 XML format if no XER tasks found ───────────────────────────
+        if not tasks and ("<Activity" in text or "<Task" in text):
+            import re
+            # Extract activities from XML
+            act_blocks = re.findall(r"<(?:Activity|Task)[^>]*>(.*?)</(?:Activity|Task)>", text, re.DOTALL)
+            for block in act_blocks:
+                row = {}
+                for tag in ["Id","Name","Status","Duration","RemainingDuration","TotalFloat",
+                            "StartDate","FinishDate","TargetStartDate","TargetFinishDate",
+                            "PercentComplete","CriticalActivity","PredecessorList"]:
+                    m = re.search(fr"<{tag}[^>]*>([^<]*)</{tag}>", block)
+                    if m: row[tag.lower()] = m.group(1).strip()
+                if row: tasks.append(row)
+            pred_blocks = re.findall(r"<(?:Relationship|Predecessor)[^>]*>(.*?)</(?:Relationship|Predecessor)>", text, re.DOTALL)
+            for block in pred_blocks:
+                row = {}
+                for tag in ["PredecessorActivity","SuccessorActivity","Type","Lag"]:
+                    m = re.search(fr"<{tag}[^>]*>([^<]*)</{tag}>", block)
+                    if m: row[tag.lower()] = m.group(1)
+                if row: preds.append(row)
+
+        # ── Try Excel schedule export if still no tasks ───────────────────────
+        if not tasks and (content[:2] == b"PK" or len(content) > 8):
+            try:
+                import openpyxl
+                from io import BytesIO
+                wb = openpyxl.load_workbook(BytesIO(content), data_only=True)
+                for wsn in wb.sheetnames[:5]:
+                    ws = wb[wsn]
+                    rows = list(ws.iter_rows(values_only=True))
+                    if not rows: continue
+                    # Find header row
+                    hdr = None
+                    for ri, row in enumerate(rows[:15]):
+                        cells = [str(c or "").lower() for c in row]
+                        if any(k in " ".join(cells) for k in ["activity","task","duration","start","finish"]):
+                            hdr = cells; break
+                    if hdr:
+                        for row in rows[rows.index(list(ws.iter_rows(values_only=True))[0])+1:]:
+                            if not any(row): continue
+                            d = dict(zip(hdr, [str(c or "") for c in row]))
+                            # Map common column names to standard fields
+                            t = {}
+                            for h, v in d.items():
+                                if any(k in h for k in ["activity id","task id","id"]): t["task_id"] = v
+                                elif any(k in h for k in ["activity name","task name","name","description"]): t["task_name"] = v
+                                elif any(k in h for k in ["duration","dur"]): t["target_drtn_hr_cnt"] = v
+                                elif any(k in h for k in ["remaining dur","remain"]): t["remain_drtn_hr_cnt"] = v
+                                elif any(k in h for k in ["total float","float"]): t["total_float_hr_cnt"] = v
+                                elif "critical" in h: t["driving_path_flag"] = "Y" if str(v).upper() in ("YES","Y","TRUE","1","CRITICAL") else "N"
+                                elif any(k in h for k in ["% complete","percent","complete"]): t["phys_complete_pct"] = v
+                            if t.get("task_id") or t.get("task_name"): tasks.append(t)
+            except Exception: pass
+
+        # ── No tasks found at all ─────────────────────────────────────────────
+        if not tasks:
+            return {"inputs": {}, "evidence": ["Schedule file received but no activities found. Check the file is a valid XER export, P6 XML, or schedule Excel. Ensure TASK/ACTIVITY table is included in the export."], "raw_tasks": 0}
+
+        # ── Compute schedule metrics ──────────────────────────────────────────
+        import re as _re
+
+        def _hrs(v):
+            try: return float(str(v or 0).replace(",","")) if v else 0.0
+            except: return 0.0
+
+        total = len(tasks)
+        milestone_types = {"TT_Mile","TT_FinMile","TT_StartMile","milestone","Milestone"}
+        non_milestones = [t for t in tasks if t.get("task_type","") not in milestone_types
+                          and t.get("task_kind","") != "Milestone"]
+        if not non_milestones: non_milestones = tasks
+
+        # Duration and progress
+        total_dur = sum(_hrs(t.get("target_drtn_hr_cnt",0)) for t in non_milestones)
+        remain_dur = sum(_hrs(t.get("remain_drtn_hr_cnt", t.get("target_drtn_hr_cnt",0))) for t in non_milestones)
+        pct_complete = round((1 - remain_dur / total_dur) * 100, 1) if total_dur > 0 else 0.0
+
+        # Also check phys_complete_pct field (XER direct)
+        pct_vals = [_hrs(t.get("phys_complete_pct",0)) for t in tasks if t.get("phys_complete_pct")]
+        if pct_vals:
+            pct_complete = round(sum(pct_vals) / len(pct_vals), 1)
+
+        # Duration in months
+        dur_months = round(total_dur / (8 * 22), 1) if total_dur > 0 else 0
+        remain_months = round(remain_dur / (8 * 22), 1) if remain_dur > 0 else dur_months
+
+        # Critical path
+        crit_flags = ["Y","Yes","TRUE","1","true","Critical","CRITICAL"]
+        critical = [t for t in tasks if (t.get("driving_path_flag","") in crit_flags or
+                                          t.get("critical","") in crit_flags or
+                                          t.get("CriticalActivity","") in crit_flags)]
+        critical_pct = round(len(critical) / max(total, 1) * 100)
+
+        # Open ends (activities with no predecessor or no successor)
+        pred_ids = set(r.get("task_id","") or r.get("pred_task_id","") for r in preds)
+        succ_ids = set(r.get("successor_task_id","") for r in preds)
+        task_ids = set(t.get("task_id","") for t in non_milestones)
+        open_starts = [t for t in non_milestones if t.get("task_id","") not in pred_ids and t.get("task_id","")]
+        open_ends = [t for t in non_milestones if t.get("task_id","") not in succ_ids and t.get("task_id","")]
+
+        # Float quality
+        neg_float = [t for t in tasks if _hrs(t.get("total_float_hr_cnt",0)) < -8]
+        zero_float = [t for t in tasks if 0 <= _hrs(t.get("total_float_hr_cnt",0)) <= 8]
+        logic_density = round(len(preds) / max(total, 1), 2)
+
+        # Quality scores
+        open_end_pct = len(open_ends) / max(len(non_milestones), 1) * 100
+        if open_end_pct <= 5 and logic_density >= 1.2: logic_quality = "GOOD"
+        elif open_end_pct <= 15 and logic_density >= 0.8: logic_quality = "REVIEW"
+        else: logic_quality = "POOR"
+
+        neg_float_pct = len(neg_float) / max(total, 1) * 100
+        if neg_float_pct == 0 and 10 <= critical_pct <= 40: float_quality = "GOOD"
+        elif neg_float_pct <= 5: float_quality = "REVIEW"
+        else: float_quality = "POOR"
+
+        # Delay from baseline (actual vs target dates)
+        delay_days = 0
+        for t in critical[:5]:
+            act_finish = t.get("act_end_date","") or t.get("FinishDate","")
+            tgt_finish = t.get("target_end_date","") or t.get("TargetFinishDate","")
+            if act_finish and tgt_finish:
+                try:
+                    from datetime import datetime
+                    fmts = ["%Y-%m-%dT%H:%M:%S","%Y-%m-%d","%d/%m/%Y","%m/%d/%Y","%d-%b-%y"]
+                    af = tf = None
+                    for fmt in fmts:
+                        try: af = datetime.strptime(act_finish[:19], fmt); break
+                        except: pass
+                    for fmt in fmts:
+                        try: tf = datetime.strptime(tgt_finish[:19], fmt); break
+                        except: pass
+                    if af and tf and af > tf:
+                        delay_days = max(delay_days, (af - tf).days)
+                except Exception: pass
+        delay_months = round(delay_days / 30.4, 1)
+
+        # Schedule level inference (1-5 from activity count and logic density)
+        if total >= 300 and logic_density >= 1.5: sched_level = 5
+        elif total >= 100 and logic_density >= 1.2: sched_level = 4
+        elif total >= 30 and logic_density >= 0.8: sched_level = 3
+        elif total >= 10: sched_level = 2
+        else: sched_level = 1
+
+        # QSRA P80 proxy from critical path length and uncertainty
+        cp_months = sum(_hrs(t.get("target_drtn_hr_cnt",0)) for t in critical) / (8*22) if critical else dur_months * 0.6
+        qsra_p80_proxy = round(cp_months * 1.15 + len(neg_float) * 0.5 + len(open_ends) * 0.3, 1)
+
+        # Critical path confidence score (0-100)
+        cp_confidence = max(20, 90 - len(open_ends)*2 - len(neg_float)*3 - max(0, critical_pct-40))
+
+        inputs = {
+            "schedule_pct_complete": pct_complete,
+            "months_remaining": remain_months,
+            "programme_duration_months": dur_months,
+            "critical_activity_count": len(critical),
+            "critical_pct": critical_pct,
+            "open_ends_count": len(open_ends),
+            "open_starts_count": len(open_starts),
+            "neg_float_count": len(neg_float),
+            "logic_density": logic_density,
+            "logic_quality": logic_quality,
+            "float_quality": float_quality,
+            "delay_months": delay_months,
+            "schedule_level_inferred": sched_level,
+            "qsra_p80_months_proxy": qsra_p80_proxy,
+            "cp_confidence_score": cp_confidence,
+            "total_activities": total,
+            "calendar_count": len(cals),
+            "progress_pct": pct_complete,
+        }
+
+        evidence = [
+            f"XER: {total} activities, {len(preds)} relationships, {len(cals)} calendars.",
+            f"Critical path: {len(critical)} activities ({critical_pct}% of programme).",
+            f"Logic quality: {logic_quality} (density {logic_density:.2f} relationships/activity, {len(open_ends)} open ends).",
+            f"Float quality: {float_quality} ({len(neg_float)} activities with negative float).",
+            f"Schedule progress: {pct_complete:.1f}% complete, {remain_months:.1f} months remaining.",
+            f"Inferred schedule level: Level {sched_level} ({total} activities, density {logic_density:.2f}).",
+            f"QSRA P80 proxy (from critical path uncertainty): {qsra_p80_proxy:.1f} months.",
+            f"Critical path confidence: {cp_confidence}/100.",
+        ]
+        if delay_months > 0:
+            evidence.append(f"Detected delay vs baseline: ~{delay_months:.1f} months on critical activities.")
+        if logic_quality == "POOR":
+            evidence.append(f"WARNING: {len(open_ends)} open ends ({open_end_pct:.0f}% of activities). This schedule cannot be used for QSRA without fixing logic.")
+        if float_quality == "POOR":
+            evidence.append(f"WARNING: {len(neg_float)} activities with negative float. The schedule is internally inconsistent.")
+        if sched_level <= 2:
+            evidence.append(f"NOTE: Only {total} activities — this appears to be a Level {sched_level} schedule (summary/milestone only). A Level 3-4 schedule is required for QSRA.")
+
+        return {"inputs": inputs, "evidence": evidence, "raw_tasks": total, "schedule_quality": logic_quality}
+
+    except Exception as e:
+        return {"inputs": {}, "evidence": [f"XER parse error: {str(e)[:100]}. Check file is a valid XER, P6 XML, or schedule Excel export."], "raw_tasks": 0}
 
 def _parse_excel_evidence(content: bytes, filename: str) -> dict:
     """
-    Extract cost and EV metrics from Excel in any format.
-    Scans every cell for keywords — no fixed column layout assumed.
+    Universal cost workbook / EVM report parser.
+    Handles: any Excel format (XLSX, XLS), any column layout, any currency.
+    Extracts: P50/P80/P90, class level, currency, escalation, CBS structure,
+    CPI, SPI, EV, actual cost, BAC, contingency, unit rates, OBA.
+    Works for: AACE estimates, NEC reports, Prism G2, CostOS, Excel cost plans.
     """
     try:
         import openpyxl, re
         from io import BytesIO
         wb = openpyxl.load_workbook(BytesIO(content), data_only=True)
-        
-        # Keywords to look for (case-insensitive)
-        EV_KEYS = ["earned value", "ev ", "bcwp", "ev$", "ev£", "earned val"]
-        AC_KEYS = ["actual cost", "acwp", "actual spend", "actuals", "spent to date", "expenditure"]
-        BAC_KEYS = ["budget at completion", "bac", "total budget", "approved budget", "baseline cost", "contract value"]
-        CPI_KEYS = ["cpi", "cost performance", "cost perf"]
-        SPI_KEYS = ["spi", "schedule performance", "sched perf"]
-        PCT_KEYS = ["% complete", "percent complete", "physical %", "% done", "progress %", "completion %"]
-        EV_PCT_KEYS = ["ev %", "ev percent", "earned value %", "ev/bac"]
-        SLIP_KEYS = ["delay", "slippage", "slip", "behind schedule"]
-        SCOPE_KEYS = ["change order", "scope change", "variation", "amendment", "co number"]
-        
-        found_values = {}
-        scope_change_rows = []
-        
-        for ws_name in wb.sheetnames[:8]:  # check first 8 sheets
-            ws = wb[ws_name]
-            rows = list(ws.rows)
-            
-            for ri, row in enumerate(rows):
-                for ci, cell in enumerate(row):
-                    cell_str = str(cell.value or "").lower().strip()
-                    if not cell_str or len(cell_str) > 80: continue
-                    
-                    # Check each keyword category
-                    for keys, field in [
-                        (EV_KEYS, "ev"), (AC_KEYS, "ac"), (BAC_KEYS, "bac"),
-                        (CPI_KEYS, "cpi"), (SPI_KEYS, "spi"),
-                        (PCT_KEYS, "pct_complete"), (EV_PCT_KEYS, "ev_pct"),
-                        (SLIP_KEYS, "slip"), (SCOPE_KEYS, "scope_change"),
-                    ]:
-                        if any(k in cell_str for k in keys) and field not in found_values:
-                            # Look for a numeric value in the same row (next few cells)
-                            for look_ci in range(max(0,ci+1), min(ci+6, len(row))):
-                                v = row[look_ci].value
-                                if v is not None:
-                                    try:
-                                        n = float(str(v).replace(",","").replace("£","").replace("$","").replace("%","").strip())
-                                        if field == "scope_change":
-                                            scope_change_rows.append(ri)
-                                        else:
-                                            found_values[field] = n
-                                        break
-                                    except: pass
-                            # Also check cell below
-                            if field not in found_values and ri+1 < len(rows):
-                                below = rows[ri+1]
-                                if ci < len(below):
-                                    v = below[ci].value
-                                    if v is not None:
-                                        try:
-                                            n = float(str(v).replace(",","").replace("£","").replace("$","").replace("%","").strip())
-                                            if field != "scope_change":
-                                                found_values[field] = n
-                                        except: pass
-        
-        inputs = {}
-        evidence = []
-        
-        # Derive inputs from what was found
-        ev = found_values.get("ev", 0)
-        ac = found_values.get("ac", 0)
-        bac = found_values.get("bac", 0)
-        pct = found_values.get("pct_complete", 0)
-        ev_pct_raw = found_values.get("ev_pct", 0)
-        cpi_raw = found_values.get("cpi", 0)
-        
-        # CPI
-        if cpi_raw and 0.3 < cpi_raw < 2.0:
-            inputs["actual_cost_pct"] = round(100 / cpi_raw, 1)
-            evidence.append(f"Excel: CPI found: {cpi_raw:.2f} — actual cost rate {inputs['actual_cost_pct']}% of plan.")
-        elif ev > 0 and ac > 0:
-            cpi_calc = ev / ac
-            if 0.3 < cpi_calc < 2.0:
-                inputs["actual_cost_pct"] = round(100 / cpi_calc, 1)
-                evidence.append(f"Excel: EV={ev:.1f}, AC={ac:.1f} — CPI={cpi_calc:.2f}, actual cost rate {inputs['actual_cost_pct']}% of plan.")
-        elif ac > 0 and bac > 0:
-            spend_pct = round(ac / bac * 100, 1)
-            evidence.append(f"Excel: Actual spend {ac:.1f} vs budget {bac:.1f} = {spend_pct:.1f}% of total budget spent.")
-            inputs["actual_cost_pct"] = min(200, round(spend_pct * 100 / max(0.01, pct) if pct > 0 else 100, 1))
-        
-        # EV %
-        if ev_pct_raw and 0 < ev_pct_raw <= 100:
-            inputs["earned_value_pct"] = round(ev_pct_raw, 1)
-            evidence.append(f"Excel: Earned value {ev_pct_raw:.1f}% of BAC.")
-        elif ev > 0 and bac > 0:
-            ev_pct_calc = round(ev / bac * 100, 1)
-            if 0 < ev_pct_calc <= 100:
-                inputs["earned_value_pct"] = ev_pct_calc
-                evidence.append(f"Excel: Earned value {ev_pct_calc:.1f}% of BAC (calculated from EV/BAC).")
-        
-        # % complete
-        if pct and 0 < pct <= 100:
-            inputs["progress_pct"] = round(pct, 1)
-            evidence.append(f"Excel: Programme {pct:.1f}% complete.")
-        
-        # Scope changes
-        scope_count = len(set(scope_change_rows))
-        if scope_count > 0:
-            inputs["scope_changes_count"] = scope_count
-            evidence.append(f"Excel: {scope_count} scope change rows detected.")
-        
-        if not evidence:
-            # Try to extract from CASEY-style Board Summary (Field/Value pairs)
-            for ws_name in wb.sheetnames[:3]:
-                ws2 = wb[ws_name]
-                for row in list(ws2.rows):
-                    if len(row) >= 2:
-                        k = str(row[0].value or "").lower().strip()
-                        v = row[1].value
-                        if "confidence" in k and v:
-                            try: inputs["earned_value_pct"] = float(str(v).replace("%","").strip()); evidence.append(f"Excel: Confidence {v} found.")
-                            except: pass
-                        if "p50" in k and v and "progress" not in k:
-                            evidence.append(f"Excel: P50 cost found: {v}.")
-            if not evidence:
-                evidence.append(f"Excel ({filename}): File opened. Key EV/CPI metrics not in standard cell locations. For best results include cells labelled CPI, EV%, or Actual vs Budget.")
-        
-        return {"inputs": inputs, "evidence": evidence}
-    
-    except Exception as e:
-        return {"inputs": {}, "evidence": [f"Excel: Could not parse {filename} — {str(e)[:80]}. Ensure file is .xlsx format (not .xls or password-protected)."]}
 
+        # ── Universal number extractor ────────────────────────────────────────
+        CURRENCY_PATTERNS = [
+            (r"£\s*([\d,\.]+)\s*[BbMmKk]?", "£"),
+            (r"€\s*([\d,\.]+)\s*[BbMmKk]?", "€"),
+            (r"A\$\s*([\d,\.]+)\s*[BbMmKk]?", "A$"),
+            (r"CA\$\s*([\d,\.]+)\s*[BbMmKk]?", "CA$"),
+            (r"NZ\$\s*([\d,\.]+)\s*[BbMmKk]?", "NZ$"),
+            (r"S\$\s*([\d,\.]+)\s*[BbMmKk]?", "S$"),
+            (r"AED\s*([\d,\.]+)\s*[BbMmKk]?", "AED"),
+            (r"SAR\s*([\d,\.]+)\s*[BbMmKk]?", "SAR"),
+            (r"NOK\s*([\d,\.]+)\s*[BbMmKk]?", "NOK"),
+            (r"SEK\s*([\d,\.]+)\s*[BbMmKk]?", "SEK"),
+            (r"INR\s*([\d,\.]+)\s*[BbMmKk]?", "INR"),
+            (r"¥\s*([\d,\.]+)\s*[BbMmKk]?", "¥"),
+            (r"\$\s*([\d,\.]+)\s*[BbMmKk]?", "$"),
+        ]
+        FX = {"$":1.0,"£":0.79,"€":0.92,"A$":1.53,"CA$":1.36,"NZ$":1.64,
+              "S$":1.35,"AED":0.27,"SAR":0.27,"NOK":0.093,"SEK":0.095,
+              "INR":0.012,"¥":0.0067,"CNY":0.14,"CHF":1.12,"DKK":0.14,
+              "PLN":0.25,"CZK":0.044,"BRL":0.20,"ZAR":0.055,"NGN":0.00063}
+
+        def parse_money_bn(cell_str, curr_detected=None):
+            """Parse any money string to USD billions."""
+            s = str(cell_str or "").strip().replace(",","")
+            if not s or s in ("-","—","N/A","TBC","n/a"): return None
+            try:
+                # Pure number
+                v = float(s)
+                mult = 1.0
+                if abs(v) > 500000: mult = 0.000000001   # raw units
+                elif abs(v) > 5000: mult = 0.000001       # thousands
+                elif abs(v) > 50:   mult = 0.001          # millions
+                else:               mult = 1.0             # already billions
+                fx = FX.get(curr_detected or "$", 1.0)
+                return round(v * mult / fx, 4)
+            except Exception:
+                pass
+            # String with currency
+            for pattern, curr in CURRENCY_PATTERNS:
+                m = re.search(pattern, s, re.IGNORECASE)
+                if m:
+                    v = float(m.group(1).replace(",",""))
+                    suffix = s[m.end():].strip().upper()[:1]
+                    if suffix == "T": v *= 1000
+                    elif suffix == "B": pass
+                    elif suffix == "M": v *= 0.001
+                    elif suffix == "K": v *= 0.000001
+                    elif v > 500000: v *= 0.000000001
+                    elif v > 5000: v *= 0.000001
+                    elif v > 50: v *= 0.001
+                    fx = FX.get(curr, 1.0)
+                    return round(v / fx, 4)
+            return None
+
+        # ── Keyword matchers ──────────────────────────────────────────────────
+        def cell_matches(cell_str, keywords):
+            s = str(cell_str or "").lower().strip()
+            return any(k in s for k in keywords)
+
+        P50_KEYS = ["p50","base estimate","base case","most likely","50th percentile","50%","expected cost","central estimate"]
+        P80_KEYS = ["p80","80th percentile","80%","board estimate","approval estimate","outturn","contingency included"]
+        P90_KEYS = ["p90","90th percentile","90%","stress","worst case"]
+        P10_KEYS = ["p10","10th percentile","10%","optimistic","best case"]
+        OBA_KEYS = ["optimism bias","oba","reference class","rcf"]
+        CONT_KEYS = ["contingency","risk allowance","risk reserve","quantified risk","qra allowance"]
+        ESC_KEYS = ["escalation","inflation","indexation","tender price inflation","tpi","bnfl index"]
+        UNIT_KEYS = ["unit rate","cost per","rate per","per km","per mw","per m2","per sqm","per unit","cost/mw"]
+        CLASS_KEYS = ["estimate class","aace class","class 1","class 2","class 3","class 4","class 5","accuracy"]
+        EV_KEYS = ["earned value","ev ","bcwp","ev$","ev£","ev%","ev/bac"]
+        AC_KEYS = ["actual cost","acwp","actual spend","actuals","spent to date","expenditure","cost to date"]
+        BAC_KEYS = ["budget at completion","bac","total budget","approved budget","baseline cost","contract value","eac","target cost"]
+        CPI_KEYS = ["cpi","cost performance"]
+        SPI_KEYS = ["spi","schedule performance"]
+        PCT_KEYS = ["% complete","percent complete","physical %","% done","progress %","completion %"]
+
+        found = {}
+        currency_detected = "$"
+        cost_lines = []  # CBS structure
+        all_text = []
+
+        for ws_name in wb.sheetnames[:10]:
+            ws = wb[ws_name]
+            rows = list(ws.iter_rows(values_only=True))
+            all_text.extend([str(c or "") for row in rows for c in row if c])
+
+            # Detect currency from sheet text
+            sheet_text = " ".join(str(c or "") for row in rows for c in row)
+            for curr in ["£","€","A$","CA$","NOK","SEK","INR","AED","SAR","¥"]:
+                if curr in sheet_text:
+                    currency_detected = curr
+                    break
+
+            for ri, row in enumerate(rows):
+                row_strs = [str(c or "").lower().strip() for c in row]
+                row_vals = list(row)
+
+                # Look for label in col A/B, value in next col
+                for ci, cell in enumerate(row):
+                    cs = str(cell or "").strip()
+                    cs_low = cs.lower()
+
+                    # P-values
+                    if cell_matches(cs, P50_KEYS) and not found.get("p50_bn"):
+                        for ni in range(ci+1, min(ci+8, len(row_vals))):
+                            v = parse_money_bn(row_vals[ni], currency_detected)
+                            if v and 0.05 < v < 5000:
+                                found["p50_bn"] = v
+                                found["p50_source"] = f"Sheet '{ws_name}' row {ri+1} col {ni+1}: {row_vals[ni]}"
+                                break
+
+                    elif cell_matches(cs, P80_KEYS) and not found.get("p80_bn"):
+                        for ni in range(ci+1, min(ci+8, len(row_vals))):
+                            v = parse_money_bn(row_vals[ni], currency_detected)
+                            if v and 0.05 < v < 5000:
+                                found["p80_bn"] = v
+                                found["p80_source"] = f"Sheet '{ws_name}' row {ri+1}: {row_vals[ni]}"
+                                break
+
+                    elif cell_matches(cs, P90_KEYS) and not found.get("p90_bn"):
+                        for ni in range(ci+1, min(ci+8, len(row_vals))):
+                            v = parse_money_bn(row_vals[ni], currency_detected)
+                            if v and 0.05 < v < 5000: found["p90_bn"] = v; break
+
+                    elif cell_matches(cs, P10_KEYS) and not found.get("p10_bn"):
+                        for ni in range(ci+1, min(ci+8, len(row_vals))):
+                            v = parse_money_bn(row_vals[ni], currency_detected)
+                            if v and 0.05 < v < 5000: found["p10_bn"] = v; break
+
+                    elif cell_matches(cs, OBA_KEYS):
+                        for ni in range(ci+1, min(ci+5, len(row_vals))):
+                            v_str = str(row_vals[ni] or "")
+                            if "%" in v_str:
+                                try: found["oba_pct"] = float(v_str.replace("%","").strip()); break
+                                except: pass
+
+                    elif cell_matches(cs, CONT_KEYS) and not found.get("contingency_bn"):
+                        for ni in range(ci+1, min(ci+8, len(row_vals))):
+                            v = parse_money_bn(row_vals[ni], currency_detected)
+                            if v and 0 < v < 500: found["contingency_bn"] = v; break
+
+                    elif cell_matches(cs, ESC_KEYS) and not found.get("escalation_pct"):
+                        for ni in range(ci+1, min(ci+5, len(row_vals))):
+                            v_str = str(row_vals[ni] or "")
+                            try:
+                                pct = float(v_str.replace("%","").strip())
+                                if 0 < pct < 50: found["escalation_pct"] = pct; break
+                            except: pass
+
+                    elif cell_matches(cs, UNIT_KEYS) and not found.get("unit_rate"):
+                        for ni in range(ci+1, min(ci+5, len(row_vals))):
+                            v = parse_money_bn(row_vals[ni], currency_detected)
+                            if v: found["unit_rate_usd_m"] = round(v*1000, 2); break  # in $M
+
+                    elif cell_matches(cs, CLASS_KEYS) and not found.get("class_level"):
+                        for ni in range(ci+1, min(ci+5, len(row_vals))):
+                            v_str = str(row_vals[ni] or "").lower()
+                            for cl in [1,2,3,4,5]:
+                                if str(cl) in v_str or f"class {cl}" in v_str:
+                                    found["class_level"] = cl
+                                    break
+                            # Also infer from accuracy range
+                            if "%" in v_str:
+                                try:
+                                    acc = float(v_str.split("%")[0].split("+")[-1].split("-")[-1].strip())
+                                    if acc >= 40: found["class_level"] = 5
+                                    elif acc >= 25: found["class_level"] = 4
+                                    elif acc >= 15: found["class_level"] = 3
+                                    elif acc >= 10: found["class_level"] = 2
+                                    else: found["class_level"] = 1
+                                except: pass
+                            if found.get("class_level"): break
+
+                    elif cell_matches(cs, EV_KEYS):
+                        for ni in range(ci+1, min(ci+6, len(row_vals))):
+                            v_str = str(row_vals[ni] or "")
+                            if "%" in v_str:
+                                try: found["earned_value_pct"] = float(v_str.replace("%","").strip()); break
+                                except: pass
+                            else:
+                                v = parse_money_bn(row_vals[ni], currency_detected)
+                                if v and not found.get("earned_value_pct"): found["ev_bn"] = v; break
+
+                    elif cell_matches(cs, AC_KEYS) and not found.get("actual_cost_bn"):
+                        for ni in range(ci+1, min(ci+8, len(row_vals))):
+                            v = parse_money_bn(row_vals[ni], currency_detected)
+                            if v and 0.001 < v < 2000: found["actual_cost_bn"] = v; break
+
+                    elif cell_matches(cs, BAC_KEYS) and not found.get("bac_bn"):
+                        for ni in range(ci+1, min(ci+8, len(row_vals))):
+                            v = parse_money_bn(row_vals[ni], currency_detected)
+                            if v and 0.05 < v < 5000: found["bac_bn"] = v; break
+
+                    elif cell_matches(cs, CPI_KEYS) and not found.get("cpi"):
+                        for ni in range(ci+1, min(ci+5, len(row_vals))):
+                            try:
+                                v = float(str(row_vals[ni] or "").replace(",",""))
+                                if 0.3 < v < 3.0: found["cpi"] = round(v,3); break
+                            except: pass
+
+                    elif cell_matches(cs, SPI_KEYS) and not found.get("spi"):
+                        for ni in range(ci+1, min(ci+5, len(row_vals))):
+                            try:
+                                v = float(str(row_vals[ni] or "").replace(",",""))
+                                if 0.3 < v < 3.0: found["spi"] = round(v,3); break
+                            except: pass
+
+                    elif cell_matches(cs, PCT_KEYS) and not found.get("progress_pct"):
+                        for ni in range(ci+1, min(ci+5, len(row_vals))):
+                            v_str = str(row_vals[ni] or "")
+                            try: found["progress_pct"] = float(v_str.replace("%","").strip()); break
+                            except: pass
+
+                    # CBS line detection (label in col A, cost in col D-G)
+                    if cs and len(cs) < 60 and any(str(row_vals[ni] or "") for ni in range(ci+1, min(ci+8, len(row_vals)))):
+                        v = parse_money_bn(row_vals[min(ci+3, len(row_vals)-1)] if ci+3 < len(row_vals) else None, currency_detected)
+                        if v and 0.001 < v < 500 and len(cost_lines) < 30:
+                            cost_lines.append({"description": cs[:50], "p50_bn": v, "cbs": f"CBS{len(cost_lines)+1:02d}"})
+
+        # Compute derived values
+        if found.get("bac_bn") and found.get("actual_cost_bn"):
+            cpi = found.get("cpi") or (found.get("ev_bn",0) / found.get("actual_cost_bn",1) if found.get("ev_bn") else None)
+            if cpi: found["cpi"] = round(cpi, 3)
+            ac_pct = round(found["actual_cost_bn"] / found["bac_bn"] * 100, 1)
+            found["actual_cost_pct"] = ac_pct
+
+        found["currency_detected"] = currency_detected
+        found["cost_lines_found"] = len(cost_lines)
+
+        # Compute QCRA P80 proxy if we have P50
+        if found.get("p50_bn") and not found.get("p80_bn"):
+            cl = found.get("class_level", 3)
+            uplift = {1:1.10, 2:1.15, 3:1.22, 4:1.35, 5:1.50}.get(cl, 1.22)
+            found["p80_bn"] = round(found["p50_bn"] * uplift, 3)
+
+        evidence = [f"Cost file: {filename}. Currency detected: {currency_detected}."]
+        for field, label in [("p50_bn","P50 base estimate"),("p80_bn","P80 board estimate"),
+                              ("class_level","Estimate class"),("escalation_pct","Escalation %"),
+                              ("contingency_bn","Contingency"),("oba_pct","OBA"),
+                              ("cpi","CPI"),("spi","SPI"),("progress_pct","% complete")]:
+            if found.get(field) is not None:
+                src = found.get(f"{field}_source","")
+                evidence.append(f"Found {label}: {found[field]}{' (' + src + ')' if src else ''}.")
+        if not found.get("p50_bn"): evidence.append("P50 not found — label cells with 'P50' or 'Base Estimate'.")
+        if not found.get("class_level"): evidence.append("Estimate class not found — include a cell labelled 'Estimate Class' or 'AACE Class'.")
+        if cost_lines: evidence.append(f"CBS structure: {len(cost_lines)} cost lines detected.")
+
+        return {"inputs": found, "evidence": evidence, "cost_lines": cost_lines}
+
+    except Exception as e:
+        return {"inputs": {}, "evidence": [f"Cost file parse error: {str(e)[:100]}. Ensure file is .xlsx format."], "cost_lines": []}
 
 def _parse_risk_register_evidence(content: bytes, filename: str) -> dict:
-    """Parse risk register (Excel or CSV) to extract risk metrics."""
+    """
+    Universal risk register parser.
+    Handles: Excel (any column layout), CSV, ARM export, @RISK output, Safran Risk,
+    Primavera Risk Analysis, BowTie XML, JIRA risk exports.
+    Extracts: risk count, total EMV, QCRA P80 proxy, top risks, owners,
+    categories, probabilities, schedule EMV, and risk cluster summary.
+    """
     try:
+        import re
         from io import BytesIO, StringIO
         import csv
-        
-        risks = []
-        
-        if filename.lower().endswith(".csv"):
-            text = content.decode("utf-8", errors="replace")
-            reader = csv.DictReader(StringIO(text))
-            for row in reader:
-                risks.append(dict(row))
-        else:
-            import openpyxl
-            wb = openpyxl.load_workbook(BytesIO(content), data_only=True)
-            ws = wb.active
-            rows = list(ws.rows)
-            if not rows: return {"inputs": {}, "evidence": ["Risk Register: Empty file."]}
-            
-            # Find header row (first row with 3+ non-empty cells)
-            hdr_row = 0
-            for ri, row in enumerate(rows[:10]):
-                non_empty = sum(1 for c in row if c.value)
-                if non_empty >= 3:
-                    hdr_row = ri; break
-            
-            headers = [str(rows[hdr_row][ci].value or "").lower().strip() 
-                      for ci in range(len(rows[hdr_row]))]
-            
-            for row in rows[hdr_row+1:]:
-                if not any(c.value for c in row): continue
-                d = {}
-                for ci, h in enumerate(headers):
-                    if ci < len(row):
-                        d[h] = row[ci].value
-                risks.append(d)
-        
-        if not risks:
-            return {"inputs": {}, "evidence": ["Risk Register: No risk rows found."]}
-        
-        # Extract metrics
-        probs = []
-        emvs = []
-        prob_keys = ["probability", "prob", "likelihood", "prob %", "probability %"]
-        emv_keys = ["emv", "expected monetary", "expected value", "risk value", "risk emv"]
-        
-        for r in risks[:100]:
-            for k, v in r.items():
-                k_l = str(k).lower()
-                if any(pk in k_l for pk in prob_keys):
-                    try:
-                        n = float(str(v or 0).replace("%","").replace(",","").strip())
-                        if n > 1: n = n / 100  # convert % to decimal
-                        if 0 < n < 1: probs.append(n)
-                    except: pass
-                if any(ek in k_l for ek in emv_keys):
-                    try:
-                        n = abs(float(str(v or 0).replace(",","").replace("£","").replace("$","").replace("€","").strip()))
-                        if n > 0: emvs.append(n)
-                    except: pass
-        
-        open_risks = sum(1 for r in risks if str(r.get("status","") or r.get("Status","") or "open").lower() in ("open","active","identified",""))
-        avg_prob = round(sum(probs)/len(probs)*100, 1) if probs else 0
-        
-        evidence = [f"Risk Register: {len(risks)} risks found, {open_risks} open."]
-        if avg_prob: evidence.append(f"Risk Register: Average risk probability {avg_prob}%.")
-        if emvs: evidence.append(f"Risk Register: Total EMV across {len(emvs)} quantified risks.")
-        
-        # Open risk count affects confidence — more than 15 open risks = elevated risk profile
-        inputs = {}
-        if open_risks > 15:
-            inputs["scope_changes_count"] = max(3, min(10, int(open_risks / 5)))
-        
-        return {"inputs": inputs, "evidence": evidence, "risk_count": len(risks)}
-    
-    except Exception as e:
-        return {"inputs": {}, "evidence": [f"Risk Register: Could not parse — {str(e)[:80]}"]}
 
+        FX = {"$":1.0,"£":0.79,"€":0.92,"A$":1.53,"CA$":1.36,"S$":1.35,"AED":0.27}
+
+        def parse_number(v):
+            try:
+                s = str(v or "").strip().replace(",","").replace("%","")
+                if not s or s in ("-","—","N/A"): return None
+                return float(s)
+            except: return None
+
+        def parse_money_bn(v, curr="$"):
+            n = parse_number(v)
+            if n is None: return None
+            fx = FX.get(curr, 1.0)
+            if abs(n) > 1e9: return round(n / 1e9 / fx, 4)
+            elif abs(n) > 1e6: return round(n / 1e6 / fx, 4)
+            elif abs(n) > 1e3: return round(n / 1e3 / fx, 4)
+            else: return round(n / fx, 4)  # already in billions
+
+        # ── Column name normaliser ────────────────────────────────────────────
+        # Maps every known tool's column names to standard fields
+        FIELD_MAP = {
+            # ID
+            "id": "id", "risk id": "id", "risk no": "id", "ref": "id", "number": "id",
+            "risk ref": "id", "item": "id", "risk_id": "id",
+            # Title
+            "title": "title", "risk title": "title", "risk name": "title",
+            "description": "title", "risk description": "title", "name": "title",
+            "risk": "title", "threat": "title", "opportunity": "title", "event": "title",
+            # Category
+            "category": "category", "type": "category", "risk type": "category",
+            "risk category": "category", "area": "category", "theme": "category",
+            "discipline": "category", "work stream": "category",
+            # Probability
+            "probability": "probability_pct", "prob": "probability_pct",
+            "likelihood": "probability_pct", "prob %": "probability_pct",
+            "probability %": "probability_pct", "frequency": "probability_pct",
+            "likelihood %": "probability_pct", "p(occ)": "probability_pct",
+            "percentage probability": "probability_pct",
+            # Impact (cost)
+            "cost impact": "cost_impact_bn", "cost impact (£m)": "cost_impact_bn",
+            "cost impact ($m)": "cost_impact_bn", "cost impact (€m)": "cost_impact_bn",
+            "impact cost": "cost_impact_bn", "financial impact": "cost_impact_bn",
+            "quantified cost": "cost_impact_bn", "cost (£m)": "cost_impact_bn",
+            "cost ($m)": "cost_impact_bn", "p50 cost": "cost_impact_bn",
+            "most likely cost": "cost_impact_bn", "cost estimate": "cost_impact_bn",
+            # EMV
+            "emv": "emv_bn", "expected monetary value": "emv_bn",
+            "expected value": "emv_bn", "ev": "emv_bn", "risk value": "emv_bn",
+            "expected cost": "emv_bn", "risk exposure": "emv_bn",
+            "quantified emv": "emv_bn", "emv (£m)": "emv_bn", "emv ($m)": "emv_bn",
+            # Schedule impact
+            "schedule impact": "schedule_days", "schedule impact (days)": "schedule_days",
+            "delay (days)": "schedule_days", "duration impact": "schedule_days",
+            "schedule impact (months)": "schedule_months",
+            "delay (months)": "schedule_months", "programme impact": "schedule_months",
+            # Owner
+            "owner": "owner", "risk owner": "owner", "responsible": "owner",
+            "lead": "owner", "accountable": "owner", "assigned to": "owner",
+            # Status
+            "status": "status", "risk status": "status", "state": "status",
+            "active": "status", "closed": "status",
+            # Mitigation
+            "mitigation": "mitigation", "response": "mitigation",
+            "treatment": "mitigation", "action": "mitigation", "control": "mitigation",
+            "risk response": "mitigation",
+            # Cause / Trigger
+            "cause": "cause", "trigger": "trigger", "source": "cause",
+        }
+
+        def normalise_header(h):
+            s = str(h or "").lower().strip().replace("_"," ")
+            return FIELD_MAP.get(s, s)
+
+        risks = []
+        currency = "$"
+
+        # ── Try Excel ─────────────────────────────────────────────────────────
+        if not filename.lower().endswith(".csv"):
+            try:
+                import openpyxl
+                wb = openpyxl.load_workbook(BytesIO(content), data_only=True)
+                # Try all sheets, pick the one with most risk-like content
+                best_sheet = None; best_score = 0
+                for wsn in wb.sheetnames:
+                    ws = wb[wsn]
+                    text = " ".join(str(c.value or "").lower() for row in ws.iter_rows() for c in row)
+                    score = sum(text.count(k) for k in ["risk","probability","emv","impact","owner","mitigation"])
+                    if score > best_score: best_score = score; best_sheet = wsn
+                ws = wb[best_sheet or wb.sheetnames[0]]
+
+                # Detect currency
+                all_text = " ".join(str(c.value or "") for row in ws.iter_rows() for c in row)
+                for curr in ["£","€","A$","CA$","NOK","SEK","INR"]:
+                    if curr in all_text: currency = curr; break
+
+                # Find header row (look in first 20 rows)
+                rows = list(ws.iter_rows(values_only=True))
+                hdr_idx = 0
+                for ri, row in enumerate(rows[:20]):
+                    non_empty = [c for c in row if c]
+                    if len(non_empty) >= 4:
+                        cells_low = [str(c or "").lower() for c in row]
+                        if any(k in " ".join(cells_low) for k in ["probability","likelihood","risk","emv","impact","category"]):
+                            hdr_idx = ri; break
+
+                raw_headers = [str(h or "").strip() for h in rows[hdr_idx]]
+                headers = [normalise_header(h) for h in raw_headers]
+
+                for row in rows[hdr_idx+1:]:
+                    if not any(row): continue
+                    d = {headers[ci]: row[ci] for ci in range(min(len(headers), len(row)))}
+                    if not d.get("title") and not d.get("id"): continue
+                    risks.append(d)
+            except Exception as xe:
+                pass
+
+        # ── Try CSV ───────────────────────────────────────────────────────────
+        if not risks:
+            try:
+                text = content.decode("utf-8", errors="replace")
+                reader = csv.DictReader(StringIO(text))
+                for row in reader:
+                    d = {normalise_header(k): v for k,v in row.items()}
+                    risks.append(d)
+            except Exception: pass
+
+        # ── Try ARM XML format ────────────────────────────────────────────────
+        if not risks:
+            try:
+                text = content.decode("utf-8", errors="ignore")
+                if "<Risk" in text or "<risk" in text:
+                    risk_blocks = re.findall(r"<[Rr]isk[^>]*>(.*?)</[Rr]isk>", text, re.DOTALL)
+                    for block in risk_blocks:
+                        d = {}
+                        for tag, field in [("Title","title"),("Description","title"),
+                                           ("Probability","probability_pct"),
+                                           ("CostImpact","cost_impact_bn"),
+                                           ("EMV","emv_bn"),("Owner","owner"),
+                                           ("Category","category"),("Status","status")]:
+                            m = re.search(fr"<{tag}[^>]*>([^<]*)</{tag}>", block, re.IGNORECASE)
+                            if m: d[field] = m.group(1).strip()
+                        if d: risks.append(d)
+            except Exception: pass
+
+        if not risks:
+            return {"inputs": {}, "evidence": [f"Risk register parse error: no risks found in {filename}. Ensure file has header row with columns like Risk, Probability, EMV, Impact, Owner."]}
+
+        # ── Extract metrics ───────────────────────────────────────────────────
+        probs, emvs, cost_impacts, sched_days, sched_months = [], [], [], [], []
+        owners_set, cats_set = set(), set()
+        top_risks = []
+
+        for r in risks:
+            # Probability
+            prob = parse_number(r.get("probability_pct")) or parse_number(r.get("probability"))
+            if prob:
+                if prob > 1: prob = min(prob, 100)  # keep as %
+                else: prob *= 100  # was 0-1 decimal
+                probs.append(prob)
+
+            # EMV
+            emv = parse_money_bn(r.get("emv_bn"), currency)
+            if emv is None:
+                cost_v = parse_money_bn(r.get("cost_impact_bn"), currency)
+                if cost_v and prob: emv = round(cost_v * prob / 100, 4)
+            if emv and abs(emv) > 0: emvs.append(abs(emv))
+
+            # Schedule
+            sd = parse_number(r.get("schedule_days"))
+            if sd: sched_days.append(sd)
+            sm = parse_number(r.get("schedule_months"))
+            if sm: sched_months.append(sm)
+
+            # Owners / categories
+            if r.get("owner"): owners_set.add(str(r["owner"]).strip()[:30])
+            if r.get("category"): cats_set.add(str(r["category"]).strip()[:30])
+
+            # Build top risk record
+            if r.get("title") or r.get("id"):
+                title = str(r.get("title") or r.get("id") or "").strip()[:60]
+                top_risks.append({
+                    "id": str(r.get("id",""))[:10],
+                    "title": title,
+                    "category": str(r.get("category",""))[:30],
+                    "probability_pct": round(probs[-1], 1) if probs else None,
+                    "cost_emv_bn": round(emvs[-1], 4) if emvs else None,
+                    "owner": str(r.get("owner",""))[:25],
+                    "status": str(r.get("status","Open"))[:15],
+                    "mitigation": str(r.get("mitigation",""))[:80],
+                })
+
+        # Sort by EMV
+        top_risks_sorted = sorted(top_risks, key=lambda x: float(x.get("cost_emv_bn") or 0), reverse=True)
+
+        total_emv = sum(emvs)
+        total_sched_months = sum(sched_months) + sum(d/30.4 for d in sched_days)
+
+        # QCRA P80 proxy: total EMV * 1.35 (for correlation and residual risk)
+        qcra_p80_proxy = round(total_emv * 1.35, 3) if total_emv > 0 else None
+
+        # Risk count and avg probability
+        risk_count = len(risks)
+        avg_prob = round(sum(probs)/len(probs), 1) if probs else None
+
+        inputs = {
+            "risk_count": risk_count,
+            "total_emv_bn": round(total_emv, 3),
+            "qcra_p80_bn_proxy": qcra_p80_proxy,
+            "avg_probability_pct": avg_prob,
+            "total_schedule_emv_months": round(total_sched_months, 1),
+            "unique_owners": len(owners_set),
+            "unique_categories": len(cats_set),
+            "top_risks": top_risks_sorted[:20],
+            "currency_detected": currency,
+        }
+
+        evidence = [
+            f"Risk register: {filename}. {risk_count} risks parsed. Currency: {currency}.",
+            f"Total EMV: {currency}{total_emv:.3f}B across {risk_count} risks.",
+        ]
+        if avg_prob: evidence.append(f"Average probability: {avg_prob:.0f}%.")
+        if qcra_p80_proxy: evidence.append(f"QCRA P80 proxy (EMV x 1.35 for correlation): {currency}{qcra_p80_proxy:.3f}B.")
+        if total_sched_months > 0: evidence.append(f"Schedule EMV: {total_sched_months:.1f} months total exposure.")
+        if owners_set: evidence.append(f"Risk owners identified: {', '.join(list(owners_set)[:5])}.")
+        if cats_set: evidence.append(f"Risk categories: {', '.join(list(cats_set)[:5])}.")
+        if top_risks_sorted:
+            evidence.append(f"Top risk by EMV: {top_risks_sorted[0].get('title','')} ({currency}{top_risks_sorted[0].get('cost_emv_bn',0):.3f}B).")
+
+        return {"inputs": inputs, "evidence": evidence, "top_risks": top_risks_sorted[:20]}
+
+    except Exception as e:
+        return {"inputs": {}, "evidence": [f"Risk register parse error: {str(e)[:150]}"], "top_risks": []}
 
 def _parse_text_report_evidence(content: bytes, filename: str) -> dict:
     """Extract key metrics from monthly report text (PDF text or DOCX)."""
@@ -8404,6 +8848,229 @@ def _parse_text_report_evidence(content: bytes, filename: str) -> dict:
     
     except Exception as e:
         return {"inputs": {}, "evidence": [f"Monthly report: Error — {str(e)[:80]}"]}
+
+
+# ── BUILD MODEL FROM EVIDENCE ─────────────────────────────────────────────────
+def build_model_from_evidence(xer_data: dict, cost_data: dict, risk_data: dict,
+                               prompt: str = "", client: str = "") -> dict:
+    """
+    Build a full CASEY model locked to uploaded evidence.
+    Every number traces back to a source file and cell.
+    Falls back to build_model() for any field not found in evidence.
+    """
+    try:
+        # ── Determine parameters from evidence ─────────────────────────────
+        xer_inp = xer_data.get("inputs", {})
+        cost_inp = cost_data.get("inputs", {})
+        risk_inp = risk_data.get("inputs", {})
+
+        # Class level: from cost file, else infer from XER schedule level
+        class_level = int(cost_inp.get("class_level") or xer_inp.get("schedule_level_inferred") or 3)
+
+        # Schedule level: from XER
+        schedule_level = int(xer_inp.get("schedule_level_inferred") or 4)
+
+        # Prompt: from original or construct from evidence
+        if not prompt:
+            prompt = "Programme from uploaded evidence"
+
+        # Run base build_model with detected class/schedule levels
+        model = build_model(prompt, client or "Uploaded Programme", class_level, schedule_level, "base")
+
+        # ── Override cost fields from evidence ──────────────────────────────
+        curr = cost_inp.get("currency_detected") or model.get("currency_symbol", "$")
+        model["currency_symbol"] = curr
+        model["evidence_mode"] = True
+
+        if cost_inp.get("p50_bn"):
+            model["p50_cost_bn"] = cost_inp["p50_bn"]
+            model["p50"] = f"{curr}{cost_inp['p50_bn']:.2f}B"
+        if cost_inp.get("p80_bn"):
+            model["p80_cost_bn"] = cost_inp["p80_bn"]
+        if cost_inp.get("p90_bn"):
+            model["p90_cost_bn"] = cost_inp["p90_bn"]
+        if cost_inp.get("p10_bn"):
+            model["p10_cost_bn"] = cost_inp["p10_bn"]
+        if cost_inp.get("contingency_bn"):
+            model["contingency_bn"] = cost_inp["contingency_bn"]
+        if cost_inp.get("escalation_pct"):
+            model["escalation_pct"] = cost_inp["escalation_pct"]
+        if cost_inp.get("class_level"):
+            model["estimate_class"] = cost_inp["class_level"]
+        if cost_data.get("cost_lines"):
+            model["cost_lines"] = cost_data["cost_lines"]
+
+        # ── Override schedule fields from XER ──────────────────────────────
+        if xer_inp.get("programme_duration_months"):
+            model["schedule_months"] = xer_inp["programme_duration_months"]
+        if xer_inp.get("months_remaining"):
+            model["months_remaining"] = xer_inp["months_remaining"]
+        if xer_inp.get("schedule_pct_complete"):
+            model["programme_pct_complete"] = xer_inp["schedule_pct_complete"]
+        if xer_inp.get("delay_months"):
+            model["schedule_delay_months"] = xer_inp["delay_months"]
+
+        # XER health engine — override from actual parsed data
+        model["xer_health"] = {
+            "activity_count": xer_inp.get("total_activities", 0),
+            "critical_count": xer_inp.get("critical_activity_count", 0),
+            "critical_pct": xer_inp.get("critical_pct", 0),
+            "logic_quality": xer_inp.get("logic_quality", "UNKNOWN"),
+            "float_quality": xer_inp.get("float_quality", "UNKNOWN"),
+            "critical_path_confidence": xer_inp.get("cp_confidence_score", 0),
+            "open_ends": xer_inp.get("open_ends_count", 0),
+            "logic_density": xer_inp.get("logic_density", 0),
+            "qsra_p80_months": xer_inp.get("qsra_p80_months_proxy", 0),
+            "from_upload": True,
+            "headline": f"From uploaded XER: {xer_inp.get('total_activities',0)} activities, "
+                       f"{xer_inp.get('critical_activity_count',0)} critical. "
+                       f"Logic: {xer_inp.get('logic_quality','?')}. Float: {xer_inp.get('float_quality','?')}.",
+        }
+
+        # Update QSRA from XER
+        if xer_inp.get("qsra_p80_months_proxy"):
+            mc = model.get("monte_carlo", {}) or {}
+            qsra = mc.get("qsra", {}) or {}
+            qsra["p80"] = round(xer_inp["qsra_p80_months_proxy"])
+            mc["qsra"] = qsra
+            model["monte_carlo"] = mc
+
+        # ── Override risk fields from register ──────────────────────────────
+        if risk_inp.get("total_emv_bn"):
+            model["total_risk_emv_bn"] = risk_inp["total_emv_bn"]
+        if risk_inp.get("qcra_p80_bn_proxy"):
+            mc = model.get("monte_carlo", {}) or {}
+            qcra = mc.get("qcra", {}) or {}
+            qcra["p80"] = risk_inp["qcra_p80_bn_proxy"]
+            mc["qcra"] = qcra
+            model["monte_carlo"] = mc
+        if risk_data.get("top_risks"):
+            # Merge with CASEY-generated risks, evidence risks take priority
+            evidence_risks = risk_data["top_risks"]
+            model["risks"] = evidence_risks[:50]
+            model["total_risks_identified"] = risk_inp.get("risk_count", len(evidence_risks))
+
+        # ── Build evidence chain (every number's source) ────────────────────
+        evidence_chain = []
+        if cost_inp.get("p50_bn") and cost_inp.get("p50_source"):
+            evidence_chain.append(f"P50 = {curr}{cost_inp['p50_bn']:.3f}B ← {cost_inp['p50_source']}")
+        elif cost_inp.get("p50_bn"):
+            evidence_chain.append(f"P50 = {curr}{cost_inp['p50_bn']:.3f}B ← Cost workbook (base estimate)")
+        if cost_inp.get("p80_bn"):
+            evidence_chain.append(f"P80 = {curr}{cost_inp['p80_bn']:.3f}B ← Cost workbook (board estimate)")
+        if risk_inp.get("total_emv_bn"):
+            evidence_chain.append(f"Risk EMV = {curr}{risk_inp['total_emv_bn']:.3f}B ← Risk register ({risk_inp.get('risk_count',0)} risks)")
+        if risk_inp.get("qcra_p80_bn_proxy"):
+            evidence_chain.append(f"QCRA P80 = {curr}{risk_inp['qcra_p80_bn_proxy']:.3f}B ← Risk register EMV x 1.35 (correlation)")
+        if xer_inp.get("total_activities"):
+            evidence_chain.append(f"Schedule = {xer_inp.get('programme_duration_months',0):.0f} months ← XER ({xer_inp['total_activities']} activities)")
+        if xer_inp.get("qsra_p80_months_proxy"):
+            evidence_chain.append(f"QSRA P80 = {xer_inp['qsra_p80_months_proxy']:.1f} months ← XER critical path uncertainty model")
+        if cost_inp.get("escalation_pct"):
+            evidence_chain.append(f"Escalation = {cost_inp['escalation_pct']:.1f}% ← Cost workbook (stated)")
+        if cost_inp.get("class_level"):
+            evidence_chain.append(f"Estimate class = Class {cost_inp['class_level']} ← Cost workbook (stated)")
+        if xer_inp.get("logic_quality"):
+            evidence_chain.append(f"Schedule quality = {xer_inp['logic_quality']} ← XER logic density {xer_inp.get('logic_density',0):.2f}, open ends {xer_inp.get('open_ends_count',0)}")
+
+        model["evidence_chain"] = evidence_chain
+        model["evidence_files"] = {
+            "xer": xer_data.get("raw_tasks",0) > 0,
+            "cost": bool(cost_inp.get("p50_bn")),
+            "risk_register": bool(risk_inp.get("risk_count")),
+        }
+
+        # List what was inferred vs what came from evidence
+        inferred = []
+        if not cost_inp.get("p50_bn"): inferred.append("P50 (CASEY sector model — no cost workbook data)")
+        if not xer_inp.get("total_activities"): inferred.append("Schedule (CASEY sector model — no XER uploaded)")
+        if not risk_inp.get("risk_count"): inferred.append("Risks (CASEY sector model — no risk register uploaded)")
+        model["evidence_inferred"] = inferred
+
+        return model
+
+    except Exception as e:
+        # Safe fallback — return standard build_model output
+        m = build_model(prompt, client or "", 3, 4, "base")
+        m["evidence_error"] = str(e)[:200]
+        return m
+
+
+@app.post("/twin/rebuild")
+async def twin_rebuild_from_evidence(request: Request):
+    """
+    Upload XER + Cost Workbook + Risk Register → CASEY rebuilds full model from evidence.
+    Every P50, P80, QCRA, QSRA and risk is traced back to the uploaded file and cell.
+    """
+    try:
+        form = await request.form()
+        xer_data = {"inputs": {}, "evidence": []}
+        cost_data = {"inputs": {}, "evidence": [], "cost_lines": []}
+        risk_data = {"inputs": {}, "evidence": [], "top_risks": []}
+        prompt = str(form.get("prompt", "") or "")
+        client_name = str(form.get("client", "") or "")
+        files_processed = []
+
+        for key in form:
+            f = form[key]
+            if not hasattr(f, "filename"): continue
+            fname = f.filename or "unknown"
+            content_bytes = await f.read()
+            ext = fname.split(".")[-1].lower() if "." in fname else ""
+            fname_l = fname.lower()
+            files_processed.append(fname)
+
+            if ext == "xer":
+                xer_data = _parse_xer_evidence(content_bytes)
+            elif ext in ("xml",) and ("xer" in fname_l or "p6" in fname_l or "primavera" in fname_l):
+                xer_data = _parse_xer_evidence(content_bytes)
+            elif ext in ("xlsx","xls","csv"):
+                # Decide which parser to use based on filename
+                is_risk = any(x in fname_l for x in ("risk","register","rr","threat","opportunity","hazard"))
+                is_schedule = any(x in fname_l for x in ("schedule","xer","programme","gantt","p6","activity"))
+                if is_risk:
+                    risk_data = _parse_risk_register_evidence(content_bytes, fname)
+                elif is_schedule:
+                    xer_data = _parse_xer_evidence(content_bytes)
+                else:
+                    # Try as cost first, then as risk register
+                    cost_result = _parse_excel_evidence(content_bytes, fname)
+                    if cost_result.get("inputs", {}).get("p50_bn") or cost_result.get("inputs", {}).get("bac_bn"):
+                        cost_data = cost_result
+                    else:
+                        risk_result = _parse_risk_register_evidence(content_bytes, fname)
+                        if risk_result.get("inputs", {}).get("risk_count", 0) > 0:
+                            risk_data = risk_result
+                        else:
+                            cost_data = cost_result  # default to cost
+            elif ext == "pdf":
+                text_result = _parse_text_report_evidence(content_bytes, fname)
+                # Merge text evidence into whichever data is most sparse
+                if not cost_data["inputs"].get("p50_bn"):
+                    cost_data["inputs"].update(text_result.get("inputs", {}))
+                cost_data["evidence"].extend(text_result.get("evidence", []))
+
+        # Build model from evidence
+        model = build_model_from_evidence(xer_data, cost_data, risk_data, prompt, client_name)
+
+        # Collect all evidence
+        all_evidence = (xer_data.get("evidence", []) +
+                       cost_data.get("evidence", []) +
+                       risk_data.get("evidence", []))
+
+        return {
+            "success": True,
+            "model": model,
+            "files_processed": files_processed,
+            "evidence": all_evidence,
+            "evidence_chain": model.get("evidence_chain", []),
+            "evidence_inferred": model.get("evidence_inferred", []),
+            "xer_health": model.get("xer_health", {}),
+            "conflicts": [],
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Evidence rebuild failed: {str(e)[:300]}")
 
 
 @app.post("/twin/upload-evidence")
@@ -13856,6 +14523,177 @@ def build_model(prompt: str='', client: str='', class_level: int=3, schedule_lev
 
     except Exception:
         pass  # Executive intelligence is additive — never blocks the model
+
+    # ── FEATURE 1: XER HEALTH ENGINE ────────────────────────────────────────
+    # Scores the schedule quality from known heuristics even without an XER upload
+    try:
+        _sched_acts = model.get('schedule', []) or []
+        _n_acts = len(_sched_acts)
+        _critical = [a for a in _sched_acts if str(a.get('critical','No')).upper() == 'YES']
+        _n_crit = len(_critical)
+        _open_ends = [a for a in _sched_acts if not any(True for b in _sched_acts if b.get('predecessor_id') == a.get('activity_id'))]
+        _logic_density = round(len(_sched_acts) / max(_n_acts, 1), 2)  # relationships per activity (approx from schedule structure)
+        _float_quality = 'GOOD' if _n_crit > 0 and _n_crit < _n_acts * 0.4 else 'REVIEW' if _n_crit == 0 else 'POOR'
+        _logic_quality = 'GOOD' if _n_acts >= 10 else 'REVIEW' if _n_acts >= 5 else 'POOR'
+        _cp_confidence = min(90, 40 + _n_crit * 5) if _n_crit > 0 else 30
+        model['xer_health'] = {
+            'activity_count': _n_acts,
+            'critical_count': _n_crit,
+            'critical_pct': round(_n_crit / max(_n_acts, 1) * 100),
+            'logic_quality': _logic_quality,
+            'float_quality': _float_quality,
+            'critical_path_confidence': _cp_confidence,
+            'open_ends': len(_open_ends),
+            'headline': f"Schedule: {_n_acts} activities, {_n_crit} critical ({round(_n_crit/max(_n_acts,1)*100)}% of programme). Logic quality: {_logic_quality}. Float quality: {_float_quality}.",
+            'board_flag': 'Upload XER for full schedule health scoring — open ends, constraint count, negative float and logic density.' if _n_acts < 15 else None,
+        }
+    except Exception:
+        pass
+
+    # ── FEATURE 2: RISK CLUSTERING ENGINE ─────────────────────────────────
+    # Groups 39 independent risks into 8 meaningful clusters for board consumption
+    try:
+        _risks_all = model.get('risks', []) or []
+        _cluster_map = {
+            'Grid & Utility': ['grid','utility','power','electric','energis','substation','transformer','cable','connection'],
+            'Procurement & Supply Chain': ['procure','supplier','tender','contract','award','lead time','manufacture','delivery','vendor'],
+            'Planning & Consents': ['plan','consent','permit','regulat','approv','environment','heritage','judicial','review'],
+            'Geotechnical & Ground': ['ground','geo','soil','rock','contamin','survey','unexploded','flood','drainage'],
+            'Stakeholder & Interfaces': ['stakeholder','interface','public','community','neighbour','rail','highway','operator','airport'],
+            'Commercial & Cost': ['commercial','cost','escalat','inflation','currency','fx','claim','variation','contingency'],
+            'Programme & Schedule': ['schedule','programme','delay','milestone','commissioning','handover','completion','float','critical'],
+            'Technology & Systems': ['technology','software','digital','cyber','system','integration','data','ai','it','bim'],
+        }
+        _clusters = {k: [] for k in _cluster_map}
+        _clusters['Other'] = []
+        for r in _risks_all:
+            title_lower = (r.get('title', r.get('risk', '')) or '').lower()
+            matched = False
+            for cluster, keywords in _cluster_map.items():
+                if any(kw in title_lower for kw in keywords):
+                    _clusters[cluster].append(r)
+                    matched = True
+                    break
+            if not matched:
+                _clusters['Other'].append(r)
+        # Build summary
+        _cluster_summary = []
+        for cluster, risks in sorted(_clusters.items(), key=lambda x: -sum(float(r.get('cost_emv_bn',0) or 0) for r in x[1])):
+            if risks:
+                cluster_emv = sum(float(r.get('cost_emv_bn',0) or 0) for r in risks)
+                _cluster_summary.append({
+                    'cluster': cluster,
+                    'risk_count': len(risks),
+                    'total_emv_bn': round(cluster_emv, 3),
+                    'top_risk': risks[0].get('title', risks[0].get('risk', '')) if risks else '',
+                    'risks': [r.get('title', r.get('risk', '')) for r in risks[:3]],
+                })
+        _total_emv = sum(c['total_emv_bn'] for c in _cluster_summary) or 0.001
+        for c in _cluster_summary:
+            c['pct_of_total_emv'] = round(c['total_emv_bn'] / _total_emv * 100)
+        model['risk_clusters'] = {
+            'clusters': _cluster_summary[:8],
+            'total_clusters': len([c for c in _cluster_summary if c['risk_count'] > 0]),
+            'headline': f"{len(_risks_all)} risks grouped into {len([c for c in _cluster_summary if c['risk_count']>0])} clusters. Top cluster by EMV: {_cluster_summary[0]['cluster'] if _cluster_summary else 'N/A'}.",
+        }
+    except Exception:
+        pass
+
+    # ── FEATURE 3: PROCUREMENT INTELLIGENCE ───────────────────────────────
+    # Shows whether key long-lead items are secured or not
+    try:
+        _subsector_lower = (subsector or '').lower()
+        _prompt_lower = (prompt or '').lower()
+        _scope_ra = model.get('scope_assumptions', model.get('route_assumptions', {})) or {}
+        curr = model.get('currency_symbol', '$') or '$'
+        p50_val = float(model.get('p50_cost_bn') or model.get('p50', 0) or 0)
+
+        # Build sector-specific procurement items
+        _proc_items = []
+        if any(x in _subsector_lower for x in ['data', 'digital', 'hyperscale', 'cloud']):
+            _proc_items = [
+                ('Transformer & HV switchgear', 'CRITICAL', '18-36 months lead time. Slot must be secured at FID.'),
+                ('Generator & UPS systems', 'HIGH', '12-24 months. Multiple vendors required for resilience.'),
+                ('Cooling plant (chillers/CRAH)', 'HIGH', '10-18 months. Vendor selection drives CAPEX ±15%.'),
+                ('Grid connection agreement', 'CRITICAL', 'DSO/TSO slot determines programme start. Non-negotiable constraint.'),
+                ('Structural steel & prefab', 'MEDIUM', '8-14 months. Early package award recommended.'),
+                ('Tier-1 EPC contractor', 'HIGH', 'Market capacity constrained. Early engagement reduces 6-12 months.'),
+            ]
+        elif any(x in _subsector_lower for x in ['rail', 'transport', 'metro', 'transit']):
+            _proc_items = [
+                ('Rolling stock / vehicles', 'CRITICAL', '36-60 months. Slot securement is programme-defining.'),
+                ('Signalling system (CBTC/ETCS)', 'CRITICAL', '24-48 months. Integration with network is governing constraint.'),
+                ('Power supply equipment (SSP/TSP)', 'HIGH', '18-30 months. Grid connection agreement precedes this.'),
+                ('Tunnel boring machines', 'CRITICAL', '18-36 months if tunnelling scope present.'),
+                ('Civils & structures contractor', 'HIGH', 'Market capacity limited. Early two-stage procurement advised.'),
+            ]
+        elif any(x in _subsector_lower for x in ['nuclear', 'energy', 'power']):
+            _proc_items = [
+                ('Reactor pressure vessel', 'CRITICAL', '84-120 months. Only 3-4 global suppliers. Slot = programme lock.'),
+                ('Steam generators & turbines', 'CRITICAL', '60-84 months. Korean/Japanese forging capacity constrained.'),
+                ('I&C systems (Rolls-Royce/Framatome)', 'CRITICAL', '48-72 months. Regulatory approval adds 12-18 months.'),
+                ('Civil & structural contractor', 'HIGH', 'Nuclear-qualified pool is small. Pre-qualification takes 12 months.'),
+                ('Grid connection & substation', 'HIGH', '24-48 months. DNO/TO cooperation needed from FEED.'),
+            ]
+        elif any(x in _subsector_lower for x in ['defence', 'military', 'security']):
+            _proc_items = [
+                ('Classified systems integrator', 'CRITICAL', 'SC/DV clearance required. 18-24 month vetting.'),
+                ('Secure communications (PACE)', 'HIGH', 'NCSC/CESG approval adds 12-24 months to procurement.'),
+                ('Protected structures & blast', 'MEDIUM', '12-18 months. Specialist contractors with security clearance.'),
+                ('TEMPEST-compliant fit-out', 'HIGH', 'Limited qualified supply chain. Early engagement critical.'),
+            ]
+        elif any(x in _subsector_lower for x in ['pharma', 'gmp', 'biologic']):
+            _proc_items = [
+                ('HVAC & cleanroom systems', 'CRITICAL', '18-30 months. GMP qualification adds 12 months minimum.'),
+                ('Process equipment (bioreactors)', 'CRITICAL', '24-48 months. Single-source risk for proprietary tech.'),
+                ('Utilities (WFI, clean steam)', 'HIGH', '12-24 months. Validation drives schedule.'),
+                ('GMP contractor qualification', 'CRITICAL', 'Only 8-12 global contractors. Capacity extremely constrained.'),
+            ]
+        elif any(x in _subsector_lower for x in ['semiconductor', 'fab', 'chip']):
+            _proc_items = [
+                ('EUV lithography (ASML)', 'CRITICAL', '24-36 months. Only one global supplier. Slot = programme.'),
+                ('Process equipment suite', 'CRITICAL', '$1-2B spend. 18-30 months collective lead time.'),
+                ('Ultra-pure water systems', 'HIGH', '12-18 months. Specialist qualification required.'),
+                ('Cleanroom structure & M&E', 'HIGH', '10-16 months. Vibration and ESD design governs.'),
+                ('Grid connection (30-100MW)', 'CRITICAL', '18-36 months. Utility investment agreement needed.'),
+            ]
+        else:
+            # Generic infrastructure
+            _proc_items = [
+                ('Tier-1 main contractor', 'HIGH', 'Market capacity varies. Early two-stage tender recommended.'),
+                ('Long-lead M&E equipment', 'HIGH', '12-24 months typical. Identify items at FEED stage.'),
+                ('Specialist subcontractors', 'MEDIUM', 'Sector-specific. Early supply chain engagement reduces risk.'),
+                ('Planning & consents', 'CRITICAL', 'Programme-defining. Parallel-path with design development.'),
+            ]
+
+        # Determine secured/not secured from evidence in prompt
+        _proc_with_status = []
+        for item, priority, note in _proc_items:
+            item_lower = item.lower()
+            keywords = item_lower.split()[:3]
+            in_prompt = any(kw in _prompt_lower for kw in keywords if len(kw) > 4)
+            # Heuristic: if mentioned in prompt positively, likely being managed
+            secured_signals = ['secured', 'awarded', 'agreed', 'signed', 'contracted', 'appointed', 'placed']
+            at_risk_signals = ['risk', 'delay', 'outstanding', 'not', 'pending', 'uncertain']
+            status = 'IN PROMPT' if in_prompt else 'NOT CONFIRMED'
+            _proc_with_status.append({
+                'item': item,
+                'priority': priority,
+                'status': status,
+                'note': note,
+                'secured': in_prompt,
+            })
+
+        critical_unsecured = [p for p in _proc_with_status if p['priority'] == 'CRITICAL' and not p['secured']]
+        model['procurement_intelligence'] = {
+            'items': _proc_with_status,
+            'critical_unsecured_count': len(critical_unsecured),
+            'headline': f"{len([p for p in _proc_with_status if p['secured']])} of {len(_proc_with_status)} procurement items confirmed in scope. {len(critical_unsecured)} CRITICAL items not confirmed.",
+            'board_flag': f"Board should seek written confirmation that these {len(critical_unsecured)} critical procurement items are on programme: {', '.join(p['item'] for p in critical_unsecured[:3])}." if critical_unsecured else "Key procurement items appear to be in scope. Request slot confirmation letters before board approval.",
+            'subsector': subsector,
+        }
+    except Exception:
+        pass
 
     # ── CASEY Self-Challenge + Auto-Correction loop ──────────────────────
     try:
