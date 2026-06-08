@@ -3503,8 +3503,26 @@ function parseMoneyLocal(v) {
             </div>}
           </div>}
 
+          {/* EVIDENCE CHAIN — when model was built from uploaded files */}
+          {model?.evidence_chain?.length > 0 && <div style={{background:'rgba(16,185,129,0.06)',border:'2px solid rgba(16,185,129,0.3)',borderRadius:8,padding:'14px 18px',marginBottom:12}}>
+            <div style={{fontSize:'9px',fontWeight:'800',color:'#10b981',letterSpacing:'.14em',marginBottom:6}}>🔗 EVIDENCE CHAIN — EVERY NUMBER TRACED TO SOURCE</div>
+            <div style={{fontSize:'11px',color:'#6ee7b7',marginBottom:8}}>This model was built from uploaded programme files. Every number below traces to a file, sheet and cell.</div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6,marginBottom:8}}>
+              {model.evidence_chain.map((e,i)=>(
+                <div key={i} style={{display:'flex',gap:6,fontSize:'9px',padding:'4px 8px',background:'rgba(16,185,129,0.05)',borderRadius:4}}>
+                  <span style={{color:'#10b981',flexShrink:0}}>→</span>
+                  <span style={{color:'#cbd5e1'}}>{e}</span>
+                </div>
+              ))}
+            </div>
+            {model?.evidence_inferred?.length > 0 && <div style={{padding:'6px 10px',background:'rgba(245,158,11,0.06)',borderRadius:4}}>
+              <div style={{fontSize:'8px',fontWeight:'700',color:'#f59e0b',marginBottom:3}}>⚙ CASEY INFERRED (no file uploaded for these):</div>
+              {model.evidence_inferred.map((e,i)=><div key={i} style={{fontSize:'8px',color:'#94a3b8'}}>• {e}</div>)}
+            </div>}
+          </div>}
+
           {/* ESTIMATE BASIS — traceability chain */}
-          {model?.estimate_basis?.traceability?.length > 0 && <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:6,padding:'12px 16px',marginBottom:12}}>
+          {!model?.evidence_chain?.length && model?.estimate_basis?.traceability?.length > 0 && <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:6,padding:'12px 16px',marginBottom:12}}>
             <div style={{fontSize:'9px',fontWeight:'800',color:'#94a3b8',letterSpacing:'.12em',marginBottom:6}}>📐 ESTIMATE BASIS — FULL TRACEABILITY</div>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6}}>
               {model.estimate_basis.traceability.map((t,i)=>(
@@ -3606,6 +3624,25 @@ function parseMoneyLocal(v) {
   })}</div>;
 })()}</Card><Card><h2>Buyer decision lens</h2>{['Base: balanced reference case for board challenge','Faster: more capex, lower confidence, shorter duration','Cheaper: lower authorisation number, longer schedule, higher residual risk','Lower Risk: higher reserve, longer duration, stronger confidence','Premium: resilience and optionality bought with visible capex premium'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}<h3>Current trade-off</h3><div className="triLens"><b>Gained</b>{tradePack.gained.map(x=><span key={x}>{x}</span>)}<b>Sacrificed</b>{tradePack.sacrificed.map(x=><span key={x}>{x}</span>)}<b>Exposed</b>{tradePack.exposed.map(x=><span key={x}>{x}</span>)}</div></Card></section>}
         {tab === 'cost' && <section className="layout two">
+          {/* PROCUREMENT INTELLIGENCE */}
+          {model?.procurement_intelligence?.items?.length > 0 && <div style={{gridColumn:'1/-1',background:'rgba(16,185,129,0.06)',border:'1px solid rgba(16,185,129,0.2)',borderRadius:8,padding:'14px 18px',marginBottom:12}}>
+            <div style={{fontSize:'9px',fontWeight:'800',color:'#10b981',letterSpacing:'.14em',marginBottom:6}}>🔧 PROCUREMENT INTELLIGENCE — KEY LONG-LEAD ITEMS</div>
+            <div style={{fontSize:'12px',color:'#fff',fontWeight:'600',marginBottom:8}}>{model.procurement_intelligence.headline}</div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6,marginBottom:8}}>
+              {model.procurement_intelligence.items.map((p,i)=>(
+                <div key={i} style={{display:'flex',alignItems:'flex-start',gap:8,padding:'8px 10px',background:'rgba(255,255,255,0.03)',borderRadius:5,border:`1px solid ${p.secured?'rgba(16,185,129,0.2)':p.priority==='CRITICAL'?'rgba(239,68,68,0.3)':'rgba(245,158,11,0.2)'}`}}>
+                  <div style={{fontSize:'14px',marginTop:1}}>{p.secured?'✅':p.priority==='CRITICAL'?'🔴':'🟡'}</div>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:'10px',fontWeight:'700',color:p.secured?'#10b981':p.priority==='CRITICAL'?'#ef4444':'#f59e0b'}}>{p.item}</div>
+                    <div style={{fontSize:'8px',color:'#64748b',marginTop:2}}>{p.note}</div>
+                  </div>
+                  <div style={{fontSize:'7px',fontWeight:'800',color:p.priority==='CRITICAL'?'#ef4444':p.priority==='HIGH'?'#f59e0b':'#94a3b8',flexShrink:0}}>{p.priority}</div>
+                </div>
+              ))}
+            </div>
+            {model.procurement_intelligence.board_flag && <div style={{padding:'8px 12px',background:'rgba(239,68,68,0.08)',borderRadius:5,fontSize:'9px',color:'#fca5a5',fontWeight:'600'}}>⚠ Board action: {model.procurement_intelligence.board_flag}</div>}
+          </div>}
+
           {/* COST CONCENTRATION — board intelligence */}
           {model?.cost_concentration?.top3_packages?.length > 0 && <div style={{gridColumn:'1/-1',background:'rgba(6,182,212,0.06)',border:'1px solid rgba(6,182,212,0.2)',borderRadius:8,padding:'16px 20px',marginBottom:12}}>
             <div style={{fontSize:'9px',fontWeight:'800',color:'#06b6d4',letterSpacing:'.14em',marginBottom:8}}>📊 COST CONCENTRATION — WHERE THE MONEY IS</div>
@@ -3646,6 +3683,23 @@ function parseMoneyLocal(v) {
                 return String(val);
               }}/></Card><Card><h2>Cost composition</h2><p className="chartCaption">Direct, indirect and reserve are scenario-controlled and reconciled to selected P50. For the detailed uncertainty view use QCRA/QSRA.</p><ResponsiveContainer width="100%" height={320}><BarChart data={[{name:'Direct',value:direct},{name:'Indirect',value:indirect},{name:'Reserve',value:reserves}]}><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis dataKey="name"/><YAxis/><Tooltip/><Bar dataKey="value" fill="#8df7ff"/></BarChart></ResponsiveContainer></Card></section>}
         {tab === 'schedule' && <section className="layout two">
+          {/* XER HEALTH ENGINE */}
+          {model?.xer_health && <div style={{gridColumn:'1/-1',display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:10,marginBottom:12}}>
+            <div style={{background:'rgba(6,182,212,0.06)',border:'1px solid rgba(6,182,212,0.2)',borderRadius:8,padding:'14px 16px',gridColumn:'1/-1'}}>
+              <div style={{fontSize:'9px',fontWeight:'800',color:'#06b6d4',letterSpacing:'.14em',marginBottom:6}}>📐 XER HEALTH ENGINE — SCHEDULE QUALITY SCORING</div>
+              <div style={{fontSize:'12px',color:'#fff',fontWeight:'600',marginBottom:10}}>{model.xer_health.headline}</div>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:8}}>
+                {[['Activities',model.xer_health.activity_count,'#06b6d4'],['Critical',model.xer_health.critical_count,'#ef4444'],['Logic Quality',model.xer_health.logic_quality,model.xer_health.logic_quality==='GOOD'?'#10b981':model.xer_health.logic_quality==='REVIEW'?'#f59e0b':'#ef4444'],['Float Quality',model.xer_health.float_quality,model.xer_health.float_quality==='GOOD'?'#10b981':model.xer_health.float_quality==='REVIEW'?'#f59e0b':'#ef4444']].map(([k,v,col],i)=>(
+                  <div key={i} style={{background:'rgba(255,255,255,0.03)',borderRadius:5,padding:'8px 10px'}}>
+                    <div style={{fontSize:'8px',color:'#64748b',marginBottom:2}}>{k}</div>
+                    <div style={{fontSize:'16px',fontWeight:'800',color:col}}>{v}</div>
+                  </div>
+                ))}
+              </div>
+              {model.xer_health.board_flag && <div style={{marginTop:8,padding:'6px 10px',background:'rgba(245,158,11,0.08)',borderRadius:4,fontSize:'9px',color:'#f59e0b'}}>⚠ {model.xer_health.board_flag}</div>}
+            </div>
+          </div>}
+
           {/* SCHEDULE KILLER CHAIN */}
           {model?.schedule_killer_chain?.chain?.length > 0 && <div style={{gridColumn:'1/-1',background:'rgba(245,158,11,0.06)',border:'1px solid rgba(245,158,11,0.2)',borderRadius:8,padding:'16px 20px',marginBottom:12}}>
             <div style={{fontSize:'9px',fontWeight:'800',color:'#f59e0b',letterSpacing:'.14em',marginBottom:6}}>⛓ SCHEDULE KILLER CHAIN — CRITICAL PATH SEQUENCE</div>
@@ -3698,6 +3752,25 @@ function parseMoneyLocal(v) {
               ))}
             </div>}
           </div>}
+          {/* RISK CLUSTERING ENGINE */}
+          {model?.risk_clusters?.clusters?.length > 0 && <div style={{gridColumn:'1/-1',background:'rgba(139,92,246,0.06)',border:'1px solid rgba(139,92,246,0.2)',borderRadius:8,padding:'14px 18px',marginBottom:12}}>
+            <div style={{fontSize:'9px',fontWeight:'800',color:'#a78bfa',letterSpacing:'.14em',marginBottom:6}}>🔗 RISK CLUSTERING ENGINE — {model.risk_clusters.total_clusters} CLUSTERS</div>
+            <div style={{fontSize:'12px',color:'#fff',fontWeight:'600',marginBottom:10}}>{model.risk_clusters.headline}</div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:8}}>
+              {model.risk_clusters.clusters.slice(0,8).map((c,i)=>(
+                <div key={i} style={{background:'rgba(139,92,246,0.06)',border:'1px solid rgba(139,92,246,0.15)',borderRadius:6,padding:'10px 12px'}}>
+                  <div style={{fontSize:'9px',fontWeight:'700',color:'#a78bfa',marginBottom:4}}>{c.cluster}</div>
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:3}}>
+                    <span style={{fontSize:'18px',fontWeight:'800',color:'#ef4444'}}>{model?.currency_symbol||'$'}{c.total_emv_bn?.toFixed?.(2)}B</span>
+                    <span style={{fontSize:'8px',color:'#64748b'}}>{c.risk_count} risks</span>
+                  </div>
+                  <div style={{fontSize:'7px',color:'#475569'}}>{c.pct_of_total_emv}% of total EMV</div>
+                  <div style={{fontSize:'8px',color:'#94a3b8',marginTop:3}}>{c.top_risk?.slice?.(0,35)}</div>
+                </div>
+              ))}
+            </div>
+          </div>}
+
           <Card><h2>Risk Register Pro</h2><p style={{fontSize:'11px',color:'#64748b',marginBottom:'8px'}}>Each risk has a cause (what triggers it), event (what happens), impact (cost/schedule consequence), probability, named owner, and mitigation. The top risks by expected monetary value drive the P80/P90 exposure in the QCRA chart.</p>{model?.stress_test_applied && <div style={{background:"rgba(239,68,68,0.08)",borderLeft:"2px solid #ef4444",padding:"6px 10px",marginBottom:"8px",fontSize:"11px",color:"#ef4444"}}>Stress test applied: risk posture has shifted. Confidence is now {model.confidence_pct}%. The risks below drove this position before the shock was applied.</div>}<Table rows={risks} cols={[['risk_id','ID'],['risk','Risk'],['cause','Cause'],['event','Event'],['impact','Impact'],['probability_pct','Prob %'],['activity_id','Activity'],['cbs','CBS'],['owner','Owner'],['mitigation','Mitigation']]}/></Card><Card><h2>Top exposure drivers</h2><ResponsiveContainer width="100%" height={380}><BarChart data={tornado} layout="vertical"><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis type="number"/><YAxis dataKey="driver" type="category" width={150}/><Tooltip/><Bar dataKey="contribution" fill="#8df7ff"/></BarChart></ResponsiveContainer></Card></section>}
         {tab === 'monte' && <section className="layout two">
           {/* Confidence decomposition panel */}
@@ -4215,6 +4288,37 @@ function parseMoneyLocal(v) {
             </div>
           </div>)})()}
 
+          {/* XER HEALTH + RISK CLUSTERS + PROCUREMENT SUMMARY */}
+          {(model?.xer_health || model?.risk_clusters || model?.procurement_intelligence) && <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:10,marginBottom:12}}>
+            {model?.xer_health && <div style={{background:'rgba(6,182,212,0.06)',border:'1px solid rgba(6,182,212,0.2)',borderRadius:6,padding:'12px 14px'}}>
+              <div style={{fontSize:'8px',fontWeight:'800',color:'#06b6d4',letterSpacing:'.12em',marginBottom:6}}>SCHEDULE HEALTH</div>
+              {[['Logic Quality',model.xer_health.logic_quality],['Float Quality',model.xer_health.float_quality],['CP Confidence',model.xer_health.critical_path_confidence+'%'],['Activities',model.xer_health.activity_count]].map(([k,v],i)=>(
+                <div key={i} style={{display:'flex',justifyContent:'space-between',fontSize:'9px',marginBottom:3}}>
+                  <span style={{color:'#94a3b8'}}>{k}</span>
+                  <span style={{color:v==='GOOD'?'#10b981':v==='REVIEW'?'#f59e0b':typeof v === 'number' ? '#06b6d4' : '#ef4444',fontWeight:'700'}}>{v}</span>
+                </div>
+              ))}
+            </div>}
+            {model?.risk_clusters && <div style={{background:'rgba(139,92,246,0.06)',border:'1px solid rgba(139,92,246,0.2)',borderRadius:6,padding:'12px 14px'}}>
+              <div style={{fontSize:'8px',fontWeight:'800',color:'#a78bfa',letterSpacing:'.12em',marginBottom:6}}>RISK CLUSTERS</div>
+              {model.risk_clusters.clusters.slice(0,4).map((c,i)=>(
+                <div key={i} style={{display:'flex',justifyContent:'space-between',fontSize:'9px',marginBottom:3}}>
+                  <span style={{color:'#94a3b8'}}>{c.cluster?.slice?.(0,18)}</span>
+                  <span style={{color:'#ef4444',fontWeight:'700'}}>{model?.currency_symbol||'$'}{c.total_emv_bn?.toFixed?.(2)}B</span>
+                </div>
+              ))}
+            </div>}
+            {model?.procurement_intelligence && <div style={{background:'rgba(16,185,129,0.06)',border:'1px solid rgba(16,185,129,0.2)',borderRadius:6,padding:'12px 14px'}}>
+              <div style={{fontSize:'8px',fontWeight:'800',color:'#10b981',letterSpacing:'.12em',marginBottom:6}}>PROCUREMENT STATUS</div>
+              {model.procurement_intelligence.items.slice(0,4).map((p,i)=>(
+                <div key={i} style={{display:'flex',gap:6,fontSize:'9px',marginBottom:3,alignItems:'flex-start'}}>
+                  <span style={{flexShrink:0}}>{p.secured?'✅':'🔴'}</span>
+                  <span style={{color:'#94a3b8'}}>{p.item?.slice?.(0,22)}</span>
+                </div>
+              ))}
+            </div>}
+          </div>}
+
           {/* WHY CASEY GENERATED THIS */}
           {(model?.why_casey_generated_this||model?.casey_defence?.why_casey_generated_this||[]).length>0&&<div style={{background:'rgba(16,185,129,0.06)',border:'1px solid rgba(16,185,129,0.2)',borderRadius:6,padding:'12px 16px',marginBottom:10}}>
             <div style={{fontSize:'9px',fontWeight:'800',color:'#10b981',letterSpacing:'.12em',marginBottom:8}}>🧠 WHY CASEY GENERATED THIS</div>
@@ -4488,26 +4592,35 @@ function TwinTab({ model, setTab }) {
           setUploadResult(null);
         };
 
-        const buildFromFiles = async () => {
+        const buildFromFiles = async (useRebuild = false) => {
           if (!uploadFiles.length) return;
           setUploading(true);
+          setUploadResult(null);
           try {
             const fd = new FormData();
-            uploadFiles.forEach(f => fd.append("files", f));
-            const resp = await apiFetch("/twin/upload-evidence", {method:"POST", body:fd});
+            uploadFiles.forEach(f => fd.append(f.name, f));
+            if (model?.prompt) fd.append("prompt", model.prompt);
+            if (model?.client) fd.append("client", model.client);
+
+            // Use /twin/rebuild to get a full evidence-backed model
+            // Fall back to /twin/upload-evidence for partial data
+            const endpoint = "/twin/rebuild";
+            const resp = await apiFetch(endpoint, {method:"POST", body:fd});
             if (resp.ok) {
               const data = await resp.json();
               setUploadResult(data);
-              if (data.twin_inputs && Object.keys(data.twin_inputs).length > 0) {
+              if (data.model && data.evidence_chain && data.evidence_chain.length > 0) {
+                // Replace the full model with the evidence-built one
+                setUploadResult({...data, rebuilt: true});
+              } else if (data.twin_inputs && Object.keys(data.twin_inputs || {}).length > 0) {
                 setInputs(prev => ({...prev, ...data.twin_inputs}));
-                setDemo(null);
               }
             } else {
               const t = await resp.text();
-              setUploadResult({evidence: ["Server error: " + t], twin_inputs: {}, format_hints: [], auto_run: false});
+              setUploadResult({evidence: ["Server error: " + t.slice(0,200)], rebuilt: false});
             }
           } catch(e) {
-            setUploadResult({evidence: ["Upload error: " + e.message], twin_inputs: {}, format_hints: [], auto_run: false});
+            setUploadResult({evidence: ["Upload error: " + e.message], rebuilt: false});
           } finally {
             setUploading(false);
           }
@@ -4522,12 +4635,25 @@ function TwinTab({ model, setTab }) {
             Upload your real programme files. CASEY reads them and creates the twin automatically. No setup. No configuration.
           </div>
 
+          {/* WHAT CASEY REBUILDS FROM EVIDENCE */}
+          <div style={{background:'rgba(6,182,212,0.06)',border:'1px solid rgba(6,182,212,0.2)',borderRadius:6,padding:'10px 14px',marginBottom:10}}>
+            <div style={{fontSize:'9px',fontWeight:'800',color:'#06b6d4',letterSpacing:'.12em',marginBottom:6}}>UPLOAD EVIDENCE → CASEY REBUILDS AUTOMATICALLY</div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6}}>
+              {[['📅 XER Schedule','→ XER Health Score, Critical Path, QSRA'],['📊 Cost Workbook','→ Estimate basis, CBS, unit rates, OBA'],['📋 Risk Register','→ QCRA, risk clusters, mortality event'],['📄 Board Pack / Report','→ Full Decision Twin from evidence']].map(([f,r],i)=>(
+                <div key={i} style={{padding:'6px 8px',background:'rgba(255,255,255,0.03)',borderRadius:4}}>
+                  <div style={{fontSize:'9px',color:'#fff',fontWeight:'600'}}>{f}</div>
+                  <div style={{fontSize:'8px',color:'#10b981',marginTop:2}}>{r}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* File type guide */}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"4px",marginBottom:"10px"}}>
-            {[["📅 XER (Primavera P6)","Schedule % complete, activities, critical path"],
-              ["📊 Excel Cost / Risk","Cost actuals, earned value, risk register"],
-              ["📄 Board Pack PDF","Monthly report, steering committee pack"],
-              ["📝 Monthly Report","Progress, costs, risks, decisions"],
+            {[["📅 XER (Primavera P6)","Schedule health score, critical path confidence, open ends, logic density"],
+              ["📊 Excel Cost / Risk","Cost actuals, earned value, risk clusters, procurement status"],
+              ["📄 Board Pack PDF","Full twin rebuild from monthly report or board pack"],
+              ["📝 Monthly Report","Progress, costs, risks, decisions → Decision Twin"],
               ["📋 Risk Register","Risk count, open items, EMV totals"],
               ["📝 Monthly Report (.txt/.docx/.pdf)","CPI, delay, programme status from narrative"]
             ].map(([t,d])=><div key={t} style={{padding:"5px 7px",background:"rgba(255,255,255,0.03)",borderRadius:"3px",border:"1px solid rgba(255,255,255,0.06)"}}>
@@ -4572,23 +4698,70 @@ function TwinTab({ model, setTab }) {
             color:"#8df7ff",fontSize:"12px",fontWeight:"800",cursor:uploading?"not-allowed":"pointer",letterSpacing:".04em"
           }}>{uploading?"Reading files — CASEY is extracting programme data...":"⚡ BUILD TWIN FROM THESE FILES"}</button>}
 
-          {/* Results */}
-          {uploadResult && <div style={{padding:"8px 10px",background:"rgba(255,255,255,0.03)",borderRadius:"4px",border:"1px solid rgba(255,255,255,0.08)"}}>
-            <div style={{fontSize:"9px",fontWeight:"800",color:"#10b981",marginBottom:"6px",letterSpacing:".06em"}}>
-              {Object.keys(uploadResult.twin_inputs||{}).length > 0 ? "CASEY EXTRACTED — inputs pre-filled below" : "CASEY READ FILES — see notes below"}
-            </div>
-            {(uploadResult.evidence||[]).map((e,i)=><div key={i} style={{fontSize:"10px",color:"#94a3b8",marginBottom:"2px",lineHeight:"1.4"}}>
-              <span style={{color:"#10b981",marginRight:"4px"}}>✓</span>{e}
-            </div>)}
-            {(uploadResult.format_hints||[]).length > 0 && <div style={{marginTop:"6px",borderTop:"1px solid rgba(255,255,255,0.06)",paddingTop:"6px"}}>
-              <div style={{fontSize:"9px",fontWeight:"700",color:"#f59e0b",marginBottom:"4px"}}>FORMAT GUIDE — to get more from your files:</div>
-              {uploadResult.format_hints.map((h,i)=><div key={i} style={{fontSize:"9px",color:"#64748b",marginBottom:"3px",lineHeight:"1.4"}}>
-                <span style={{color:"#f59e0b",marginRight:"4px"}}>→</span>{h}
-              </div>)}
-            </div>}
-            {Object.keys(uploadResult.twin_inputs||{}).length > 0 && <div style={{marginTop:"6px",padding:"6px 8px",background:"rgba(16,185,129,0.08)",borderRadius:"3px",border:"1px solid rgba(16,185,129,0.2)"}}>
-              <div style={{fontSize:"9px",fontWeight:"700",color:"#10b981",marginBottom:"3px"}}>Pre-filled from your files:</div>
-              {Object.entries(uploadResult.twin_inputs).map(([k,v])=><span key={k} style={{display:"inline-block",margin:"1px 3px 1px 0",padding:"1px 6px",background:"rgba(16,185,129,0.15)",borderRadius:"10px",fontSize:"9px",color:"#10b981"}}>{k.replace(/_/g," ")}: {v}</span>)}
+          {/* Results — Evidence Chain UI */}
+          {uploadResult && <div style={{padding:"10px 12px",background:"rgba(255,255,255,0.03)",borderRadius:"6px",border:"1px solid rgba(255,255,255,0.08)"}}>
+            {/* FULL REBUILD SUCCESS */}
+            {uploadResult.rebuilt && uploadResult.evidence_chain?.length > 0
+              ? <div>
+                  <div style={{fontSize:"10px",fontWeight:"800",color:"#10b981",marginBottom:6}}>✅ DECISION TWIN REBUILT FROM EVIDENCE</div>
+                  <div style={{fontSize:"9px",color:"#6ee7b7",marginBottom:8}}>Every number is traced to your uploaded files. No assumptions — only evidence.</div>
+                  {/* Evidence chain */}
+                  <div style={{background:"rgba(16,185,129,0.05)",borderRadius:4,padding:"8px 10px",marginBottom:8}}>
+                    <div style={{fontSize:"8px",fontWeight:"700",color:"#10b981",marginBottom:4}}>EVIDENCE CHAIN — SOURCE OF EVERY NUMBER:</div>
+                    {uploadResult.evidence_chain.map((e,i)=><div key={i} style={{display:"flex",gap:6,fontSize:"9px",marginBottom:2}}>
+                      <span style={{color:"#10b981",flexShrink:0}}>→</span>
+                      <span style={{color:"#cbd5e1"}}>{e}</span>
+                    </div>)}
+                  </div>
+                  {/* What CASEY inferred */}
+                  {uploadResult.evidence_inferred?.length > 0 && <div style={{background:"rgba(245,158,11,0.06)",borderRadius:4,padding:"8px 10px",marginBottom:8}}>
+                    <div style={{fontSize:"8px",fontWeight:"700",color:"#f59e0b",marginBottom:4}}>⚙ CASEY INFERRED (upload these files to replace with evidence):</div>
+                    {uploadResult.evidence_inferred.map((e,i)=><div key={i} style={{fontSize:"9px",color:"#94a3b8",marginBottom:2}}>• {e}</div>)}
+                  </div>}
+                  {/* File status */}
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginBottom:10}}>
+                    {[["📅 XER Schedule",uploadResult.model?.xer_health?.from_upload],
+                      ["📊 Cost Workbook",uploadResult.model?.evidence_files?.cost],
+                      ["📋 Risk Register",uploadResult.model?.evidence_files?.risk_register]].map(([label,has])=>(
+                      <div key={label} style={{padding:"6px 8px",background:has?"rgba(16,185,129,0.08)":"rgba(255,255,255,0.02)",border:`1px solid ${has?"rgba(16,185,129,0.2)":"rgba(255,255,255,0.06)"}`,borderRadius:4,textAlign:"center"}}>
+                        <div style={{fontSize:"13px"}}>{has?"✅":"❌"}</div>
+                        <div style={{fontSize:"8px",color:has?"#10b981":"#475569",marginTop:2}}>{label}</div>
+                      </div>
+                    ))}
+                  </div>
+                  {/* XER health from upload */}
+                  {uploadResult.xer_health?.from_upload && <div style={{background:"rgba(6,182,212,0.06)",borderRadius:4,padding:"8px 10px",marginBottom:8}}>
+                    <div style={{fontSize:"8px",fontWeight:"700",color:"#06b6d4",marginBottom:4}}>XER HEALTH SCORE FROM YOUR FILE:</div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6}}>
+                      {[["Activities",uploadResult.xer_health.activity_count],
+                        ["Logic Quality",uploadResult.xer_health.logic_quality],
+                        ["Float Quality",uploadResult.xer_health.float_quality],
+                        ["Critical Path",uploadResult.xer_health.critical_pct+"%"],
+                        ["Open Ends",uploadResult.xer_health.open_ends],
+                        ["CP Confidence",uploadResult.xer_health.critical_path_confidence+"/100"]].map(([k,v])=>(
+                        <div key={k} style={{textAlign:"center"}}>
+                          <div style={{fontSize:"7px",color:"#64748b"}}>{k}</div>
+                          <div style={{fontSize:"11px",fontWeight:"700",color:v==="GOOD"?"#10b981":v==="REVIEW"?"#f59e0b":v==="POOR"?"#ef4444":"#06b6d4"}}>{v}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>}
+                </div>
+              : <div>
+                  {/* PARTIAL RESULT */}
+                  <div style={{fontSize:"9px",fontWeight:"800",color:"#64748b",marginBottom:6}}>
+                    {uploadResult.evidence?.length > 0 ? "CASEY READ FILES — partial data extracted" : "No data extracted — check file format"}
+                  </div>
+                  {(uploadResult.evidence||[]).map((e,i)=><div key={i} style={{fontSize:"9px",color:"#94a3b8",marginBottom:2}}>
+                    <span style={{color:"#10b981",marginRight:4}}>✓</span>{e}
+                  </div>)}
+                  {(uploadResult.format_hints||[]).map((h,i)=><div key={i} style={{fontSize:"9px",color:"#f59e0b",padding:"2px 0"}}>💡 {h}</div>)}
+                </div>
+            }
+            {/* Conflicts */}
+            {uploadResult.conflicts?.length > 0 && <div style={{marginTop:8,background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)",borderRadius:4,padding:"8px 10px"}}>
+              <div style={{fontSize:"9px",fontWeight:"800",color:"#ef4444",marginBottom:4}}>⚠ CONFLICTS BETWEEN FILES</div>
+              {uploadResult.conflicts.map((c,i)=><div key={i} style={{fontSize:"9px",color:"#fca5a5",marginBottom:2}}>• {c}</div>)}
             </div>}
           </div>}
         </div>;
