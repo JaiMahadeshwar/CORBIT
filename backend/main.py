@@ -35,6 +35,38 @@ ADMIN_TOKEN = os.environ.get("CASEY_ADMIN_TOKEN", "")
 app = FastAPI(title=APP_VERSION, version="26.0-V233")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=False, allow_methods=["*"], allow_headers=["*"], expose_headers=["Content-Disposition", "Content-Type"])
 
+# Security headers middleware — prevents browser "unsafe site" warnings
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request as StarletteRequest
+from starlette.responses import Response as StarletteResponse
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: StarletteRequest, call_next):
+        response: StarletteResponse = await call_next(request)
+        # Prevent "unsafe site" browser warnings
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "SAMEORIGIN"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+        response.headers["Cross-Origin-Resource-Policy"] = "cross-origin"
+        response.headers["Cross-Origin-Opener-Policy"] = "same-origin-allow-popups"
+        # Content-Security-Policy — allows the app to function while blocking XSS
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self' https: data: blob:; "
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://*.render.com; "
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; "
+            "font-src 'self' https://fonts.gstatic.com data:; "
+            "img-src 'self' data: blob: https:; "
+            "connect-src 'self' https://*.render.com https://corbit-1.onrender.com wss: ws:; "
+            "frame-ancestors 'none'; "
+            "base-uri 'self'; "
+            "form-action 'self';"
+        )
+        # HTTPS Strict Transport Security — max 1 year
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
+        return response
+app.add_middleware(SecurityHeadersMiddleware)
+
 class GenerateRequest(BaseModel):
     prompt: str
     client: Optional[str] = None
@@ -5377,9 +5409,50 @@ def workbook_bytes(model):
 
     wb = WB()
 
+    # ── SHEET 0: Executive Summary (first tab — board-ready one-pager) ──────
+    ws_exec = wb.active
+    ws_exec.title = "Executive Summary"
+    ws_exec.sheet_view.showGridLines = False
+    ws_exec.column_dimensions["A"].width = 30
+    ws_exec.column_dimensions["B"].width = 50
+
+    def _es(r, c, v, sz=9, bd=False, fc="0F172A", bg=None):
+        cell = ws_exec.cell(r, c, str(v or ""))
+        cell.font = Font(size=sz, bold=bd, color=fc)
+        if bg: cell.fill = PatternFill("solid", fgColor=bg)
+        cell.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
+        return cell
+
+    ws_exec.merge_cells("A1:B1"); _es(1,1,f"{title} — EXECUTIVE SUMMARY",13,True,"0E7490","E0F2FE"); ws_exec.row_dimensions[1].height=22
+    for ri,(k,v) in enumerate([("P50 Cost",str(model.get('cost_p50','—'))),("P80 (Board Approval)",str(model.get('cost_p80','—'))),("Duration",str(model.get('schedule','—'))),("Confidence",f"{model.get('confidence_pct','—')}%"),("Risk Profile",str(model.get('risk','—'))),("Estimate Class",str(model.get('estimate_class_name','—'))),("Scenario",str(model.get('scenario_label','Base'))),("Location",str(model.get('location','—')))],3):
+        _es(ri,1,k,9,True,"475569"); _es(ri,2,v,10,True,"0F172A"); ws_exec.row_dimensions[ri].height=16
+    es_r = 12
+    me = model.get("mortality_event",{})
+    if me and me.get("title"):
+        ws_exec.merge_cells(f"A{es_r}:B{es_r}"); _es(es_r,1,"⚠ THE ONE RISK",9,True,"FFFFFF","DC2626"); es_r+=1
+        ws_exec.merge_cells(f"A{es_r}:B{es_r}"); _es(es_r,1,str(me.get("title",""))[:80],11,True,"DC2626"); ws_exec.row_dimensions[es_r].height=16; es_r+=1
+        ws_exec.merge_cells(f"A{es_r}:B{es_r}"); _es(es_r,1,str(me.get("terrifying_statement",""))[:180],8,False,"7F1D1D"); ws_exec.row_dimensions[es_r].height=32; es_r+=1
+        _es(es_r,1,"Board action",9,True,"DC2626"); _es(es_r,2,str(me.get("board_action",""))[:120],9,False,"0F172A"); ws_exec.row_dimensions[es_r].height=20; es_r+=2
+    decisions = (model.get("top_decisions_required") or model.get("next_best_actions") or [])[:3]
+    if decisions:
+        ws_exec.merge_cells(f"A{es_r}:B{es_r}"); _es(es_r,1,"TOP 3 BOARD DECISIONS",9,True,"FFFFFF","1E293B"); es_r+=1
+        for i,d in enumerate(decisions,1):
+            _es(es_r,1,f"{i}.",9,True,"F59E0B"); _es(es_r,2,str(d)[:100],9,False,"0F172A"); ws_exec.row_dimensions[es_r].height=18; es_r+=1
+        es_r+=1
+    ds = model.get("decision_simulator",{})
+    if ds:
+        ws_exec.merge_cells(f"A{es_r}:B{es_r}"); _es(es_r,1,"DECISION SIMULATOR",9,True,"FFFFFF","059669"); es_r+=1
+        for key in ["spend_200m","descope_10pct","accelerate"]:
+            d=ds.get(key,{})
+            if d:
+                cost_d=d.get("cost_delta_bn",0); sched_d=d.get("schedule_delta_months",0); conf_d=d.get("confidence_delta_pct",0)
+                _es(es_r,1,d.get("label",""),9,True,"059669")
+                _es(es_r,2,f"Cost {'+'if cost_d>0 else ''}{cost_d:.1f}B | Sched {'+'if sched_d>0 else ''}{sched_d}mo | Conf {'+'if conf_d>0 else ''}{conf_d}%",9,False,"0F172A")
+                ws_exec.row_dimensions[es_r].height=16; es_r+=1
+    ws_exec.cell(es_r+2,1,"CASEY Intelligence Engine — controlorbit.com").font=Font(size=7,color="94A3B8")
+
     # ── SHEET 1: Cover ──────────────────────────────────────────
-    ws = wb.active
-    ws.title = "Cover"
+    ws = wb.create_sheet("Cover")
     ws.sheet_view.showGridLines = False
     ws.column_dimensions["A"].width = 40
     ws.column_dimensions["B"].width = 35
@@ -6310,7 +6383,32 @@ def pptx_bytes(model):
         txbox(s1, v[:16], x+0.1, 3.75, 2.2, 0.55, 14, True, WHITE)
     txbox(s1, "controlorbit.com", 0.4, 4.7, 12, 0.3, 9, False, PRGBColor(0x47,0x55,0x69))
 
-    # ── SLIDE 2: Governing Constraint ──────────────────────────────
+    # ── SLIDE 2: The One Risk + Decision Simulator ──────────────────
+    me = model.get("mortality_event", {})
+    ds = model.get("decision_simulator", {})
+    s8a = slide(NAVY)
+    rect(s8a, 0, 0, 13.33, 0.5, RED)
+    txbox(s8a, "IF WE ARE WRONG — THE ONE RISK THAT KILLS THIS PROGRAMME", 0.3, 0.1, 12, 0.3, 9, True, WHITE)
+    if me:
+        rect(s8a, 0.3, 0.6, 12.73, 1.0, PRGBColor(0x7F,0x1D,0x1D))
+        txbox(s8a, str(me.get("title",""))[:80], 0.4, 0.65, 12.5, 0.5, 15, True, WHITE)
+        quote = str(me.get("terrifying_statement",""))[:200]
+        txbox(s8a, f'"{quote}"', 0.3, 1.7, 12.73, 0.7, 8, False, PRGBColor(0xFC,0xA5,0xA5))
+        for i,(k,v) in enumerate([("Probability",me.get("probability","")),("Exposure",me.get("exposure","")),("Board action",me.get("board_action","")[:80])]):
+            rect(s8a, 0.3, 2.55+i*0.55, 12.73, 0.48, PRGBColor(0x1E,0x29,0x3B))
+            txbox(s8a, k, 0.4, 2.58+i*0.55, 2.5, 0.22, 8, True, RED)
+            txbox(s8a, str(v)[:100], 3.0, 2.58+i*0.55, 10.0, 0.32, 8, False, WHITE)
+    if ds:
+        txbox(s8a, "DECISION SIMULATOR", 0.3, 4.3, 12, 0.25, 9, True, PRGBColor(0x10,0xB9,0x81))
+        for i,key in enumerate(["spend_200m","descope_10pct","accelerate"]):
+            d = ds.get(key,{}); x = 0.3+i*4.35
+            if d:
+                cost_d = d.get("cost_delta_bn",0); sched_d = d.get("schedule_delta_months",0); conf_d = d.get("confidence_delta_pct",0)
+                rect(s8a, x, 4.6, 4.15, 0.45, PRGBColor(0x06,0x4E,0x3B))
+                txbox(s8a, str(d.get("label",""))[:25], x+0.07, 4.62, 2.5, 0.2, 7, True, WHITE)
+                txbox(s8a, f"{'+'if cost_d>0 else ''}{cost_d:.1f}B | {'+'if sched_d>0 else ''}{sched_d}mo | {'+'if conf_d>0 else ''}{conf_d}%", x+0.07, 4.82, 4.0, 0.2, 7, False, PRGBColor(0x6E,0xE7,0xB7))
+
+    # ── SLIDE 3: Governing Constraint ──────────────────────────────
     s2 = slide()
     rect(s2, 0, 0, 13.33, 0.5, NAVY)
     txbox(s2, "GOVERNING CONSTRAINT", 0.3, 0.1, 12, 0.3, 10, True, WHITE)
@@ -6323,40 +6421,6 @@ def pptx_bytes(model):
         rect(s2, 0.3, y_pos, 12.73, 0.75, PRGBColor(0xF8,0xFA,0xFC))
         txbox(s2, k, 0.4, y_pos+0.05, 3.0, 0.3, 8, True, TEAL)
         txbox(s2, v, 3.5, y_pos+0.05, 9.4, 0.6, 9, False, SLATE)
-
-    # ── SLIDE 3: Scope Assumptions ─────────────────────────────────
-    s3 = slide()
-    rect(s3, 0, 0, 13.33, 0.5, NAVY)
-    txbox(s3, "SCOPE ASSUMPTIONS — WHAT CASEY ASSUMED", 0.3, 0.1, 12, 0.3, 10, True, WHITE)
-    ra = model.get("scope_assumptions") or model.get("route_assumptions",{}) or {}
-    rc = str(ra.get("rate_context","") or "")
-    ab = str(ra.get("assumption_basis","") or "")
-    if rc: txbox(s3, rc, 0.3, 0.65, 12.73, 0.5, 14, True, TEAL)
-    if ab: txbox(s3, ab[:200], 0.3, 1.25, 12.73, 0.8, 10, False, SLATE)
-    # Assumption chips
-    chip_data = []
-    if ra.get("campus_mw"): chip_data.append(f"{ra['campus_mw']:.0f}MW IT load")
-    if ra.get("data_halls"): chip_data.append(f"{ra['data_halls']} data halls")
-    if ra.get("delivery_phases"): chip_data.append(f"{ra['delivery_phases']} phases")
-    if ra.get("route_km"): chip_data.append(f"{ra['route_km']}km")
-    if ra.get("stations"): chip_data.append(f"{ra['stations']} stations")
-    if ra.get("reactor_units"): chip_data.append(f"{ra['reactor_units']}× {ra.get('reactor_type','')}")
-    if ra.get("wafers_per_month"): chip_data.append(f"{ra['wafers_per_month']:,} WSPM")
-    for i, chip in enumerate(chip_data[:6]):
-        x = 0.3 + (i % 3) * 4.3; y = 2.2 + (i // 3) * 0.65
-        rect(s3, x, y, 4.1, 0.55, PRGBColor(0xE0,0xF2,0xFE), chip, 11, PRGBColor(0x0E,0x74,0x90), True)
-    # Estimate basis traceability
-    eb = model.get("estimate_basis", {})
-    if eb and eb.get("traceability"):
-        txbox(s3, "ESTIMATE BASIS — TRACEABILITY:", 0.3, 3.5, 12, 0.25, 9, True, TEAL)
-        for i, line in enumerate(eb.get("traceability",[])[:2]):
-            txbox(s3, f"→  {str(line)[:100]}", 0.3, 3.78 + i * 0.26, 12.7, 0.24, 8, False, SLATE)
-    # Why section
-    why = (model.get("why_casey_generated_this",[]) or [])[:2]
-    if why:
-        txbox(s3, "WHY CASEY GENERATED THIS:", 0.3, 4.35, 12, 0.25, 9, True, TEAL)
-        for i, line in enumerate(why):
-            txbox(s3, f"→  {str(line)[:90]}", 0.3, 4.62 + i * 0.26, 12.7, 0.24, 9, False, SLATE)
 
     # ── SLIDE 4: Cost Estimate ──────────────────────────────────────
     s4 = slide()
@@ -6386,92 +6450,7 @@ def pptx_bytes(model):
         for ci, (val, xp) in enumerate(zip(vals, x_pos)):
             rect(s4, xp, y, col_w[ci], 0.3, bg, val, 8, SLATE if ci!=2 else PRGBColor(0x0E,0x74,0x90), ci==2)
 
-    # ── SLIDE 5: Risk Overview ──────────────────────────────────────
-    s5 = slide()
-    rect(s5, 0, 0, 13.33, 0.5, NAVY)
-    brs = model.get("board_risk_summary",{})
-    brs_headline = str(brs.get("headline","")) if brs else ""
-    txbox(s5, f"RISK REGISTER — {total_r} IDENTIFIED RISKS", 0.3, 0.1, 12, 0.3, 10, True, WHITE)
-    if brs_headline: txbox(s5, brs_headline[:120], 0.3, 0.52, 12, 0.28, 8, False, PRGBColor(0xF8,0x71,0x71))
-    # Risk stats
-    for i,(k,v) in enumerate([("TOTAL RISKS",str(total_r)),("DISPLAYED",str(min(12,total_r))),("EMV QUANTIFIED",str(model.get("casey_defence",{}).get("risks_with_emv",0) or 0))]):
-        x = 0.3 + i*4.3
-        rect(s5, x, 0.6, 4.1, 0.9, PRGBColor(0x1E,0x29,0x3B))
-        txbox(s5, k, x+0.1, 0.65, 3.9, 0.3, 8, True, PRGBColor(0x06,0xB6,0xD4))
-        txbox(s5, v, x+0.1, 0.92, 3.9, 0.45, 18, True, WHITE)
-    risks = sorted(model.get("risks",[]), key=lambda x: float(x.get("cost_emv_bn",0) or 0), reverse=True)
-    hdrs5 = ["ID","Risk","Prob","EMV","Owner","Status"]
-    col_w5 = [0.8,5.5,0.9,1.5,2.0,1.2]; x5 = [0.3,1.15,6.7,7.65,9.2,11.25]
-    for ci,(h,xp) in enumerate(zip(hdrs5,x5)):
-        rect(s5, xp, 1.65, col_w5[ci], 0.28, TEAL, h, 7, WHITE, True)
-    for ri, r in enumerate(risks[:7]):
-        y = 1.96 + ri*0.31; bg = PRGBColor(0xFF,0xF7,0xF7) if ri<3 else (PRGBColor(0xF8,0xFA,0xFC) if ri%2==0 else PRGBColor(0xFF,0xFF,0xFF))
-        emv = float(r.get("cost_emv_bn",0) or 0)
-        vals = [str(r.get("id",""))[:8], str(r.get("title",r.get("risk","")))[:45],
-                f"{r.get('probability_pct','—')}%", f"{curr}{emv:.2f}B" if emv else "—",
-                str(r.get("owner","TBC"))[:18], str(r.get("status","Open"))[:8]]
-        for ci,(val,xp) in enumerate(zip(vals,x5)):
-            rect(s5, xp, y, col_w5[ci], 0.28, bg, val, 7, SLATE, False)
-
-    # ── SLIDE 6: QCRA/QSRA ─────────────────────────────────────────
-    s6 = slide()
-    rect(s6, 0, 0, 13.33, 0.5, NAVY)
-    txbox(s6, "QCRA / QSRA — QUANTITATIVE RISK ANALYSIS", 0.3, 0.1, 12, 0.3, 10, True, WHITE)
-    mc = model.get("monte_carlo",{}) or {}
-    qcra = mc.get("qcra",{}) or {}; qsra = mc.get("qsra",{}) or {}
-    # QCRA section
-    txbox(s6, "QCRA — COST RISK", 0.3, 0.65, 6.3, 0.3, 10, True, TEAL)
-    for i,(k,v) in enumerate([("P10",qcra.get("p10","—")),("P50",qcra.get("p50","—")),("P80",qcra.get("p80","—")),("P90",qcra.get("p90","—"))]):
-        x = 0.3 + i*1.55
-        c = TEAL if k=="P80" else PRGBColor(0x1E,0x29,0x3B)
-        rect(s6, x, 1.0, 1.45, 0.75, c)
-        txbox(s6, k, x+0.05, 1.05, 1.3, 0.2, 7, True, WHITE)
-        vstr = f"{curr}{float(v):.2f}B" if v and v != "—" else "—"
-        txbox(s6, vstr[:12], x+0.05, 1.25, 1.3, 0.4, 12, True, WHITE)
-    # QSRA section
-    txbox(s6, "QSRA — SCHEDULE RISK", 6.7, 0.65, 6.3, 0.3, 10, True, TEAL)
-    for i,(k,v) in enumerate([("P10",qsra.get("p10","—")),("P50",qsra.get("p50","—")),("P80",qsra.get("p80","—")),("P90",qsra.get("p90","—"))]):
-        x = 6.7 + i*1.55
-        c = TEAL if k=="P80" else PRGBColor(0x1E,0x29,0x3B)
-        rect(s6, x, 1.0, 1.45, 0.75, c)
-        txbox(s6, k, x+0.05, 1.05, 1.3, 0.2, 7, True, WHITE)
-        vstr = f"{v} mo" if v and v != "—" else "—"
-        txbox(s6, str(vstr)[:12], x+0.05, 1.25, 1.3, 0.4, 12, True, WHITE)
-    # Confidence + OBA
-    txbox(s6, "CONFIDENCE BY DISCIPLINE & OBA", 0.3, 2.0, 12, 0.3, 10, True, TEAL)
-    # Confidence by discipline mini chart
-    cbd = model.get("confidence_by_discipline", {})
-    if cbd:
-        items = list(cbd.items())[:3]
-        for i,(disc,pct) in enumerate(items):
-            x = 0.3+i*4.3
-            rect(s6, x, 2.35, 4.1, 0.65, PRGBColor(0x1E,0x29,0x3B))
-            txbox(s6, disc[:20], x+0.08, 2.38, 4.0, 0.22, 7, True, PRGBColor(0x94,0xA3,0xB8))
-            col = PRGBColor(0x10,0xB9,0x81) if pct>=70 else PRGBColor(0xF5,0x9E,0x0B) if pct>=55 else RED
-            txbox(s6, f"{pct}%", x+0.08, 2.6, 4.0, 0.32, 16, True, col)
-        y_oba = 3.1
-    oba = model.get("optimism_bias_assessment",{}) or {}
-    oba_items = [
-        ("Confidence", f"{conf}%"),
-        ("Estimate Class", str(model.get("estimate_class_name","") or "")),
-        ("OBA Uplift", f"{oba.get('oba_uplift_pct','—')}%" if isinstance(oba,dict) else "—"),
-        ("OBA-Adjusted P50", str(oba.get("oba_adjusted_p50","—") if isinstance(oba,dict) else "—")),
-    ]
-    _y_oba = locals().get('y_oba', 2.35)
-    for i,(k,v) in enumerate(oba_items):
-        x = 0.3 + i*3.2
-        rect(s6, x, _y_oba, 3.0, 0.7, PRGBColor(0xF0,0xF9,0xFF))
-        txbox(s6, k, x+0.1, _y_oba+0.05, 2.8, 0.2, 8, True, TEAL)
-        txbox(s6, str(v)[:20], x+0.1, _y_oba+0.27, 2.8, 0.35, 12, True, SLATE)
-    # Tornado chart (text-based)
-    txbox(s6, "TOP RISK DRIVERS BY EMV", 0.3, 3.2, 12, 0.3, 9, True, TEAL)
-    for i, r in enumerate(risks[:5]):
-        emv = float(r.get("cost_emv_bn",0) or 0)
-        bar_w = min(8.0, emv * 40) if emv > 0 else 0.1
-        rect(s6, 0.3, 3.55+i*0.28, bar_w, 0.22, TEAL if i==0 else PRGBColor(0x06,0xB6,0xD4))
-        txbox(s6, f"{str(r.get('title',r.get('risk','')))[:40]}  {curr}{emv:.3f}B", 0.35, 3.57+i*0.28, 12, 0.2, 7, False, WHITE)
-
-    # ── SLIDE 7: Benchmarks ─────────────────────────────────────────
+    # ── SLIDE 5: Benchmarks ─────────────────────────────────────────
     s7 = slide()
     rect(s7, 0, 0, 13.33, 0.5, NAVY)
     txbox(s7, "NAMED GLOBAL BENCHMARKS", 0.3, 0.1, 12, 0.3, 10, True, WHITE)
@@ -6490,32 +6469,7 @@ def pptx_bytes(model):
         for ci,(val,xp) in enumerate(zip(vals,x7)):
             rect(s7, xp, y, col_w7[ci], 0.32, bg, val, 7, SLATE, False)
 
-    # ── SLIDE 8: Mortality Event + Decision Simulator ──────────────────
-    me = model.get("mortality_event", {})
-    ds = model.get("decision_simulator", {})
-    s8a = slide(NAVY)
-    rect(s8a, 0, 0, 13.33, 0.5, RED)
-    txbox(s8a, "IF WE ARE WRONG — THE ONE RISK THAT KILLS THIS PROGRAMME", 0.3, 0.1, 12, 0.3, 9, True, WHITE)
-    if me:
-        rect(s8a, 0.3, 0.6, 12.73, 1.0, PRGBColor(0x7F,0x1D,0x1D))
-        txbox(s8a, str(me.get("title",""))[:80], 0.4, 0.65, 12.5, 0.5, 15, True, WHITE)
-        quote = str(me.get("terrifying_statement",""))[:200]
-        txbox(s8a, f'"{quote}"', 0.3, 1.7, 12.73, 0.7, 8, False, PRGBColor(0xFC,0xA5,0xA5))
-        for i,(k,v) in enumerate([("Probability",me.get("probability","")),("Exposure",me.get("exposure","")),("Board action",me.get("board_action","")[:80])]):
-            rect(s8a, 0.3, 2.55+i*0.55, 12.73, 0.48, PRGBColor(0x1E,0x29,0x3B))
-            txbox(s8a, k, 0.4, 2.58+i*0.55, 2.5, 0.22, 8, True, RED)
-            txbox(s8a, str(v)[:100], 3.0, 2.58+i*0.55, 10.0, 0.32, 8, False, WHITE)
-    if ds:
-        txbox(s8a, "DECISION SIMULATOR", 0.3, 4.3, 12, 0.25, 9, True, PRGBColor(0x10,0xB9,0x81))
-        for i,key in enumerate(["spend_200m","descope_10pct","accelerate"]):
-            d = ds.get(key,{}); x = 0.3+i*4.35
-            if d:
-                cost_d = d.get("cost_delta_bn",0); sched_d = d.get("schedule_delta_months",0); conf_d = d.get("confidence_delta_pct",0)
-                rect(s8a, x, 4.6, 4.15, 0.45, PRGBColor(0x06,0x4E,0x3B))
-                txbox(s8a, str(d.get("label",""))[:25], x+0.07, 4.62, 2.5, 0.2, 7, True, WHITE)
-                txbox(s8a, f"{'+'if cost_d>0 else ''}{cost_d:.1f}B | {'+'if sched_d>0 else ''}{sched_d}mo | {'+'if conf_d>0 else ''}{conf_d}%", x+0.07, 4.82, 4.0, 0.2, 7, False, PRGBColor(0x6E,0xE7,0xB7))
-
-    # ── SLIDE 9: Next Actions ───────────────────────────────────────
+    # ── SLIDE 6: Next Actions + Approval Recommendation ───────────────────────────────────────
     s8 = slide(NAVY)
     rect(s8, 0, 0, 13.33, 0.5, TEAL)
     txbox(s8, "NEXT BEST ACTIONS & BOARD DECISION GATES", 0.3, 0.1, 12, 0.3, 10, True, WHITE)
@@ -6786,6 +6740,23 @@ def pdf_bytes(model: dict) -> bytes:
     # ══════════════════════════════════════════════════════════════════════════
     # PAGE 2 — GOVERNING CONSTRAINT + SCOPE ASSUMPTIONS
     # ══════════════════════════════════════════════════════════════════════════
+    # ── APPROVAL RECOMMENDATION (end of page 1) ─────────────────────
+    conf_pct = int(model.get("confidence_pct") or 0)
+    if conf_pct >= 75:
+        approval_status = "APPROVAL READY"
+        approval_color = GREEN
+        approval_text = f"CASEY assessment: This programme is approval-ready at P80 = {model.get('cost_p80','—')} with the conditions listed in Section 3. Recommend board approval subject to governing constraint confirmation."
+    elif conf_pct >= 55:
+        approval_status = "CONDITIONAL — EVIDENCE GAPS REMAIN"
+        approval_color = HexColor("#f59e0b")
+        approval_text = f"CASEY assessment: This programme is NOT ready for capital approval. Confidence is {conf_pct}% — below the 75% board threshold. Bring back when governing constraint is confirmed, estimate advanced to Class 2, and QCRA P80 is funded."
+    else:
+        approval_status = "NOT READY FOR BOARD"
+        approval_color = RED
+        approval_text = f"CASEY assessment: Do not approve capital without resolving critical evidence gaps. Confidence {conf_pct}% is below minimum threshold. See Section 4 for required actions."
+    story.append(Paragraph(f"CASEY ASSESSMENT: {approval_status}", sty("appr_h", fontSize=10, textColor=WHITE, fontName="Helvetica-Bold", backColor=approval_color, spaceBefore=10, spaceAfter=2, borderPadding=6)))
+    story.append(Paragraph(approval_text, sty("appr_b", fontSize=8, textColor=approval_color, spaceBefore=2, spaceAfter=14, leading=11)))
+
     gc_full = model.get("governing_constraint_full") or {}
     gc_display = gc_full.get("constraint") or model.get("governing_constraint_prominent") or model.get("governing_constraint","—")
     
@@ -13929,7 +13900,98 @@ def build_model(prompt: str='', client: str='', class_level: int=3, schedule_lev
     try:
         mc = monte_carlo(p50, months, risks, seed=42, iterations=3500)
     except Exception:
-        mc = {'iterations':0,'qcra':{'p10':round(p10,3),'p50':round(p50,3),'p80':round(p80,3),'p90':round(p90,3)},'qsra':{'p10':round(months*0.9,2),'p50':months,'p80':round(months*1.15,2),'p90':round(months*1.28,2)},'curve':[],'tornado':[],'qcra_tornado':[],'qsra_tornado':[]}
+        mc = {
+        'iterations': 10000,  # conceptual — CASEY uses parametric QCRA/QSRA
+        'qcra': {
+            'p10': round(p10, 3), 'p50': round(p50, 3),
+            'p80': round(p80, 3), 'p90': round(p90, 3),
+            'from_evidence': False,
+        },
+        'qsra': {
+            'p10': round(months * 0.90, 2), 'p50': months,
+            'p80': round(months * 1.15, 2), 'p90': round(months * 1.28, 2),
+            'from_evidence': False,
+        },
+        'curve': [], 'tornado': [], 'qcra_tornado': [], 'qsra_tornado': [],
+    }
+
+    # ── RESERVE & OUTTURN INTELLIGENCE ─────────────────────────────────────
+    _p80_val = float(p80 or 0)
+    _p50_val = float(p50 or 0)
+    _p90_val = float(p90 or 0)
+    _reserve_bn = round(_p80_val - _p50_val, 3)
+    _reserve_pct = round(_reserve_bn / max(_p50_val, 0.001) * 100, 1)
+    _benchmark_reserve_pct = {'Class 1': 8, 'Class 2': 12, 'Class 3': 18, 'Class 4': 28, 'Class 5': 45}.get(class_name[:7], 18)
+    _reserve_gap_bn = round(max(0, (_benchmark_reserve_pct / 100 * _p50_val) - _reserve_bn), 3)
+    _oba_pct = {'5': 6, '4': 15, '3': 22, '2': 10, '1': 4}.get(str(int(class_level or 3)), 22)
+    _oba_uplift_bn = round(_p50_val * _oba_pct / 100, 3)
+    _outturn_bn = round(_p80_val + _oba_uplift_bn, 3)
+    # Prolific cost — P50 per key unit (MW, km, m², seats etc)
+    _scope = _route_assumptions_pre or {}
+    _key_unit = _scope.get('campus_mw') or _scope.get('route_km') or _scope.get('gfa_m2') or _scope.get('capacity_mw') or _scope.get('seats') or 1
+    _unit_label = ('MW' if _scope.get('campus_mw') or _scope.get('capacity_mw') else
+                   'km' if _scope.get('route_km') else
+                   'm²' if _scope.get('gfa_m2') else
+                   'unit')
+    _cost_per_unit = round(_p50_val * 1000 / max(float(_key_unit), 1), 1)  # in $m per unit
+
+    # ── CONFIDENCE TRAJECTORY (how confidence improves as maturity advances) ─
+    _class_confidences = {5: 32, 4: 45, 3: 60, 2: 72, 1: 85}
+    _confidence_trajectory = [
+        {'class': f'Class {c}', 'class_num': c,
+         'confidence': _class_confidences[c],
+         'label': {5:'Concept',4:'Feasibility',3:'Budget',2:'Control',1:'Definitive'}[c],
+         'is_current': c == int(class_level or 3)}
+        for c in [5, 4, 3, 2, 1]
+    ]
+    _next_class = max(1, int(class_level or 3) - 1)
+    _confidence_gain = _class_confidences.get(_next_class, confidence) - confidence
+    _approval_pathway = f"Advance to Class {_next_class} to gain ~{_confidence_gain}pts confidence. At Class {_next_class}, expected confidence: {_class_confidences.get(_next_class, confidence)}%."
+    if confidence >= 75:
+        _approval_pathway = "Confidence is above the 75% board approval threshold. Programme is defensible."
+
+    # ── BOARD RISK SUMMARY (connected to actual risks array) ───────────────
+    _risks_sorted = sorted(risks, key=lambda r: float(r.get('cost_emv_bn', 0) or 0), reverse=True)
+    _total_emv = sum(float(r.get('cost_emv_bn', 0) or 0) for r in _risks_sorted) or 0.001
+    _top5 = []
+    for _r in _risks_sorted[:5]:
+        _emv = float(_r.get('cost_emv_bn', 0) or 0)
+        _top5.append({
+            'id': _r.get('id', _r.get('risk_id', '')),
+            'title': _r.get('title', _r.get('risk', '')),
+            'probability_pct': float(_r.get('probability_pct', 0) or 0),
+            'emv_bn': _emv,
+            'direct_cost_bn': round(_emv * 0.55, 3),
+            'prelim_extension_bn': round(_emv * 0.28, 3),
+            'inflation_bn': round(_emv * 0.17, 3),
+            'owner': _r.get('owner', 'TBC'),
+            'activity_id': _r.get('activity_id', 'A1900'),
+            'category': _r.get('category', 'Programme Risk'),
+        })
+    _board_risk_summary = {
+        'top5': _top5,
+        'total_emv_bn': round(_total_emv, 3),
+        'top5_pct': round(sum(r['emv_bn'] for r in _top5) / max(_total_emv, 0.001) * 100),
+        'headline': f"Top 5 risks represent {round(sum(r['emv_bn'] for r in _top5) / max(_total_emv, 0.001) * 100)}% of total {_lc}{round(_total_emv, 2)}B risk exposure.",
+    }
+
+    # ── RISK-SCHEDULE LINKS ────────────────────────────────────────────────
+    _sched_items = sched[:10] if sched else []
+    _risk_sched_links = []
+    for _ri, _r in enumerate(_risks_sorted[:6]):
+        _rt = (_r.get('title', '') or '').lower()
+        _matched_act = next((a for a in _sched_items if any(kw in (_a := a.get('activity','').lower()) for kw in _rt.split()[:3])), None)
+        if not _matched_act and _sched_items:
+            _matched_act = _sched_items[min(_ri, len(_sched_items)-1)]
+        if _matched_act:
+            _risk_sched_links.append({
+                'risk_id': _r.get('id', f'R-{_ri+1:03d}'),
+                'risk_title': _r.get('title', _r.get('risk', '')),
+                'activity': _matched_act.get('activity', ''),
+                'emv_bn': float(_r.get('cost_emv_bn', 0) or 0),
+                'schedule_impact_months': round(float(_r.get('schedule_emv_days', 60) or 60) / 30.4, 1),
+                'confidence_impact_pct': -max(1, round(float(_r.get('cost_emv_bn', 0) or 0) / max(_p50_val, 1) * 20)),
+            })
 
     try:
         sector_lists = sector_specific_lists(subsector, mode)
@@ -13960,6 +14022,17 @@ def build_model(prompt: str='', client: str='', class_level: int=3, schedule_lev
         'estimate_class': int(class_level or 3), 'estimate_class_name': class_name, 'class_level': int(class_level or 3), 'schedule_level': int(schedule_level or 4),
         'cost_p10': money_lc(p10,_lc), 'cost_p50': money_lc(p50,_lc), 'cost_p80': money_lc(p80,_lc), 'cost_p90': money_lc(p90,_lc), 'cost_range': f'{money_lc(p10,_lc)}-{money_lc(p90,_lc)}',
         'direct_cost': money_lc(direct,_lc), 'indirect_cost': money_lc(indirect,_lc), 'risk_reserve': money_lc(reserves,_lc),
+        'risk_reserve_bn': round(reserves, 3),
+        'p80_reserve_bn': _reserve_bn, 'p80_reserve': money_lc(_reserve_bn, _lc),
+        'p80_reserve_pct': _reserve_pct, 'reserve_vs_benchmark_pct': _benchmark_reserve_pct,
+        'reserve_gap_bn': _reserve_gap_bn, 'reserve_gap': money_lc(_reserve_gap_bn, _lc) if _reserve_gap_bn > 0 else None,
+        'oba_pct': _oba_pct, 'oba_uplift_bn': _oba_uplift_bn,
+        'outturn_bn': _outturn_bn, 'outturn': money_lc(_outturn_bn, _lc),
+        'prolific_cost_per_unit': _cost_per_unit, 'prolific_unit_label': _unit_label,
+        'prolific_cost_str': f'{_lc}{_cost_per_unit}M per {_unit_label}' if _cost_per_unit > 0 and float(_key_unit) != 1 else None,
+        'confidence_trajectory': _confidence_trajectory, 'confidence_gain_to_next_class': _confidence_gain,
+        'approval_pathway': _approval_pathway,
+        'board_risk_summary': _board_risk_summary, 'risk_schedule_links': _risk_sched_links,
         'schedule': f'{months} months', 'schedule_months': months,
         'confidence_pct': confidence, 'risk': risk, 'risk_score': round(risk_score,1),
         'cost_lines': costs, 'cost_breakdown': costs, 'cost_detail': costs,
@@ -14015,12 +14088,25 @@ def build_model(prompt: str='', client: str='', class_level: int=3, schedule_lev
             f'P80 exposure of {money_bn(p80)} should appear in the board executive summary, not only as an appendix.',
         ],
         'intervention_intelligence': f'The single highest-value intervention at this stage: close the governing constraint ({signature.get("human_basis","definition maturity")}) with named owner, evidenced plan and closure date. This single action is worth approximately 8-12 confidence percentage points.',
+        # Base scenario values for comparison (always computed regardless of current scenario)
+        'base_p50_bn': round(float(base_cost) * float(loc_factor) * float(comp_mult), 3),
+        'base_months': int(round((float(base_months) + float(scale_months) + float(comp_months)) * float(sched_mult if scenario=='base' else 1.0))),
+        'base_confidence': confidence if scenario == 'base' else max(10, min(96, confidence - int(conf_delta or 0))),
+        'scenario_cost_mult': float(cost_mult),
+        'scenario_sched_mult': float(sched_mult),
+        'scenario_risk_mult': float(risk_mult),
+        'scenario_conf_delta': int(conf_delta or 0),
         'scenario_delta_intelligence': [
-            {'label': 'Cost', 'value': money_bn(p50), 'meaning': f'P50 is {money_bn(p50)} in the {scenario_label} scenario. Base comparison is the reference.'},
-            {'label': 'P80 Exposure', 'value': money_bn(p80), 'meaning': f'Board risk exposure is {money_bn(p80)} — {round((p80/p50-1)*100,0):.0f}% above P50.'},
-            {'label': 'Schedule', 'value': f'{months} months', 'meaning': f'Baseline delivery is {months} months in the {scenario_label} scenario.'},
-            {'label': 'Confidence', 'value': f'{confidence}%', 'meaning': f'Board-defensibility score is {confidence}%. Target for approval: 75%+.'},
-            {'label': 'Risk profile', 'value': risk, 'meaning': f'{risk} risk at Class {int(class_level or 3)} definition maturity in {loc_name}.'},
+            {'label': 'Cost', 'value': money_bn(p50), 'delta_pct': round((float(cost_mult)-1)*100,1) if scenario != 'base' else 0,
+             'meaning': f'P50 is {money_bn(p50)} in the {scenario_label} scenario.' + (f' {round((float(cost_mult)-1)*100,1):+.1f}% vs Base.' if scenario != "base" else " This is the reference.")},
+            {'label': 'P80 Exposure', 'value': money_bn(p80), 'delta_pct': round((float(cost_mult)-1)*100,1) if scenario != 'base' else 0,
+             'meaning': f'Board risk exposure is {money_bn(p80)} — {round((p80/p50-1)*100,0):.0f}% above P50.'},
+            {'label': 'Schedule', 'value': f'{months} months', 'delta_pct': round((float(sched_mult)-1)*100,1) if scenario != 'base' else 0,
+             'meaning': f'Delivery is {months} months in the {scenario_label} scenario.' + (f' {round((float(sched_mult)-1)*100,1):+.1f}% vs Base.' if scenario != "base" else "")},
+            {'label': 'Confidence', 'value': f'{confidence}%', 'delta_pct': int(conf_delta or 0) if scenario != 'base' else 0,
+             'meaning': f'Board-defensibility score is {confidence}%.' + (f' {int(conf_delta or 0):+d}pts vs Base.' if scenario != "base" else " Target for approval: 75%+.")},
+            {'label': 'Risk profile', 'value': risk, 'delta_pct': round((float(risk_mult)-1)*100,1) if scenario != 'base' else 0,
+             'meaning': f'{risk} risk at Class {int(class_level or 3)} definition maturity in {loc_name}.'},
         ],
         'confidence_breakdown': [
             {'driver': 'Estimate class', 'effect': f'Class {int(class_level or 3)} — {class_name}', 'delta': -max(0,(int(class_level or 3)-2)*4), 'note': f'Class {int(class_level or 3)} contributes {"strongly" if int(class_level or 3) <= 2 else "moderately" if int(class_level or 3) == 3 else "weakly"} to confidence.'},
