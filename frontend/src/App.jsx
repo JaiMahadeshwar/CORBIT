@@ -13,7 +13,15 @@ import './style.css';
 
 const PROD_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL || 'https://corbit-1.onrender.com';
 if (typeof window !== 'undefined') window._CASEY_API = PROD_URL;
-const API_CANDIDATES = [PROD_URL, 'http://127.0.0.1:8000', 'http://localhost:8000'].filter(Boolean);
+// Only use localhost fallbacks in development - never in production (triggers browser security warnings)
+const IS_DEV = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+// Rollup-safe sign prefix helper
+const sign = (n) => n > 0 ? '+' : n < 0 ? '-' : '';
+const signedVal = (n, suffix='') => n !== 0 ? sign(n) + Math.abs(n) + suffix : null;
+
+const API_CANDIDATES = IS_DEV 
+  ? [PROD_URL, 'http://127.0.0.1:8000', 'http://localhost:8000'].filter(Boolean)
+  : [PROD_URL].filter(Boolean);
 let API = API_CANDIDATES[0];
 async function apiFetch(path, options, timeoutMs = 90000) {
   let lastError;
@@ -21,7 +29,8 @@ async function apiFetch(path, options, timeoutMs = 90000) {
     try {
       const controller = new AbortController();
       const tid = setTimeout(() => controller.abort(), timeoutMs);
-      // credentials:'omit' prevents browser enforcing the credentials+wildcard CORS restriction
+      // credentials:'omit' prevents CORS credential restriction
+      // Never fall through to localhost on production - prevents "unsafe site" browser warning
       const r = await fetch(base + path, { credentials: 'omit', ...options, signal: controller.signal });
       clearTimeout(tid);
       API = base;
@@ -155,9 +164,9 @@ function ProfessionalIntakeResult({ result, model }) {
 
       <div className="challengeMetricRow professionalMetrics">
         {engMetrics.risks>0 ? <div className="cm hot"><span>Risks parsed</span><b style={{color:'#f59e0b'}}>{engMetrics.risks}</b></div> : <div className="cm hot"><span>Submitted / inferred P50</span><b>{challengeP50}</b></div>}
-        {engMetrics.p90>0 ? <div className="cm"><span>P90 downside</span><b style={{color:'#ef4444'}}>${engMetrics.p90.toFixed(1)}B</b></div> : <div className="cm"><span>Challenge P80</span><b style={{color:'#ff9940'}}>{challengeP80}</b></div>}
-        {engMetrics.emv>0 ? <div className="cm"><span>Total EMV</span><b style={{color:'#ff9940'}}>${engMetrics.emv.toFixed(2)}B</b></div> : engMetrics.acts>0 ? <div className="cm"><span>Activities</span><b>{engMetrics.acts}</b></div> : <div className="cm"><span>Stress P90</span><b style={{color:'#ff6b7d'}}>{challengeP90}</b></div>}
-        <div className="cm"><span>Evidence quality</span><b style={{color:confPct<60?'#f7d774':'#8df7ff'}}>{confImpact||confPct}%</b></div>
+        {engMetrics.p90>0 ? <div className="cm"><span>P90 downside</span><b style={{color:'#ef4444'}}>${engMetrics.p90.toFixed(1)+'B'}</b></div> : <div className="cm"><span>Challenge P80</span><b style={{color:'#ff9940'}}>{challengeP80}</b></div>}
+        {engMetrics.emv>0 ? <div className="cm"><span>Total EMV</span><b style={{color:'#ff9940'}}>${engMetrics.emv.toFixed(2)+'B'}</b></div> : engMetrics.acts>0 ? <div className="cm"><span>Activities</span><b>{engMetrics.acts}</b></div> : <div className="cm"><span>Stress P90</span><b style={{color:'#ff6b7d'}}>{challengeP90}</b></div>}
+        <div className="cm"><span>Evidence quality</span><b style={{color:confPct<60?'#f7d774':'#8df7ff'}}>{confImpact||confPct+'%'}</b></div>
       </div>
 
       <div className="sourceBundle">
@@ -260,7 +269,7 @@ function HolyGrailRuntime({ model, scenario, generate, runShock }) {
       <p style={{fontSize:'11px',color:'#64748b',marginBottom:'12px'}}>First generate a project on the Overview tab, then click any event below to stress-test it.</p>
       <div className="runtimeButtons">
         {controls.map(([id,title,sub])=>(
-          <button key={id} onClick={()=>fire(id)} className={lastFired===id?'fired':''}>
+          <button key={id} onClick={()=>fire(id)} className={lastFired===id?'fired':undefined}>
             <Zap size={14}/>
             <b>{title}</b>
             <span>{sub}</span>
@@ -396,6 +405,14 @@ const examples = [
   spacePrompt,
 ];
 const scenarios = ['base', 'faster', 'cheaper', 'lower_risk', 'premium'];
+// Scenario multipliers used across all tabs to scale sub-panels consistently
+const getScenarioMults = (model) => ({
+  cost: parseFloat(model?.scenario_cost_mult || 1.0),
+  risk: parseFloat(model?.scenario_risk_mult || 1.0),
+  sched: parseFloat(model?.scenario_sched_mult || 1.0),
+  conf: parseInt(model?.scenario_conf_delta || 0),
+  isNonBase: !!(model?.scenario && model.scenario !== 'base'),
+});
 
 
 const showcaseProjects = [
@@ -949,16 +966,16 @@ function ComparePanel({ promptA, setPromptA, promptB, setPromptB, onRun, loading
               <span style={{fontSize:'11px',fontWeight:'700',color:'#e2e8f0'}}>{b.name}</span>
               <div style={{display:'flex',gap:'3px',flexShrink:0,marginLeft:'4px'}}>
                 {b.mode==='Space'&&<span style={{background:'rgba(141,247,255,0.1)',color:'#8df7ff',fontSize:'7px',padding:'1px 4px',borderRadius:'2px',fontWeight:'800'}}>SPACE</span>}
-                {b.cost_growth_pct>80&&<span style={{background:'rgba(239,68,68,0.12)',color:'#fca5a5',fontSize:'7px',padding:'1px 4px',borderRadius:'2px',fontWeight:'800'}}>+{b.cost_growth_pct}%</span>}
-                {b.cost_growth_pct>0&&b.cost_growth_pct<=80&&<span style={{background:'rgba(245,158,11,0.1)',color:'#fde68a',fontSize:'7px',padding:'1px 4px',borderRadius:'2px',fontWeight:'800'}}>+{b.cost_growth_pct}%</span>}
+                {b.cost_growth_pct>80&&<span style={{background:'rgba(239,68,68,0.12)',color:'#fca5a5',fontSize:'7px',padding:'1px 4px',borderRadius:'2px',fontWeight:'800'}}>+{b.cost_growth_pct+'%'}</span>}
+                {b.cost_growth_pct>0&&b.cost_growth_pct<=80&&<span style={{background:'rgba(245,158,11,0.1)',color:'#fde68a',fontSize:'7px',padding:'1px 4px',borderRadius:'2px',fontWeight:'800'}}>+{b.cost_growth_pct+'%'}</span>}
               </div>
             </div>
             <div style={{fontSize:'9px',color:'#475569',marginBottom:'1px'}}>{b.sector}</div>
             <div style={{display:'flex',gap:'8px'}}>
-              <span style={{fontSize:'9px',color:'#64748b'}}>Actual: ${b.cost_bn}B</span>
+              <span style={{fontSize:'9px',color:'#64748b'}}>Actual: ${b.cost_bn+'B'}</span>
               {b.schedule_slip_months>0&&<span style={{fontSize:'9px',color:'#f59e0b'}}>+{b.schedule_slip_months}mo slip</span>}
             </div>
-            {b.failure_mode&&<div style={{fontSize:'8px',color:'#334155',marginTop:'1px',fontStyle:'italic'}}>{b.failure_mode.slice(0,65)}{b.failure_mode.length>65?'…':''}</div>}
+            {b.failure_mode&&<div style={{fontSize:'8px',color:'#334155',marginTop:'1px',fontStyle:'italic'}}>{b.failure_mode.slice(0,65)}{b.failure_mode.length>65?'…':null}</div>}
           </div>)}
         </div>
       </div>
@@ -1090,17 +1107,17 @@ function ComparePanel({ promptA, setPromptA, promptB, setPromptB, onRun, loading
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'8px',marginBottom:'8px'}}>
             <div style={{textAlign:'center',padding:'6px',background:'rgba(255,255,255,0.03)',borderRadius:'3px'}}>
               <div style={{fontSize:'9px',color:'#475569',marginBottom:'2px'}}>Option A risk EMV</div>
-              <div style={{fontSize:'14px',fontWeight:'800',color:'#e2e8f0'}}>${rc.emv_a}B</div>
+              <div style={{fontSize:'14px',fontWeight:'800',color:'#e2e8f0'}}>${rc.emv_a+'B'}</div>
               <div style={{fontSize:'9px',color:'#64748b'}}>P80: {rc.p80_a}</div>
             </div>
             <div style={{textAlign:'center',padding:'6px',background:'rgba(255,255,255,0.03)',borderRadius:'3px'}}>
               <div style={{fontSize:'9px',color:'#475569',marginBottom:'2px'}}>Option B risk EMV</div>
-              <div style={{fontSize:'14px',fontWeight:'800',color:'#e2e8f0'}}>${rc.emv_b}B</div>
+              <div style={{fontSize:'14px',fontWeight:'800',color:'#e2e8f0'}}>${rc.emv_b+'B'}</div>
               <div style={{fontSize:'9px',color:'#64748b'}}>P80: {rc.p80_b}</div>
             </div>
             <div style={{textAlign:'center',padding:'6px',background:'rgba(255,255,255,0.03)',borderRadius:'3px'}}>
               <div style={{fontSize:'9px',color:'#475569',marginBottom:'2px'}}>EMV delta</div>
-              <div style={{fontSize:'14px',fontWeight:'800',color:rc.emv_delta>0?'#fca5a5':'#10b981'}}>{rc.emv_delta>0?'+':''}{rc.emv_delta}B</div>
+              <div style={{fontSize:'14px',fontWeight:'800',color:rc.emv_delta>0?'#fca5a5':'#10b981'}}>{(rc.emv_delta>0?'+':'')+rc.emv_delta+'B'}</div>
               <div style={{fontSize:'9px',color:'#64748b'}}>P80 gap: {rc.p80_gap?(rc.p80_gap>0?'+':'')+rc.p80_gap+'B':'—'}</div>
             </div>
           </div>
@@ -1459,7 +1476,7 @@ function Loading({ text }) {
 }
 function ScenarioSelector({ scenario, generate, matrix=[], model=null, prompt='', projectContext=null }) {
   const labels = {base:'Base', faster:'Faster', cheaper:'Cheaper', lower_risk:'Lower Risk', premium:'Premium'};
-  return <section className="scenarioRail">{scenarios.map(s => { const row = matrix.find(x => x.scenario === s) || {}; const active = s === scenario; return <button key={s} className={active?'active':''} onClick={() => generate(s, model?.prompt || prompt, model || projectContext)}><b>{labels[s] || s}</b><span>{row.cost_p50 || '—'} · {row.schedule_months || '—'} mo · {row.confidence_pct || '—'}%</span><em>{row.risk || (active ? 'selected' : 'run scenario')}</em></button> })}</section>;
+  return <section className="scenarioRail">{scenarios.map(s => { const row = matrix.find(x => x.scenario === s) || {}; const active = s === scenario; return <button key={s} className={active?'active':''} onClick={() => generate(s, model?.prompt || prompt, model || projectContext)}><b>{labels[s] || s}</b><span>{row.cost_p50 || '—'} · {row.schedule_months || '—'} mo · {row.confidence_pct || '—'+'%'}</span><em>{row.risk || (active ? 'selected' : 'run scenario')}</em></button> })}</section>;
 }
 function ExportStrip({ model, onBoardPack, onExcel, onRisk, onXer, onQcra }) {
   if (!model) return null;
@@ -1608,17 +1625,37 @@ function realisticMetric(value, jitter = 0.35, decimals = 1, suffix = '') {
   return `${v.toFixed(decimals)}${suffix}`;
 }
 function IntelligenceMeta({ model, mode, setMode }) {
-  const seed = stableSeed(model);
-  const cohort = model?.mode === 'Space' ? 42 + (seed % 18) : 118 + (seed % 64);
-  const sims = 18000 + (seed % 7000);
-  const rev = `CASEY-X.${116 + (seed % 7)}.${seed % 10}`;
-  return <section className="orbitalMetaRail">
-    <div><b>Model</b><span>{rev}</span></div>
-    <div><b>Calibration</b><span>{model?.mode === 'Space' ? 'mission assurance / orbital logistics' : 'capital delivery / infrastructure peer memory'}</span></div>
-    <div><b>Benchmark cohort</b><span>{cohort} comparable programmes</span></div>
-    <div><b>Simulation count</b><span>{sims.toLocaleString()} QCRA/QSRA trials</span></div>
-    <div><b>Evidence class</b><span>{model?.confidence_pct >= 75 ? 'approval challenge' : model?.confidence_pct >= 55 ? 'option selection' : 'pre-approval evidence gap'}</span></div>
-    <div className="modeSwitch"><button className={mode==='exec'?'active':''} onClick={()=>setMode('exec')}>Executive</button><button className={mode==='board'?'active':''} onClick={()=>setMode('board')}>Board</button><button className={mode==='delivery'?'active':''} onClick={()=>setMode('delivery')}>Delivery</button><button className={mode==='analyst'?'active':''} onClick={()=>setMode('analyst')}>Analyst</button></div>
+  const cohort = (model?.benchmark_comparison || []).length || (model?.mode === 'Space' ? 42 : 153);
+  const conf = model?.confidence_pct || 0;
+  const evidenceClass = conf >= 75 ? 'Approval ready' : conf >= 55 ? 'Option selection' : 'Pre-approval gap';
+  const evidenceColor = conf >= 75 ? '#10b981' : conf >= 55 ? '#f59e0b' : '#ef4444';
+  const roles = [
+    {id:'exec',  label:'Executive',  desc:'One risk. One number. One decision.'},
+    {id:'board', label:'Board',       desc:'Governing constraint + approval evidence'},
+    {id:'pm',    label:'PM / QS',     desc:'Cost, schedule, risk register detail'},
+    {id:'analyst',label:'Analyst',   desc:'Full methodology + evidence chain'},
+  ];
+  return <section className="orbitalMetaRail" style={{display:'flex',alignItems:'stretch',gap:0,borderBottom:'1px solid rgba(255,255,255,0.07)',background:'rgba(10,15,30,0.8)'}}>
+    <div style={{display:'flex',gap:20,padding:'8px 20px',flex:1,alignItems:'center',flexWrap:'wrap'}}>
+      <div style={{fontSize:'9px'}}><span style={{color:'#475569',marginRight:4}}>Sector</span><b style={{color:'#e2e8f0'}}>{model?.subsector || model?.mode || '—'}</b></div>
+      <div style={{fontSize:'9px'}}><span style={{color:'#475569',marginRight:4}}>Location</span><b style={{color:'#e2e8f0'}}>{model?.location || '—'}</b></div>
+      <div style={{fontSize:'9px'}}><span style={{color:'#475569',marginRight:4}}>Benchmarks</span><b style={{color:'#e2e8f0'}}>{cohort} comparables</b></div>
+      <div style={{fontSize:'9px'}}><span style={{color:'#475569',marginRight:4}}>Estimate</span><b style={{color:'#e2e8f0'}}>{model?.estimate_class_name || '—'}</b></div>
+      <div style={{fontSize:'9px',padding:'2px 8px',background:evidenceColor+'20',border:`1px solid ${evidenceColor}40`,borderRadius:12}}>
+        <b style={{color:evidenceColor}}>{evidenceClass}</b>
+      </div>
+    </div>
+    <div style={{display:'flex',borderLeft:'1px solid rgba(255,255,255,0.07)'}}>
+      {roles.map(r => <button key={r.id}
+        onClick={()=>setMode(r.id)}
+        title={r.desc}
+        style={{padding:'0 14px',background:mode===r.id?'rgba(6,182,212,0.15)':'transparent',
+          border:'none',borderLeft:'1px solid rgba(255,255,255,0.06)',cursor:'pointer',
+          display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:2,minWidth:80}}>
+        <span style={{fontSize:'10px',fontWeight:mode===r.id?'800':'500',color:mode===r.id?'#06b6d4':'#64748b'}}>{r.label}</span>
+        <span style={{fontSize:'7px',color:mode===r.id?'#94a3b8':'#334155',whiteSpace:'nowrap'}}>{r.desc}</span>
+      </button>)}
+    </div>
   </section>;
 }
 
@@ -2433,6 +2470,121 @@ function SelfChallenge({ sc, programme }) {
 
   const dimList = Object.values(dims);
 
+  const renderApprovalStatus = () => {
+              const conf = model?.confidence_pct || 0;
+              const ready = conf >= 75; const partial = conf >= 55;
+              const status = ready ? 'APPROVAL READY' : partial ? 'CONDITIONAL — EVIDENCE GAPS REMAIN' : 'NOT READY FOR BOARD';
+              const color = ready ? '#10b981' : partial ? '#f59e0b' : '#ef4444';
+              const bg = ready ? 'rgba(16,185,129,0.08)' : partial ? 'rgba(245,158,11,0.06)' : 'rgba(239,68,68,0.08)';
+              const border = ready ? 'rgba(16,185,129,0.4)' : partial ? 'rgba(245,158,11,0.35)' : 'rgba(239,68,68,0.5)';
+              return <div style={{background:bg,border:`2px solid ${border}`,borderRadius:10,padding:'16px 20px',marginBottom:12,display:'grid',gridTemplateColumns:'1fr auto',alignItems:'center',gap:16}}>
+                <div>
+                  <div style={{fontSize:'10px',fontWeight:'800',color,letterSpacing:'.14em',marginBottom:4}}>{status}</div>
+                  <div style={{fontSize:'22px',fontWeight:'900',color:'#fff',marginBottom:6}}>{model?.cost_p50} &nbsp;<span style={{fontSize:'14px',fontWeight:'400',color:'#64748b'}}>P50</span>&nbsp;&nbsp;{model?.cost_p80} &nbsp;<span style={{fontSize:'14px',fontWeight:'400',color:'#64748b'}}>P80</span>&nbsp;&nbsp;{model?.schedule} &nbsp;<span style={{fontSize:'14px',fontWeight:'400',color:'#64748b'}}>delivery</span></div>
+                  <div style={{fontSize:'11px',color:'#94a3b8'}}>{model?.subsector} · {model?.location} · {model?.estimate_class_name}</div>
+                </div>
+                <div style={{textAlign:'center',padding:'10px 20px',background:'rgba(255,255,255,0.03)',borderRadius:8,border:'1px solid rgba(255,255,255,0.07)'}}>
+                  <div style={{fontSize:'9px',color:'#64748b',marginBottom:4}}>BOARD CONFIDENCE</div>
+                  <div style={{fontSize:'36px',fontWeight:'900',color,lineHeight:1}}>{model?.confidence_pct+'%'}</div>
+                  <div style={{fontSize:'8px',color:'#475569',marginTop:3}}>{conf>=75?'Board-defensible':'Target: 75%+'}</div>
+                </div>
+              </div>;
+            };
+
+  const renderScenarioCompare = () => {
+  const baseRow=scenarioMatrix.find(x=>x.scenario==='base')||{};
+  const bCost=parseMoneyLocal(baseRow.cost_p50||baseRow.cost||'0');
+  const bConf=parseInt(String(baseRow.confidence_pct||baseRow.confidence||'50'));
+  const bSched=parseInt(String(baseRow.schedule_months||'0'));
+  const tradeNotes={
+    base:'Reference case. Balanced cost, schedule and evidence posture for board challenge.',
+    faster:'Time bought at cost of money and float. Confidence falls — board will ask if saving is real.',
+    cheaper:'Lower number carries higher residual risk. Evidence deferred — board must accept this explicitly.',
+    lower_risk:'Reserve adds confidence but costs more time and money. Requires QCRA evidence it is risk-linked.',
+    premium:'Full optionality at premium capex. Requires explicit board decision to pay for resilience.'
+  };
+  const worsens={base:[],faster:['Cost ↑','Confidence ↓','Risk ↑'],cheaper:['Schedule ↑','Confidence ↓','Risk ↑'],lower_risk:['Cost ↑','Schedule ↑'],premium:['Cost ↑↑']};
+  const improves={base:[],faster:['Schedule ↓'],cheaper:['Cost ↓'],lower_risk:['Confidence ↑','Risk ↓'],premium:['Confidence ↑','Risk ↓']};
+  return <div className="scenarioCompare upgraded">{scenarios.map(s=>{
+    const active=s===scenario;
+    const row=scenarioMatrix.find(x=>x.scenario===s)||{};
+    const rCost=parseMoneyLocal(row.cost_p50||row.cost||'0');
+    const rConf=parseInt(String(row.confidence_pct||row.confidence||'50'));
+    const rSched=parseInt(String(row.schedule_months||'0'));
+    const costD=bCost>0?Math.round((rCost-bCost)/bCost*100):0;
+    const confD=bConf>0?rConf-bConf:0;
+    const schedD=bSched>0?rSched-bSched:0;
+    const rCol=(row.risk||'').toLowerCase().includes('high')?'#ef4444':(row.risk||'').toLowerCase().includes('medium')?'#f59e0b':'#10b981';
+    const cCol=rConf>=65?'#10b981':rConf>=50?'#f59e0b':'#ef4444';
+    const ws=worsens[s]||[]; const im=improves[s]||[];
+    return <button key={s} className={active?'active':''} onClick={()=>generate(s,model?.prompt||prompt,model||projectContext)}>
+      <b style={{textTransform:'uppercase',letterSpacing:'.06em',fontSize:'13px'}}>{(row.label||s).replace('_',' ')}</b>
+      <strong style={{fontSize:'16px',display:'block',margin:'4px 0'}}>{row.cost_p50||row.cost||'—'}</strong>
+      <div style={{fontSize:'11px',color:'#94a3b8',marginBottom:'4px'}}>{row.schedule_months||'—'} months · <span style={{color:cCol,fontWeight:'700'}}>{row.confidence_pct||row.confidence||'—'+'%'}</span> · <span style={{color:rCol,fontWeight:'700'}}>{row.risk||'—'}</span></div>
+      {s!=='base'&&bCost>0&&<div style={{display:'flex',gap:'5px',flexWrap:'wrap',marginBottom:'3px'}}>
+        {costD!==0&&<span style={{background:'rgba(239,68,68,0.12)',color:costD>0?'#ef4444':'#10b981',padding:'1px 6px',borderRadius:'2px',fontSize:'10px',fontWeight:'900'}}>{(costD>0?'+':'-')+Math.abs(costD)+'% cost'}</span>}
+        {confD!==0&&<span style={{background:'rgba(6,182,212,0.12)',color:confD>0?'#10b981':'#ef4444',padding:'1px 6px',borderRadius:'2px',fontSize:'10px',fontWeight:'900'}}>{(confD>0?'+':'-')+Math.abs(confD)+'pt conf'}</span>}
+        {schedD!==0&&<span style={{background:'rgba(245,158,11,0.12)',color:schedD<0?'#10b981':'#f59e0b',padding:'1px 6px',borderRadius:'2px',fontSize:'10px',fontWeight:'900'}}>{(schedD>0?'+':'-')+Math.abs(schedD)+'mo'}</span>}
+      </div>}
+      {ws.length>0&&<div style={{fontSize:'9px',color:'#ef4444',fontWeight:'700',letterSpacing:'.05em'}}>WORSE: {ws.join(' · ')}</div>}
+      {im.length>0&&<div style={{fontSize:'9px',color:'#10b981',fontWeight:'700',letterSpacing:'.05em'}}>BETTER: {im.join(' · ')}</div>}
+      <em style={{fontSize:'10px',color:'#64748b',fontStyle:'normal',lineHeight:'1.3',display:'block',marginTop:'4px'}}>{active?'▶ ACTIVE — '+scenario.toUpperCase():tradeNotes[s]||''}</em>
+    </button>;
+  })}</div>;
+};
+
+  const renderChatMsg = (m) => {
+    const lines = String(m.text||'').split('\n');
+    const textBlock = lines.map((line, li) => {
+      if (!line.trim()) return <div key={li} style={{height:'5px'}}/>;
+      if (line.startsWith('**') && line.endsWith('**') && line.length > 4)
+        return <div key={li} className="chatHeading">{line.replace(/\*\*/g,'')}</div>;
+      const parts = line.split(/\*\*([^*]+)\*\*/g);
+      return <p key={li} className="chatLine">{parts.map((p,pi)=>pi%2===1?<strong key={pi}>{p}</strong>:p)}</p>;
+    });
+    const srcBadge = m.role === 'assistant' && m.source ? <div style={{marginTop:'4px',fontSize:'9px',color:'#334155',fontFamily:'monospace'}}>
+      {m.source === 'claude' ? '⚡ Claude (Anthropic)' : m.source === 'openai' ? '🤖 GPT-4o (OpenAI)' : m.source === 'pattern' ? '⚙ Pattern match (set API key for AI)' : ''}
+    </div> : null;
+    const d = m.delta;
+    const deltaBlock = d && !d.error ? <div style={{marginTop:'10px',background:'rgba(141,247,255,0.05)',border:'1px solid rgba(141,247,255,0.2)',borderRadius:'4px',padding:'10px 12px'}}>
+      <div style={{fontSize:'9px',fontWeight:'800',letterSpacing:'.12em',color:'#8df7ff',marginBottom:'6px'}}>◆ MODEL RECALCULATED — CONSTRAINT APPLIED</div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'8px',marginBottom:'8px'}}>
+        {d.cost_delta_bn !== undefined && <div style={{textAlign:'center',padding:'6px',background:'rgba(255,255,255,0.03)',borderRadius:'3px'}}>
+          <div style={{fontSize:'9px',color:'#475569',marginBottom:'2px'}}>Cost delta</div>
+          <div style={{fontSize:'13px',fontWeight:'800',color:d.cost_delta_bn>0?'#fca5a5':'#10b981'}}>{(d.cost_delta_bn>0?'+':'')+((d.cost_delta_bn||0).toFixed(1))+'B'}</div>
+          <div style={{fontSize:'10px',color:'#8df7ff'}}>{d.new_p50}</div>
+        </div>}
+        {d.confidence_delta !== undefined && <div style={{textAlign:'center',padding:'6px',background:'rgba(255,255,255,0.03)',borderRadius:'3px'}}>
+          <div style={{fontSize:'9px',color:'#475569',marginBottom:'2px'}}>Confidence</div>
+          <div style={{fontSize:'13px',fontWeight:'800',color:d.confidence_delta<0?'#fca5a5':'#10b981'}}>{(d.confidence_delta>0?'+':'')+d.confidence_delta+'pts'}</div>
+          <div style={{fontSize:'10px',color:'#8df7ff'}}>{d.new_confidence+'%'}</div>
+        </div>}
+        {d.schedule_delta_months !== undefined && <div style={{textAlign:'center',padding:'6px',background:'rgba(255,255,255,0.03)',borderRadius:'3px'}}>
+          <div style={{fontSize:'9px',color:'#475569',marginBottom:'2px'}}>Schedule delta</div>
+          <div style={{fontSize:'13px',fontWeight:'800',color:d.schedule_delta_months>0?'#fca5a5':'#10b981'}}>{(d.schedule_delta_months>0?'+':'')+d.schedule_delta_months+'mo'}</div>
+          <div style={{fontSize:'10px',color:'#8df7ff'}}>{d.new_schedule}</div>
+        </div>}
+      </div>
+      {d.new_governing_constraint && <div style={{fontSize:'10px',color:'#94a3b8',borderTop:'1px solid rgba(255,255,255,0.06)',paddingTop:'6px'}}>New governing constraint: <b style={{color:'#e2e8f0'}}>{d.new_governing_constraint}</b></div>}
+    </div> : null;
+    return <>{textBlock}{srcBadge}{deltaBlock}</>;
+  };
+
+  const renderBenchmarkStats = () => {
+                const bms = model.benchmark_comparison || [];
+                const costGrowths = bms.map(b=>b.cost_growth_pct||0).sort((a,b)=>a-b);
+                const slips = bms.map(b=>b.schedule_slip_months||0).sort((a,b)=>a-b);
+                const p50Val = model?.p50_cost_bn || 0;
+                const anchorVals = bms.map(b=>parseFloat((b.anchor_cost||'0').replace(/[^0-9.]/g,''))).filter(v=>v>0).sort((a,b)=>a-b);
+                const costPct = anchorVals.length ? Math.round(anchorVals.filter(v=>v<=p50Val*1000).length/anchorVals.length*100) : null;
+                return <div style={{fontSize:'11px',color:'#cbd5e1',lineHeight:'1.6'}}>
+                  {costPct !== null && <div style={{marginBottom:3}}><b style={{color:'#fff'}}>Cost:</b> Your P50 is at the <span style={{color:'#a78bfa',fontWeight:'700'}}>{costPct}th percentile</span> of this cohort by anchor cost.</div>}
+                  <div style={{marginBottom:3}}><b style={{color:'#fff'}}>Risk profile:</b> {model?.confidence_pct >= 65 ? 'Above median confidence for this cohort.' : 'Below median confidence — higher than average delivery risk.'}</div>
+                  <div><b style={{color:'#fff'}}>Class {model?.estimate_class} accuracy range:</b> Your P50 could reasonably be {({1:'±10%',2:'±15%',3:'±20%',4:'±35%',5:'±50%'})[model?.estimate_class] || '±20%'} higher or lower.</div>
+                </div>;
+              };
+
+
   return (
     <div style={{background:'#0a0f1e',border:`1px solid ${trafficBorder(traffic)}`,borderRadius:6,marginBottom:16,overflow:'hidden'}}>
       {/* Header row */}
@@ -2452,11 +2604,11 @@ function SelfChallenge({ sc, programme }) {
             <div key={d.label} style={{display:'flex',alignItems:'center',gap:4}}>
               {dot(d.traffic)}
               <span style={{fontSize:'9px',color:'#64748b'}}>{d.label?.split(' ')[0]}</span>
-              <span style={{fontSize:'10px',fontWeight:'700',color:trafficColor(d.traffic)}}>{d.score}%</span>
+              <span style={{fontSize:'10px',fontWeight:'700',color:trafficColor(d.traffic)}}>{d.score+'%'}</span>
             </div>
           ))}
           <div style={{width:1,height:14,background:'rgba(255,255,255,0.08)'}}/>
-          <span style={{fontSize:'11px',fontWeight:'800',color:trafficColor(traffic)}}>{overall}%</span>
+          <span style={{fontSize:'11px',fontWeight:'800',color:trafficColor(traffic)}}>{overall+'%'}</span>
           <span style={{fontSize:'9px',color:'#475569',fontFamily:'monospace'}}>{expanded?'▲':'▼'}</span>
         </div>
       </div>
@@ -2472,7 +2624,7 @@ function SelfChallenge({ sc, programme }) {
               <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:d.issues?.length?8:0}}>
                 {dot(d.traffic)}
                 <span style={{fontSize:'10px',fontWeight:'700',color:'#fff'}}>{d.label}</span>
-                <span style={{fontSize:'11px',fontWeight:'800',color:trafficColor(d.traffic),marginLeft:'auto'}}>{d.score}%</span>
+                <span style={{fontSize:'11px',fontWeight:'800',color:trafficColor(d.traffic),marginLeft:'auto'}}>{d.score+'%'}</span>
               </div>
               {d.issues?.map((iss,i)=>(
                 <div key={i} style={{display:'flex',gap:6,marginTop:4}}>
@@ -2495,6 +2647,22 @@ function SelfChallenge({ sc, programme }) {
     </div>
   );
 }
+
+const scenarioInsightMap95 = {
+  base: 'Mechanical completion is not the true finish line; validated production readiness and deviation closure are the real board decision gates.',
+  faster: 'Acceleration is now the risk: CQV, clean-utility validation and media-fill readiness are being forced into the same window. The programme may finish construction before it is safe to release product.',
+  cheaper: 'The cheaper case is not simply cheaper. It has likely transferred cost into operational fragility: leaner redundancy, weaker qualification float and higher late-stage validation disruption.',
+  lower_risk: 'The lower-risk case buys regulatory confidence by protecting CQV float, GMP turnover and deviation closure before commercial ramp-up.',
+  premium: 'Premium delivery protects market launch by buying utility resilience, validation capacity and stronger batch-release readiness.'
+};
+
+const scenarioTrade95 = {
+  base: ['Balanced cost, time and evidence posture.','Maintains a credible reference case for board challenge.','Does not buy extra time certainty or capital efficiency.'],
+  faster: ['You bought time by spending money and consuming recovery float.','Earlier revenue / market-entry option and stronger strategic timing.','CQV float, interface stability, procurement optionality and late-stage recovery.'],
+  cheaper: ['You cut capital authorization by moving risk into resilience, redundancy and start-up.','Lower initial approval number and reduced near-term capital draw.','Operational resilience, commissioning flexibility, contingency adequacy and lifecycle certainty.'],
+  lower_risk: ['You bought confidence by adding assurance, float and procurement evidence.','Reduced P80/P90 exposure and stronger board approval defensibility.','Earlier revenue date and lean capital posture.'],
+  premium: ['You bought resilience, redundancy and strategic optionality.','Higher operational resilience, stronger procurement certainty and better downside protection.','Lowest-capex authorization case.']
+};
 
 function App() {
   const [show, setShow] = useState(true);
@@ -2620,20 +2788,6 @@ useEffect(() => {
     return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, []);
   
-const scenarioInsightMap95 = {
-  base: 'Mechanical completion is not the true finish line; validated production readiness and deviation closure are the real board decision gates.',
-  faster: 'Acceleration is now the risk: CQV, clean-utility validation and media-fill readiness are being forced into the same window. The programme may finish construction before it is safe to release product.',
-  cheaper: 'The cheaper case is not simply cheaper. It has likely transferred cost into operational fragility: leaner redundancy, weaker qualification float and higher late-stage validation disruption.',
-  lower_risk: 'The lower-risk case buys regulatory confidence by protecting CQV float, GMP turnover and deviation closure before commercial ramp-up.',
-  premium: 'Premium delivery protects market launch by buying utility resilience, validation capacity and stronger batch-release readiness.'
-};
-const scenarioTrade95 = {
-  base: ['Balanced cost, time and evidence posture.','Maintains a credible reference case for board challenge.','Does not buy extra time certainty or capital efficiency.'],
-  faster: ['You bought time by spending money and consuming recovery float.','Earlier revenue / market-entry option and stronger strategic timing.','CQV float, interface stability, procurement optionality and late-stage recovery.'],
-  cheaper: ['You cut capital authorization by moving risk into resilience, redundancy and start-up.','Lower initial approval number and reduced near-term capital draw.','Operational resilience, commissioning flexibility, contingency adequacy and lifecycle certainty.'],
-  lower_risk: ['You bought confidence by adding assurance, float and procurement evidence.','Reduced P80/P90 exposure and stronger board approval defensibility.','Earlier revenue date and lean capital posture.'],
-  premium: ['You bought resilience, redundancy and strategic optionality.','Higher operational resilience, stronger procurement certainty and better downside protection.','Lowest-capex authorization case.']
-};
 
 function scenarioAdjustedModel(currentModel, nextScenario) {
     if (!currentModel) return currentModel;
@@ -2749,7 +2903,7 @@ function TrustRuntimeBar({ model }) {
     ['Signature', model.scenario_signature || runtime.scenario_signature || '—'],
   ];
   return <section className="trustRuntimeBar">
-    <div className="trustRuntimeLead"><b>V150 Trust Runtime</b><span>{g.decision_posture || 'Scenario locked to canonical state'}</span></div>
+    <div className="trustRuntimeLead"><b>STRESS TEST</b><span>{g.decision_posture || "Scenario stress testing active"}</span></div>
     {items.map(([k,v]) => <div className="trustRuntimeMetric" key={k}><span>{k}</span><strong>{v}</strong></div>)}
   </section>;
 }
@@ -3109,7 +3263,7 @@ function parseMoneyLocal(v) {
     setSimulationStage(nextScenario === 'base' ? 'Building base simulation…' : 'Re-running scenario from locked project context…');
     setConfidencePulse(true);
     setTimeout(() => setPropagating(false), 1600);
-    setLoading(true); setTab(nextScenario !== 'base' ? 'compare' : 'overview');
+    setLoading(true); setTab('overview');
     // Demo gate — fires only for brand-new project runs from the main console
     // NEVER fires for: showcase library, earth/space demo, scenario switching on existing model
     // Gate is handled by checkAndGate() on the Generate button before generate() is called.
@@ -3437,206 +3591,219 @@ function parseMoneyLocal(v) {
           <span style={{fontSize:'11px',color:'#94a3b8'}}>Exports available below. Earth Demo, Space Demo and Showcase Library always free.</span>
           <a href="mailto:hello@controlorbit.com?subject=CASEY Full Access" style={{marginLeft:'auto',fontSize:'11px',color:'#8df7ff',fontWeight:'700',textDecoration:'none',background:'rgba(141,247,255,0.1)',padding:'4px 12px',borderRadius:'3px',border:'1px solid rgba(141,247,255,0.3)'}}>Request full access →</a>
         </div>}
-      <nav className="tabs">{[['overview','Overview'],['twin','⚡ Decision Twin'],['compare','Scenarios'],['delta','Intel'],['causal','Causal'],['cost','Cost'],['schedule','Schedule'],['risk','Risk'],['monte','QCRA/QSRA'],['outputs','Outputs'],['assurance','Assurance'],['runtime','Stress Test'],['advisor','Advisor'],['defence','⚡ Defence'],['method','Method'],['benchmark','Benchmarks'],['pricing','Pricing']].map(x => <button key={x[0]} className={tab===x[0]?'active':''} onClick={() => setTab(x[0])}>{x[1]}</button>)}</nav>
+      <nav className="tabs">{[['overview','Overview'],['twin','⚡ Decision Twin'],['compare','Scenarios'],['cost','Cost'],['schedule','Schedule'],['risk','Risk'],['monte','QCRA/QSRA'],['assurance','Assurance'],['defence','⚡ Board Pack'],['method','Method'],['advisor','Advisor']].map(x => <button key={x[0]} className={tab===x[0]?'active':''} onClick={() => setTab(x[0])}>{x[1]}</button>)}</nav>
         {tab === 'overview' && <>
-          <SelfChallenge sc={model?.self_challenge} programme={model?.title}/>
-          <div style={{background:'linear-gradient(90deg,rgba(141,247,255,0.08),rgba(141,247,255,0.02))',border:'1px solid rgba(141,247,255,0.18)',borderRadius:'5px',padding:'10px 16px',marginBottom:'10px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:'12px',flexWrap:'wrap'}}>
-            <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
-              <span style={{fontSize:'18px'}}>⚡</span>
-              <div>
-                <div style={{fontSize:'11px',fontWeight:'800',color:'#8df7ff',marginBottom:'1px'}}>⚡ PROGRAMME DECISION TWIN — Live decision engine</div>
-                <div style={{fontSize:'10px',color:'#64748b'}}>This is your decision baseline. Once live, go to the <b style={{color:'#8df7ff'}}>⚡ Twin tab</b> to feed earned value, milestone progress and signals — CASEY returns forecast-at-completion, governing constraint alerts and board decisions.</div>
-              </div>
-            </div>
-            <button onClick={()=>setTab('twin')} style={{padding:'7px 14px',background:'rgba(141,247,255,0.1)',border:'1px solid rgba(141,247,255,0.25)',borderRadius:'4px',color:'#8df7ff',fontSize:'11px',fontWeight:'800',cursor:'pointer',flexShrink:0}}>Open Twin →</button>
+          {/* ── ROLE FILTER BAR ─────────────────────────────────────────── */}
+          <div style={{display:'flex',gap:6,marginBottom:12,padding:'8px 12px',background:'rgba(255,255,255,0.02)',borderRadius:8,border:'1px solid rgba(255,255,255,0.06)',alignItems:'center'}}>
+            <span style={{fontSize:'8px',fontWeight:'800',color:'#475569',letterSpacing:'.12em',marginRight:4}}>VIEWING AS</span>
+            {[['exec','Executive / CFO'],['board','Project Director'],['pm','Project Manager'],['analyst','Analyst / QS']].map(([m,label])=>(
+              <button key={m} onClick={()=>setViewMode(m)} style={{padding:'5px 12px',borderRadius:20,border:`1px solid ${viewMode===m?'rgba(141,247,255,0.5)':'rgba(255,255,255,0.08)'}`,background:viewMode===m?'rgba(141,247,255,0.1)':'transparent',color:viewMode===m?'#8df7ff':'#475569',fontSize:'9px',fontWeight:viewMode===m?'800':'500',cursor:'pointer',transition:'all .15s'}}>
+                {label}
+              </button>
+            ))}
+            {model?.scenario && model.scenario !== 'base' && <div style={{marginLeft:'auto',padding:'3px 10px',background:'rgba(6,182,212,0.1)',border:'1px solid rgba(6,182,212,0.25)',borderRadius:12,fontSize:'8px',fontWeight:'700',color:'#06b6d4'}}>{(model.scenario_label||'').toUpperCase()} SCENARIO ACTIVE</div>}
+            {model?.evidence_mode && <div style={{marginLeft:model?.scenario&&model.scenario!=='base'?4:'auto',padding:'3px 10px',background:'rgba(16,185,129,0.1)',border:'1px solid rgba(16,185,129,0.3)',borderRadius:12,fontSize:'8px',fontWeight:'700',color:'#10b981'}}>🔗 EVIDENCE MODE</div>}
           </div>
-          {/* CHALLENGE MODE + ANALOGUES — shown for ALL runs */}
-          {model && <div style={{marginBottom:"10px",padding:"10px 14px",background:"rgba(15,23,42,0.8)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:"6px"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"8px",flexWrap:"wrap",gap:"8px"}}>
-              <div>
-                <div style={{fontSize:"11px",fontWeight:"900",color:"#e2e8f0"}}>CASEY INTELLIGENCE TOOLS</div>
-                <div style={{fontSize:"9px",color:"#475569"}}>Works with any programme run — Free Run, Earth Demo, Space Demo, or Showcase Library</div>
-              </div>
-            </div>
-            <ChallengeAnaloguePanel model={model} />
-          </div>}
-          {/* EVIDENCE MODE BANNER */}
-          {model?.evidence_mode && model?.evidence_chain?.length > 0 && <div style={{gridColumn:'1/-1',background:'rgba(16,185,129,0.08)',border:'2px solid rgba(16,185,129,0.3)',borderRadius:8,padding:'10px 16px',marginBottom:10,display:'flex',alignItems:'center',gap:12}}>
-            <span style={{fontSize:'20px'}}>🔗</span>
-            <div style={{flex:1}}>
-              <div style={{fontSize:'11px',fontWeight:'800',color:'#10b981',marginBottom:2}}>EVIDENCE MODE — Numbers derived from uploaded files, not sector assumptions</div>
-              <div style={{fontSize:'9px',color:'#6ee7b7',display:'flex',gap:12,flexWrap:'wrap'}}>
-                {model.evidence_files?.xer && <span>✅ XER Schedule ({model.xer_health?.activity_count} activities)</span>}
-                {model.evidence_files?.cost && <span>✅ Cost Workbook (P50={model.cost_p50})</span>}
-                {model.evidence_files?.risk_register && <span>✅ Risk Register ({model.total_risks_identified} risks)</span>}
-                {model.evidence_inferred?.length > 0 && <span style={{color:'#f59e0b'}}>⚙ {model.evidence_inferred.length} field{model.evidence_inferred.length>1?'s':''} inferred by CASEY (upload missing files to replace)</span>}
-              </div>
-            </div>
-          </div>}
 
-          {/* CONFIDENCE DECOMPOSITION + MORTALITY EVENT + DECISION SIMULATOR */}
-          {model?.confidence_by_discipline && <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:10,marginBottom:12}}>
-            {/* Confidence by discipline */}
-            <div style={{background:'rgba(6,182,212,0.06)',border:'1px solid rgba(6,182,212,0.2)',borderRadius:8,padding:'14px 16px'}}>
-              <div style={{fontSize:'9px',fontWeight:'800',color:'#06b6d4',letterSpacing:'.12em',marginBottom:8}}>CONFIDENCE BY DISCIPLINE</div>
-              <div style={{fontSize:'10px',color:'#94a3b8',marginBottom:8}}>Why {model.confidence_pct}%? Here's the breakdown:</div>
-              {Object.entries(model.confidence_by_discipline).map(([disc,pct])=>(
-                <div key={disc} style={{display:'flex',alignItems:'center',gap:6,marginBottom:4}}>
-                  <div style={{flex:1,fontSize:'9px',color:'#cbd5e1'}}>{disc}</div>
-                  <div style={{width:60,height:4,background:'rgba(255,255,255,0.08)',borderRadius:2}}>
-                    <div style={{width:`${pct}%`,height:'100%',borderRadius:2,background:pct>=70?'#10b981':pct>=55?'#f59e0b':'#ef4444'}}/>
-                  </div>
-                  <div style={{fontSize:'9px',fontWeight:'700',color:pct>=70?'#10b981':pct>=55?'#f59e0b':'#ef4444',minWidth:28}}>{pct}%</div>
+          {/* ── EXECUTIVE / CFO VIEW ─────────────────────────────────────── */}
+          {viewMode === 'exec' && <>
+            {/* APPROVAL STATUS — the headline */}
+            {renderApprovalStatus()}
+
+            {/* THE ONE RISK — full width, commanding */}
+            {model?.mortality_event?.title && <div style={{background:'rgba(239,68,68,0.08)',border:'2px solid rgba(239,68,68,0.5)',borderRadius:10,padding:'16px 20px',marginBottom:12}}>
+              <div style={{fontSize:'9px',fontWeight:'800',color:'#ef4444',letterSpacing:'.16em',marginBottom:6}}>⚠ THE ONE RISK — IF THIS PROGRAMME FAILS, THIS IS WHY</div>
+              <div style={{fontSize:'18px',fontWeight:'900',color:'#fff',marginBottom:8,lineHeight:1.3}}>{model.mortality_event.title}</div>
+              <div style={{fontSize:'11px',color:'#fca5a5',fontStyle:'italic',lineHeight:1.6,marginBottom:10}}>"{model.mortality_event.terrifying_statement}"</div>
+              <div style={{display:'flex',gap:24,alignItems:'center'}}>
+                <div style={{fontSize:'9px',color:'#94a3b8'}}>Probability: <b style={{color:'#fca5a5',fontSize:'12px'}}>{model.mortality_event.probability}</b></div>
+                <div style={{fontSize:'9px',color:'#94a3b8'}}>Exposure: <b style={{color:'#fca5a5',fontSize:'12px'}}>{model.mortality_event.exposure}</b></div>
+                {model.mortality_event.board_action && <div style={{flex:1,padding:'6px 12px',background:'rgba(239,68,68,0.12)',borderRadius:6,fontSize:'9px',color:'#fca5a5',fontWeight:'600'}}>Board action: {model.mortality_event.board_action}</div>}
+              </div>
+            </div>}
+
+            {/* THREE DECISIONS — the only other thing an exec needs */}
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:10,marginBottom:12}}>
+              {(model?.top_decisions_required||model?.next_best_actions||[]).slice(0,3).map((d,i)=>(
+                <div key={i} style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:8,padding:'12px 14px'}}>
+                  <div style={{fontSize:'22px',fontWeight:'900',color:'#f59e0b',marginBottom:6}}>{i+1}</div>
+                  <div style={{fontSize:'10px',color:'#cbd5e1',lineHeight:1.5}}>{d}</div>
+                </div>
+              ))}
+            </div>
+          </>}
+
+          {/* ── PROJECT DIRECTOR VIEW ────────────────────────────────────── */}
+          {viewMode === 'board' && <>
+            {/* Governing constraint — PD's first question */}
+            {(model?.governing_constraint_prominent || model?.governing_constraint_full?.statement) && <div style={{background:'rgba(245,158,11,0.08)',border:'2px solid rgba(245,158,11,0.4)',borderRadius:10,padding:'14px 18px',marginBottom:12}}>
+              <div style={{fontSize:'9px',fontWeight:'800',color:'#f59e0b',letterSpacing:'.14em',marginBottom:4}}>⛔ GOVERNING CONSTRAINT — BOARD MUST CONFIRM BEFORE APPROVAL</div>
+              <div style={{fontSize:'15px',fontWeight:'800',color:'#fff',marginBottom:6}}>{model.governing_constraint_prominent || model.governing_constraint_full?.statement}</div>
+              <div style={{display:'flex',gap:16,fontSize:'9px',color:'#94a3b8'}}>
+                {model.governing_constraint_full?.owner && <span>Owner: <b style={{color:'#fbbf24'}}>{model.governing_constraint_full.owner}</b></span>}
+                {model.governing_constraint_full?.evidence && <span>Evidence: <b style={{color:'#fbbf24'}}>{model.governing_constraint_full.evidence}</b></span>}
+              </div>
+            </div>}
+
+            {/* KPIs + Scenario delta */}
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr 1fr',gap:8,marginBottom:12}}>
+              {[['P50',model?.cost_p50,'#8df7ff'],['P80',model?.cost_p80,'#06b6d4'],['Duration',model?.schedule,'#f59e0b'],['Confidence',model?.confidence_pct+'%',(model?.confidence_pct||0)>=70?'#10b981':(model?.confidence_pct||0)>=55?'#f59e0b':'#ef4444']].map(([k,v,col])=>(
+                <div key={k} style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:8,padding:'10px 14px',textAlign:'center'}}>
+                  <div style={{fontSize:'8px',color:'#64748b',marginBottom:3}}>{k}</div>
+                  <div style={{fontSize:'18px',fontWeight:'900',color:col}}>{v}</div>
+                  {model?.scenario!=='base' && k==='P50' && <div style={{fontSize:'8px',color:'#06b6d4',marginTop:2}}>{(((model?.scenario_cost_mult||1)*100)-100).toFixed(0)}% vs Base</div>}
                 </div>
               ))}
             </div>
 
-            {/* THE ONE RISK — mortality event */}
-            {model?.mortality_event && <div style={{background:'rgba(239,68,68,0.08)',border:'2px solid rgba(239,68,68,0.4)',borderRadius:8,padding:'14px 16px'}}>
-              <div style={{fontSize:'9px',fontWeight:'800',color:'#ef4444',letterSpacing:'.12em',marginBottom:6}}>⚠ IF WE ARE WRONG, THIS IS WHY</div>
-              <div style={{fontSize:'12px',fontWeight:'700',color:'#fff',marginBottom:8}}>{model.mortality_event.title}</div>
-              <div style={{fontSize:'10px',color:'#fca5a5',lineHeight:'1.5',marginBottom:8,fontStyle:'italic'}}>"{model.mortality_event.terrifying_statement}"</div>
-              <div style={{fontSize:'9px',color:'#94a3b8'}}>{model.mortality_event.probability} · {model.mortality_event.exposure}</div>
-              <div style={{marginTop:8,padding:'6px 8px',background:'rgba(239,68,68,0.1)',borderRadius:4,fontSize:'9px',color:'#fca5a5',fontWeight:'600'}}>Board action: {model.mortality_event.board_action}</div>
-            </div>}
-
-            {/* DECISION SIMULATOR */}
-            {model?.decision_simulator && <div style={{background:'rgba(16,185,129,0.06)',border:'1px solid rgba(16,185,129,0.2)',borderRadius:8,padding:'14px 16px'}}>
-              <div style={{fontSize:'9px',fontWeight:'800',color:'#10b981',letterSpacing:'.12em',marginBottom:8}}>🎮 DECISION SIMULATOR</div>
-              <div style={{fontSize:'9px',color:'#94a3b8',marginBottom:8}}>What if the board asks "what does it cost to go faster?"</div>
-              {[model.decision_simulator.spend_200m, model.decision_simulator.descope_10pct, model.decision_simulator.accelerate].filter(Boolean).map((d,i)=>(
-                <div key={i} style={{marginBottom:8,padding:'8px 10px',background:'rgba(16,185,129,0.05)',borderRadius:5,border:'1px solid rgba(16,185,129,0.15)'}}>
-                  <div style={{fontSize:'10px',fontWeight:'700',color:'#10b981',marginBottom:3}}>{d.label}</div>
-                  <div style={{display:'flex',gap:8,fontSize:'9px'}}>
-                    <span style={{color:d.cost_delta_bn>0?'#ef4444':'#10b981'}}>{d.cost_delta_bn>0?'+':''}{d.cost_delta_bn?.toFixed?.(2)}B cost</span>
-                    <span style={{color:d.schedule_delta_months<0?'#10b981':'#ef4444'}}>{d.schedule_delta_months>0?'+':''}{d.schedule_delta_months}mo sched</span>
-                    <span style={{color:d.confidence_delta_pct>0?'#10b981':'#ef4444'}}>{d.confidence_delta_pct>0?'+':''}{d.confidence_delta_pct}% conf</span>
+            {/* Board attack 5 questions — what the board WILL ask */}
+            {(model?.board_attack_simulation||model?.casey_defence?.board_challenge_qs||[]).slice(0,5).length > 0 && <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:10,padding:'14px 18px',marginBottom:12}}>
+              <div style={{fontSize:'9px',fontWeight:'800',color:'#e2e8f0',letterSpacing:'.12em',marginBottom:8}}>THE 5 QUESTIONS THIS BOARD WILL ASK — ARE YOU READY?</div>
+              {(model?.board_attack_simulation||model?.casey_defence?.board_challenge_qs||[]).slice(0,5).map((q,i)=>(
+                <div key={i} style={{display:'flex',gap:10,marginBottom:6,padding:'6px 10px',background:'rgba(239,68,68,0.04)',borderRadius:5,border:'1px solid rgba(239,68,68,0.1)'}}>
+                  <span style={{color:'#ef4444',fontWeight:'900',fontSize:'11px',flexShrink:0}}>{i+1}.</span>
+                  <div>
+                    <div style={{fontSize:'10px',color:'#fff',fontWeight:'600',marginBottom:1}}>{typeof q === 'string' ? q : q?.question}</div>
+                    {typeof q === 'object' && q?.expected_gap && <div style={{fontSize:'8px',color:'#64748b'}}>Evidence gap: {q.expected_gap}</div>}
                   </div>
                 </div>
               ))}
             </div>}
-          </div>}
 
-          {/* EVIDENCE CHAIN — when model was built from uploaded files */}
-          {model?.evidence_chain?.length > 0 && <div style={{background:'rgba(16,185,129,0.06)',border:'2px solid rgba(16,185,129,0.3)',borderRadius:8,padding:'14px 18px',marginBottom:12}}>
-            <div style={{fontSize:'9px',fontWeight:'800',color:'#10b981',letterSpacing:'.14em',marginBottom:6}}>🔗 EVIDENCE CHAIN — EVERY NUMBER TRACED TO SOURCE</div>
-            <div style={{fontSize:'11px',color:'#6ee7b7',marginBottom:8}}>This model was built from uploaded programme files. Every number below traces to a file, sheet and cell.</div>
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6,marginBottom:8}}>
+            {/* Decision simulator */}
+            {model?.decision_simulator && <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8}}>
+              <div style={{gridColumn:'1/-1',fontSize:'9px',fontWeight:'800',color:'#10b981',letterSpacing:'.12em',marginBottom:4}}>🎮 DECISION SIMULATOR — WHAT IF THE BOARD ASKS?</div>
+              {[model.decision_simulator.spend_200m,model.decision_simulator.descope_10pct,model.decision_simulator.accelerate].filter(Boolean).map((d,i)=>(
+                <div key={i} style={{background:'rgba(16,185,129,0.06)',border:'1px solid rgba(16,185,129,0.2)',borderRadius:8,padding:'10px 14px'}}>
+                  <div style={{fontSize:'9px',fontWeight:'800',color:'#10b981',marginBottom:4}}>{d.label}</div>
+                  <div style={{display:'flex',gap:12,fontSize:'10px'}}>
+                    <span style={{color:(d.cost_delta_bn||0)>0?'#ef4444':'#10b981'}}>{(d.cost_delta_bn>0?'+':d.cost_delta_bn<0?'-':'')+((Math.abs(d.cost_delta_bn||0)).toFixed(1))+'B cost'}</span>
+                    <span style={{color:(d.schedule_delta_months||0)<0?'#10b981':'#ef4444'}}>{(d.schedule_delta_months>0?'+':d.schedule_delta_months<0?'-':'')+Math.abs(d.schedule_delta_months||0)+'mo'}</span>
+                    <span style={{color:(d.confidence_delta_pct||0)>0?'#10b981':'#ef4444'}}>{(d.confidence_delta_pct>0?'+':d.confidence_delta_pct<0?'-':'')+Math.abs(d.confidence_delta_pct||0)+'%'}</span>
+                  </div>
+                </div>
+              ))}
+            </div>}
+          </>}
+
+          {/* ── PROJECT MANAGER VIEW ─────────────────────────────────────── */}
+          {viewMode === 'pm' && <>
+            {/* Scenario delta + KPI bar */}
+            {model?.scenario !== 'base' && <div style={{background:'rgba(6,182,212,0.06)',border:'1px solid rgba(6,182,212,0.2)',borderRadius:8,padding:'8px 14px',marginBottom:10,display:'flex',gap:16,alignItems:'center',flexWrap:'wrap'}}>
+              <div style={{fontSize:'9px',fontWeight:'800',color:'#06b6d4'}}>{(model.scenario_label||'').toUpperCase()} vs BASE</div>
+              {(model.scenario_delta_intelligence||[]).map((d,i)=>(
+                <div key={i} style={{fontSize:'9px',color:'#94a3b8'}}>{d.label}: <b style={{color:(d.delta_pct||0)>0?'#ef4444':'#10b981'}}>{d.value}</b>{d.delta_pct!==0&&<span style={{color:(d.delta_pct||0)>0?'#ef4444':'#10b981',marginLeft:3}}>{((d.delta_pct||0)>0?'+':'-')+d.delta_pct+'%'}</span>}</div>
+              ))}
+            </div>}
+
+            {/* Confidence decomposition — PM lives here */}
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:12}}>
+              {model?.confidence_by_discipline && <div style={{background:'rgba(6,182,212,0.06)',border:'1px solid rgba(6,182,212,0.2)',borderRadius:8,padding:'12px 16px'}}>
+                <div style={{fontSize:'9px',fontWeight:'800',color:'#06b6d4',marginBottom:8}}>CONFIDENCE BY DISCIPLINE — WHERE ARE THE GAPS?</div>
+                {Object.entries(model.confidence_by_discipline).map(([disc,pct])=>(
+                  <div key={disc} style={{display:'flex',alignItems:'center',gap:8,marginBottom:5}}>
+                    <div style={{fontSize:'9px',color:'#94a3b8',width:140,flexShrink:0}}>{disc}</div>
+                    <div style={{flex:1,height:4,background:'rgba(255,255,255,0.06)',borderRadius:2}}>
+                      <div style={{width:pct+'%',height:'100%',background:pct>=70?'#10b981':pct>=55?'#f59e0b':'#ef4444',borderRadius:2,transition:'width .3s'}}/>
+                    </div>
+                    <div style={{fontSize:'10px',fontWeight:'700',color:pct>=70?'#10b981':pct>=55?'#f59e0b':'#ef4444',minWidth:30,textAlign:'right'}}>{pct+'%'}</div>
+                  </div>
+                ))}
+              </div>}
+
+              <div style={{display:'grid',gridTemplateRows:'1fr 1fr',gap:8}}>
+                {/* Estimate basis */}
+                {model?.estimate_basis && <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:8,padding:'12px 14px'}}>
+                  <div style={{fontSize:'9px',fontWeight:'800',color:'#64748b',marginBottom:6}}>ESTIMATE BASIS</div>
+                  {(model.estimate_basis.traceability||[]).slice(0,3).map((t,i)=>(
+                    <div key={i} style={{fontSize:'9px',color:'#475569',marginBottom:2,display:'flex',gap:5}}>
+                      <span style={{color:'#06b6d4',flexShrink:0}}>→</span>{t}
+                    </div>
+                  ))}
+                </div>}
+                {/* Top risk */}
+                {model?.mortality_event?.title && <div style={{background:'rgba(239,68,68,0.06)',border:'1px solid rgba(239,68,68,0.3)',borderRadius:8,padding:'12px 14px'}}>
+                  <div style={{fontSize:'9px',fontWeight:'800',color:'#ef4444',marginBottom:4}}>TOP RISK</div>
+                  <div style={{fontSize:'10px',color:'#fff',fontWeight:'600',marginBottom:2}}>{model.mortality_event.title}</div>
+                  <div style={{fontSize:'9px',color:'#94a3b8'}}>{model.mortality_event.probability} · {model.mortality_event.exposure}</div>
+                </div>}
+              </div>
+            </div>
+
+            {/* Decisions + decisions link */}
+            <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:8,padding:'12px 16px'}}>
+              <div style={{fontSize:'9px',fontWeight:'800',color:'#e2e8f0',marginBottom:6}}>ACTIONS REQUIRED</div>
+              {(model?.top_decisions_required||model?.next_best_actions||[]).slice(0,4).map((a,i)=>(
+                <div key={i} style={{display:'flex',gap:8,marginBottom:4,fontSize:'9px',color:'#94a3b8',lineHeight:1.5}}>
+                  <span style={{color:'#f59e0b',fontWeight:'800',flexShrink:0}}>{i+1}.</span>{a}
+                </div>
+              ))}
+            </div>
+          </>}
+
+          {/* ── ANALYST / QS VIEW ────────────────────────────────────────── */}
+          {viewMode === 'analyst' && <>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:10,marginBottom:12}}>
+              {/* Full confidence decomp */}
+              {model?.confidence_by_discipline && <div style={{background:'rgba(6,182,212,0.06)',border:'1px solid rgba(6,182,212,0.2)',borderRadius:8,padding:'12px 14px'}}>
+                <div style={{fontSize:'9px',fontWeight:'800',color:'#06b6d4',marginBottom:6}}>CONFIDENCE DECOMPOSITION</div>
+                {Object.entries(model.confidence_by_discipline).map(([disc,pct])=>(
+                  <div key={disc} style={{display:'flex',alignItems:'center',gap:6,marginBottom:4}}>
+                    <div style={{fontSize:'8px',color:'#94a3b8',flex:1,overflow:'hidden',whiteSpace:'nowrap',textOverflow:'ellipsis'}}>{disc}</div>
+                    <div style={{width:40,height:3,background:'rgba(255,255,255,0.08)',borderRadius:2,flexShrink:0}}>
+                      <div style={{width:pct+'%',height:'100%',background:pct>=70?'#10b981':pct>=55?'#f59e0b':'#ef4444',borderRadius:2}}/>
+                    </div>
+                    <div style={{fontSize:'9px',fontWeight:'700',color:pct>=70?'#10b981':pct>=55?'#f59e0b':'#ef4444',minWidth:26,textAlign:'right'}}>{pct+'%'}</div>
+                  </div>
+                ))}
+              </div>}
+              {/* Estimate basis full */}
+              {model?.estimate_basis && <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:8,padding:'12px 14px'}}>
+                <div style={{fontSize:'9px',fontWeight:'800',color:'#64748b',marginBottom:6}}>ESTIMATE BASIS — FULL TRACE</div>
+                {(model.estimate_basis.traceability||[]).map((t,i)=>(
+                  <div key={i} style={{fontSize:'9px',color:'#475569',marginBottom:3,display:'flex',gap:5}}>
+                    <span style={{color:'#06b6d4',flexShrink:0}}>→</span>{t}
+                  </div>
+                ))}
+              </div>}
+              {/* XER health */}
+              {model?.xer_health && <div style={{background:'rgba(6,182,212,0.06)',border:'1px solid rgba(6,182,212,0.15)',borderRadius:8,padding:'12px 14px'}}>
+                <div style={{fontSize:'9px',fontWeight:'800',color:'#06b6d4',marginBottom:6}}>SCHEDULE QUALITY — XER HEALTH</div>
+                {[['Activities',model.xer_health.activity_count],['Logic',model.xer_health.logic_quality],['Float',model.xer_health.float_quality],['Open Ends',model.xer_health.open_ends],['CP Confidence',model.xer_health.critical_path_confidence+'%']].map(([k,v])=>(
+                  <div key={k} style={{display:'flex',justifyContent:'space-between',marginBottom:3,fontSize:'9px'}}>
+                    <span style={{color:'#64748b'}}>{k}</span>
+                    <span style={{fontWeight:'700',color:v==='GOOD'?'#10b981':v==='REVIEW'?'#f59e0b':v==='POOR'?'#ef4444':'#06b6d4'}}>{v}</span>
+                  </div>
+                ))}
+              </div>}
+            </div>
+            {/* Scenario delta full */}
+            {model?.scenario !== 'base' && <div style={{background:'rgba(6,182,212,0.06)',border:'1px solid rgba(6,182,212,0.2)',borderRadius:8,padding:'10px 14px',marginBottom:10}}>
+              <div style={{fontSize:'9px',fontWeight:'800',color:'#06b6d4',marginBottom:6}}>{(model.scenario_label||'').toUpperCase()} — FULL DELTA vs BASE</div>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:8}}>
+                {(model.scenario_delta_intelligence||[]).map((d,i)=>(
+                  <div key={i} style={{textAlign:'center'}}>
+                    <div style={{fontSize:'8px',color:'#64748b',marginBottom:2}}>{d.label}</div>
+                    <div style={{fontSize:'12px',fontWeight:'800',color:'#fff'}}>{d.value}</div>
+                    {d.delta_pct!==0&&<div style={{fontSize:'8px',fontWeight:'700',color:(d.delta_pct||0)>0?'#ef4444':'#10b981'}}>{((d.delta_pct||0)>0?'+':'-')+d.delta_pct+'%'}</div>}
+                  </div>
+                ))}
+              </div>
+            </div>}
+            {/* Evidence chain */}
+            {model?.evidence_chain?.length > 0 && <div style={{background:'rgba(16,185,129,0.05)',border:'1px solid rgba(16,185,129,0.2)',borderRadius:8,padding:'10px 14px'}}>
+              <div style={{fontSize:'9px',fontWeight:'800',color:'#10b981',marginBottom:6}}>EVIDENCE CHAIN — SOURCE OF EVERY NUMBER</div>
               {model.evidence_chain.map((e,i)=>(
-                <div key={i} style={{display:'flex',gap:6,fontSize:'9px',padding:'4px 8px',background:'rgba(16,185,129,0.05)',borderRadius:4}}>
+                <div key={i} style={{display:'flex',gap:6,fontSize:'9px',marginBottom:2}}>
                   <span style={{color:'#10b981',flexShrink:0}}>→</span>
-                  <span style={{color:'#cbd5e1'}}>{e}</span>
+                  <span style={{color:'#64748b'}}>{e}</span>
                 </div>
               ))}
-            </div>
-            {model?.evidence_inferred?.length > 0 && <div style={{padding:'6px 10px',background:'rgba(245,158,11,0.06)',borderRadius:4}}>
-              <div style={{fontSize:'8px',fontWeight:'700',color:'#f59e0b',marginBottom:3}}>⚙ CASEY INFERRED (no file uploaded for these):</div>
-              {model.evidence_inferred.map((e,i)=><div key={i} style={{fontSize:'8px',color:'#94a3b8'}}>• {e}</div>)}
             </div>}
-          </div>}
-
-          {/* ESTIMATE BASIS — traceability chain */}
-          {!model?.evidence_chain?.length && model?.estimate_basis?.traceability?.length > 0 && <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:6,padding:'12px 16px',marginBottom:12}}>
-            <div style={{fontSize:'9px',fontWeight:'800',color:'#94a3b8',letterSpacing:'.12em',marginBottom:6}}>📐 ESTIMATE BASIS — FULL TRACEABILITY</div>
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6}}>
-              {model.estimate_basis.traceability.map((t,i)=>(
-                <div key={i} style={{fontSize:'9px',color:'#64748b',display:'flex',gap:4}}><span style={{color:'#06b6d4',flexShrink:0}}>→</span>{t}</div>
-              ))}
-            </div>
-          </div>}
-
-          {/* LIVE INTELLIGENCE SIGNAL */}
-          {model?.live_intel_active && model?.live_intel_text && <section className="layout one">
-            <div style={{padding:'10px 16px',background:'rgba(16,185,129,0.05)',border:'1px solid rgba(16,185,129,0.2)',borderLeft:'3px solid #10b981',borderRadius:'5px',marginBottom:'10px'}}>
-              <div style={{display:'flex',alignItems:'center',gap:'8px',marginBottom:'6px'}}>
-                <div style={{width:'7px',height:'7px',borderRadius:'50%',background:'#10b981',animation:'pulse 1.5s infinite',flexShrink:0}}/>
-                <div style={{display:'flex',flexDirection:'column',gap:'1px'}}>
-                <span style={{fontSize:'9px',fontWeight:'900',color:'#10b981',letterSpacing:'.08em'}}>
-                  {model.live_intel_mode === 'AI-enriched' ? '⚡ MARKET & COST INTELLIGENCE' : '📊 MARKET & COST INTELLIGENCE'} — {model.live_intel_timestamp}
-                </span>
-                <span style={{fontSize:'8px',color:'#334155'}}>Sources: {model.live_intel_sources}</span>
-              </div>
-              </div>
-              <p style={{fontSize:'10px',color:'#94a3b8',lineHeight:'1.6',margin:0}}>{model.live_intel_text?.slice(0,600)}</p>
-
-            </div>
-          </section>}
-          {model.executive_shock_insight && <section className="layout one"><Card className="shockCard"><h2>⚡ Live model update</h2><p>{model.executive_shock_insight}</p></Card></section>}
-          <section className="layout two">
-            <Card><h2>Executive summary</h2><p style={{fontSize:'13px',lineHeight:'1.6'}}>{model.executive_summary || `${model.title} has been classified as ${safeRender(model.subsector)}. CASEY generated a first-pass cost, schedule, risk and confidence model for the selected scenario.`}</p><div className="miniMetrics"><b><span>Direct cost</span>{fmt(direct, model?.currency_symbol)}</b><b><span>Indirect cost</span>{fmt(indirect, model?.currency_symbol)}</b><b><span>Risk / reserve</span>{fmt(reserves, model?.currency_symbol)}</b></div><h3>Recommendation</h3>{(model.next_best_actions || []).slice(0,5).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{safeRender(x)}</div>)}</Card>
-            <Card><h2>Board briefing — what the data says</h2>{(model.board_briefing || model.board_challenge_questions || []).slice(0,5).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{safeRender(x)}</div>)}<h3>CASEY thinking</h3><p className="caseyThinking">{model.casey_thinking || 'CASEY interprets this as a system-of-systems infrastructure programme requiring cost, schedule, risk and decision intelligence.'}</p></Card>
-          </section>
-          <section className="layout two eliteLayer">
-            <Card className="confidenceMeaningCard" style={{padding:'12px 14px'}}><h2 style={{fontSize:'12px',marginBottom:'6px'}}>What the confidence score means</h2><h3 style={{fontSize:'13px'}}>{safeRender(confLens?.headline)}</h3><p className="big">{safeRender(confLens?.meaning)}</p><div className="reason"><span>!</span><b>Decision rule</b><br/>{safeRender(confLens?.decisionRule)}</div><div className="reason"><span>→</span><b>Primary constraint</b><br/>{safeRender(confLens?.constraint)}</div><div className="reason"><span>%</span><b>Plain English</b><br/>The confidence % is a board-defensibility score — not optimism. 75%+ = evidence supports approval. 55-74% = challengeable at committee. Below 55% = gaps need closing before capital commitment. It is driven by: how well the project matches known benchmarks, whether the critical path has a named owner, procurement certainty, reserve adequacy, and scenario posture.</div></Card>
-            <Card><h2>Likely board questions</h2>{boardQuestions(model).slice(0,6).map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}<h3>CASEY final position</h3><p className="caseyThinking finalPosition">{finalPosition(model)}</p></Card>
-          </section>
-          <IncumbentPressurePanel model={model} direct={direct} indirect={indirect} reserves={reserves} reconcileCheck={reconcileCheck}/>
-          <section className="layout two eliteLayer">
-            <Card><h2>Evidence threshold map</h2><p className="chartCaption">Shows why the confidence number is where it is, and what must improve before board approval.</p><ResponsiveContainer width="100%" height={260}><BarChart data={evidenceScorecard(model)} layout="vertical"><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis type="number" domain={[0,100]}/><YAxis dataKey="name" type="category" width={145}/><Tooltip formatter={(v) => [`${v}%`, 'board-defensibility score']}/><ReferenceLine x={70} stroke="#ffd96a88" label="board comfort"/><Bar dataKey="score" fill="#8df7ff"/></BarChart></ResponsiveContainer>{evidenceScorecard(model).map((x,i)=><div className="reason compactReason" key={x.name}><span>{i+1}</span><b>{x.name}: {Math.round(x.score)}%</b><br/>{x.note}</div>)}</Card>
-            <Card><h2>Contradiction scan</h2><p className="chartCaption">CASEY does not just make the case look better. It exposes the trade-off that could get challenged.</p>{contradictionScan(model).map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}<h3>Demo close line</h3><p className="caseyThinking finalPosition">Traditional project controls reports show numbers. CASEY shows the board what the numbers are trying to hide.</p></Card>
-          </section>
-          <LiveCalibrationPanel model={model}/>
-          {baseVs?.base && <section className="layout two">
-            <Card className="shockCard"><h2>Scenario vs Base</h2><p>{safeRender(baseVs.plain_english)}</p><div className="miniMetrics"><b><span>Base P50</span>{safeRender(baseVs.base?.cost_p50)}<small>{safeRender(baseVs.base?.schedule_months)} mo · {safeRender(baseVs.base?.confidence_pct)}%</small></b><b><span>{safeRender(baseVs.selected?.scenario)} P50</span>{safeRender(baseVs.selected?.cost_p50)}<small>{safeRender(baseVs.selected?.schedule_months)} mo · {safeRender(baseVs.selected?.confidence_pct)}%</small></b>{baseVs.delta && <b><span>Delta</span>{safeRender(baseVs.delta.cost_direction) === 'same' ? 'No cost move' : `${safeRender(baseVs.delta.cost)} ${safeRender(baseVs.delta.cost_direction)}`}<small>{safeRender(baseVs.delta.months)} mo · {safeRender(baseVs.delta.confidence_pts)} pts</small></b>}</div></Card>
-            <Card><h2>What changed and why</h2>{(model.scenario_delta_intelligence || []).slice(0,5).map((x,i)=><div className="reason" key={i}><span>{i+1}</span><b>{x.label}: {x.value}</b><br/>{x.meaning}</div>)}</Card>
-          </section>}
-          <section className="layout two">
-            <Card><h2>Mission control signals</h2><div className="missionCardGrid">{(model.mission_control_cards || []).slice(0,6).map((c,i)=><div className="intelCard" key={i}><b>{c.label}</b><p>{c.signal}</p><span>{c.severity}</span></div>)}</div></Card>
-            <Card><h2>Uncertainty narrative</h2><p>{safeRender(model.uncertainty_narrative?.estimate_maturity)}</p><p>{safeRender(model.uncertainty_narrative?.schedule_maturity)}</p><p>{safeRender(model.uncertainty_narrative?.interpretation)}</p><h3>Benchmark comparison</h3>{(model.benchmark_comparison || []).slice(0,4).map((b,i)=><div className="reason" key={i}><span>{i+1}</span><b>{safeRender(b?.archetype)}</b> · {safeRender(b?.anchor_cost)} · {safeRender(b?.anchor_duration_months)} months</div>)}</Card>
-          </section>
-          <section className="layout two"><BenchmarkIntelligence model={model}/><CausalGraph model={model}/></section>
-          <section className="layout two">
-            <Card><h2>Confidence drivers</h2>{(model.sector_confidence_drivers || ['Benchmark similarity: high where comparable infrastructure archetypes exist','Scope maturity: concept / budget level until package evidence is supplied','Procurement certainty: sensitive to long-lead equipment and market capacity','Schedule maturity: improves when critical path and commissioning logic are validated','Interface exposure: controlled by utilities, systems integration and operational constraints']).map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card>
-            <Card><h2>Why this position was produced</h2>{(model.why_casey_generated_this || ['The brief indicates the infrastructure asset and operating environment from the brief','The programme was mapped to benchmark memory and sector archetypes','Cost, schedule and risk were calibrated against class maturity and delivery complexity','The narrative is designed for early board challenge, not certified pricing']).map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card>
-          </section>
-          <section className="layout two">
-            <Card><h2>Primary cost drivers</h2>{(model.sector_primary_cost_drivers || ['Utility / enabling infrastructure','Specialist systems and long-lead equipment','Commissioning and validation complexity','Programme management, preliminaries and indirects','Risk reserve driven by procurement and interface uncertainty']).map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card>
-            <Card><h2>Top schedule threats</h2>{(model.sector_schedule_threats || ['Utility energisation delay','Long-lead equipment procurement and supplier capacity','Design freeze instability and scope movement','Systems integration and commissioning bottlenecks','Approvals, safety case, permitting or operational access constraints']).map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card>
-          </section>
-          <section className="layout one"><AdvisoryFeeCounter model={model}/></section>
+          </>}
         </>}
 
-        {tab === 'compare' && <section className="layout two"><Card><h2>Scenario comparison</h2><p style={{fontSize:'12px',color:'#64748b',marginBottom:'10px'}}>Re-run any scenario below. Each recalculates cost, schedule, confidence, risk register and exports from the same source of truth — instantly.</p>{model?.stress_test_applied && <div style={{background:"rgba(245,158,11,0.1)",border:"1px solid rgba(245,158,11,0.3)",borderRadius:"3px",padding:"8px 12px",marginBottom:"10px",fontSize:"11px",color:"#f59e0b"}}><b>STRESS TEST ACTIVE: {String(model.stress_test_applied).replace(/_/g," ").toUpperCase()}</b><br/>{model.stress_test_note} — P50 now {safeRender(model.cost_p50)}, confidence {model.confidence_pct}%. Scenario re-runs below use the stressed baseline.</div>}<div className="runtimeInline"><button onClick={()=>setTab('runtime')}><Zap size={15}/> Open Live Stress Test</button><button onClick={()=>runShock('signalling_slip')}>Simulate 4-month signalling slip</button><button onClick={()=>runShock('procurement_gap')}>Simulate procurement evidence gap</button></div>{(()=>{
-  const baseRow=scenarioMatrix.find(x=>x.scenario==='base')||{};
-  const bCost=parseMoneyLocal(baseRow.cost_p50||baseRow.cost||'0');
-  const bConf=parseInt(String(baseRow.confidence_pct||baseRow.confidence||'50'));
-  const bSched=parseInt(String(baseRow.schedule_months||'0'));
-  const tradeNotes={
-    base:'Reference case. Balanced cost, schedule and evidence posture for board challenge.',
-    faster:'Time bought at cost of money and float. Confidence falls — board will ask if saving is real.',
-    cheaper:'Lower number carries higher residual risk. Evidence deferred — board must accept this explicitly.',
-    lower_risk:'Reserve adds confidence but costs more time and money. Requires QCRA evidence it is risk-linked.',
-    premium:'Full optionality at premium capex. Requires explicit board decision to pay for resilience.'
-  };
-  const worsens={base:[],faster:['Cost ↑','Confidence ↓','Risk ↑'],cheaper:['Schedule ↑','Confidence ↓','Risk ↑'],lower_risk:['Cost ↑','Schedule ↑'],premium:['Cost ↑↑']};
-  const improves={base:[],faster:['Schedule ↓'],cheaper:['Cost ↓'],lower_risk:['Confidence ↑','Risk ↓'],premium:['Confidence ↑','Risk ↓']};
-  return <div className="scenarioCompare upgraded">{scenarios.map(s=>{
-    const active=s===scenario;
-    const row=scenarioMatrix.find(x=>x.scenario===s)||{};
-    const rCost=parseMoneyLocal(row.cost_p50||row.cost||'0');
-    const rConf=parseInt(String(row.confidence_pct||row.confidence||'50'));
-    const rSched=parseInt(String(row.schedule_months||'0'));
-    const costD=bCost>0?Math.round((rCost-bCost)/bCost*100):0;
-    const confD=bConf>0?rConf-bConf:0;
-    const schedD=bSched>0?rSched-bSched:0;
-    const rCol=(row.risk||'').toLowerCase().includes('high')?'#ef4444':(row.risk||'').toLowerCase().includes('medium')?'#f59e0b':'#10b981';
-    const cCol=rConf>=65?'#10b981':rConf>=50?'#f59e0b':'#ef4444';
-    const ws=worsens[s]||[]; const im=improves[s]||[];
-    return <button key={s} className={active?'active':''} onClick={()=>generate(s,model?.prompt||prompt,model||projectContext)}>
-      <b style={{textTransform:'uppercase',letterSpacing:'.06em',fontSize:'13px'}}>{(row.label||s).replace('_',' ')}</b>
-      <strong style={{fontSize:'16px',display:'block',margin:'4px 0'}}>{row.cost_p50||row.cost||'—'}</strong>
-      <div style={{fontSize:'11px',color:'#94a3b8',marginBottom:'4px'}}>{row.schedule_months||'—'} months · <span style={{color:cCol,fontWeight:'700'}}>{row.confidence_pct||row.confidence||'—'}%</span> · <span style={{color:rCol,fontWeight:'700'}}>{row.risk||'—'}</span></div>
-      {s!=='base'&&bCost>0&&<div style={{display:'flex',gap:'5px',flexWrap:'wrap',marginBottom:'3px'}}>
-        {costD!==0&&<span style={{background:costD>0?'rgba(239,68,68,0.15)':'rgba(16,185,129,0.12)',color:costD>0?'#ef4444':'#10b981',padding:'1px 6px',borderRadius:'2px',fontSize:'10px',fontWeight:'900'}}>{costD>0?'+':''}{costD}% cost</span>}
-        {confD!==0&&<span style={{background:confD>0?'rgba(16,185,129,0.12)':'rgba(239,68,68,0.15)',color:confD>0?'#10b981':'#ef4444',padding:'1px 6px',borderRadius:'2px',fontSize:'10px',fontWeight:'900'}}>{confD>0?'+':''}{confD}pt conf</span>}
-        {schedD!==0&&<span style={{background:schedD<0?'rgba(16,185,129,0.12)':'rgba(245,158,11,0.12)',color:schedD<0?'#10b981':'#f59e0b',padding:'1px 6px',borderRadius:'2px',fontSize:'10px',fontWeight:'900'}}>{schedD>0?'+':''}{schedD}mo</span>}
-      </div>}
-      {ws.length>0&&<div style={{fontSize:'9px',color:'#ef4444',fontWeight:'700',letterSpacing:'.05em'}}>WORSE: {ws.join(' · ')}</div>}
-      {im.length>0&&<div style={{fontSize:'9px',color:'#10b981',fontWeight:'700',letterSpacing:'.05em'}}>BETTER: {im.join(' · ')}</div>}
-      <em style={{fontSize:'10px',color:'#64748b',fontStyle:'normal',lineHeight:'1.3',display:'block',marginTop:'4px'}}>{active?'▶ ACTIVE — '+scenario.toUpperCase():tradeNotes[s]||''}</em>
-    </button>;
-  })}</div>;
-})()}</Card><Card><h2>Buyer decision lens</h2>{['Base: balanced reference case for board challenge','Faster: more capex, lower confidence, shorter duration','Cheaper: lower authorisation number, longer schedule, higher residual risk','Lower Risk: higher reserve, longer duration, stronger confidence','Premium: resilience and optionality bought with visible capex premium'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}<h3>Current trade-off</h3><div className="triLens"><b>Gained</b>{tradePack.gained.map(x=><span key={x}>{x}</span>)}<b>Sacrificed</b>{tradePack.sacrificed.map(x=><span key={x}>{x}</span>)}<b>Exposed</b>{tradePack.exposed.map(x=><span key={x}>{x}</span>)}</div></Card></section>}
+        {tab === 'compare' && <section className="layout two"><Card><h2>Scenario comparison</h2><p style={{fontSize:'12px',color:'#64748b',marginBottom:'10px'}}>Re-run any scenario below. Each recalculates cost, schedule, confidence, risk register and exports from the same source of truth — instantly.</p>{model?.stress_test_applied && <div style={{background:"rgba(245,158,11,0.1)",border:"1px solid rgba(245,158,11,0.3)",borderRadius:"3px",padding:"8px 12px",marginBottom:"10px",fontSize:"11px",color:"#f59e0b"}}><b>STRESS TEST ACTIVE: {String(model.stress_test_applied).replace(/_/g," ").toUpperCase()}</b><br/>{model.stress_test_note} — P50 now {safeRender(model.cost_p50)}, confidence {model.confidence_pct}%. Scenario re-runs below use the stressed baseline.</div>}<div className="runtimeInline"><button onClick={()=>setTab('compare')}><Zap size={15}/> Open Live Stress Test</button><button onClick={()=>runShock('signalling_slip')}>Simulate 4-month signalling slip</button><button onClick={()=>runShock('procurement_gap')}>Simulate procurement evidence gap</button></div>{renderScenarioCompare()}</Card><Card><h2>Buyer decision lens</h2>{['Base: balanced reference case for board challenge','Faster: more capex, lower confidence, shorter duration','Cheaper: lower authorisation number, longer schedule, higher residual risk','Lower Risk: higher reserve, longer duration, stronger confidence','Premium: resilience and optionality bought with visible capex premium'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}<h3>Current trade-off</h3><div className="triLens"><b>Gained</b>{tradePack.gained.map(x=><span key={x}>{x}</span>)}<b>Sacrificed</b>{tradePack.sacrificed.map(x=><span key={x}>{x}</span>)}<b>Exposed</b>{tradePack.exposed.map(x=><span key={x}>{x}</span>)}</div></Card></section>}
         {tab === 'cost' && <section className="layout two">
           {/* PROCUREMENT INTELLIGENCE */}
           {model?.procurement_intelligence?.items?.length > 0 && <div style={{gridColumn:'1/-1',background:'rgba(16,185,129,0.06)',border:'1px solid rgba(16,185,129,0.2)',borderRadius:8,padding:'14px 18px',marginBottom:12}}>
@@ -3660,13 +3827,14 @@ function parseMoneyLocal(v) {
           {/* COST CONCENTRATION — board intelligence */}
           {model?.cost_concentration?.top3_packages?.length > 0 && <div style={{gridColumn:'1/-1',background:'rgba(6,182,212,0.06)',border:'1px solid rgba(6,182,212,0.2)',borderRadius:8,padding:'16px 20px',marginBottom:12}}>
             <div style={{fontSize:'9px',fontWeight:'800',color:'#06b6d4',letterSpacing:'.14em',marginBottom:8}}>📊 COST CONCENTRATION — WHERE THE MONEY IS</div>
-            <div style={{fontSize:'13px',color:'#fff',fontWeight:'600',marginBottom:10}}>{model.cost_concentration.top3_pct_of_total}% of total cost sits in {model.cost_concentration.top3_packages.length} packages — these are the board's cost control priorities.</div>
+            {isNonBase && <div style={{display:'inline-block',padding:'2px 8px',background:'rgba(6,182,212,0.1)',border:'1px solid rgba(6,182,212,0.2)',borderRadius:12,fontSize:'8px',color:'#06b6d4',fontWeight:'700',marginBottom:6}}>{(model.scenario_label||'').toUpperCase()} SCENARIO — cost scaled {((model.scenario_cost_mult||1)*100-100).toFixed(0)}% vs Base</div>}
+            <div style={{fontSize:'13px',color:'#fff',fontWeight:'600',marginBottom:10}}>{model.cost_concentration.top3_pct_of_total}% of total cost sits in {model.cost_concentration.top3_packages.length} packages — these are the board cost control priorities.</div>
             <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8,marginBottom:10}}>
               {model.cost_concentration.top3_packages.map((p,i)=>(
                 <div key={i} style={{background:'rgba(6,182,212,0.08)',border:'1px solid rgba(6,182,212,0.2)',borderRadius:6,padding:'10px 12px'}}>
                   <div style={{fontSize:'8px',color:'#06b6d4',fontWeight:'700',marginBottom:3}}>#{i+1} — {p.cbs}</div>
                   <div style={{fontSize:'11px',color:'#fff',fontWeight:'600',marginBottom:4}}>{p.description}</div>
-                  <div style={{fontSize:'16px',fontWeight:'800',color:'#06b6d4'}}>{model?.currency_symbol||'$'}{p.p50_bn?.toFixed?.(2)||'—'}B</div>
+                  <div style={{fontSize:'16px',fontWeight:'800',color:'#06b6d4'}}>{model?.currency_symbol||'$'}{p.p50_bn ? ((p.p50_bn * (model?.scenario_cost_mult||1)).toFixed(2)) : '—'+'B'}</div>
                 </div>
               ))}
             </div>
@@ -3676,7 +3844,7 @@ function parseMoneyLocal(v) {
               {model.risk_cost_anatomy.slice(0,3).map((r,i)=>(
                 <div key={i} style={{display:'flex',alignItems:'center',gap:8,marginBottom:5,padding:'6px 10px',background:'rgba(245,158,11,0.05)',borderRadius:4}}>
                   <div style={{flex:2,fontSize:'10px',color:'#cbd5e1',fontWeight:'600'}}>{r.risk_title}</div>
-                  <div style={{flex:1,fontSize:'9px',color:'#94a3b8',textAlign:'center'}}><span style={{color:'#ef4444'}}>{model?.currency_symbol||'$'}{r.direct_cost_bn?.toFixed?.(3)}</span><br/>direct</div>
+                  <div style={{flex:1,fontSize:'9px',color:'#94a3b8',textAlign:'center'}}><span style={{color:'#ef4444'}}>{model?.currency_symbol||'$'}{r.direct_cost_bn ? (r.direct_cost_bn*(model?.scenario_risk_mult||1)).toFixed(3) : '—'}</span><br/>direct</div>
                   <div style={{flex:1,fontSize:'9px',color:'#94a3b8',textAlign:'center'}}><span style={{color:'#f59e0b'}}>{model?.currency_symbol||'$'}{r.prelim_extension_bn?.toFixed?.(3)}</span><br/>prelims</div>
                   <div style={{flex:1,fontSize:'9px',color:'#94a3b8',textAlign:'center'}}><span style={{color:'#a78bfa'}}>{model?.currency_symbol||'$'}{r.inflation_bn?.toFixed?.(3)}</span><br/>inflation</div>
                   <div style={{flex:1,fontSize:'10px',color:'#fff',fontWeight:'700',textAlign:'right'}}>{model?.currency_symbol||'$'}{r.emv_bn?.toFixed?.(3)}<br/><span style={{fontSize:'8px',color:'#64748b'}}>total</span></div>
@@ -3714,6 +3882,15 @@ function parseMoneyLocal(v) {
             </div>
           </div>}
 
+          {/* Scenario banner for schedule */}
+          {model?.scenario !== 'base' && <div style={{gridColumn:'1/-1',background:'rgba(245,158,11,0.06)',border:'1px solid rgba(245,158,11,0.2)',borderRadius:6,padding:'8px 14px',marginBottom:8,display:'flex',gap:12,alignItems:'center'}}>
+            <div style={{fontSize:'9px',fontWeight:'800',color:'#f59e0b'}}>{(model.scenario_label||'').toUpperCase()} SCENARIO SCHEDULE</div>
+            <div style={{display:'flex',gap:16,fontSize:'9px',color:'#94a3b8'}}>
+              <span>Duration: <b style={{color:'#f59e0b'}}>{model.schedule||'—'}</b></span>
+              <span>QSRA P80: <b style={{color:'#f59e0b'}}>{model.monte_carlo?.qsra?.p80||'—'} months</b></span>
+              <span>Schedule mult: <b style={{color:'#f59e0b'}}>{model.scenario_sched_mult ? ((model.scenario_sched_mult*100)-100).toFixed(0)+'%' : '—'} vs Base</b></span>
+            </div>
+          </div>}
           {/* SCHEDULE KILLER CHAIN */}
           {model?.schedule_killer_chain?.chain?.length > 0 && <div style={{gridColumn:'1/-1',background:'rgba(245,158,11,0.06)',border:'1px solid rgba(245,158,11,0.2)',borderRadius:8,padding:'16px 20px',marginBottom:12}}>
             <div style={{fontSize:'9px',fontWeight:'800',color:'#f59e0b',letterSpacing:'.14em',marginBottom:6}}>⛓ SCHEDULE KILLER CHAIN — CRITICAL PATH SEQUENCE</div>
@@ -3724,7 +3901,7 @@ function parseMoneyLocal(v) {
                   <div style={{background:a.linked_risk_emv_bn>0?'rgba(239,68,68,0.12)':'rgba(245,158,11,0.08)',border:a.linked_risk_emv_bn>0?'1px solid rgba(239,68,68,0.3)':'1px solid rgba(245,158,11,0.2)',borderRadius:6,padding:'8px 12px',minWidth:120,textAlign:'center'}}>
                     <div style={{fontSize:'8px',color:'#64748b',marginBottom:2}}>{a.activity_id}</div>
                     <div style={{fontSize:'10px',fontWeight:'700',color:'#fff',marginBottom:2}}>{a.name}</div>
-                    <div style={{fontSize:'9px',color:'#f59e0b'}}>{a.duration_months}mo</div>
+                    <div style={{fontSize:'9px',color:'#f59e0b'}}>{a.duration_months+'mo'}</div>
                     {a.linked_risk_title && <div style={{fontSize:'8px',color:'#ef4444',marginTop:2}}>⚠ {a.linked_risk_title?.slice?.(0,30)}</div>}
                   </div>
                   {i < model.schedule_killer_chain.chain.length-1 && <div style={{fontSize:'16px',color:'#f59e0b',padding:'0 4px'}}>→</div>}
@@ -3734,87 +3911,204 @@ function parseMoneyLocal(v) {
             <div style={{marginTop:10,fontSize:'10px',color:'#94a3b8'}}>Activities marked ⚠ have active risks that can move this milestone. Delay any one and completion moves.</div>
           </div>}
           <Card><h2>Schedule bridge vs Base</h2><p className="chartCaption">This is the month-by-month reason the scenario becomes faster or slower than Base.</p>{scheduleWaterfall.map((x,i)=><div className={`reason ${x.kind==='total'?'deltaReason':''}`} key={i}><span>{i+1}</span><b>{x.driver}</b><br/>{x.kind==='total'?`${x.months} months`:(x.months>=0?'+':'') + x.months + ' months'}</div>)}<h3>Scenario schedule logic</h3><Table rows={schedule} cols={[["activity_id","Activity"],["phase","Phase"],["activity","Name"],["predecessor","Pred"],["duration_months","Months"],["critical","Critical"],["basis","Basis"]]}/></Card><Card><h2>QSRA finish-date curve</h2><p className="chartCaption">P50 equals the headline schedule. P80/P90 show how severe the delivery tail becomes after the scenario trade-off.</p><div className="metrics"><div>P50<b>{qsra.p50} mo</b></div><div>P80<b>{qsra.p80} mo</b></div><div>P90<b>{qsra.p90} mo</b></div></div><ResponsiveContainer width="100%" height={280}><LineChart data={curve}><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis dataKey="percentile"/><YAxis/><Tooltip formatter={(v) => [`${v} months`, "QSRA finish date"]}/><ReferenceLine x={50} stroke="#ffffff88" label="P50 = headline"/><ReferenceLine x={80} stroke="#ffffff55" label="P80 = board risk"/><Line type="monotone" name="QSRA finish date" dataKey="schedule_months" stroke="#b18cff" strokeWidth={4}/></LineChart></ResponsiveContainer><div className="reason p80Translation"><span>1/5</span>{safeRender(p80Talk.schedule)}</div><div className="reason p80Translation"><span>!</span>{safeRender(p80Talk.board)}</div>{(model.monte_carlo?.curve_readout || []).slice(1).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{x}</div>)}</Card></section>}
-        {tab === 'risk' && <section className="layout two">
-          {/* TOP BOARD RISKS — executive intelligence */}
-          {model?.board_risk_summary?.top5?.length > 0 && <div style={{gridColumn:'1/-1',background:'rgba(239,68,68,0.06)',border:'1px solid rgba(239,68,68,0.2)',borderRadius:8,padding:'16px 20px',marginBottom:12}}>
-            <div style={{fontSize:'9px',fontWeight:'800',color:'#ef4444',letterSpacing:'.14em',marginBottom:6}}>🎯 TOP BOARD RISKS — MONETISED EXPOSURE</div>
-            <div style={{fontSize:'13px',color:'#fff',fontWeight:'600',marginBottom:10}}>{model.board_risk_summary.headline}</div>
-            {model.board_risk_summary.top5.map((r,i)=>(
-              <div key={i} style={{display:'grid',gridTemplateColumns:'2fr 1fr 1fr 1fr 1fr',gap:6,alignItems:'center',marginBottom:5,padding:'8px 12px',background:i===0?'rgba(239,68,68,0.08)':'rgba(255,255,255,0.02)',borderRadius:5,border:i===0?'1px solid rgba(239,68,68,0.3)':'1px solid rgba(255,255,255,0.06)'}}>
-                <div>
-                  <div style={{fontSize:'8px',color:'#64748b',marginBottom:1}}>#{i+1} {r.id}</div>
-                  <div style={{fontSize:'11px',color:'#fff',fontWeight:'600'}}>{r.title?.slice?.(0,50)}</div>
-                  <div style={{fontSize:'9px',color:'#94a3b8'}}>Owner: {r.owner} · Activity: {r.activity_id}</div>
-                </div>
-                <div style={{textAlign:'center'}}><div style={{fontSize:'15px',fontWeight:'800',color:'#ef4444'}}>{model?.currency_symbol||'$'}{r.emv_bn?.toFixed?.(3)}B</div><div style={{fontSize:'8px',color:'#64748b'}}>total EMV</div></div>
-                <div style={{textAlign:'center'}}><div style={{fontSize:'12px',fontWeight:'700',color:'#f87171'}}>{model?.currency_symbol||'$'}{r.direct_cost_bn?.toFixed?.(3)}B</div><div style={{fontSize:'8px',color:'#64748b'}}>direct cost</div></div>
-                <div style={{textAlign:'center'}}><div style={{fontSize:'12px',fontWeight:'700',color:'#fbbf24'}}>{model?.currency_symbol||'$'}{r.prelim_extension_bn?.toFixed?.(3)}B</div><div style={{fontSize:'8px',color:'#64748b'}}>prelims</div></div>
-                <div style={{textAlign:'center'}}><div style={{fontSize:'12px',fontWeight:'700',color:'#a78bfa'}}>{model?.currency_symbol||'$'}{r.inflation_bn?.toFixed?.(3)}B</div><div style={{fontSize:'8px',color:'#64748b'}}>inflation</div></div>
-              </div>
-            ))}
-            {/* Risk → Schedule → Confidence links */}
-            {model?.risk_schedule_links?.length > 0 && <div style={{marginTop:10,padding:'10px 12px',background:'rgba(255,255,255,0.03)',borderRadius:5,border:'1px solid rgba(255,255,255,0.07)'}}>
-              <div style={{fontSize:'9px',fontWeight:'800',color:'#06b6d4',letterSpacing:'.12em',marginBottom:6}}>RISK → SCHEDULE → CONFIDENCE LINKS</div>
-              {model.risk_schedule_links.slice(0,3).map((l,i)=>(
-                <div key={i} style={{display:'flex',gap:8,alignItems:'center',marginBottom:4,fontSize:'10px',color:'#94a3b8'}}>
-                  <span style={{color:'#06b6d4',fontWeight:'700',minWidth:60}}>{l.risk_id}</span>
-                  <span style={{flex:2,color:'#cbd5e1'}}>{l.risk_title}</span>
-                  <span style={{color:'#f59e0b',minWidth:80}}>→ {l.activity_id}</span>
-                  <span style={{color:'#ef4444',minWidth:80}}>+{l.potential_delay_months}mo delay</span>
-                  <span style={{color:'#a78bfa',minWidth:80}}>{l.confidence_impact_pct}% conf</span>
-                </div>
-              ))}
+        {tab === 'risk' && <section className="layout one">
+          {/* SCENARIO BANNER */}
+          {model?.scenario !== 'base' && <div style={{background:'rgba(239,68,68,0.06)',border:'1px solid rgba(239,68,68,0.2)',borderRadius:6,padding:'8px 14px',marginBottom:10,display:'flex',gap:12,alignItems:'center'}}>
+            <div style={{fontSize:'9px',fontWeight:'800',color:'#ef4444'}}>{(model.scenario_label||'').toUpperCase()} SCENARIO — risk EMVs scaled {(((model.scenario_risk_mult||1)*100)-100).toFixed(0)}% vs Base</div>
+            <div style={{fontSize:'9px',color:'#94a3b8',marginLeft:'auto'}}>Total EMV: <b style={{color:'#ef4444'}}>{model.currency_symbol}{((model.board_risk_summary?.total_emv_bn||0)*(model.scenario_risk_mult||1)).toFixed(2)+'B'}</b></div>
+          </div>}
+
+          {/* RISK RESERVE HEADLINE — what a CFO asks immediately */}
+          {model?.p80_reserve_bn > 0 && <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr auto',gap:8,marginBottom:12,padding:'12px 16px',background:'rgba(239,68,68,0.06)',border:'1px solid rgba(239,68,68,0.2)',borderRadius:8}}>
+            <div>
+              <div style={{fontSize:'8px',color:'#64748b',marginBottom:2}}>RISK RESERVE (P80−P50)</div>
+              <div style={{fontSize:'20px',fontWeight:'900',color:(model.p80_reserve_pct||0)>=(model.reserve_vs_benchmark_pct||18)?'#10b981':'#ef4444'}}>{model.p80_reserve}</div>
+              <div style={{fontSize:'8px',color:'#475569'}}>{model.p80_reserve_pct}% of P50 (benchmark: {model.reserve_vs_benchmark_pct}%)</div>
+            </div>
+            <div>
+              <div style={{fontSize:'8px',color:'#64748b',marginBottom:2}}>TOTAL RISK EMV</div>
+              <div style={{fontSize:'20px',fontWeight:'900',color:'#ef4444'}}>{model.currency_symbol}{((model.board_risk_summary?.total_emv_bn||0)*(model.scenario_risk_mult||1)).toFixed(2)+'B'}</div>
+              <div style={{fontSize:'8px',color:'#475569'}}>across {model.total_risks_identified||model.risks?.length||0} identified risks</div>
+            </div>
+            <div>
+              <div style={{fontSize:'8px',color:'#64748b',marginBottom:2}}>FULL OUTTURN (P80+OBA)</div>
+              <div style={{fontSize:'20px',fontWeight:'900',color:'#f59e0b'}}>{model.outturn}</div>
+              <div style={{fontSize:'8px',color:'#475569'}}>OBA: {model.oba_pct}% ({model.estimate_class_name})</div>
+            </div>
+            {model.reserve_gap_bn > 0 && <div style={{padding:'8px 12px',background:'rgba(239,68,68,0.12)',border:'1px solid rgba(239,68,68,0.3)',borderRadius:6,display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'center'}}>
+              <div style={{fontSize:'8px',color:'#ef4444',marginBottom:2,textAlign:'center'}}>RESERVE SHORTFALL</div>
+              <div style={{fontSize:'16px',fontWeight:'900',color:'#ef4444'}}>{model.currency_symbol}{model.reserve_gap_bn.toFixed?.(2)+'B'}</div>
+              <div style={{fontSize:'7px',color:'#94a3b8',textAlign:'center'}}>below benchmark</div>
             </div>}
           </div>}
-          {/* RISK CLUSTERING ENGINE */}
-          {model?.risk_clusters?.clusters?.length > 0 && <div style={{gridColumn:'1/-1',background:'rgba(139,92,246,0.06)',border:'1px solid rgba(139,92,246,0.2)',borderRadius:8,padding:'14px 18px',marginBottom:12}}>
-            <div style={{fontSize:'9px',fontWeight:'800',color:'#a78bfa',letterSpacing:'.14em',marginBottom:6}}>🔗 RISK CLUSTERING ENGINE — {model.risk_clusters.total_clusters} CLUSTERS</div>
-            <div style={{fontSize:'12px',color:'#fff',fontWeight:'600',marginBottom:10}}>{model.risk_clusters.headline}</div>
+
+          {/* TOP BOARD RISKS — MONETISED */}
+          {model?.board_risk_summary?.top5?.length > 0 && <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:8,padding:'14px 18px',marginBottom:12}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
+              <div style={{fontSize:'9px',fontWeight:'800',color:'#e2e8f0',letterSpacing:'.12em'}}>🎯 TOP RISKS — MONETISED BOARD EXPOSURE</div>
+              <div style={{fontSize:'9px',color:'#64748b'}}>{model.board_risk_summary.top5_pct}% of total EMV in top 5</div>
+            </div>
+            {model.board_risk_summary.top5.map((r,i)=>(
+              <div key={i} style={{display:'grid',gridTemplateColumns:'2fr 1fr 1fr 1fr 1fr 1fr',gap:6,alignItems:'center',marginBottom:5,padding:'8px 12px',background:i===0?'rgba(239,68,68,0.08)':'rgba(255,255,255,0.02)',borderRadius:5,border:i===0?'1px solid rgba(239,68,68,0.25)':'1px solid rgba(255,255,255,0.04)'}}>
+                <div>
+                  <div style={{fontSize:'10px',color:'#fff',fontWeight:'600'}}>{r.title?.slice?.(0,50)}</div>
+                  <div style={{fontSize:'8px',color:'#64748b'}}>Owner: {r.owner} · {r.probability_pct}% probability</div>
+                </div>
+                <div style={{textAlign:'center'}}><div style={{fontSize:'13px',fontWeight:'800',color:'#ef4444'}}>{model?.currency_symbol}{((r.emv_bn||0)*(model?.scenario_risk_mult||1)).toFixed(3)+'B'}</div><div style={{fontSize:'7px',color:'#64748b'}}>total EMV</div></div>
+                <div style={{textAlign:'center'}}><div style={{fontSize:'11px',fontWeight:'700',color:'#f87171'}}>{model?.currency_symbol}{((r.direct_cost_bn||0)*(model?.scenario_risk_mult||1)).toFixed(3)+'B'}</div><div style={{fontSize:'7px',color:'#64748b'}}>direct</div></div>
+                <div style={{textAlign:'center'}}><div style={{fontSize:'11px',fontWeight:'700',color:'#fbbf24'}}>{model?.currency_symbol}{((r.prelim_extension_bn||0)*(model?.scenario_risk_mult||1)).toFixed(3)+'B'}</div><div style={{fontSize:'7px',color:'#64748b'}}>prelims</div></div>
+                <div style={{textAlign:'center'}}><div style={{fontSize:'11px',fontWeight:'700',color:'#a78bfa'}}>{model?.currency_symbol}{((r.inflation_bn||0)*(model?.scenario_risk_mult||1)).toFixed(3)+'B'}</div><div style={{fontSize:'7px',color:'#64748b'}}>inflation</div></div>
+                <div style={{textAlign:'center',padding:'3px 6px',background:i===0?'rgba(239,68,68,0.15)':'rgba(255,255,255,0.04)',borderRadius:3,fontSize:'8px',color:'#94a3b8'}}>{r.category}</div>
+              </div>
+            ))}
+          </div>}
+
+          {/* RISK → SCHEDULE → CONFIDENCE LINKS */}
+          {model?.risk_schedule_links?.length > 0 && <div style={{background:'rgba(245,158,11,0.06)',border:'1px solid rgba(245,158,11,0.2)',borderRadius:8,padding:'14px 18px',marginBottom:12}}>
+            <div style={{fontSize:'9px',fontWeight:'800',color:'#f59e0b',letterSpacing:'.12em',marginBottom:8}}>RISK → SCHEDULE → CONFIDENCE CHAIN</div>
+            {model.risk_schedule_links.slice(0,5).map((l,i)=>(
+              <div key={i} style={{display:'flex',alignItems:'center',gap:6,marginBottom:5,padding:'5px 8px',background:'rgba(245,158,11,0.04)',borderRadius:4}}>
+                <div style={{fontSize:'9px',color:'#fff',flex:1,fontWeight:'600'}}>{l.risk_title?.slice?.(0,40)}</div>
+                <div style={{display:'flex',gap:8,fontSize:'9px',color:'#94a3b8'}}>
+                  <span>→ <b style={{color:'#f59e0b'}}>{l.activity?.slice?.(0,25)}</b></span>
+                  <span style={{color:'#ef4444'}}>+{l.schedule_impact_months}mo delay</span>
+                  <span style={{color:'#a78bfa'}}>{l.confidence_impact_pct}% conf</span>
+                </div>
+              </div>
+            ))}
+          </div>}
+
+          {/* RISK CLUSTERS */}
+          {model?.risk_clusters?.clusters?.length > 0 && <div style={{background:'rgba(139,92,246,0.06)',border:'1px solid rgba(139,92,246,0.2)',borderRadius:8,padding:'14px 18px',marginBottom:12}}>
+            <div style={{fontSize:'9px',fontWeight:'800',color:'#a78bfa',letterSpacing:'.12em',marginBottom:8}}>🔗 {model.risk_clusters.total_clusters} RISK CLUSTERS — WHERE THE EXPOSURE LIVES</div>
             <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:8}}>
               {model.risk_clusters.clusters.slice(0,8).map((c,i)=>(
-                <div key={i} style={{background:'rgba(139,92,246,0.06)',border:'1px solid rgba(139,92,246,0.15)',borderRadius:6,padding:'10px 12px'}}>
-                  <div style={{fontSize:'9px',fontWeight:'700',color:'#a78bfa',marginBottom:4}}>{c.cluster}</div>
-                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:3}}>
-                    <span style={{fontSize:'18px',fontWeight:'800',color:'#ef4444'}}>{model?.currency_symbol||'$'}{c.total_emv_bn?.toFixed?.(2)}B</span>
-                    <span style={{fontSize:'8px',color:'#64748b'}}>{c.risk_count} risks</span>
+                <div key={i} style={{background:'rgba(139,92,246,0.06)',border:'1px solid rgba(139,92,246,0.12)',borderRadius:6,padding:'8px 12px'}}>
+                  <div style={{fontSize:'8px',color:'#a78bfa',fontWeight:'700',marginBottom:3}}>{c.cluster}</div>
+                  <div style={{fontSize:'15px',fontWeight:'900',color:'#ef4444'}}>{model?.currency_symbol}{((c.total_emv_bn||0)*(model?.scenario_risk_mult||1)).toFixed?.(2)+'B'}</div>
+                  <div style={{display:'flex',justifyContent:'space-between',fontSize:'7px',color:'#64748b',marginTop:2}}>
+                    <span>{c.risk_count} risks</span>
+                    <span>{c.pct_of_total_emv+'%'}</span>
                   </div>
-                  <div style={{fontSize:'7px',color:'#475569'}}>{c.pct_of_total_emv}% of total EMV</div>
-                  <div style={{fontSize:'8px',color:'#94a3b8',marginTop:3}}>{c.top_risk?.slice?.(0,35)}</div>
                 </div>
               ))}
             </div>
           </div>}
 
-          <Card><h2>Risk Register Pro</h2><p style={{fontSize:'11px',color:'#64748b',marginBottom:'8px'}}>Each risk has a cause (what triggers it), event (what happens), impact (cost/schedule consequence), probability, named owner, and mitigation. The top risks by expected monetary value drive the P80/P90 exposure in the QCRA chart.</p>{model?.stress_test_applied && <div style={{background:"rgba(239,68,68,0.08)",borderLeft:"2px solid #ef4444",padding:"6px 10px",marginBottom:"8px",fontSize:"11px",color:"#ef4444"}}>Stress test applied: risk posture has shifted. Confidence is now {model.confidence_pct}%. The risks below drove this position before the shock was applied.</div>}<Table rows={risks} cols={[['risk_id','ID'],['risk','Risk'],['cause','Cause'],['event','Event'],['impact','Impact'],['probability_pct','Prob %'],['activity_id','Activity'],['cbs','CBS'],['owner','Owner'],['mitigation','Mitigation']]}/></Card><Card><h2>Top exposure drivers</h2><ResponsiveContainer width="100%" height={380}><BarChart data={tornado} layout="vertical"><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis type="number"/><YAxis dataKey="driver" type="category" width={150}/><Tooltip/><Bar dataKey="contribution" fill="#8df7ff"/></BarChart></ResponsiveContainer></Card></section>}
-        {tab === 'monte' && <section className="layout two">
-          {/* Confidence decomposition panel */}
-          {model?.confidence_by_discipline && <div style={{gridColumn:'1/-1',background:'rgba(6,182,212,0.06)',border:'1px solid rgba(6,182,212,0.2)',borderRadius:8,padding:'14px 18px',marginBottom:12}}>
-            <div style={{fontSize:'9px',fontWeight:'800',color:'#06b6d4',letterSpacing:'.14em',marginBottom:6}}>WHY {model.confidence_pct}% CONFIDENCE? — DECOMPOSITION BY DISCIPLINE</div>
-            <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8,marginBottom:10}}>
-              {Object.entries(model.confidence_by_discipline).map(([disc,pct])=>(
-                <div key={disc} style={{background:'rgba(255,255,255,0.03)',borderRadius:5,padding:'8px 10px'}}>
-                  <div style={{fontSize:'8px',color:'#64748b',marginBottom:2}}>{disc}</div>
-                  <div style={{fontSize:'18px',fontWeight:'800',color:pct>=70?'#10b981':pct>=55?'#f59e0b':'#ef4444'}}>{pct}%</div>
-                  <div style={{width:'100%',height:3,background:'rgba(255,255,255,0.08)',borderRadius:2,marginTop:4}}>
-                    <div style={{width:`${pct}%`,height:'100%',borderRadius:2,background:pct>=70?'#10b981':pct>=55?'#f59e0b':'#ef4444'}}/>
-                  </div>
+          {/* FULL RISK REGISTER */}
+          <Card><h2>Risk Register</h2>
+            <p style={{color:'#475569',fontSize:'9px',marginBottom:'8px'}}>Each risk: cause → event → cost + schedule impact → probability → owner → mitigation. Top risks drive P80 exposure.</p>
+            {(model?.risks||[]).slice(0,20).map((r,i)=>(
+              <div key={i} style={{padding:'6px 10px',background:i===0?'rgba(239,68,68,0.06)':'rgba(255,255,255,0.02)',borderRadius:4,marginBottom:3,display:'grid',gridTemplateColumns:'2fr 1fr 1fr 1fr 1fr',gap:6,fontSize:'9px',alignItems:'center'}}>
+                <div><b style={{color:'#fff'}}>{r.title||r.risk}</b><br/><span style={{color:'#475569',fontSize:'8px'}}>{r.mitigation?.slice?.(0,60)}</span></div>
+                <div style={{textAlign:'center',color:'#ef4444',fontWeight:'700'}}>{model?.currency_symbol}{r.cost_emv_bn?.toFixed?.(3)||'—'+'B'}</div>
+                <div style={{textAlign:'center',color:'#f59e0b'}}>{r.probability_pct||'—'+'%'}</div>
+                <div style={{textAlign:'center',color:'#94a3b8'}}>{r.owner||'TBC'}</div>
+                <div style={{textAlign:'center'}}><span style={{padding:'1px 5px',background:r.status==='Closed'?'rgba(16,185,129,0.1)':'rgba(239,68,68,0.1)',borderRadius:3,color:r.status==='Closed'?'#10b981':'#ef4444',fontSize:'7px'}}>{r.status||'Open'}</span></div>
+              </div>
+            ))}
+          </Card>
+        </section>}
+        {tab === 'monte' && <section className="layout one">
+          {/* SCENARIO BANNER */}
+          {model?.scenario !== 'base' && <div style={{background:'rgba(6,182,212,0.06)',border:'1px solid rgba(6,182,212,0.2)',borderRadius:6,padding:'8px 14px',marginBottom:10,display:'flex',gap:12,alignItems:'center'}}>
+            <div style={{fontSize:'9px',fontWeight:'800',color:'#06b6d4'}}>{(model.scenario_label||'').toUpperCase()} SCENARIO QCRA/QSRA</div>
+            <div style={{display:'flex',gap:16,fontSize:'9px',color:'#94a3b8'}}>
+              <span>P50: <b style={{color:'#fff'}}>{model.cost_p50}</b></span>
+              <span>P80: <b style={{color:'#06b6d4'}}>{model.cost_p80}</b></span>
+              <span>QSRA P80: <b style={{color:'#f59e0b'}}>{model.monte_carlo?.qsra?.p80} months</b></span>
+              <span>Confidence: <b style={{color:(model.confidence_pct||0)>=70?'#10b981':'#f59e0b'}}>{model.confidence_pct+'%'}</b></span>
+            </div>
+          </div>}
+
+          {/* THE RESERVE INTELLIGENCE STRIP — what Bloomberg sees first */}
+          {model?.p80_reserve_bn > 0 && <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr 1fr',gap:10,marginBottom:12}}>
+            {[
+              ['P80 Reserve (P80 − P50)', model?.p80_reserve, model?.p80_reserve_pct+'% of P50', (model?.p80_reserve_pct||0) >= (model?.reserve_vs_benchmark_pct||18) ? '#10b981' : '#ef4444'],
+              ['OBA Uplift (Class '+( model?.estimate_class||3)+')', model?.currency_symbol+(model?.oba_uplift_bn||0).toFixed?.(2)+'B', (model?.oba_pct||0)+'% optimism bias adjustment', '#f59e0b'],
+              ['Full Outturn (P80 + OBA)', model?.outturn, 'Total board exposure', '#ef4444'],
+              ['Benchmark Reserve %', (model?.reserve_vs_benchmark_pct||18)+'%', 'Required at '+( model?.estimate_class_name||'Class 3'), (model?.p80_reserve_pct||0) >= (model?.reserve_vs_benchmark_pct||18) ? '#10b981' : '#ef4444'],
+            ].map(([label,value,sub,color])=>(
+              <div key={label} style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:8,padding:'12px 14px'}}>
+                <div style={{fontSize:'8px',color:'#64748b',marginBottom:4}}>{label}</div>
+                <div style={{fontSize:'18px',fontWeight:'900',color:color,marginBottom:2}}>{value}</div>
+                <div style={{fontSize:'8px',color:'#475569'}}>{sub}</div>
+              </div>
+            ))}
+          </div>}
+          {model?.reserve_gap_bn > 0 && <div style={{background:'rgba(239,68,68,0.08)',border:'1px solid rgba(239,68,68,0.3)',borderRadius:6,padding:'8px 14px',marginBottom:10,display:'flex',gap:12,alignItems:'center'}}>
+            <span style={{fontSize:'14px'}}>⚠</span>
+            <div style={{fontSize:'10px',color:'#fca5a5',fontWeight:'700'}}>Reserve shortfall: {model.currency_symbol}{model.reserve_gap_bn.toFixed?.(2)}B below benchmark for {model.estimate_class_name}. Benchmark requires {model.reserve_vs_benchmark_pct}% — you are holding {model.p80_reserve_pct}%.</div>
+          </div>}
+
+          {/* CONFIDENCE TRAJECTORY — how confidence grows with maturity */}
+          {model?.confidence_trajectory?.length > 0 && <div style={{background:'rgba(6,182,212,0.06)',border:'1px solid rgba(6,182,212,0.2)',borderRadius:8,padding:'14px 18px',marginBottom:12}}>
+            <div style={{fontSize:'9px',fontWeight:'800',color:'#06b6d4',letterSpacing:'.12em',marginBottom:8}}>CONFIDENCE TRAJECTORY — HOW YOUR NUMBER GETS STRONGER</div>
+            <div style={{display:'flex',alignItems:'center',gap:0,marginBottom:8}}>
+              {model.confidence_trajectory.map((stage,i)=>(
+                <div key={i} style={{flex:1,textAlign:'center',padding:'8px 4px',background:stage.is_current?'rgba(6,182,212,0.15)':'transparent',borderRadius:6,border:stage.is_current?'1px solid rgba(6,182,212,0.4)':'1px solid transparent',position:'relative'}}>
+                  {stage.is_current && <div style={{position:'absolute',top:-8,left:'50%',transform:'translateX(-50%)',fontSize:'8px',background:'#06b6d4',color:'#fff',padding:'1px 5px',borderRadius:3,fontWeight:'700',whiteSpace:'nowrap'}}>YOU ARE HERE</div>}
+                  <div style={{fontSize:'8px',color:stage.is_current?'#8df7ff':'#64748b',fontWeight:stage.is_current?'800':'400'}}>{stage.label}</div>
+                  <div style={{fontSize:'16px',fontWeight:'900',color:stage.confidence>=75?'#10b981':stage.confidence>=55?'#f59e0b':'#ef4444',margin:'2px 0'}}>{stage.confidence+'%'}</div>
+                  <div style={{fontSize:'7px',color:'#475569'}}>{stage.class}</div>
+                  {i < model.confidence_trajectory.length - 1 && <div style={{position:'absolute',right:-8,top:'50%',transform:'translateY(-50%)',color:'#334155',fontSize:'12px'}}>→</div>}
                 </div>
               ))}
             </div>
-            {model?.confidence_breakdown?.length > 0 && <div>
-              <div style={{fontSize:'8px',color:'#64748b',marginBottom:4}}>CONFIDENCE DRIVERS:</div>
-              <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
-                {model.confidence_breakdown.map((cb,i)=>(
-                  <div key={i} style={{background:'rgba(255,255,255,0.03)',borderRadius:4,padding:'4px 8px',fontSize:'9px'}}>
-                    <span style={{color:'#94a3b8'}}>{cb.driver}: </span>
-                    <span style={{color:'#fff',fontWeight:'600'}}>{cb.effect}</span>
-                    {cb.delta !== undefined && cb.delta !== 0 && <span style={{color:cb.delta>0?'#10b981':'#ef4444',marginLeft:4}}>{cb.delta>0?'+':''}{cb.delta}%</span>}
-                  </div>
-                ))}
-              </div>
-            </div>}
+            {model.approval_pathway && <div style={{padding:'8px 12px',background:'rgba(6,182,212,0.06)',borderRadius:5,fontSize:'9px',color:'#8df7ff'}}>{model.approval_pathway}</div>}
           </div>}
-          <Card><h2>QCRA cost range curve</h2>{model?.stress_test_applied && <div style={{background:'rgba(245,158,11,0.08)',borderLeft:'2px solid #f59e0b',padding:'6px 10px',marginBottom:'8px',fontSize:'11px',color:'#f59e0b'}}>Stress test active: {String(model.stress_test_applied).replace(/_/g,' ')} — P50 updated to {safeRender(model.cost_p50)}. Download Export QCRA/QSRA to capture the stressed curves.</div>}<p style={{fontSize:'11px',color:'#64748b',marginBottom:'8px'}}>Probability range across 10,000+ simulations. P50 = the most likely outturn (headline number). P80 = 80% chance of coming in at this or less — this is the board's risk exposure. P90 = stress-case downside. Not a cashflow profile.</p><div className="metrics"><div>P50 headline<b>{safeRender(model.cost_p50)}</b></div><div>P80 risk exposure<b>{fmt(qcra.p80, model?.currency_symbol)}</b></div><div>P90 stress case<b>{fmt(qcra.p90, model?.currency_symbol)}</b></div></div><ResponsiveContainer width="100%" height={280}><AreaChart data={curve}><defs><linearGradient id="caseyG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#8df7ff" stopOpacity=".55"/><stop offset="1" stopColor="#8df7ff" stopOpacity="0"/></linearGradient></defs><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis dataKey="percentile"/><YAxis/><Tooltip formatter={(v) => {const curr = model?.currency_symbol || '$'; return [`${curr}${Number(v).toFixed(1)}B`, "QCRA total outturn"];}}/><ReferenceLine x={50} stroke="#ffffff88" label="P50 = headline"/><ReferenceLine x={80} stroke="#ffffff55" label="P80 = board risk"/><Area type="monotone" name="QCRA total outturn" dataKey="cost_bn" stroke="#8df7ff" fill="url(#caseyG)"/></AreaChart></ResponsiveContainer>{(model.monte_carlo?.curve_readout || []).slice(0,1).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{safeRender(x)}</div>)}<div className="reason p80Translation"><span>1/5</span>{safeRender(p80Talk.cost)}</div><div className="reason"><span>!</span>This curve is a probability distribution, not spend over time. The x-axis is confidence percentile. P50 equals the headline estimate; P80/P90 are board downside exposure.</div></Card><Card><h2>QSRA schedule range curve</h2><p className="chartCaption">P50 matches the headline duration. P80/P90 show the likely board conversation if critical path risk lands.</p><div className="metrics"><div>P50 headline<b>{qsra.p50} mo</b></div><div>P80 risk date<b>{qsra.p80} mo</b></div><div>P90 stress date<b>{qsra.p90} mo</b></div></div><ResponsiveContainer width="100%" height={280}><LineChart data={curve}><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis dataKey="percentile"/><YAxis/><Tooltip formatter={(v) => [`${v} months`, "QSRA finish date"]}/><ReferenceLine x={50} stroke="#ffffff88" label="P50 = headline"/><ReferenceLine x={80} stroke="#ffffff55" label="P80 = board risk"/><Line type="monotone" name="QSRA finish date" dataKey="schedule_months" stroke="#b18cff" strokeWidth={4}/></LineChart></ResponsiveContainer><div className="reason p80Translation"><span>1/5</span>{safeRender(p80Talk.schedule)}</div><div className="reason p80Translation"><span>!</span>{safeRender(p80Talk.board)}</div>{(model.monte_carlo?.curve_readout || []).map((x,i)=><div className="reason" key={i}><span>{i+1}</span>{safeRender(x)}</div>)}</Card></section>}
+
+          {/* CONFIDENCE BY DISCIPLINE */}
+          {model?.confidence_by_discipline && <div style={{background:'rgba(6,182,212,0.06)',border:'1px solid rgba(6,182,212,0.2)',borderRadius:8,padding:'14px 18px',marginBottom:12}}>
+            <div style={{fontSize:'9px',fontWeight:'800',color:'#06b6d4',marginBottom:8}}>WHY {model.confidence_pct}% CONFIDENCE? — DECOMPOSITION BY DISCIPLINE</div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+              {Object.entries(model.confidence_by_discipline).map(([disc,pct])=>(
+                <div key={disc} style={{display:'flex',alignItems:'center',gap:8}}>
+                  <div style={{fontSize:'9px',color:'#94a3b8',width:140,flexShrink:0}}>{disc}</div>
+                  <div style={{flex:1,height:5,background:'rgba(255,255,255,0.06)',borderRadius:3}}>
+                    <div style={{width:pct+'%',height:'100%',background:pct>=70?'#10b981':pct>=55?'#f59e0b':'#ef4444',borderRadius:3,transition:'width .4s'}}/>
+                  </div>
+                  <div style={{fontSize:'10px',fontWeight:'800',color:pct>=70?'#10b981':pct>=55?'#f59e0b':'#ef4444',minWidth:30,textAlign:'right'}}>{pct+'%'}</div>
+                </div>
+              ))}
+            </div>
+          </div>}
+
+          {/* QCRA + QSRA P VALUES */}
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:12}}>
+            <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:8,padding:'14px 18px'}}>
+              <div style={{fontSize:'9px',fontWeight:'800',color:'#ef4444',marginBottom:8}}>QCRA — COST RISK</div>
+              {[['P10 (optimistic)',model.monte_carlo?.qcra?.p10,'#10b981'],['P50 (base estimate)',model.cost_p50,'#8df7ff'],['P80 (board exposure)',model.cost_p80,'#06b6d4'],['P90 (stress case)',model.monte_carlo?.qcra?.p90,'#ef4444']].map(([k,v,col])=>(
+                <div key={k} style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:5,padding:'4px 8px',background:k.includes('P80')?'rgba(6,182,212,0.08)':'transparent',borderRadius:4}}>
+                  <span style={{fontSize:'9px',color:'#64748b'}}>{k}</span>
+                  <span style={{fontSize:k.includes('P80')?'15px':'11px',fontWeight:'800',color:col}}>{typeof v === 'number' ? (model.currency_symbol||'$')+(v).toFixed(2)+'B' : v}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:8,padding:'14px 18px'}}>
+              <div style={{fontSize:'9px',fontWeight:'800',color:'#f59e0b',marginBottom:8}}>QSRA — SCHEDULE RISK</div>
+              {[['P10 (optimistic)',model.monte_carlo?.qsra?.p10+' months','#10b981'],['P50 (base duration)',model.schedule,'#8df7ff'],['P80 (board exposure)',model.monte_carlo?.qsra?.p80+' months','#f59e0b'],['P90 (stress case)',model.monte_carlo?.qsra?.p90+' months','#ef4444']].map(([k,v,col])=>(
+                <div key={k} style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:5,padding:'4px 8px',background:k.includes('P80')?'rgba(245,158,11,0.08)':'transparent',borderRadius:4}}>
+                  <span style={{fontSize:'9px',color:'#64748b'}}>{k}</span>
+                  <span style={{fontSize:k.includes('P80')?'15px':'11px',fontWeight:'800',color:col}}>{v}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* CONFIDENCE DRIVERS */}
+          {model?.confidence_breakdown?.length > 0 && <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:8,padding:'12px 16px'}}>
+            <div style={{fontSize:'9px',fontWeight:'800',color:'#64748b',marginBottom:6}}>CONFIDENCE DRIVERS</div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6}}>
+              {model.confidence_breakdown.map((d,i)=>(
+                <div key={i} style={{display:'flex',justifyContent:'space-between',fontSize:'9px',padding:'3px 0',borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
+                  <span style={{color:'#64748b'}}>{d.driver}: {d.effect}</span>
+                  <span style={{fontWeight:'700',color:(d.delta||0)>=0?'#10b981':'#ef4444'}}>{d.delta ? ((d.delta>0?'+':'')+d.delta) : '—'}</span>
+                </div>
+              ))}
+            </div>
+          </div>}
+        </section>}
         {tab === 'delta' && <section className="layout two">
           <Card><h2>Strategic Delta Intelligence</h2><p>What changed because this scenario was selected.</p>
             {(model.scenario_delta_intelligence || []).map((x,i)=><div className="reason" key={i}><span>{i+1}</span><b>{x.label}: {x.value}</b><br/>{x.meaning}</div>)}
@@ -3848,7 +4142,7 @@ function parseMoneyLocal(v) {
 
         {tab === 'twin' && <TwinTab model={model} setTab={setTab}/>}
 
-        {tab === 'causal' && <section className="layout two"><CausalGraph model={model}/><BenchmarkIntelligence model={model}/><Card><h2>Evidence Mode: {viewMode}</h2>{evidenceScorecard(model).map((x,i)=><div className="reason" key={x.name}><span>{i+1}</span><b>{x.name}: {Math.round(x.score)}%</b><br/>{x.note}</div>)}</Card></section>}
+        {tab === 'causal' && <section className="layout two"><CausalGraph model={model}/><BenchmarkIntelligence model={model}/><Card><h2>Evidence Mode: {viewMode}</h2>{evidenceScorecard(model).map((x,i)=><div className="reason" key={x.name}><span>{i+1}</span><b>{x.name}: {Math.round(x.score)+'%'}</b><br/>{x.note}</div>)}</Card></section>}
 
         {tab === 'outputs' && <section className="layout two"><Card><h2>Generated Artefacts</h2><p>The public demo previews the intelligence pack. Enterprise access unlocks the live generated controls deliverables.</p><div className="exports v50Exports lockedExports">
           <button onClick={() => download('/export/workbook', model, `${model.id || 'casey'}_COST_WORKBOOK.xlsx`)}><FileSpreadsheet/> Generate Cost Model XLSX</button>
@@ -3862,17 +4156,87 @@ function parseMoneyLocal(v) {
         {tab === 'assurance' && <><IncumbentPressurePanel model={model} direct={direct} indirect={indirect} reserves={reserves} reconcileCheck={reconcileCheck}/><section className="layout two"><Card><h2>Assurance room weapons</h2>{['Open with the P80/P90 exposure, not the headline P50.','Ask which evidence package retires the governing constraint.','Force every mitigation to name owner, trigger, residual exposure and date.','Show scenario trade-offs live before anyone can defend a single-point estimate.','Export the audit model immediately so the conversation moves from opinion to traceability.'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card><Card><h2>Why CASEY changes the conversation</h2>{['CASEY recalculates cost, schedule, confidence and board posture from one source of truth in seconds.','Every scenario is a complete recalculation — not a slide edit.','The system surfaces contradictions rather than polishing the management narrative.','Static reports become live investment-committee intelligence.'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card></section><section className="layout one"><ProgrammeHealthSignal onRunHealthCheck={runHealthCheck}/></section></>}
 
         {tab === 'advisor' && <>
-          {/* INSTITUTIONAL AUTHORITY LINE — the one sentence */}
-          {model?.institutional_authority_line && <section className="layout one"><div style={{background:'linear-gradient(135deg,rgba(141,247,255,0.06),rgba(177,140,255,0.06))',border:'1px solid rgba(141,247,255,0.2)',borderRadius:'6px',padding:'14px 20px',display:'flex',gap:'12px',alignItems:'flex-start'}}>
-            <span style={{color:'#8df7ff',fontWeight:'900',fontSize:'10px',letterSpacing:'.15em',flexShrink:0,paddingTop:'2px'}}>AUTHORITY LINE</span>
-            <p style={{color:'#e2e8f0',fontSize:'13px',lineHeight:'1.6',margin:0,fontStyle:'italic'}}>{safeRender(model.institutional_authority_line)}</p>
-          </div></section>}
+          <section className="layout two">
+            <Card>
+              <h2>CASEY Advisor</h2>
+              {/* SCENARIO CONTEXT FOR ADVISOR */}
+              {model?.scenario !== 'base' && <div style={{background:'rgba(6,182,212,0.06)',border:'1px solid rgba(6,182,212,0.2)',borderRadius:6,padding:'8px 14px',marginBottom:10,display:'flex',gap:12,alignItems:'center'}}>
+                <div style={{fontSize:'10px',fontWeight:'800',color:'#06b6d4'}}>{(model.scenario_label||'').toUpperCase()} SCENARIO ACTIVE</div>
+                <div style={{fontSize:'9px',color:'#94a3b8'}}>All advisor analysis below reflects the {model.scenario_label} scenario: {model.cost_p50} · {model.schedule} · {model.confidence_pct}% confidence</div>
+              </div>}
+              {model?.institutional_authority_line && <div style={{background:'linear-gradient(90deg,rgba(141,247,255,0.08),rgba(177,140,255,0.06))',border:'1px solid rgba(141,247,255,0.2)',borderRadius:8,padding:'12px 18px',marginBottom:12,display:'flex',gap:12,alignItems:'center'}}>
+                <span style={{fontSize:'16px'}}>⚡</span>
+                <div>
+                  <div style={{fontSize:'9px',fontWeight:'800',color:'#8df7ff',letterSpacing:'.12em',marginBottom:3}}>PROGRAMME AUTHORITY LINE</div>
+                  <div style={{fontSize:'13px',fontWeight:'700',color:'#fff',lineHeight:1.4}}>{model.institutional_authority_line}</div>
+                </div>
+              </div>}
+              <p style={{fontSize:'11px',color:'#64748b',lineHeight:1.55,marginBottom:10}}>
+                CASEY does not affirm. It challenges. Every answer is grounded in the live model data — not general advice.
+                If your estimate is optimistic, CASEY will say so. If your risk register is weak, CASEY will name the weakness.
+              </p>
+              {model?.live_intel_active && <span style={{fontSize:'9px',color:'#10b981',fontWeight:'700',marginBottom:'8px',display:'flex',alignItems:'center',gap:'5px'}}>
+                <span style={{width:'5px',height:'5px',borderRadius:'50%',background:'#10b981',display:'inline-block',animation:'pulse 1.5s infinite'}}/>
+                {model.live_intel_mode === 'AI-enriched' ? 'AI-enriched intelligence active' : 'Open Crawl active'} — advisor answers include real-time data from {model.live_intel_sources?.split(',')[0]} and {(model.live_intel_sources||'').split(',').length - 1} other sources ({model.live_intel_timestamp})
+              </span>}
+              <div style={{background:'rgba(141,247,255,0.05)',border:'1px solid rgba(141,247,255,0.12)',borderRadius:'4px',padding:'8px 12px',marginBottom:'10px',fontSize:'11px'}}>
+                <div style={{fontSize:'9px',fontWeight:'800',letterSpacing:'.1em',color:'#ef4444',marginBottom:'5px'}}>HARD CONSTRAINT SCENARIOS — each one recalculates the full model</div>
+                {[
+                  'What if the governing constraint slips by 12 months?',
+                  'What if sole-source procurement is forced on the largest package?',
+                  'What if the OBA-adjusted P50 becomes the board commitment number?',
+                  'What if scope increases by 15% after baseline freeze?',
+                  'What if the P80 reserve is held at programme level and not drawable without board approval?',
+                ].map(x => <button key={x} onClick={() => ask(x)}
+                  style={{display:'block',width:'100%',textAlign:'left',background:'rgba(141,247,255,0.06)',border:'1px solid rgba(141,247,255,0.15)',color:'#8df7ff',padding:'5px 10px',borderRadius:'3px',marginBottom:'4px',cursor:'pointer',fontSize:'11px',fontStyle:'italic'}}>
+                  "{x}"
+                </button>)}
+              </div>
+              <div className="advisorPrompts bigButtons">{[
+                'Why is this estimate probably wrong?',
+                'What assumption in this submission is most likely to be false?',
+                'Which risk will kill this programme if it is not closed before capital commitment?',
+                'What is management not telling the board?',
+                'Why should the board not approve this today?',
+                'What would make you reject this submission?',
+                'If this programme fails publicly, what is the primary cause?',
+                'Where is the optimism bias in this estimate?',
+                'What does the reference class say the actual outturn will be?',
+                'Which benchmark failure does this most resemble and why?',
+                'What is the one piece of evidence missing that would change your view?',
+                'Challenge my confidence score — is it justified?',
+              ].map(x=><button key={x} data-question={x} onClick={()=>ask(x)}><Brain size={14}/>{x}</button>)}</div>
+              <div className="chatBox boardInterrogation">{chat.length ? chat.map((m,i)=><div key={i} className={`msg ${m.role}`}>{renderChatMsg(m)}</div>) : <div className="msg assistant"><b>Board attack ready.</b><br/>Click any challenge above. CASEY will answer against the active scenario, not as a generic chatbot.</div>}</div>
+              <div className="ask"><input value={chatQ} onChange={e=>setChatQ(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')ask()}} placeholder="Challenge the programme — e.g. Why is this estimate wrong? Which risk will kill this? What is management hiding?"/><button onClick={() => ask(chatQ)}>Ask</button></div>
+            </Card>
+            <Card>
+              <h2>Live Client Challenge Room</h2>
+              <p className="advisorIntro">Upload a client cost estimate, XER schedule or risk register — or use the demo buttons below. CASEY challenges the document like an independent reviewer: identifies unpriced exposure, evidence gaps, reserve weaknesses and the questions to ask before committing capital.</p>
+              <div className="challengeHero"><span>CASEY INTAKE NORMALISATION ENGINE</span><b>Messy file → schema detection → WBS/CBS inference → evidence gaps → board attack → export-ready challenge</b></div>
+              <div className="challengeModeStrip"><b>Choose the file type to challenge</b><span>These buttons show the exact review style. Upload your own file below and CASEY will replace the sample with parsed source-file numbers.</span></div>
+              <div className="challengeButtons pro">
+                <button onClick={()=>setUploadResult({filename:'Contractor_Cost_Estimate_v27_FINAL.xlsx', file_type:'COST ESTIMATE', schema_confidence:'Auto-mapped', findings:['Estimate structure normalised. Cost packages identified across direct works, preliminaries and risk allowance.','The headline P50 number is present — but there is no P80/P90 basis. This is how a submitted estimate can understate exposure: the headline looks fixed but the downside is unpriced.','Contingency is present as a lump sum. CASEY cannot verify it is sized against quantified risk exposure rather than a percentage of direct cost — a common tender-basis weakness.','Basis statements are missing on 6 of the major packages. Without basis, there is no evidence of what was included or excluded — and no way to challenge scope creep later.'], red_flags:['Commercial observation: No P80/P90 range provided. The estimate looks precise but carries unquantified downside. Ask the contractor to provide a risk-adjusted range.','Commercial observation: Lump-sum contingency with no risk linkage. This is not yet a quantified reserve. Require QCRA support.','No CBS/WBS mapping. Cannot verify completeness of scope coverage or trace costs to programme activities.','Escalation basis not stated. For a multi-year programme, this is a material omission.'], next_steps:['Require the contractor to provide a P50/P80/P90 range with QCRA support.','Mandate a CBS that maps to the programme WBS and schedule activities.','Commission an independent cost review before approving the headline number.','Run CASEY QCRA alongside the contractor estimate — compare the P80 positions.'], epc_challenge:true})}><FileSpreadsheet size={18}/><b>Challenge contractor cost estimate</b><span>Detect hidden exposure, lump-sum contingency and missing basis statements.</span></button>
+                <button onClick={()=>setUploadResult({filename:'Programme_Schedule_FINAL_v14.xer', file_type:'SCHEDULE (XER)', schema_confidence:'Logic mapped', findings:['Schedule logic parsed. Activities identified across civil, systems, commissioning and handover phases.','Critical path identified — but float analysis reveals operationally unusable buffer. The management date assumes best-case access windows throughout.','Logic gaps detected: 8 activities have no predecessor. These are schedule anchors — they cannot be challenged because they have no upstream dependency. This can prevent a reliable view of the real critical path.','Commissioning and trial running phases show compressed durations. These are the activities most likely to slip — and they sit directly before the opening/handover milestone.'], red_flags:['Commercial observation: Open-ended activities with no predecessor — schedule logic issue that can overstate available float.','Commercial observation: Commissioning duration appears optimistic against comparable programmes. A single failed integration test resets the clock.','Float is nominal, not operationally usable. Access windows, possession permits and operator acceptance are not confirmed in the logic.','Board date is driven by the earliest path. It should be driven by the P80/P90 QSRA finish date.'], next_steps:['Require the contractor to close all open ends and confirm predecessor logic.','Run QSRA and require the P80/P90 finish date to be the board commitment date.','Validate all commissioning durations against independent benchmarks.','Name the owner of the critical-path constraint.'], epc_challenge:true})}><Workflow size={18}/><b>Challenge programme schedule</b><span>Detect schedule padding, unusable float and optimistic commissioning dates.</span></button>
+                <button onClick={()=>setUploadResult({filename:'Risk_Register_v8_Draft.xlsx', file_type:'RISK REGISTER', schema_confidence:'Schema mapped', findings:['Risk register schema mapped. Cause, event, impact and owner columns identified.','CASEY challenges every risk without a named trigger, quantified residual exposure and evidence closure date.','7 risks have mitigation confidence below 50%. These are not mitigated — they are noted. The reserve needs to account for them.','4 risks are flagged as Evidence required. These are open exposures — the source file does not yet provide the evidence that the risk is under control.'], red_flags:['Commercial observation: Mitigations are written as action phrases ("to be confirmed", "in progress") rather than evidence closure. A mitigation is only valid when the evidence is complete.','Commercial observation: Residual exposure is not reconciled to the reserve. This is the most common way a risk register hides real exposure — risks exist on paper but the money is not in the budget.','4 risks require evidence that has not been provided. These cannot be treated as mitigated for board approval purposes.','Owner accountability: all risks assigned to programme-level owners. Board needs named individual owners with accountability.'], next_steps:['Require every risk to have: named owner, confirmed trigger, quantified residual and evidence closure date.','Reconcile residual exposure to reserve — any gap requires additional provision.','The 4 Evidence Required risks must be resolved or escalated to the board as open items.','Export the challenged register after QCRA/QSRA alignment and use the board attack questions.'], epc_challenge:true})}><ShieldAlert size={18}/><b>Challenge risk register</b><span>Detect unmitigated risks, missing evidence and reserve reconciliation gaps.</span></button>
+              </div>
+              <h3>Upload real file</h3>
+              <label className="upload proUpload"><Upload size={18}/> Upload estimate / XER / risk workbook<input type="file" onChange={upload}/></label>
+              <ProfessionalIntakeResult result={uploadResult} model={model}/>
+            </Card>
+          </section>
 
-          {/* PROGRAMME MORTALITY + CONFIDENCE TRAJECTORY */}
-          {model?.programme_mortality_risk && <section className="layout two">
+          <section className="layout one"><Card><h2>Board attack simulation — the 5 questions this board will ask</h2>
+            <p style={{fontSize:'11px',color:'#64748b',marginBottom:'12px'}}>These are sector-specific, programme-specific challenges that a serious investment committee will table. CASEY generates each one from live model data — your actual P50, P80, sector, and governing constraints. Not a template.</p>
+            {(model.board_attack_simulation||[]).map((q,i)=><div key={i} style={{display:'flex',gap:'10px',padding:'10px 0',borderBottom:'1px solid rgba(255,255,255,0.05)'}}>
+              <span style={{color:'#f59e0b',fontWeight:'900',flexShrink:0,fontSize:'11px',paddingTop:'1px'}}>{i+1}.</span>
+              <span style={{color:'#e2e8f0',lineHeight:'1.5',fontSize:'13px'}}>{safeRender(q)}</span>
+            </div>)}
+          </Card></section>
+
+          <section className="layout two">
             <Card><h2>Programme mortality risk</h2>
               <div style={{display:'flex',alignItems:'baseline',gap:'8px',marginBottom:'8px'}}>
-                <span style={{fontSize:'48px',fontWeight:'900',color:model.programme_mortality_risk.pct>60?'#ef4444':model.programme_mortality_risk.pct>35?'#f59e0b':'#10b981'}}>{model.programme_mortality_risk.pct}%</span>
+                <span style={{fontSize:'48px',fontWeight:'900',color:model.programme_mortality_risk.pct>60?'#ef4444':model.programme_mortality_risk.pct>35?'#f59e0b':'#10b981'}}>{model.programme_mortality_risk.pct+'%'}</span>
                 <span style={{fontSize:'12px',fontWeight:'800',color:model.programme_mortality_risk.pct>60?'#ef4444':model.programme_mortality_risk.pct>35?'#f59e0b':'#10b981'}}>{model.programme_mortality_risk.label}</span>
               </div>
               <p style={{fontSize:'12px',color:'#94a3b8',lineHeight:'1.5'}}>{safeRender(model.programme_mortality_risk.narrative)}</p>
@@ -3887,261 +4251,13 @@ function parseMoneyLocal(v) {
                 <p style={{fontSize:'11px',color:'#64748b',marginTop:'8px',borderTop:'1px solid rgba(255,255,255,0.06)',paddingTop:'8px'}}>{safeRender(model.confidence_trajectory.next_gate)}</p>
               </>}
             </Card>
-          </section>}
+          </section>
 
-          {/* BEHAVIOURAL FORECAST + INTERVENTION INTELLIGENCE */}
-          {model?.behavioural_forecast && <section className="layout two">
-            <Card><h2>Behavioural forecast</h2>
-              <p style={{color:'#8df7ff',fontStyle:'italic',lineHeight:'1.6',fontSize:'13px'}}>{safeRender(model.behavioural_forecast)}</p>
-              <p style={{fontSize:'11px',color:'#475569',marginTop:'8px'}}>Based on comparable {safeRender(model.subsector)} programmes — what CASEY expects to happen next if the governing constraint is not evidenced before approval.</p>
-            </Card>
-            <Card><h2>Intervention intelligence</h2>
-              {(model?.intervention_intelligence||model?.governance_challenges||[]).map((x,i)=><div className="reason" key={i} style={{borderLeft:'2px solid rgba(141,247,255,0.3)',paddingLeft:'10px',marginBottom:'6px'}}><span style={{color:'#8df7ff',fontWeight:'800',marginRight:'6px'}}>{i+1}.</span>{safeRender(x)}</div>)}
-            </Card>
-          </section>}
-
-          {/* TRADITIONAL vs CASEY */}
-          {model?.traditional_vs_casey?.casey && <section className="layout two">
-            <Card style={{borderLeft:'2px solid rgba(239,68,68,0.4)'}}><h2 style={{color:'#ff6b7d'}}>What a conventional report says</h2>
-              <p style={{color:'#94a3b8',fontStyle:'italic',lineHeight:'1.6'}}>{safeRender(model.traditional_vs_casey.traditional)}</p>
-              <p style={{fontSize:'11px',color:'#475569',marginTop:'8px',borderTop:'1px solid rgba(255,255,255,0.06)',paddingTop:'8px'}}>{safeRender(model.traditional_vs_casey.incumbent_line)}</p>
-            </Card>
-            <Card style={{borderLeft:'2px solid rgba(141,247,255,0.4)'}}><h2 style={{color:'#8df7ff'}}>What CASEY reads underneath</h2>
-              <p style={{color:'#e2e8f0',lineHeight:'1.6'}}>{safeRender(model.traditional_vs_casey.casey)}</p>
-              <p style={{fontSize:'11px',color:'#64748b',marginTop:'8px',borderTop:'1px solid rgba(255,255,255,0.06)',paddingTop:'8px'}}>{safeRender(model.traditional_vs_casey.gap)}</p>
-            </Card>
-          </section>}
-
-          {/* BOARD ATTACK SIMULATION */}
-          {(model?.board_attack_simulation||[]).length > 0 && <section className="layout one"><Card><h2>Board attack simulation — the 5 questions this board will ask</h2>
-            <p style={{fontSize:'11px',color:'#64748b',marginBottom:'12px'}}>These are sector-specific, programme-specific challenges that a serious investment committee will table. CASEY generates each one from live model data — your actual P50, P80, sector, and governing constraints. Not a template.</p>
-            {(model.board_attack_simulation||[]).map((q,i)=><div key={i} style={{display:'flex',gap:'10px',padding:'10px 0',borderBottom:'1px solid rgba(255,255,255,0.05)'}}>
-              <span style={{color:'#f59e0b',fontWeight:'900',flexShrink:0,fontSize:'11px',paddingTop:'1px'}}>{i+1}.</span>
-              <span style={{color:'#e2e8f0',lineHeight:'1.5',fontSize:'13px'}}>{safeRender(q)}</span>
-            </div>)}
-          </Card></section>}
-
-          {/* LOCATION + FINANCING CONTEXT */}
-          {model?.location_context?.framework && <section className="layout two">
-            <Card><h2>📍 Location intelligence</h2>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px',marginBottom:'10px'}}>
-                <div><div style={{fontSize:'9px',color:'#64748b',fontWeight:'800',letterSpacing:'.1em',marginBottom:'3px'}}>LOCATION</div><div style={{fontSize:'14px',color:'#e2e8f0',fontWeight:'700'}}>{safeRender(model.location||'Global')}</div></div>
-                <div><div style={{fontSize:'9px',color:'#64748b',fontWeight:'800',letterSpacing:'.1em',marginBottom:'3px'}}>CURRENCY</div><div style={{fontSize:'14px',color:'#8df7ff',fontWeight:'700'}}>{safeRender(model.location_context.currency)}</div></div>
-              </div>
-              <div style={{marginBottom:'8px'}}><div style={{fontSize:'9px',color:'#64748b',fontWeight:'800',letterSpacing:'.1em',marginBottom:'3px'}}>REGULATORY FRAMEWORK</div><div style={{fontSize:'12px',color:'#cbd5e1',lineHeight:'1.5'}}>{safeRender(model.location_context.framework)}</div></div>
-              <div style={{marginBottom:'8px'}}><div style={{fontSize:'9px',color:'#64748b',fontWeight:'800',letterSpacing:'.1em',marginBottom:'3px'}}>APPROVAL BODY</div><div style={{fontSize:'12px',color:'#cbd5e1'}}>{safeRender(model.location_context.approval_body)}</div></div>
-              <div style={{padding:'8px',background:'rgba(245,158,11,0.06)',borderRadius:'3px',border:'1px solid rgba(245,158,11,0.15)'}}><div style={{fontSize:'9px',color:'#f59e0b',fontWeight:'800',letterSpacing:'.1em',marginBottom:'3px'}}>OBA NOTE FOR THIS LOCATION</div><div style={{fontSize:'11px',color:'#94a3b8',lineHeight:'1.5'}}>{safeRender(model.location_context.optimism_bias_note)}</div></div>
-            </Card>
-            {model?.financing_context && <Card><h2>💰 Financing context</h2>
-              <div style={{marginBottom:'8px'}}><div style={{fontSize:'9px',color:'#64748b',fontWeight:'800',letterSpacing:'.1em',marginBottom:'3px'}}>PRIMARY SOURCE</div><div style={{fontSize:'13px',color:'#8df7ff',fontWeight:'700'}}>{safeRender(model.financing_context.primary_source)}</div></div>
-              <div style={{marginBottom:'8px'}}><div style={{fontSize:'9px',color:'#64748b',fontWeight:'800',letterSpacing:'.1em',marginBottom:'3px'}}>SECONDARY SOURCE</div><div style={{fontSize:'12px',color:'#cbd5e1'}}>{safeRender(model.financing_context.secondary_source)}</div></div>
-              <div style={{marginBottom:'8px'}}><div style={{fontSize:'9px',color:'#64748b',fontWeight:'800',letterSpacing:'.1em',marginBottom:'3px'}}>STRUCTURE</div><div style={{fontSize:'12px',color:'#cbd5e1'}}>{safeRender(model.financing_context.structure)}</div></div>
-              <div style={{marginBottom:'8px',padding:'6px 8px',background:'rgba(239,68,68,0.06)',borderRadius:'3px',border:'1px solid rgba(239,68,68,0.12)'}}><div style={{fontSize:'9px',color:'#ef4444',fontWeight:'800',letterSpacing:'.1em',marginBottom:'3px'}}>CURRENCY RISK</div><div style={{fontSize:'11px',color:'#fca5a5'}}>{safeRender(model.financing_context.currency_risk)}</div></div>
-              <div style={{marginBottom:'8px'}}><div style={{fontSize:'9px',color:'#64748b',fontWeight:'800',letterSpacing:'.1em',marginBottom:'3px'}}>PROCUREMENT RULES</div><div style={{fontSize:'11px',color:'#64748b'}}>{safeRender(model.financing_context.procurement_rules)}</div></div>
-              <div style={{padding:'6px 8px',background:'rgba(141,247,255,0.04)',borderRadius:'3px',border:'1px solid rgba(141,247,255,0.1)'}}><div style={{fontSize:'11px',color:'#94a3b8',lineHeight:'1.5',fontStyle:'italic'}}>{safeRender(model.financing_context.sector_note)}</div></div>
-              <div style={{marginTop:'8px',padding:'6px 8px',background:'rgba(245,158,11,0.06)',borderRadius:'3px'}}><div style={{fontSize:'9px',color:'#f59e0b',fontWeight:'800',letterSpacing:'.1em',marginBottom:'3px'}}>BANKABILITY</div><div style={{fontSize:'12px',color:'#fcd34d',fontWeight:'700'}}>{safeRender(model.financing_context.bankability_verdict)}</div></div>
-            </Card>}
-          </section>}
-
-          {/* GATE REVIEW READINESS */}
-          {model?.gate_review_readiness && <section className="layout two">
-            <Card><h2>Gate review readiness</h2>
-              <div style={{display:'flex',gap:'12px',alignItems:'center',marginBottom:'10px'}}>
-                <span style={{fontSize:'24px',fontWeight:'900',color:model.gate_review_readiness.overall_verdict==='READY'?'#10b981':model.gate_review_readiness.overall_verdict==='CONDITIONAL'?'#f59e0b':'#ef4444'}}>{model.gate_review_readiness.overall_verdict}</span>
-                <span style={{fontSize:'13px',color:'#94a3b8'}}>at {safeRender(model.gate_review_readiness.current_gate_readiness)}</span>
-              </div>
-              <p style={{fontSize:'12px',color:'#64748b',marginBottom:'10px',lineHeight:'1.5'}}>{safeRender(model.gate_review_readiness.ipa_alignment)}</p>
-              <p style={{fontSize:'11px',color:'#f59e0b',fontStyle:'italic'}}>{safeRender(model.gate_review_readiness.critical_gate_risk)}</p>
-              <div style={{marginTop:'10px'}}>
-                <div style={{fontSize:'10px',color:'#475569',fontWeight:'800',letterSpacing:'.1em',marginBottom:'6px'}}>NEXT GATE — EVIDENCE REQUIRED</div>
-                {(model.gate_review_readiness.next_gate_actions||[]).map((a,i)=><div key={i} style={{fontSize:'11px',color:'#cbd5e1',padding:'3px 0',borderBottom:'1px solid rgba(255,255,255,0.04)',display:'flex',gap:'6px'}}><span style={{color:'#8df7ff',flexShrink:0}}>→</span>{safeRender(a)}</div>)}
-              </div>
-            </Card>
-            <Card><h2>Optimism bias assessment</h2>
-              {model?.optimism_bias_assessment && <>
-                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px',marginBottom:'10px'}}>
-                  <div style={{background:'rgba(239,68,68,0.08)',padding:'8px',borderRadius:'4px',border:'1px solid rgba(239,68,68,0.2)'}}>
-                    <div style={{fontSize:'9px',color:'#ef4444',fontWeight:'900',letterSpacing:'.1em'}}>STATED P50</div>
-                    <div style={{fontSize:'18px',fontWeight:'900',color:'#fca5a5'}}>{safeRender(model.cost_p50)}</div>
-                    <div style={{fontSize:'9px',color:'#64748b'}}>{safeRender(model.schedule)}</div>
-                  </div>
-                  <div style={{background:'rgba(245,158,11,0.08)',padding:'8px',borderRadius:'4px',border:'1px solid rgba(245,158,11,0.2)'}}>
-                    <div style={{fontSize:'9px',color:'#f59e0b',fontWeight:'900',letterSpacing:'.1em'}}>OBA ADJUSTED</div>
-                    <div style={{fontSize:'18px',fontWeight:'900',color:'#fcd34d'}}>{safeRender(model.optimism_bias_assessment.oba_adjusted_p50)}</div>
-                    <div style={{fontSize:'9px',color:'#64748b'}}>{safeRender(model.optimism_bias_assessment.oba_adjusted_schedule)}</div>
-                  </div>
-                </div>
-                <p style={{fontSize:'11px',color:'#94a3b8',lineHeight:'1.5',marginBottom:'6px'}}>{safeRender(model.optimism_bias_assessment.verdict)}</p>
-                <p style={{fontSize:'10px',color:'#475569',fontStyle:'italic'}}>{safeRender(model.optimism_bias_assessment.oba_source)}</p>
-                <p style={{fontSize:'11px',color:'#f59e0b',marginTop:'8px',padding:'6px 8px',background:'rgba(245,158,11,0.06)',borderRadius:'3px',lineHeight:'1.5'}}>{safeRender(model.optimism_bias_assessment.board_challenge)}</p>
-              </>}
-            </Card>
-          </section>}
-
-          {/* SECOND ORDER CONTRADICTIONS */}
-          {(model?.second_order_contradictions||[]).length > 0 && <section className="layout one"><Card><h2>Second-order contradictions</h2>
-            <p style={{fontSize:'11px',color:'#64748b',marginBottom:'10px'}}>What the optimistic case creates downstream — risks that appear only when the preferred scenario is examined under pressure.</p>
-            {(model.second_order_contradictions||[]).map((x,i)=><div key={i} className="reason" style={{borderLeft:'2px solid rgba(245,158,11,0.4)',paddingLeft:'10px',marginBottom:'6px'}}><span style={{color:'#f59e0b',fontWeight:'800',marginRight:'6px'}}>{i+1}.</span>{safeRender(x)}</div>)}
-          </Card></section>}
-
-          {/* PROCUREMENT HEATMAP */}
-          {(model?.procurement_heatmap||[]).length > 0 && <section className="layout one"><Card><h2>Procurement packages</h2>
-            <p style={{fontSize:'11px',color:'#64748b',marginBottom:'12px'}}>CASEY maps every procurement package from sector intelligence and location context. Single-source flags identify the highest commercial exposure in each package — these are the items that can break a programme date.</p>
-            <div style={{overflowX:'auto'}}>
-              <table style={{width:'100%',borderCollapse:'collapse',fontSize:'11px'}}>
-                <thead><tr style={{borderBottom:'1px solid rgba(255,255,255,0.1)'}}>
-                  {['Package','Status','Value est.','Lead time','Single source','Risk','Owner'].map(h=><th key={h} style={{padding:'6px 8px',textAlign:'left',color:'#64748b',fontWeight:'800',letterSpacing:'.08em',fontSize:'10px'}}>{h}</th>)}
-                </tr></thead>
-                <tbody>{(model.procurement_heatmap||[]).map((p,i)=><tr key={i} style={{borderBottom:'1px solid rgba(255,255,255,0.04)',background:i%2===0?'rgba(255,255,255,0.01)':'transparent'}}>
-                  <td style={{padding:'7px 8px',color:'#e2e8f0',fontWeight:'700',maxWidth:'160px'}}>{p.package}</td>
-                  <td style={{padding:'7px 8px'}}><span style={{background:p.status==='Active'?'rgba(239,68,68,0.12)':'rgba(245,158,11,0.1)',color:p.status==='Active'?'#fca5a5':'#fde68a',borderRadius:'3px',padding:'2px 7px',fontSize:'10px',fontWeight:'800'}}>{p.status}</span></td>
-                  <td style={{padding:'7px 8px',color:'#8df7ff',fontSize:'11px',fontWeight:'600'}}>{p.value_est||'—'}</td>
-                  <td style={{padding:'7px 8px',color:'#94a3b8'}}>{p.lead_time||'—'}</td>
-                  <td style={{padding:'7px 8px',textAlign:'center'}}>{p.single_source_risk ? <span style={{color:'#ef4444',fontWeight:'900',fontSize:'14px'}}>⚠</span> : <span style={{color:'#10b981'}}>✓</span>}</td>
-                  <td style={{padding:'7px 8px',color:'#64748b',maxWidth:'200px',lineHeight:'1.4',fontSize:'10px'}}>{p.risk}</td>
-                  <td style={{padding:'7px 8px',color:'#475569',fontSize:'10px'}}>{p.owner}</td>
-                </tr>)}
-                </tbody>
-              </table>
-            </div>
-          </Card></section>}
-
-          {/* HISTORICAL FAILURE PATTERN */}
-          {model?.if_this_fails && <section className="layout one"><Card style={{borderLeft:'3px solid rgba(239,68,68,0.5)',background:'rgba(239,68,68,0.03)'}}><h2 style={{color:'#ff6b7d'}}>Historical failure pattern for this sector</h2>
-            <p style={{fontSize:'11px',color:'#64748b',marginBottom:'10px'}}>Named programmes, real cost growth figures, actual failure modes. This is the sector intelligence that makes a green dashboard insufficient — the historical pattern that governs what happens next if the governing constraint is not closed.</p>
-            <p style={{color:'#e2e8f0',lineHeight:'1.7',fontSize:'13px'}}>{safeRender(model.if_this_fails)}</p>
-          </Card></section>}
-
-          {/* CRITICAL PATH + NEAR-CRITICAL NARRATIVE */}
-          {(model?.critical_path_narrative||[]).length > 0 && <section className="layout two">
-            <Card><h2>🔴 Critical path — what must be evidenced before approval</h2>
-              <p style={{fontSize:'11px',color:'#64748b',marginBottom:'10px'}}>These are the activities CASEY identifies as near-critical in the sector causal graph. Each one needs a named owner and evidence closure date before board approval.</p>
-              {(model.critical_path_narrative||[]).map((x,i)=><div key={i} className="reason" style={{borderLeft:'2px solid rgba(239,68,68,0.4)',paddingLeft:'10px',marginBottom:'6px'}}>
-                <span style={{color:'#ef4444',fontWeight:'900',marginRight:'6px'}}>{i+1}.</span>
-                <span style={{color:'#e2e8f0',lineHeight:'1.5',fontSize:'12px'}}>{safeRender(x)}</span>
-              </div>)}
-            </Card>
-            <Card><h2>Near-critical density interpretation</h2>
-              <p style={{color:'#94a3b8',lineHeight:'1.6',fontSize:'13px',marginBottom:'12px'}}>{safeRender(model.near_critical_narrative)}</p>
-              {model?.sector_constraints && <div style={{padding:'10px 14px',background:'rgba(141,247,255,0.05)',borderRadius:'4px',border:'1px solid rgba(141,247,255,0.12)'}}>
-                <div style={{fontSize:'9px',color:'#8df7ff',fontWeight:'800',letterSpacing:'.12em',marginBottom:'6px'}}>GOVERNING SECTOR CONSTRAINTS</div>
-                <p style={{color:'#cbd5e1',fontSize:'12px',lineHeight:'1.6',margin:0}}>{safeRender(model.sector_constraints)}</p>
-              </div>}
-            </Card>
-          </section>}
-
-          {/* GATE REVIEW READINESS */}
-          {model?.gate_review_readiness && <section className="layout two">
-            <Card><h2>Gate review readiness</h2>
-              <p style={{fontSize:'10px',color:'#475569',marginBottom:'8px',lineHeight:'1.4'}}>G0=concept · G1=options · G2=business case · G3=investment decision · G4=readiness · G5=closeout. IPA/World Bank gateway framework.</p>
-              <div style={{display:'flex',alignItems:'center',gap:'16px',marginBottom:'12px'}}>
-                <span style={{fontSize:'32px',fontWeight:'900',color:model.gate_review_readiness.overall_verdict==='READY'?'#10b981':model.gate_review_readiness.overall_verdict==='CONDITIONAL'?'#f59e0b':'#ef4444'}}>{model.gate_review_readiness.overall_verdict}</span>
-                <span style={{fontSize:'13px',color:'#94a3b8'}}>{safeRender(model.gate_review_readiness.current_gate_readiness)}</span>
-              </div>
-              <p style={{fontSize:'12px',color:'#64748b',marginBottom:'10px',lineHeight:'1.5'}}>{safeRender(model.gate_review_readiness.ipa_alignment)}</p>
-              <p style={{fontSize:'11px',color:'#f59e0b',fontStyle:'italic',marginBottom:'10px'}}>{safeRender(model.gate_review_readiness.critical_gate_risk)}</p>
-              <div style={{borderTop:'1px solid rgba(255,255,255,0.06)',paddingTop:'10px'}}>
-                <div style={{fontSize:'10px',color:'#64748b',fontWeight:'800',letterSpacing:'.1em',marginBottom:'6px'}}>NEXT GATE ACTIONS</div>
-                {(model.gate_review_readiness.next_gate_actions||[]).map((a,i)=><div key={i} style={{fontSize:'11px',color:'#cbd5e1',padding:'3px 0',borderBottom:'1px solid rgba(255,255,255,0.04)',display:'flex',gap:'6px'}}><span style={{color:'#8df7ff',flexShrink:0}}>→</span>{safeRender(a)}</div>)}
-              </div>
-            </Card>
-            {model?.optimism_bias_assessment && <Card><h2>📊 Optimism bias — OBA-adjusted outturn</h2>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px',marginBottom:'12px'}}>
-                <div style={{background:'rgba(245,158,11,0.08)',borderRadius:'4px',padding:'10px',border:'1px solid rgba(245,158,11,0.2)'}}>
-                  <div style={{fontSize:'9px',color:'#f59e0b',fontWeight:'800',letterSpacing:'.1em',marginBottom:'4px'}}>OBA-ADJUSTED P50</div>
-                  <div style={{fontSize:'18px',fontWeight:'900',color:'#fcd34d'}}>{safeRender(model.optimism_bias_assessment.oba_adjusted_p50)}</div>
-                  <div style={{fontSize:'9px',color:'#64748b'}}>{safeRender(model.optimism_bias_assessment.oba_adjusted_schedule)}</div>
-                </div>
-                <div style={{background:'rgba(141,247,255,0.05)',borderRadius:'4px',padding:'10px',border:'1px solid rgba(141,247,255,0.1)'}}>
-                  <div style={{fontSize:'9px',color:'#8df7ff',fontWeight:'800',letterSpacing:'.1em',marginBottom:'4px'}}>HEADLINE P50</div>
-                  <div style={{fontSize:'18px',fontWeight:'900',color:'#e2e8f0'}}>{safeRender(model.cost_p50)}</div>
-                  <div style={{fontSize:'9px',color:'#64748b'}}>{safeRender(model.schedule)}</div>
-                </div>
-              </div>
-              <p style={{fontSize:'11px',color:'#94a3b8',lineHeight:'1.5',marginBottom:'6px'}}>{safeRender(model.optimism_bias_assessment.verdict)}</p>
-              <p style={{fontSize:'10px',color:'#475569',fontStyle:'italic',marginBottom:'8px'}}>{safeRender(model.optimism_bias_assessment.oba_source)}</p>
-              <p style={{fontSize:'11px',color:'#f59e0b',padding:'8px 10px',background:'rgba(245,158,11,0.06)',borderRadius:'3px',lineHeight:'1.5',margin:0}}>{safeRender(model.optimism_bias_assessment.board_challenge)}</p>
-            </Card>}
-          </section>}
-
-          {/* ORIGINAL ADVISOR PANEL */}
-          <section className="layout two advisorElite challengeRoom"><Card><h2>CASEY Board Assurance Console</h2>
-<p className="advisorIntro" style={{borderLeft:'3px solid #ef4444',paddingLeft:'10px',color:'#94a3b8'}}>
-  {model?.live_intel_active && <span style={{display:'block',fontSize:'9px',color:'#10b981',fontWeight:'700',marginBottom:'4px',display:'flex',alignItems:'center',gap:'5px'}}>
-    <span style={{width:'5px',height:'5px',borderRadius:'50%',background:'#10b981',display:'inline-block',animation:'pulse 1.5s infinite'}}/>
-    {model.live_intel_mode === 'AI-enriched' ? 'AI-enriched intelligence active' : 'Open Crawl active'} — advisor answers include real-time data from {model.live_intel_sources?.split(',')[0]} and {(model.live_intel_sources||'').split(',').length - 1} other sources ({model.live_intel_timestamp})
-  </span>}
-  CASEY does not affirm. It challenges. Every answer is grounded in the live model data — not general advice.
-  If your estimate is optimistic, CASEY will say so. If your risk register is weak, CASEY will name the weakness.
-  The advisor uses the same adversarial intelligence as an IPA reviewer or hostile investment committee.
-  <b style={{color:'#ef4444',display:'block',marginTop:'4px'}}>Set ANTHROPIC_API_KEY in Render environment variables to enable full AI responses.</b>
-</p>
-<div style={{background:'rgba(141,247,255,0.05)',border:'1px solid rgba(141,247,255,0.12)',borderRadius:'4px',padding:'8px 12px',marginBottom:'10px',fontSize:'11px'}}>
-  <div style={{fontSize:'9px',fontWeight:'800',letterSpacing:'.1em',color:'#ef4444',marginBottom:'5px'}}>HARD CONSTRAINT SCENARIOS — each one recalculates the full model</div>
-  {[
-    'What if the governing constraint slips by 12 months?',
-    'What if sole-source procurement is forced on the largest package?',
-    'What if the OBA-adjusted P50 becomes the board commitment number?',
-    'What if scope increases by 15% after baseline freeze?',
-    'What if the P80 reserve is held at programme level and not drawable without board approval?',
-  ].map(x => <button key={x} onClick={() => ask(x)}
-    style={{display:'block',width:'100%',textAlign:'left',background:'rgba(141,247,255,0.06)',border:'1px solid rgba(141,247,255,0.15)',color:'#8df7ff',padding:'5px 10px',borderRadius:'3px',marginBottom:'4px',cursor:'pointer',fontSize:'11px',fontStyle:'italic'}}>
-    "{x}"
-  </button>)}
-</div>
-<div className="advisorPrompts bigButtons">{[
-  'Why is this estimate probably wrong?',
-  'What assumption in this submission is most likely to be false?',
-  'Which risk will kill this programme if it is not closed before capital commitment?',
-  'What is management not telling the board?',
-  'Why should the board not approve this today?',
-  'What would make you reject this submission?',
-  'If this programme fails publicly, what is the primary cause?',
-  'Where is the optimism bias in this estimate?',
-  'What does the reference class say the actual outturn will be?',
-  'Which benchmark failure does this most resemble and why?',
-  'What is the one piece of evidence missing that would change your view?',
-  'Challenge my confidence score — is it justified?',
-].map(x=><button key={x} data-question={x} onClick={()=>ask(x)}><Brain size={14}/>{x}</button>)}</div><div className="chatBox boardInterrogation">{chat.length ? chat.map((m,i)=><div key={i} className={`msg ${m.role}`}>{(() => {
-    const lines = String(m.text||'').split('\n');
-    const textBlock = lines.map((line, li) => {
-      if (!line.trim()) return <div key={li} style={{height:'5px'}}/>;
-      if (line.startsWith('**') && line.endsWith('**') && line.length > 4)
-        return <div key={li} className="chatHeading">{line.replace(/\*\*/g,'')}</div>;
-      const parts = line.split(/\*\*([^*]+)\*\*/g);
-      return <p key={li} className="chatLine">{parts.map((p,pi)=>pi%2===1?<strong key={pi}>{p}</strong>:p)}</p>;
-    });
-    const srcBadge = m.role === 'assistant' && m.source ? <div style={{marginTop:'4px',fontSize:'9px',color:'#334155',fontFamily:'monospace'}}>
-      {m.source === 'claude' ? '⚡ Claude (Anthropic)' : m.source === 'openai' ? '🤖 GPT-4o (OpenAI)' : m.source === 'pattern' ? '⚙ Pattern match (set API key for AI)' : ''}
-    </div> : null;
-    const d = m.delta;
-    const deltaBlock = d && !d.error ? <div style={{marginTop:'10px',background:'rgba(141,247,255,0.05)',border:'1px solid rgba(141,247,255,0.2)',borderRadius:'4px',padding:'10px 12px'}}>
-      <div style={{fontSize:'9px',fontWeight:'800',letterSpacing:'.12em',color:'#8df7ff',marginBottom:'6px'}}>◆ MODEL RECALCULATED — CONSTRAINT APPLIED</div>
-      <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'8px',marginBottom:'8px'}}>
-        {d.cost_delta_bn !== undefined && <div style={{textAlign:'center',padding:'6px',background:'rgba(255,255,255,0.03)',borderRadius:'3px'}}>
-          <div style={{fontSize:'9px',color:'#475569',marginBottom:'2px'}}>Cost delta</div>
-          <div style={{fontSize:'13px',fontWeight:'800',color:d.cost_delta_bn>0?'#fca5a5':'#10b981'}}>{d.cost_delta_bn>0?'+':''}{d.cost_delta_bn?.toFixed(1)}B</div>
-          <div style={{fontSize:'10px',color:'#8df7ff'}}>{d.new_p50}</div>
-        </div>}
-        {d.confidence_delta !== undefined && <div style={{textAlign:'center',padding:'6px',background:'rgba(255,255,255,0.03)',borderRadius:'3px'}}>
-          <div style={{fontSize:'9px',color:'#475569',marginBottom:'2px'}}>Confidence</div>
-          <div style={{fontSize:'13px',fontWeight:'800',color:d.confidence_delta<0?'#fca5a5':'#10b981'}}>{d.confidence_delta>0?'+':''}{d.confidence_delta}pts</div>
-          <div style={{fontSize:'10px',color:'#8df7ff'}}>{d.new_confidence}%</div>
-        </div>}
-        {d.schedule_delta_months !== undefined && <div style={{textAlign:'center',padding:'6px',background:'rgba(255,255,255,0.03)',borderRadius:'3px'}}>
-          <div style={{fontSize:'9px',color:'#475569',marginBottom:'2px'}}>Schedule delta</div>
-          <div style={{fontSize:'13px',fontWeight:'800',color:d.schedule_delta_months>0?'#fca5a5':'#10b981'}}>{d.schedule_delta_months>0?'+':''}{d.schedule_delta_months}mo</div>
-          <div style={{fontSize:'10px',color:'#8df7ff'}}>{d.new_schedule}</div>
-        </div>}
-      </div>
-      {d.new_governing_constraint && <div style={{fontSize:'10px',color:'#94a3b8',borderTop:'1px solid rgba(255,255,255,0.06)',paddingTop:'6px'}}>New governing constraint: <b style={{color:'#e2e8f0'}}>{d.new_governing_constraint}</b></div>}
-    </div> : null;
-    return <>{textBlock}{srcBadge}{deltaBlock}</>;
-  })()}</div>) : <div className="msg assistant"><b>Board attack ready.</b><br/>Click any challenge above. CASEY will answer against the active scenario, not as a generic chatbot.</div>}</div><div className="ask"><input value={chatQ} onChange={e=>setChatQ(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')ask()}} placeholder="Challenge the programme — e.g. Why is this estimate wrong? Which risk will kill this? What is management hiding?"/><button onClick={() => ask(chatQ)}>Ask</button></div></Card><Card><h2>Live Client Challenge Room</h2><p className="advisorIntro">Upload a client cost estimate, XER schedule or risk register — or use the demo buttons below. CASEY challenges the document like an independent reviewer: identifies unpriced exposure, evidence gaps, reserve weaknesses and the questions to ask before committing capital.</p><div className="challengeHero"><span>CASEY INTAKE NORMALISATION ENGINE</span><b>Messy file → schema detection → WBS/CBS inference → evidence gaps → board attack → export-ready challenge</b></div><div className="challengeModeStrip"><b>Choose the file type to challenge</b><span>These buttons show the exact review style. Upload your own file below and CASEY will replace the sample with parsed source-file numbers.</span></div><div className="challengeButtons pro">
-  <button onClick={()=>setUploadResult({filename:'Contractor_Cost_Estimate_v27_FINAL.xlsx', file_type:'COST ESTIMATE', schema_confidence:'Auto-mapped', findings:['Estimate structure normalised. Cost packages identified across direct works, preliminaries and risk allowance.','The headline P50 number is present — but there is no P80/P90 basis. This is how a submitted estimate can understate exposure: the headline looks fixed but the downside is unpriced.','Contingency is present as a lump sum. CASEY cannot verify it is sized against quantified risk exposure rather than a percentage of direct cost — a common tender-basis weakness.','Basis statements are missing on 6 of the major packages. Without basis, there is no evidence of what was included or excluded — and no way to challenge scope creep later.'], red_flags:['Commercial observation: No P80/P90 range provided. The estimate looks precise but carries unquantified downside. Ask the contractor to provide a risk-adjusted range.','Commercial observation: Lump-sum contingency with no risk linkage. This is not yet a quantified reserve. Require QCRA support.','No CBS/WBS mapping. Cannot verify completeness of scope coverage or trace costs to programme activities.','Escalation basis not stated. For a multi-year programme, this is a material omission.'], next_steps:['Require the contractor to provide a P50/P80/P90 range with QCRA support.','Mandate a CBS that maps to the programme WBS and schedule activities.','Commission an independent cost review before approving the headline number.','Run CASEY QCRA alongside the contractor estimate — compare the P80 positions.'], epc_challenge:true})}><FileSpreadsheet size={18}/><b>Challenge contractor cost estimate</b><span>Detect hidden exposure, lump-sum contingency and missing basis statements.</span></button>
-  <button onClick={()=>setUploadResult({filename:'Programme_Schedule_FINAL_v14.xer', file_type:'SCHEDULE (XER)', schema_confidence:'Logic mapped', findings:['Schedule logic parsed. Activities identified across civil, systems, commissioning and handover phases.','Critical path identified — but float analysis reveals operationally unusable buffer. The management date assumes best-case access windows throughout.','Logic gaps detected: 8 activities have no predecessor. These are schedule anchors — they cannot be challenged because they have no upstream dependency. This can prevent a reliable view of the real critical path.','Commissioning and trial running phases show compressed durations. These are the activities most likely to slip — and they sit directly before the opening/handover milestone.'], red_flags:['Commercial observation: Open-ended activities with no predecessor — schedule logic issue that can overstate available float.','Commercial observation: Commissioning duration appears optimistic against comparable programmes. A single failed integration test resets the clock.','Float is nominal, not operationally usable. Access windows, possession permits and operator acceptance are not confirmed in the logic.','Board date is driven by the earliest path. It should be driven by the P80/P90 QSRA finish date.'], next_steps:['Require the contractor to close all open ends and confirm predecessor logic.','Run QSRA and require the P80/P90 finish date to be the board commitment date.','Validate all commissioning durations against independent benchmarks.','Name the owner of the critical-path constraint.'], epc_challenge:true})}><Workflow size={18}/><b>Challenge programme schedule</b><span>Detect schedule padding, unusable float and optimistic commissioning dates.</span></button>
-  <button onClick={()=>setUploadResult({filename:'Risk_Register_v8_Draft.xlsx', file_type:'RISK REGISTER', schema_confidence:'Schema mapped', findings:['Risk register schema mapped. Cause, event, impact and owner columns identified.','CASEY challenges every risk without a named trigger, quantified residual exposure and evidence closure date.','7 risks have mitigation confidence below 50%. These are not mitigated — they are noted. The reserve needs to account for them.','4 risks are flagged as Evidence required. These are open exposures — the source file does not yet provide the evidence that the risk is under control.'], red_flags:['Commercial observation: Mitigations are written as action phrases ("to be confirmed", "in progress") rather than evidence closure. A mitigation is only valid when the evidence is complete.','Commercial observation: Residual exposure is not reconciled to the reserve. This is the most common way a risk register hides real exposure — risks exist on paper but the money is not in the budget.','4 risks require evidence that has not been provided. These cannot be treated as mitigated for board approval purposes.','Owner accountability: all risks assigned to programme-level owners. Board needs named individual owners with accountability.'], next_steps:['Require every risk to have: named owner, confirmed trigger, quantified residual and evidence closure date.','Reconcile residual exposure to reserve — any gap requires additional provision.','The 4 Evidence Required risks must be resolved or escalated to the board as open items.','Export the challenged register after QCRA/QSRA alignment and use the board attack questions.'], epc_challenge:true})}><ShieldAlert size={18}/><b>Challenge risk register</b><span>Detect unmitigated risks, missing evidence and reserve reconciliation gaps.</span></button>
-</div><h3>Upload real file</h3><label className="upload proUpload"><Upload size={18}/> Upload estimate / XER / risk workbook<input type="file" onChange={upload}/></label><ProfessionalIntakeResult result={uploadResult} model={model}/></Card></section></>
+          <section className="layout one"><div style={{background:'linear-gradient(135deg,rgba(141,247,255,0.06),rgba(177,140,255,0.06))',border:'1px solid rgba(141,247,255,0.2)',borderRadius:'6px',padding:'14px 20px',display:'flex',gap:'12px',alignItems:'flex-start'}}>
+            <span style={{color:'#8df7ff',fontWeight:'900',fontSize:'10px',letterSpacing:'.15em',flexShrink:0,paddingTop:'2px'}}>AUTHORITY LINE</span>
+            <p style={{color:'#e2e8f0',fontSize:'13px',lineHeight:'1.6',margin:0,fontStyle:'italic'}}>{safeRender(model.institutional_authority_line)}</p>
+          </div></section>
+        </>
 }
 
         {tab === 'runtime' && <HolyGrailRuntime model={model} scenario={scenario} generate={generate} runShock={runShock}/>}
@@ -4172,9 +4288,47 @@ function parseMoneyLocal(v) {
             {(model?.benchmark_comparison||[]).map((b,i)=><div key={i} className="reason" style={{borderLeft:`2px solid ${b.cost_growth_pct>80?'rgba(239,68,68,0.5)':b.cost_growth_pct>30?'rgba(245,158,11,0.5)':'rgba(141,247,255,0.3)'}`,paddingLeft:'10px',marginBottom:'8px'}}>
               <b style={{color:'#e2e8f0'}}>{b.name||b.archetype}</b>
               {b.cost_growth_pct > 0 && <span style={{background:'rgba(239,68,68,0.1)',color:'#fca5a5',borderRadius:'3px',padding:'1px 6px',fontSize:'10px',fontWeight:'800',marginLeft:'8px'}}>+{b.cost_growth_pct}% cost</span>}
-              {b.schedule_slip_months > 0 && <span style={{background:'rgba(245,158,11,0.1)',color:'#fde68a',borderRadius:'3px',padding:'1px 6px',fontSize:'10px',fontWeight:'800',marginLeft:'4px'}}>+{b.schedule_slip_months}mo</span>}
+              {b.schedule_slip_months > 0 && <span style={{background:'rgba(245,158,11,0.1)',color:'#fde68a',borderRadius:'3px',padding:'1px 6px',fontSize:'10px',fontWeight:'800',marginLeft:'4px'}}>+{b.schedule_slip_months+'mo'}</span>}
               <p style={{fontSize:'11px',color:'#64748b',marginTop:'4px',lineHeight:'1.5'}}>{b.lesson||b.failure_mode||b.why}</p>
             </div>)}
+          </Card>
+
+          {/* WHAT THIS MEANS FOR YOUR PROGRAMME */}
+          <Card><h2>What this means for your programme</h2>
+            <div style={{marginBottom:12,padding:'10px 14px',background:'rgba(6,182,212,0.06)',border:'1px solid rgba(6,182,212,0.2)',borderRadius:6}}>
+              <div style={{fontSize:'10px',fontWeight:'800',color:'#06b6d4',marginBottom:6}}>YOUR PROGRAMME VS THIS COHORT</div>
+              {(model?.benchmark_comparison||[]).length > 0 && <div style={{fontSize:'11px',color:'#cbd5e1',lineHeight:'1.6'}}>
+                <div style={{marginBottom:4}}>
+                  <b style={{color:'#fff'}}>Median cost growth in this cohort:</b>{' '}
+                  <span style={{color:'#f59e0b',fontWeight:'700'}}>
+                    +{Math.round((model.benchmark_comparison||[]).reduce((s,b)=>s+(b.cost_growth_pct||0),0)/Math.max((model.benchmark_comparison||[]).length,1))}%
+                  </span>
+                  {' '}— if this applies, your programme moves from {model.cost_p50} to{' '}
+                  <span style={{color:'#ef4444',fontWeight:'700'}}>
+                    {model?.p50_cost_bn ? '$'+(model.p50_cost_bn*(1+(model.benchmark_comparison||[]).reduce((s,b)=>s+(b.cost_growth_pct||0),0)/Math.max((model.benchmark_comparison||[]).length,1)/100)).toFixed(1)+'B' : '—'}
+                  </span>
+                </div>
+                <div style={{marginBottom:4}}>
+                  <b style={{color:'#fff'}}>Median schedule slip:</b>{' '}
+                  <span style={{color:'#f59e0b',fontWeight:'700'}}>
+                    +{Math.round((model.benchmark_comparison||[]).reduce((s,b)=>s+(b.schedule_slip_months||0),0)/Math.max((model.benchmark_comparison||[]).length,1))} months
+                  </span>
+                  {' '}vs your current {model.schedule}
+                </div>
+                <div>
+                  <b style={{color:'#fff'}}>Primary failure mode across cohort:</b>{' '}
+                  <span style={{color:'#fca5a5'}}>
+                    {(model.benchmark_comparison||[]).reduce((acc,b)=>{const fm=b.failure_mode||'';return acc.length<fm.length?fm:acc;},'').slice(0,80)}
+                  </span>
+                </div>
+              </div>}
+            </div>
+
+            {/* SECTOR PERCENTILE */}
+            {model?.benchmark_comparison?.length >= 3 && <div style={{padding:'10px 14px',background:'rgba(139,92,246,0.06)',border:'1px solid rgba(139,92,246,0.2)',borderRadius:6}}>
+              <div style={{fontSize:'10px',fontWeight:'800',color:'#a78bfa',marginBottom:6}}>WHERE YOUR PROGRAMME SITS IN THE COHORT</div>
+              {renderBenchmarkStats()}
+            </div>}
           </Card>
         </section>}
 
@@ -4200,754 +4354,117 @@ function parseMoneyLocal(v) {
             </div>
           </Card>
         </section>}
-        {tab === 'defence' && <div style={{padding:'0 2px'}}>
-          {/* Header */}
-          <div style={{background:'rgba(14,116,144,0.08)',border:'1px solid rgba(14,116,144,0.2)',borderRadius:6,padding:'14px 18px',marginBottom:12}}>
-            <div style={{fontSize:'11px',fontWeight:'800',color:'#0e7490',letterSpacing:'.12em',marginBottom:4}}>⚡ PROGRAMME DECISION TWIN — BOARD DEFENCE LAYER</div>
-            <div style={{fontSize:'11px',color:'#94a3b8'}}>Every number defends itself. The question is no longer "did AI make this up?" — it is "do we agree with CASEY's assumptions?"</div>
-          </div>
-
-          {/* THE ONE RISK — terrifying insight */}
-          {model?.mortality_event && <div style={{background:'rgba(239,68,68,0.10)',border:'2px solid rgba(239,68,68,0.5)',borderRadius:8,padding:'16px 20px',marginBottom:14}}>
-            <div style={{fontSize:'9px',fontWeight:'800',color:'#ef4444',letterSpacing:'.18em',marginBottom:6}}>⚠ IF WE ARE WRONG — THE ONE RISK THAT KILLS THIS PROGRAMME</div>
-            <div style={{fontSize:'15px',fontWeight:'800',color:'#fff',lineHeight:'1.3',marginBottom:10}}>{model.mortality_event.title}</div>
-            <div style={{fontSize:'11px',color:'#fca5a5',lineHeight:'1.6',marginBottom:10,fontStyle:'italic',borderLeft:'3px solid rgba(239,68,68,0.4)',paddingLeft:12}}>"{model.mortality_event.terrifying_statement}"</div>
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:8}}>
-              <div style={{background:'rgba(239,68,68,0.08)',borderRadius:5,padding:'8px 12px'}}>
-                <div style={{fontSize:'8px',color:'#ef4444',fontWeight:'700',marginBottom:2}}>PROBABILITY</div>
-                <div style={{fontSize:'11px',color:'#fca5a5'}}>{model.mortality_event.probability}</div>
-              </div>
-              <div style={{background:'rgba(239,68,68,0.08)',borderRadius:5,padding:'8px 12px'}}>
-                <div style={{fontSize:'8px',color:'#ef4444',fontWeight:'700',marginBottom:2}}>EXPOSURE</div>
-                <div style={{fontSize:'11px',color:'#fca5a5'}}>{model.mortality_event.exposure}</div>
-              </div>
-            </div>
-            <div style={{background:'rgba(239,68,68,0.12)',border:'1px solid rgba(239,68,68,0.3)',borderRadius:5,padding:'10px 14px'}}>
-              <div style={{fontSize:'8px',fontWeight:'800',color:'#ef4444',marginBottom:4}}>BOARD ACTION REQUIRED</div>
-              <div style={{fontSize:'11px',color:'#fff',fontWeight:'600'}}>{model.mortality_event.board_action}</div>
+        {tab === 'defence' && <>
+          {/* SCENARIO CONTEXT */}
+          {model?.scenario !== 'base' && <div style={{background:'rgba(6,182,212,0.06)',border:'1px solid rgba(6,182,212,0.2)',borderRadius:6,padding:'8px 14px',marginBottom:10,display:'flex',gap:12,alignItems:'center'}}>
+            <div style={{fontSize:'9px',fontWeight:'800',color:'#06b6d4'}}>{(model.scenario_label||'').toUpperCase()} SCENARIO — Board Pack reflects this scenario vs Base</div>
+            <div style={{display:'flex',gap:16,fontSize:'9px',color:'#94a3b8',marginLeft:'auto'}}>
+              <span>Cost: <b style={{color:'#06b6d4'}}>{model.cost_p50}</b></span>
+              <span>Schedule: <b style={{color:'#06b6d4'}}>{model.schedule}</b></span>
+              <span>Confidence: <b style={{color:'#06b6d4'}}>{model.confidence_pct+'%'}</b></span>
             </div>
           </div>}
 
-          {/* DECISION SIMULATOR */}
-          {model?.decision_simulator && <div style={{background:'rgba(16,185,129,0.06)',border:'1px solid rgba(16,185,129,0.2)',borderRadius:8,padding:'14px 18px',marginBottom:14}}>
-            <div style={{fontSize:'9px',fontWeight:'800',color:'#10b981',letterSpacing:'.12em',marginBottom:6}}>🎮 DECISION SIMULATOR — WHAT IF THE BOARD ASKS?</div>
-            <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8}}>
-              {[model.decision_simulator.spend_200m, model.decision_simulator.descope_10pct, model.decision_simulator.accelerate].filter(Boolean).map((d,i)=>(
-                <div key={i} style={{background:'rgba(16,185,129,0.05)',border:'1px solid rgba(16,185,129,0.15)',borderRadius:6,padding:'12px 14px'}}>
-                  <div style={{fontSize:'10px',fontWeight:'700',color:'#10b981',marginBottom:8}}>{d.label}</div>
-                  <div style={{display:'flex',flexDirection:'column',gap:4,marginBottom:8}}>
-                    <div style={{display:'flex',justifyContent:'space-between',fontSize:'10px'}}>
-                      <span style={{color:'#94a3b8'}}>Cost</span>
-                      <span style={{color:d.cost_delta_bn>0?'#ef4444':'#10b981',fontWeight:'700'}}>{d.cost_delta_bn>0?'+':''}{d.cost_delta_bn?.toFixed?.(2)}B</span>
-                    </div>
-                    <div style={{display:'flex',justifyContent:'space-between',fontSize:'10px'}}>
-                      <span style={{color:'#94a3b8'}}>Schedule</span>
-                      <span style={{color:d.schedule_delta_months<0?'#10b981':'#ef4444',fontWeight:'700'}}>{d.schedule_delta_months>0?'+':''}{d.schedule_delta_months} months</span>
-                    </div>
-                    <div style={{display:'flex',justifyContent:'space-between',fontSize:'10px'}}>
-                      <span style={{color:'#94a3b8'}}>Confidence</span>
-                      <span style={{color:d.confidence_delta_pct>0?'#10b981':'#ef4444',fontWeight:'700'}}>{d.confidence_delta_pct>0?'+':''}{d.confidence_delta_pct}%</span>
-                    </div>
+          {/* PANEL 1: THE ONE RISK — full width, red, commanding */}
+          {model?.mortality_event?.title && <div style={{background:'rgba(239,68,68,0.08)',border:'2px solid rgba(239,68,68,0.5)',borderRadius:10,padding:'18px 22px',marginBottom:12}}>
+            <div style={{fontSize:'9px',fontWeight:'800',color:'#ef4444',letterSpacing:'.16em',marginBottom:8}}>⚠ IF WE ARE WRONG — THE ONE RISK THAT KILLS THIS PROGRAMME</div>
+            <div style={{fontSize:'20px',fontWeight:'900',color:'#fff',marginBottom:8,lineHeight:1.3}}>{model.mortality_event.title}</div>
+            <div style={{fontSize:'12px',color:'#fca5a5',fontStyle:'italic',lineHeight:1.7,marginBottom:10}}>"{model.mortality_event.terrifying_statement}"</div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr auto',gap:12,alignItems:'center'}}>
+              <div style={{padding:'8px 12px',background:'rgba(239,68,68,0.12)',borderRadius:6}}>
+                <div style={{fontSize:'8px',color:'#ef4444',marginBottom:2}}>PROBABILITY</div>
+                <div style={{fontSize:'14px',fontWeight:'900',color:'#fca5a5'}}>{model.mortality_event.probability}</div>
+              </div>
+              <div style={{padding:'8px 12px',background:'rgba(239,68,68,0.12)',borderRadius:6}}>
+                <div style={{fontSize:'8px',color:'#ef4444',marginBottom:2}}>COST + SCHEDULE EXPOSURE</div>
+                <div style={{fontSize:'14px',fontWeight:'900',color:'#fca5a5'}}>{model.mortality_event.exposure}</div>
+              </div>
+              {model.mortality_event.board_action && <div style={{padding:'8px 14px',background:'rgba(239,68,68,0.08)',border:'1px solid rgba(239,68,68,0.25)',borderRadius:6}}>
+                <div style={{fontSize:'8px',color:'#ef4444',marginBottom:2}}>BOARD ACTION REQUIRED</div>
+                <div style={{fontSize:'10px',color:'#fff',fontWeight:'600'}}>{model.mortality_event.board_action}</div>
+              </div>}
+            </div>
+          </div>}
+
+          {/* PANELS 2+3: GOVERNING CONSTRAINT + DECISION SIMULATOR side by side */}
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:12}}>
+            {/* PANEL 2: GOVERNING CONSTRAINT */}
+            {(model?.governing_constraint_prominent || model?.governing_constraint_full?.statement) && <div style={{background:'rgba(245,158,11,0.08)',border:'2px solid rgba(245,158,11,0.4)',borderRadius:10,padding:'14px 18px'}}>
+              <div style={{fontSize:'9px',fontWeight:'800',color:'#f59e0b',letterSpacing:'.14em',marginBottom:6}}>⛔ GOVERNING CONSTRAINT — WHAT MUST HAPPEN BEFORE APPROVAL</div>
+              <div style={{fontSize:'15px',fontWeight:'800',color:'#fff',marginBottom:10,lineHeight:1.4}}>
+                {model.governing_constraint_prominent || model.governing_constraint_full?.statement}
+              </div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+                {model.governing_constraint_full?.owner && <div style={{padding:'6px 10px',background:'rgba(245,158,11,0.08)',borderRadius:5}}>
+                  <div style={{fontSize:'8px',color:'#f59e0b',marginBottom:2}}>OWNER</div>
+                  <div style={{fontSize:'10px',color:'#fbbf24',fontWeight:'700'}}>{model.governing_constraint_full.owner}</div>
+                </div>}
+                {model.governing_constraint_full?.evidence && <div style={{padding:'6px 10px',background:'rgba(245,158,11,0.08)',borderRadius:5}}>
+                  <div style={{fontSize:'8px',color:'#f59e0b',marginBottom:2}}>EVIDENCE NEEDED</div>
+                  <div style={{fontSize:'10px',color:'#94a3b8'}}>{model.governing_constraint_full.evidence}</div>
+                </div>}
+              </div>
+            </div>}
+
+            {/* PANEL 3: DECISION SIMULATOR */}
+            {model?.decision_simulator && <div style={{background:'rgba(16,185,129,0.06)',border:'2px solid rgba(16,185,129,0.3)',borderRadius:10,padding:'14px 18px'}}>
+              <div style={{fontSize:'9px',fontWeight:'800',color:'#10b981',letterSpacing:'.14em',marginBottom:8}}>🎮 DECISION SIMULATOR — WHAT IF THE BOARD ASKS?</div>
+              {[model.decision_simulator.spend_200m,model.decision_simulator.descope_10pct,model.decision_simulator.accelerate].filter(Boolean).map((d,i)=>(
+                <div key={i} style={{marginBottom:8,padding:'10px 12px',background:'rgba(16,185,129,0.05)',borderRadius:6,border:'1px solid rgba(16,185,129,0.15)'}}>
+                  <div style={{fontSize:'10px',fontWeight:'800',color:'#10b981',marginBottom:4}}>{d.label}</div>
+                  <div style={{display:'flex',gap:16,fontSize:'10px'}}>
+                    <span style={{color:(d.cost_delta_bn||0)>0?'#ef4444':'#10b981',fontWeight:'700'}}>{(d.cost_delta_bn>0?'+':d.cost_delta_bn<0?'-':'')+((Math.abs(d.cost_delta_bn||0)).toFixed(1))+'B cost'}</span>
+                    <span style={{color:(d.schedule_delta_months||0)<0?'#10b981':'#ef4444',fontWeight:'700'}}>{(d.schedule_delta_months>0?'+':d.schedule_delta_months<0?'-':'')+Math.abs(d.schedule_delta_months||0)} months</span>
+                    <span style={{color:(d.confidence_delta_pct||0)>0?'#10b981':'#ef4444',fontWeight:'700'}}>{(d.confidence_delta_pct>0?'+':d.confidence_delta_pct<0?'-':'')+Math.abs(d.confidence_delta_pct||0)}% conf</span>
                   </div>
-                  <div style={{fontSize:'9px',color:'#64748b',lineHeight:'1.4'}}>{d.narrative}</div>
-                </div>
-              ))}
-            </div>
-          </div>}
-
-          {/* GOVERNING CONSTRAINT — dominates the page */}
-          {(()=>{const gc=model?.governing_constraint_full||{};const display=gc.constraint||model?.casey_defence?.governing_constraint_display||model?.governing_constraint||'—';return(
-          <div style={{background:'rgba(239,68,68,0.10)',border:'2px solid rgba(239,68,68,0.5)',borderRadius:8,padding:'18px 20px',marginBottom:14}}>
-            <div style={{fontSize:'9px',fontWeight:'800',color:'#ef4444',letterSpacing:'.18em',marginBottom:8}}>⛔ GOVERNING CONSTRAINT — BOARD ACTION REQUIRED</div>
-            <div style={{fontSize:'17px',fontWeight:'800',color:'#fff',lineHeight:'1.3',marginBottom:12}}>{display}</div>
-            {gc.probability_of_delay&&<div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:10}}>
-              <div style={{background:'rgba(239,68,68,0.08)',borderRadius:5,padding:'10px 12px'}}>
-                <div style={{fontSize:'8px',fontWeight:'700',color:'#ef4444',letterSpacing:'.1em',marginBottom:3}}>PROBABILITY OF DELAY</div>
-                <div style={{fontSize:'11px',color:'#fca5a5',lineHeight:'1.4'}}>{gc.probability_of_delay}</div>
-              </div>
-              <div style={{background:'rgba(239,68,68,0.08)',borderRadius:5,padding:'10px 12px'}}>
-                <div style={{fontSize:'8px',fontWeight:'700',color:'#ef4444',letterSpacing:'.1em',marginBottom:3}}>ESTIMATED IMPACT</div>
-                <div style={{fontSize:'11px',color:'#fca5a5',lineHeight:'1.4'}}>{gc.estimated_impact}</div>
-              </div>
-            </div>}
-            {gc.board_action_required&&<div style={{background:'rgba(239,68,68,0.12)',border:'1px solid rgba(239,68,68,0.3)',borderRadius:5,padding:'10px 14px',marginBottom:8}}>
-              <div style={{fontSize:'8px',fontWeight:'800',color:'#ef4444',letterSpacing:'.1em',marginBottom:4}}>BOARD ACTION REQUIRED</div>
-              <div style={{fontSize:'12px',color:'#fff',fontWeight:'600',lineHeight:'1.5'}}>{gc.board_action_required}</div>
-            </div>}
-            {gc.evidence_required&&<div style={{fontSize:'10px',color:'#94a3b8',marginTop:4}}>Evidence required: {gc.evidence_required}</div>}
-            {!gc.probability_of_delay&&<div style={{fontSize:'10px',color:'#94a3b8',marginTop:4}}>Resolve this first. Everything else is secondary.</div>}
-          </div>)})()}
-
-          {/* SCOPE ASSUMPTIONS — what CASEY assumed */}
-          {(()=>{const ra=model?.scope_assumptions||model?.route_assumptions||{};const ab=ra.assumption_basis;const rc=ra.rate_context;if(!ab&&!rc)return null;return(
-          <div style={{background:'rgba(6,182,212,0.06)',border:'1px solid rgba(6,182,212,0.2)',borderRadius:6,padding:'14px 18px',marginBottom:12}}>
-            <div style={{fontSize:'9px',fontWeight:'800',color:'#06b6d4',letterSpacing:'.12em',marginBottom:8}}>📐 SCOPE ASSUMPTIONS — WHAT CASEY ASSUMED</div>
-            {rc&&<div style={{fontSize:'13px',fontWeight:'700',color:'#fff',marginBottom:8}}>{rc}</div>}
-            {ab&&<div style={{fontSize:'11px',color:'#94a3b8',lineHeight:'1.6',marginBottom:8}}>{ab}</div>}
-            <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
-              {ra.campus_mw>0&&<span style={{background:'rgba(6,182,212,0.12)',border:'1px solid rgba(6,182,212,0.25)',borderRadius:4,padding:'3px 8px',fontSize:'10px',color:'#67e8f9'}}>{ra.campus_mw}MW campus</span>}
-              {ra.data_halls>0&&<span style={{background:'rgba(6,182,212,0.12)',border:'1px solid rgba(6,182,212,0.25)',borderRadius:4,padding:'3px 8px',fontSize:'10px',color:'#67e8f9'}}>{ra.data_halls} data halls</span>}
-              {ra.delivery_phases>0&&<span style={{background:'rgba(6,182,212,0.12)',border:'1px solid rgba(6,182,212,0.25)',borderRadius:4,padding:'3px 8px',fontSize:'10px',color:'#67e8f9'}}>{ra.delivery_phases} phases</span>}
-              {ra.pue>0&&<span style={{background:'rgba(6,182,212,0.12)',border:'1px solid rgba(6,182,212,0.25)',borderRadius:4,padding:'3px 8px',fontSize:'10px',color:'#67e8f9'}}>PUE {ra.pue}</span>}
-              {ra.cooling_strategy&&<span style={{background:'rgba(6,182,212,0.12)',border:'1px solid rgba(6,182,212,0.25)',borderRadius:4,padding:'3px 8px',fontSize:'10px',color:'#67e8f9'}}>{ra.cooling_strategy}</span>}
-              {ra.grid_connection_voltage&&<span style={{background:'rgba(6,182,212,0.12)',border:'1px solid rgba(6,182,212,0.25)',borderRadius:4,padding:'3px 8px',fontSize:'10px',color:'#67e8f9'}}>{ra.grid_connection_voltage} grid</span>}
-              {ra.route_km>0&&<span style={{background:'rgba(6,182,212,0.12)',border:'1px solid rgba(6,182,212,0.25)',borderRadius:4,padding:'3px 8px',fontSize:'10px',color:'#67e8f9'}}>{ra.route_km}km route</span>}
-              {ra.stations>0&&<span style={{background:'rgba(6,182,212,0.12)',border:'1px solid rgba(6,182,212,0.25)',borderRadius:4,padding:'3px 8px',fontSize:'10px',color:'#67e8f9'}}>{ra.stations} stations</span>}
-              {ra.reactor_units>0&&<span style={{background:'rgba(6,182,212,0.12)',border:'1px solid rgba(6,182,212,0.25)',borderRadius:4,padding:'3px 8px',fontSize:'10px',color:'#67e8f9'}}>{ra.reactor_units}× {ra.reactor_type}</span>}
-              {ra.total_mwe>0&&<span style={{background:'rgba(6,182,212,0.12)',border:'1px solid rgba(6,182,212,0.25)',borderRadius:4,padding:'3px 8px',fontSize:'10px',color:'#67e8f9'}}>{ra.total_mwe}MWe</span>}
-              {ra.wafers_per_month>0&&<span style={{background:'rgba(6,182,212,0.12)',border:'1px solid rgba(6,182,212,0.25)',borderRadius:4,padding:'3px 8px',fontSize:'10px',color:'#67e8f9'}}>{ra.wafers_per_month.toLocaleString()} WSPM</span>}
-              {ra.process_node_nm>0&&<span style={{background:'rgba(6,182,212,0.12)',border:'1px solid rgba(6,182,212,0.25)',borderRadius:4,padding:'3px 8px',fontSize:'10px',color:'#67e8f9'}}>{ra.process_node_nm}nm node</span>}
-              {ra.installed_mw>0&&<span style={{background:'rgba(6,182,212,0.12)',border:'1px solid rgba(6,182,212,0.25)',borderRadius:4,padding:'3px 8px',fontSize:'10px',color:'#67e8f9'}}>{ra.installed_mw}MW installed</span>}
-              {ra.throughput_mtpa>0&&<span style={{background:'rgba(6,182,212,0.12)',border:'1px solid rgba(6,182,212,0.25)',borderRadius:4,padding:'3px 8px',fontSize:'10px',color:'#67e8f9'}}>{ra.throughput_mtpa}Mtpa throughput</span>}
-            </div>
-          </div>)})()}
-
-          {/* XER HEALTH + RISK CLUSTERS + PROCUREMENT SUMMARY */}
-          {(model?.xer_health || model?.risk_clusters || model?.procurement_intelligence) && <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:10,marginBottom:12}}>
-            {model?.xer_health && <div style={{background:'rgba(6,182,212,0.06)',border:'1px solid rgba(6,182,212,0.2)',borderRadius:6,padding:'12px 14px'}}>
-              <div style={{fontSize:'8px',fontWeight:'800',color:'#06b6d4',letterSpacing:'.12em',marginBottom:6}}>SCHEDULE HEALTH</div>
-              {[['Logic Quality',model.xer_health.logic_quality],['Float Quality',model.xer_health.float_quality],['CP Confidence',model.xer_health.critical_path_confidence+'%'],['Activities',model.xer_health.activity_count]].map(([k,v],i)=>(
-                <div key={i} style={{display:'flex',justifyContent:'space-between',fontSize:'9px',marginBottom:3}}>
-                  <span style={{color:'#94a3b8'}}>{k}</span>
-                  <span style={{color:v==='GOOD'?'#10b981':v==='REVIEW'?'#f59e0b':typeof v === 'number' ? '#06b6d4' : '#ef4444',fontWeight:'700'}}>{v}</span>
                 </div>
               ))}
             </div>}
-            {model?.risk_clusters && <div style={{background:'rgba(139,92,246,0.06)',border:'1px solid rgba(139,92,246,0.2)',borderRadius:6,padding:'12px 14px'}}>
-              <div style={{fontSize:'8px',fontWeight:'800',color:'#a78bfa',letterSpacing:'.12em',marginBottom:6}}>RISK CLUSTERS</div>
-              {model.risk_clusters.clusters.slice(0,4).map((c,i)=>(
-                <div key={i} style={{display:'flex',justifyContent:'space-between',fontSize:'9px',marginBottom:3}}>
-                  <span style={{color:'#94a3b8'}}>{c.cluster?.slice?.(0,18)}</span>
-                  <span style={{color:'#ef4444',fontWeight:'700'}}>{model?.currency_symbol||'$'}{c.total_emv_bn?.toFixed?.(2)}B</span>
-                </div>
-              ))}
-            </div>}
-            {model?.procurement_intelligence && <div style={{background:'rgba(16,185,129,0.06)',border:'1px solid rgba(16,185,129,0.2)',borderRadius:6,padding:'12px 14px'}}>
-              <div style={{fontSize:'8px',fontWeight:'800',color:'#10b981',letterSpacing:'.12em',marginBottom:6}}>PROCUREMENT STATUS</div>
-              {model.procurement_intelligence.items.slice(0,4).map((p,i)=>(
-                <div key={i} style={{display:'flex',gap:6,fontSize:'9px',marginBottom:3,alignItems:'flex-start'}}>
-                  <span style={{flexShrink:0}}>{p.secured?'✅':'🔴'}</span>
-                  <span style={{color:'#94a3b8'}}>{p.item?.slice?.(0,22)}</span>
-                </div>
-              ))}
-            </div>}
-          </div>}
-
-          {/* WHY CASEY GENERATED THIS */}
-          {(model?.why_casey_generated_this||model?.casey_defence?.why_casey_generated_this||[]).length>0&&<div style={{background:'rgba(16,185,129,0.06)',border:'1px solid rgba(16,185,129,0.2)',borderRadius:6,padding:'12px 16px',marginBottom:10}}>
-            <div style={{fontSize:'9px',fontWeight:'800',color:'#10b981',letterSpacing:'.12em',marginBottom:8}}>🧠 WHY CASEY GENERATED THIS</div>
-            {(model?.why_casey_generated_this||model?.casey_defence?.why_casey_generated_this||[]).map((p,i)=><div key={i} style={{display:'flex',gap:6,marginBottom:4}}><span style={{color:'#10b981',fontSize:'10px',flexShrink:0}}>→</span><span style={{fontSize:'11px',color:'#cbd5e1',lineHeight:'1.5'}}>{p}</span></div>)}
-          </div>}
-
-          {/* WHY EACH NUMBER */}
-          {[
-            ['WHY '+(model?.cost_p50||'P50'), model?.casey_defence?.why_cost||[]],
-            ['WHY '+(model?.schedule_months||'—')+' MONTHS', model?.casey_defence?.why_schedule||[]],
-            ['WHY '+(model?.confidence_pct||'—')+'% CONFIDENCE', model?.casey_defence?.why_confidence||[]],
-            ['WHY P80 = '+(model?.cost_p80||'—'), model?.casey_defence?.why_p80||[]],
-          ].map(([heading, points])=>(
-            <div key={heading} style={{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:6,padding:'12px 16px',marginBottom:8}}>
-              <div style={{fontSize:'9px',fontWeight:'800',color:'#06b6d4',letterSpacing:'.1em',marginBottom:6}}>{heading}</div>
-              {(points||[]).map((p,i)=><div key={i} style={{display:'flex',gap:6,marginBottom:3}}><span style={{color:'#0e7490',fontSize:'10px',flexShrink:0}}>→</span><span style={{fontSize:'11px',color:'#cbd5e1',lineHeight:'1.5'}}>{p}</span></div>)}
-            </div>
-          ))}
-
-          {/* RISK REGISTER DEPTH */}
-          {model?.total_risks_identified>0&&<div style={{background:'rgba(245,158,11,0.06)',border:'1px solid rgba(245,158,11,0.2)',borderRadius:6,padding:'12px 16px',marginBottom:8}}>
-            <div style={{fontSize:'9px',fontWeight:'800',color:'#f59e0b',letterSpacing:'.1em',marginBottom:6}}>📋 RISK REGISTER DEPTH</div>
-            <div style={{display:'flex',gap:16,alignItems:'center',flexWrap:'wrap'}}>
-              <div style={{textAlign:'center'}}><div style={{fontSize:'28px',fontWeight:'800',color:'#fff',lineHeight:1}}>{model.total_risks_identified}</div><div style={{fontSize:'9px',color:'#64748b',marginTop:2}}>TOTAL RISKS</div></div>
-              <div style={{textAlign:'center'}}><div style={{fontSize:'28px',fontWeight:'800',color:'#f59e0b',lineHeight:1}}>{model?.risks_displayed||Math.min(12,model.total_risks_identified)}</div><div style={{fontSize:'9px',color:'#64748b',marginTop:2}}>TOP BY EMV SHOWN</div></div>
-              <div style={{textAlign:'center'}}><div style={{fontSize:'28px',fontWeight:'800',color:'#10b981',lineHeight:1}}>{model?.casey_defence?.risks_with_emv||0}</div><div style={{fontSize:'9px',color:'#64748b',marginTop:2}}>EMV QUANTIFIED</div></div>
-              <div style={{flex:1,minWidth:160,fontSize:'10px',color:'#94a3b8',lineHeight:'1.5'}}>Full register (all {model.total_risks_identified} risks) exported to Risk Register workbook. Top 12 by EMV displayed in Risk tab and board pack.</div>
-            </div>
-          </div>}
-
-          {/* WHAT WOULD CHANGE THE ANSWER */}
-          <div style={{background:'rgba(245,158,11,0.06)',border:'1px solid rgba(245,158,11,0.2)',borderRadius:6,padding:'12px 16px',marginBottom:8}}>
-            <div style={{fontSize:'9px',fontWeight:'800',color:'#f59e0b',letterSpacing:'.1em',marginBottom:6}}>WHAT WOULD CHANGE THE ANSWER</div>
-            {(model?.casey_defence?.what_changes_answer||[]).map((p,i)=><div key={i} style={{display:'flex',gap:6,marginBottom:3}}><span style={{color:'#f59e0b',fontSize:'10px',flexShrink:0}}>→</span><span style={{fontSize:'11px',color:'#cbd5e1',lineHeight:'1.5'}}>{p}</span></div>)}
           </div>
 
-          {/* XER QA */}
-          {model?.xer_qa&&<div style={{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:6,padding:'12px 16px',marginBottom:8}}>
-            <div style={{fontSize:'9px',fontWeight:'800',color:'#06b6d4',letterSpacing:'.1em',marginBottom:8}}>XER SCHEDULE QA</div>
-            <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:6}}>
-              {[['Activities',model.xer_qa.total_activities],['Milestones',model.xer_qa.milestone_count],['Logic Density',model.xer_qa.logic_density],['Open Ends',model.xer_qa.open_ends],['Critical Path',model.xer_qa.critical_path_pct+'%'],['QA Score',model.xer_qa.qa_score+'%']].map(([l,v])=>(
-                <div key={l} style={{background:'rgba(255,255,255,0.03)',borderRadius:4,padding:'7px 10px'}}>
-                  <div style={{fontSize:'9px',color:'#64748b',marginBottom:2}}>{l}</div>
-                  <div style={{fontSize:'13px',fontWeight:'700',color:'#fff'}}>{v}</div>
+          {/* PANEL 4: CONFIDENCE EVIDENCE — what we know vs what we assumed */}
+          <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:10,padding:'14px 18px'}}>
+            <div style={{fontSize:'9px',fontWeight:'800',color:'#e2e8f0',letterSpacing:'.12em',marginBottom:8}}>📋 CONFIDENCE EVIDENCE — WHAT CASEY KNOWS vs WHAT IT ASSUMED</div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8,marginBottom:10}}>
+              {[['📅 XER Schedule',model?.evidence_files?.xer||model?.xer_health?.from_upload,'Upload XER for verified QSRA'],
+                ['📊 Cost Workbook',model?.evidence_files?.cost,'Upload cost file for verified P50'],
+                ['📋 Risk Register',model?.evidence_files?.risk_register,'Upload register for verified QCRA']].map(([label,has,hint])=>(
+                <div key={label} style={{padding:'8px 12px',background:has?'rgba(16,185,129,0.08)':'rgba(255,255,255,0.02)',border:`1px solid ${has?'rgba(16,185,129,0.25)':'rgba(255,255,255,0.06)'}`,borderRadius:6}}>
+                  <div style={{fontSize:'12px',marginBottom:4}}>{has?'✅':'❌'}</div>
+                  <div style={{fontSize:'9px',fontWeight:'700',color:has?'#10b981':'#64748b'}}>{label}</div>
+                  {!has && <div style={{fontSize:'8px',color:'#475569',marginTop:2}}>{hint}</div>}
                 </div>
               ))}
             </div>
-            <div style={{marginTop:6,fontSize:'10px',color:'#94a3b8'}}>Duration: {model.xer_qa.duration_flag}</div>
-          </div>}
-        </div>}
-      </>}
+            {/* Confidence decomposition compact */}
+            {model?.confidence_by_discipline && <div style={{borderTop:'1px solid rgba(255,255,255,0.06)',paddingTop:8}}>
+              <div style={{fontSize:'8px',color:'#475569',marginBottom:6}}>WHY {model.confidence_pct}% CONFIDENCE?</div>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:6}}>
+                {Object.entries(model.confidence_by_discipline).slice(0,6).map(([disc,pct])=>(
+                  <div key={disc} style={{display:'flex',alignItems:'center',gap:6}}>
+                    <div style={{flex:1,height:3,background:'rgba(255,255,255,0.06)',borderRadius:2}}>
+                      <div style={{width:pct+'%',height:'100%',background:pct>=70?'#10b981':pct>=55?'#f59e0b':'#ef4444',borderRadius:2}}/>
+                    </div>
+                    <div style={{fontSize:'8px',fontWeight:'700',color:pct>=70?'#10b981':pct>=55?'#f59e0b':'#ef4444',minWidth:24}}>{pct+'%'}</div>
+                    <div style={{fontSize:'7px',color:'#475569',overflow:'hidden',whiteSpace:'nowrap',textOverflow:'ellipsis',maxWidth:60}}>{disc.split('/')[0].trim()}</div>
+                  </div>
+                ))}
+              </div>
+            </div>}
+            {/* Evidence chain if available */}
+            {model?.evidence_chain?.length > 0 && <div style={{borderTop:'1px solid rgba(255,255,255,0.06)',paddingTop:8,marginTop:8}}>
+              <div style={{fontSize:'8px',color:'#10b981',fontWeight:'700',marginBottom:4}}>EVIDENCE CHAIN — NUMBERS FROM YOUR FILES:</div>
+              {model.evidence_chain.slice(0,4).map((e,i)=>(
+                <div key={i} style={{fontSize:'8px',color:'#475569',marginBottom:2,display:'flex',gap:5}}>
+                  <span style={{color:'#10b981',flexShrink:0}}>→</span>{e}
+                </div>
+              ))}
+            </div>}
+          </div>
+        </>}
+        </>}
     </main>
-  {(loading || exportingLabel) && <div className="simOverlay">
-      <div className="simCard">
-        <div className="simSpinner" />
-        <h3 style={{textAlign:'center',lineHeight:'1.4',maxWidth:'360px'}}>{exportingLabel || simulationStage || 'Building intelligence pack…'}</h3>
-        {(simulationStage||'').toLowerCase().includes('demo') || (simulationStage||'').toLowerCase().includes('reference')
-          ? <p style={{textAlign:'center',color:'#64748b',fontSize:'12px',maxWidth:'320px',lineHeight:'1.5'}}>First load takes 20–30 seconds while the server starts. Subsequent loads are instant. Please wait.</p>
-          : <p style={{textAlign:'center',color:'#64748b',fontSize:'11px'}}>QCRA · QSRA · Risk register · Benchmarks · Board pack</p>}
-      </div>
-    </div>}
   </div>;
-}
-
-// ── SAVED PROJECTS + INVESTOR CSS ────────────────────────────────────────────
-// ── COMPACT DENSITY OVERRIDE CSS ─────────────────────────────────────────────
-const compactDensityCSS = `
-  /* Tighter headings throughout */
-  .v50EliteApp .card h2 { font-size: 12px !important; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 8px !important; }
-  .v50EliteApp .card h3 { font-size: 11px !important; font-weight: 700; margin: 10px 0 6px; }
-  .v50EliteApp .reason { padding: 5px 0 !important; font-size: 12px !important; line-height: 1.5 !important; }
-  .v50EliteApp .card { padding: 14px 16px !important; }
-  .v50EliteApp .big { font-size: 13px !important; line-height: 1.6 !important; }
-  .v50EliteApp .chartCaption { font-size: 11px !important; color: #64748b; margin-bottom: 8px !important; }
-  /* KPI strip - more compact */
-  .v50EliteApp .kpis { gap: 6px !important; padding: 8px 0 !important; }
-  /* Tabs - tighter */
-  .v50EliteApp .tabs button { font-size: 10px !important; padding: 5px 10px !important; }
-  /* Scenario rail - compact */
-  .v50EliteApp .scenarioRail button { padding: 7px 10px !important; }
-  .v50EliteApp .scenarioRail button b { font-size: 11px !important; }
-  .v50EliteApp .scenarioRail button span { font-size: 10px !important; }
-  /* Overview section gaps */
-  .v50EliteApp .layout { gap: 10px !important; margin-bottom: 10px !important; }
-  /* IntelligenceMeta rail */
-  .v50EliteApp .orbitalMetaRail { padding: 6px 14px !important; gap: 16px !important; font-size: 10px !important; }
-  /* Confidence badge */
-  .v50EliteApp .confidenceEngineBadge { padding: 5px 14px !important; font-size: 10px !important; }
-  /* Mission cards */
-  .v50EliteApp .intelCard { padding: 8px 10px !important; }
-  .v50EliteApp .intelCard b { font-size: 11px !important; }
-  .v50EliteApp .intelCard p { font-size: 10px !important; }
-  /* fee counter */
-  .v50EliteApp .feeRow { padding: 4px 0 !important; font-size: 11px !important; }
-  /* Audit spine */
-  .v50EliteApp .auditSpine { padding: 4px 0 !important; font-size: 11px !important; }
-  /* Advisor prompts */
-  .v50EliteApp .advisorPrompts button { font-size: 11px !important; padding: 6px 10px !important; }
-  /* Export strip */
-  .v50EliteApp .v50ExportStrip button { font-size: 10px !important; padding: 5px 10px !important; }
-`;
-if (!document.querySelector('#casey-compact-css')) {
-  const s = document.createElement('style');
-  s.id = 'casey-compact-css';
-  s.textContent = compactDensityCSS;
-  document.head.appendChild(s);
-}
-
-const savedInvestorCSS = `
-.savedPanel,.investorPanel{position:fixed;top:0;right:0;width:min(640px,100vw);height:100vh;background:#0c1a2e;border-left:1px solid rgba(141,247,255,0.15);z-index:900;overflow-y:auto;display:flex;flex-direction:column;}
-.savedHeader,.investorHeader{padding:18px 20px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;justify-content:space-between;align-items:flex-start;flex-shrink:0;background:#0a1628;}
-.savedHeader h2,.investorHeader h2{color:#e2e8f0;font-size:16px;font-weight:800;margin:0;}
-.savedHeader button,.investorHeader button{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#94a3b8;padding:5px 12px;border-radius:3px;cursor:pointer;font-size:12px;flex-shrink:0;}
-.savedGrid{padding:16px;display:flex;flex-direction:column;gap:10px;}
-.savedCard{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:5px;padding:14px 16px;}
-.savedCard:hover{border-color:rgba(141,247,255,0.2);}
-.savedCard h3{color:#e2e8f0;font-size:13px;font-weight:700;margin:4px 0 10px;}
-.savedMeta{display:flex;justify-content:space-between;font-size:10px;font-weight:800;letter-spacing:.1em;color:#8df7ff;margin-bottom:4px;}
-.savedMeta em{color:#475569;font-style:normal;}
-.savedStats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px;}
-.savedStats>div{background:rgba(255,255,255,0.03);border-radius:3px;padding:6px;text-align:center;}
-.savedStats span{display:block;font-size:9px;color:#475569;font-weight:800;letter-spacing:.08em;margin-bottom:2px;}
-.savedStats b{display:block;font-size:12px;color:#8df7ff;font-weight:700;}
-.savedActions{display:flex;gap:8px;}
-.savedLoad{background:rgba(141,247,255,0.08);border:1px solid rgba(141,247,255,0.2);color:#8df7ff;padding:5px 14px;border-radius:3px;cursor:pointer;font-size:11px;font-weight:700;}
-.savedLoad:hover{background:rgba(141,247,255,0.15);}
-.savedDelete{background:transparent;border:1px solid rgba(239,68,68,0.2);color:#475569;padding:5px 12px;border-radius:3px;cursor:pointer;font-size:11px;}
-.savedDelete:hover{border-color:rgba(239,68,68,0.4);color:#fca5a5;}
-.investorPanel{width:min(900px,100vw);}
-.investorHeader{flex-direction:row;gap:16px;align-items:flex-start;}
-.investorHeader h2{font-size:20px;color:#e2e8f0;margin:4px 0 6px;}
-.investorHeader p{color:#64748b;font-size:12px;margin:0;}
-.investorGrid{padding:20px;display:flex;flex-direction:column;gap:16px;}
-.investorBlock{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:5px;padding:16px 18px;}
-.investorBlock h3{font-size:11px;font-weight:800;letter-spacing:.12em;color:#8df7ff;margin:0 0 12px;text-transform:uppercase;}
-.investorBlock.wide{width:100%;}
-.investorMetric{display:inline-block;margin:0 16px 12px 0;vertical-align:top;width:calc(50% - 20px);}
-.investorMetricVal{font-size:22px;font-weight:900;color:#e2e8f0;line-height:1;}
-.investorMetricLabel{font-size:11px;color:#94a3b8;font-weight:600;margin:3px 0 1px;}
-.investorMetricNote{font-size:10px;color:#475569;line-height:1.4;}
-.investorMoat{margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,0.05);}
-.investorMoat:last-child{border-bottom:none;margin-bottom:0;}
-.investorMoat b{color:#e2e8f0;font-size:12px;display:block;margin-bottom:3px;}
-.investorMoat p{color:#64748b;font-size:11px;line-height:1.6;margin:0;}
-.investorRevTable{display:flex;flex-direction:column;gap:0;}
-.investorRevHeader,.investorRevRow{display:grid;grid-template-columns:1.8fr 1.8fr 1.6fr 2fr;gap:8px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:11px;}
-.investorRevHeader{color:#64748b;font-weight:800;letter-spacing:.08em;font-size:9px;text-transform:uppercase;}
-.investorRevRow{color:#94a3b8;}
-.investorRevRow:last-child{border-bottom:none;}
-`;
-if (!document.querySelector('#casey-saved-investor-css')) {
-  const s = document.createElement('style');
-  s.id = 'casey-saved-investor-css';
-  s.textContent = savedInvestorCSS;
-  document.head.appendChild(s);
-}
-
-// ── DIGITAL TWIN TAB — 14-Layer Intelligence Engine ─────────────────────────
-function TwinTab({ model, setTab }) {
-  const SECTOR_FIELDS = {
-    Rail:[{k:"civil_complete_pct",l:"Civil works % complete",t:"pct",bm:20,h:"Physical % complete vs plan. Not spend."},
-          {k:"possessions_used_pct",l:"Track possessions used vs granted %",t:"pct",bm:85,h:"Below 80% = programme extension risk. Crossrail had 72% at year 4."},
-          {k:"systems_integration_open_items",l:"Open IEMs (interface items)",t:"num",bm:50,h:"Above 100 with less than 24 months to opening = Crossrail failure pattern."},
-          {k:"signalling_milestones_met_pct",l:"Signalling milestones on time %",t:"pct",bm:70,h:"Signalling is always on the critical path. Below 70% = delay risk."},
-          {k:"earned_value_pct",l:"Earned value % (EV divided by BAC times 100)",t:"pct",bm:95,h:"Below 90% = overrun trajectory."}],
-    Space:[{k:"trl_achieved",l:"Technology Readiness Level (TRL achieved)",t:"num",bm:6,h:"TRL 6 minimum before PDR. JWST launched at TRL 9 after 506% cost growth."},
-           {k:"open_anomalies",l:"Open qualification anomalies (unresolved)",t:"num",bm:5,h:"Each anomaly delays launch authority. JWST had 300+ at one stage."},
-           {k:"mission_assurance_items_closed_pct",l:"Mission assurance items closed %",t:"pct",bm:60,h:"MA items must be formally closed with evidence."},
-           {k:"launch_manifest_confirmed",l:"Launch slot confirmed with provider",t:"bool",h:"Without a confirmed slot all schedule milestones are notional."},
-           {k:"mass_margin_pct",l:"Mass margin remaining %",t:"pct",bm:15,h:"Below 10% = redesign required."}],
-    Nuclear:[{k:"gda_status",l:"Regulatory hold-points cleared %",t:"pct",bm:60,h:"No work can proceed past hold-points without ONR written authorisation."},
-             {k:"nuclear_workforce_pct",l:"Nuclear-qualified workforce secured %",t:"pct",bm:50,h:"SC/DV cleared and qualified staff vs planned peak."},
-             {k:"design_freeze_achieved",l:"Design freeze achieved (independent sign-off)",t:"bool",h:"Vogtle: design changes post-FCD drove 113% overrun."},
-             {k:"supply_chain_qualified_pct",l:"Nuclear supply chain qualified %",t:"pct",bm:40,h:"% of nuclear-grade suppliers contracted."},
-             {k:"earned_value_pct",l:"Earned value %",t:"pct",bm:95,h:"EV/BAC x 100."}],
-    Defence:[{k:"requirements_frozen",l:"Requirements baseline frozen (SRO signed)",t:"bool",h:"Ajax: requirements instability drove 40% cost growth."},
-             {k:"sc_dv_clearances_pct",l:"SC/DV clearances granted %",t:"pct",bm:60,h:"Below 50% = programme delay."},
-             {k:"itar_licences_granted",l:"All ITAR/export licences granted",t:"bool",h:"Missing licence = 6-12 month stop."},
-             {k:"test_milestones_met_pct",l:"Test and evaluation milestones met %",t:"pct",bm:70,h:"T&E is always on the critical path."},
-             {k:"earned_value_pct",l:"Earned value %",t:"pct",bm:90,h:"EV/BAC x 100."}],
-    Digital:[{k:"grid_connection_confirmed",l:"Grid connection agreement signed with DNO/TSO",t:"bool",h:"18-24 month lead time. The single longest-lead item."},
-             {k:"transformer_delivery_confirmed",l:"Power transformer delivery confirmed",t:"bool",h:"Must be ordered before planning consent."},
-             {k:"planning_consent_granted",l:"Full planning consent granted",t:"bool",h:"Including substation and cooling."},
-             {k:"it_load_spec_frozen",l:"IT load specification frozen",t:"bool",h:"Any change requires cooling redesign."},
-             {k:"earned_value_pct",l:"Earned value %",t:"pct",bm:95,h:"EV/BAC x 100."}],
-    Mining:[{k:"ore_grade_vs_feasibility_pct",l:"Ore grade vs feasibility model %",t:"pct",bm:95,h:"Below 90% = business case at risk."},
-            {k:"community_agreement_signed",l:"Community benefit agreement signed",t:"bool",h:"Cobre Panama: 10B programme suspended at 95% complete without community agreement."},
-            {k:"comminution_equipment_delivery_confirmed",l:"Processing equipment delivery confirmed",t:"bool",h:"SAG mill delivery confirmed?"},
-            {k:"power_supply_secured",l:"Power supply contracted for full load",t:"bool",h:"Power contracted for full production capacity?"},
-            {k:"earned_value_pct",l:"Earned value %",t:"pct",bm:92,h:"EV/BAC x 100."}],
-    Battery:[{k:"offtake_contracted_pct",l:"Offtake contracted % of annual capacity",t:"pct",bm:40,h:"Britishvolt: no offtake = no financing = administration."},
-             {k:"cell_chemistry_qualified",l:"Cell chemistry qualified and meeting target",t:"bool",h:"Chemistry meeting energy density specification?"},
-             {k:"formation_equipment_on_order",l:"Formation cycling equipment on order",t:"bool",h:"18-month lead time. Must be ordered now."},
-             {k:"earned_value_pct",l:"Earned value %",t:"pct",bm:90,h:"EV/BAC x 100."}],
-    Semiconductor:[{k:"tool_allocation_confirmed_pct",l:"Process tools allocated % (incl. EUV)",t:"pct",bm:50,h:"ASML EUV = 3-year lead time. Cannot be accelerated."},
-                   {k:"cleanroom_handover_complete",l:"Cleanroom handed over and qualifying",t:"bool",h:"18-month qualification process before any tools can run."},
-                   {k:"workforce_secured_pct",l:"Process integration engineers secured %",t:"pct",bm:40,h:"% of required process engineers contracted."},
-                   {k:"earned_value_pct",l:"Earned value %",t:"pct",bm:92,h:"EV/BAC x 100."}],
-  };
-
-  const getSK = (sub,mode) => {
-    const s = ((sub||"")+" "+(mode||"")).toLowerCase();
-    if(s.includes("rail")||s.includes("transit")) return "Rail";
-    if(s.includes("space")||s.includes("lunar")||s.includes("orbital")||s.includes("satellite")) return "Space";
-    if(s.includes("nuclear")) return "Nuclear";
-    if(s.includes("defence")||s.includes("defense")) return "Defence";
-    if(s.includes("data")||s.includes("digital")||s.includes("hyperscale")) return "Digital";
-    if(s.includes("mining")||s.includes("copper")||s.includes("mineral")) return "Mining";
-    if(s.includes("battery")||s.includes("gigafactory")) return "Battery";
-    if(s.includes("semi")||s.includes("fab")) return "Semiconductor";
-    return null;
-  };
-
-  const sk = getSK(model?.subsector||"", model?.mode||"");
-  const sectorFields = sk ? (SECTOR_FIELDS[sk]||[]) : [];
-
-  const DEMOS = {
-    "earth_on_track":{l:"Earth — On track (month 18)",d:"HS2-style, 18 months in, tracking close to plan. Load to see GREEN outcome.",i:{progress_pct:15,actual_cost_pct:101,earned_value_pct:98,schedule_slip_months:1,scope_changes_count:1,civil_complete_pct:14,possessions_used_pct:88,systems_integration_open_items:32}},
-    "earth_overrun":{l:"Earth — Cost overrun (month 36)",d:"HS2-style, 3 years in, 15% over budget, 6-month slip, 9 scope changes. REBASELINE outcome.",i:{progress_pct:28,actual_cost_pct:115,earned_value_pct:86,schedule_slip_months:6,scope_changes_count:9,civil_complete_pct:26,possessions_used_pct:71,systems_integration_open_items:148}},
-    "space_on_track":{l:"Space — Phase B, TRL 6, on plan",d:"Lunar programme at Phase B, launch slot confirmed, 7 anomalies. Healthy outcome.",i:{progress_pct:40,actual_cost_pct:101,earned_value_pct:99,schedule_slip_months:0,scope_changes_count:1,trl_achieved:6,open_anomalies:7,launch_manifest_confirmed:1,mass_margin_pct:18}},
-    "space_at_risk":{l:"Space — Phase C, mission at risk",d:"Launch slot not confirmed, 28 anomalies, 14-month slip. HIGH RISK outcome.",i:{progress_pct:60,actual_cost_pct:118,earned_value_pct:82,schedule_slip_months:14,scope_changes_count:6,trl_achieved:5,open_anomalies:28,launch_manifest_confirmed:0,mass_margin_pct:8}},
-  };
-
-  const [inputs, setInputs] = React.useState({});
-  const [result, setResult] = React.useState(null);
-  const [busy, setBusy] = React.useState(false);
-  const [demo, setDemo] = React.useState(null);
-  const [uploadFiles, setUploadFiles] = React.useState([]);
-  const [uploadResult, setUploadResult] = React.useState(null);
-  const [uploading, setUploading] = React.useState(false);
-  const [dragOver, setDragOver] = React.useState(false);
-  const setI = (k,v) => setInputs(p=>({...p,[k]:v}));
-  const loadDemo = (key) => { setDemo(key); setInputs(DEMOS[key].i); setResult(null); };
-
-  const runTwin = async () => {
-    setBusy(true);
-    try {
-      const r = await apiFetch("/twin/update", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model, twin_inputs:inputs})});
-      if(r.ok) { const d=await r.json(); if(d.twin) setResult(d.twin); }
-      else { const t=await r.text(); alert("Twin error: "+t); }
-    } catch(e) { alert("Twin error: "+e.message); } finally { setBusy(false); }
-  };
-
-  const colC = (c) => c>=75?"#10b981":c>=60?"#f59e0b":"#ef4444";
-  const defCol = (v) => v==="Strong"?"#10b981":v==="Moderate"?"#f59e0b":"#ef4444";
-
-  return <section className="layout two">
-    {/* LEFT PANEL — Inputs */}
-    <div style={{display:"flex",flexDirection:"column",gap:"10px"}}>
-
-      {/* HOW IT WORKS */}
-      <div style={{background:"linear-gradient(135deg,rgba(141,247,255,0.08),rgba(141,247,255,0.02))",border:"1px solid rgba(141,247,255,0.2)",borderRadius:"6px",padding:"12px 14px"}}>
-        <div style={{fontSize:"13px",fontWeight:"900",color:"#8df7ff",marginBottom:"6px"}}>CASEY DIGITAL TWIN — A living decision engine</div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"6px",marginBottom:"8px"}}>
-          {[["Step 1 — Establish baseline","Run your project first. This generates your approved P50, schedule and confidence.","#8df7ff"],
-            ["Step 2 — Feed real data","Go to the input section. Enter earned value, spend vs plan, milestones, sector signals.","#10b981"],
-            ["Step 3 — Get decisions","CASEY returns: forecast, governing constraint, board defensibility, failure pattern match, recovery options and a board recommendation.","#f59e0b"]
-          ].map(([t,b,c])=><div key={t} style={{padding:"7px 9px",background:"rgba(255,255,255,0.03)",borderRadius:"4px",borderTop:"2px solid "+c}}>
-            <div style={{fontSize:"9px",fontWeight:"800",color:c,marginBottom:"3px"}}>{t}</div>
-            <div style={{fontSize:"9px",color:"#64748b",lineHeight:"1.4"}}>{b}</div>
-          </div>)}
-        </div>
-        <div style={{fontSize:"9px",color:"#475569"}}>Load a pre-filled demo scenario to see what the twin produces before entering real data.</div>
-      </div>
-
-      {/* BUILD TWIN FROM FILES */}
-      {true && (() => {
-        const handleFiles = (fileList) => {
-          const arr = Array.from(fileList);
-          setUploadFiles(arr);
-          setUploadResult(null);
-        };
-
-        const buildFromFiles = async (useRebuild = false) => {
-          if (!uploadFiles.length) return;
-          setUploading(true);
-          setUploadResult(null);
-          try {
-            const fd = new FormData();
-            uploadFiles.forEach(f => fd.append(f.name, f));
-            if (model?.prompt) fd.append("prompt", model.prompt);
-            if (model?.client) fd.append("client", model.client);
-
-            // Use /twin/rebuild to get a full evidence-backed model
-            // Fall back to /twin/upload-evidence for partial data
-            const endpoint = "/twin/rebuild";
-            const resp = await apiFetch(endpoint, {method:"POST", body:fd});
-            if (resp.ok) {
-              const data = await resp.json();
-              setUploadResult(data);
-              if (data.model && data.evidence_chain && data.evidence_chain.length > 0) {
-                // Replace the full model with the evidence-built one
-                setUploadResult({...data, rebuilt: true});
-              } else if (data.twin_inputs && Object.keys(data.twin_inputs || {}).length > 0) {
-                setInputs(prev => ({...prev, ...data.twin_inputs}));
-              }
-            } else {
-              const t = await resp.text();
-              setUploadResult({evidence: ["Server error: " + t.slice(0,200)], rebuilt: false});
-            }
-          } catch(e) {
-            setUploadResult({evidence: ["Upload error: " + e.message], rebuilt: false});
-          } finally {
-            setUploading(false);
-          }
-        };
-
-        const FILE_ICONS = {xer:"📅", xlsx:"📊", xls:"📊", csv:"📋", pdf:"📄", docx:"📝", txt:"📝"};
-        const getIcon = f => FILE_ICONS[f.name.split(".").pop().toLowerCase()] || "📎";
-
-        return <div style={{background:"linear-gradient(135deg,rgba(141,247,255,0.06),rgba(141,247,255,0.02))",border:"1px solid rgba(141,247,255,0.2)",borderRadius:"6px",padding:"10px 12px"}}>
-          <div style={{fontSize:"11px",fontWeight:"900",color:"#8df7ff",marginBottom:"4px"}}>BUILD TWIN FROM PROJECT EVIDENCE</div>
-          <div style={{fontSize:"9px",color:"#64748b",marginBottom:"10px",lineHeight:"1.5"}}>
-            Upload your real programme files. CASEY reads them and creates the twin automatically. No setup. No configuration.
-          </div>
-
-          {/* WHAT CASEY REBUILDS FROM EVIDENCE */}
-          <div style={{background:'rgba(6,182,212,0.06)',border:'1px solid rgba(6,182,212,0.2)',borderRadius:6,padding:'10px 14px',marginBottom:10}}>
-            <div style={{fontSize:'9px',fontWeight:'800',color:'#06b6d4',letterSpacing:'.12em',marginBottom:6}}>UPLOAD EVIDENCE → CASEY REBUILDS AUTOMATICALLY</div>
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6}}>
-              {[['📅 XER Schedule','→ XER Health Score, Critical Path, QSRA'],['📊 Cost Workbook','→ Estimate basis, CBS, unit rates, OBA'],['📋 Risk Register','→ QCRA, risk clusters, mortality event'],['📄 Board Pack / Report','→ Full Decision Twin from evidence']].map(([f,r],i)=>(
-                <div key={i} style={{padding:'6px 8px',background:'rgba(255,255,255,0.03)',borderRadius:4}}>
-                  <div style={{fontSize:'9px',color:'#fff',fontWeight:'600'}}>{f}</div>
-                  <div style={{fontSize:'8px',color:'#10b981',marginTop:2}}>{r}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* File type guide */}
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"4px",marginBottom:"10px"}}>
-            {[["📅 XER (Primavera P6)","Schedule health score, critical path confidence, open ends, logic density"],
-              ["📊 Excel Cost / Risk","Cost actuals, earned value, risk clusters, procurement status"],
-              ["📄 Board Pack PDF","Full twin rebuild from monthly report or board pack"],
-              ["📝 Monthly Report","Progress, costs, risks, decisions → Decision Twin"],
-              ["📋 Risk Register","Risk count, open items, EMV totals"],
-              ["📝 Monthly Report (.txt/.docx/.pdf)","CPI, delay, programme status from narrative"]
-            ].map(([t,d])=><div key={t} style={{padding:"5px 7px",background:"rgba(255,255,255,0.03)",borderRadius:"3px",border:"1px solid rgba(255,255,255,0.06)"}}>
-              <div style={{fontSize:"9px",fontWeight:"700",color:"#e2e8f0"}}>{t}</div>
-              <div style={{fontSize:"8px",color:"#475569",lineHeight:"1.3"}}>{d}</div>
-            </div>)}
-          </div>
-
-          {/* Drop zone */}
-          <div
-            onDragOver={e=>{e.preventDefault();setDragOver(true);}}
-            onDragLeave={()=>setDragOver(false)}
-            onDrop={e=>{e.preventDefault();setDragOver(false);handleFiles(e.dataTransfer.files);}}
-            onClick={()=>document.getElementById("twin-file-input").click()}
-            style={{border:"2px dashed "+(dragOver?"rgba(141,247,255,0.5)":"rgba(141,247,255,0.2)"),
-              borderRadius:"5px",padding:"16px",textAlign:"center",cursor:"pointer",
-              background:dragOver?"rgba(141,247,255,0.06)":"rgba(255,255,255,0.02)",
-              transition:"all 0.15s",marginBottom:"8px"}}
-          >
-            <div style={{fontSize:"22px",marginBottom:"4px"}}>📂</div>
-            <div style={{fontSize:"11px",fontWeight:"700",color:"#8df7ff",marginBottom:"2px"}}>
-              Drop files here or click to select
-            </div>
-            <div style={{fontSize:"9px",color:"#475569"}}>XER · Excel · CSV · PDF · Word · TXT — any format, any mess</div>
-            <input id="twin-file-input" type="file" multiple accept=".xer,.xlsx,.xls,.csv,.pdf,.docx,.txt"
-              style={{display:"none"}} onChange={e=>handleFiles(e.target.files)}/>
-          </div>
-
-          {/* File list */}
-          {uploadFiles.length > 0 && <div style={{marginBottom:"8px"}}>
-            {uploadFiles.map((f,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"4px 8px",background:"rgba(255,255,255,0.04)",borderRadius:"3px",marginBottom:"2px",fontSize:"10px"}}>
-              <span>{getIcon(f)} {f.name}</span>
-              <span style={{color:"#475569",fontSize:"9px"}}>{(f.size/1024).toFixed(0)}KB</span>
-            </div>)}
-          </div>}
-
-          {/* Build button */}
-          {uploadFiles.length > 0 && <button onClick={buildFromFiles} disabled={uploading} style={{
-            width:"100%",padding:"10px",marginBottom:"8px",
-            background:uploading?"rgba(141,247,255,0.04)":"rgba(141,247,255,0.12)",
-            border:"1px solid rgba(141,247,255,0.3)",borderRadius:"4px",
-            color:"#8df7ff",fontSize:"12px",fontWeight:"800",cursor:uploading?"not-allowed":"pointer",letterSpacing:".04em"
-          }}>{uploading?"Reading files — CASEY is extracting programme data...":"⚡ BUILD TWIN FROM THESE FILES"}</button>}
-
-          {/* Results — Evidence Chain UI */}
-          {uploadResult && <div style={{padding:"10px 12px",background:"rgba(255,255,255,0.03)",borderRadius:"6px",border:"1px solid rgba(255,255,255,0.08)"}}>
-            {/* FULL REBUILD SUCCESS */}
-            {uploadResult.rebuilt && uploadResult.evidence_chain?.length > 0
-              ? <div>
-                  <div style={{fontSize:"10px",fontWeight:"800",color:"#10b981",marginBottom:6}}>✅ DECISION TWIN REBUILT FROM EVIDENCE</div>
-                  <div style={{fontSize:"9px",color:"#6ee7b7",marginBottom:8}}>Every number is traced to your uploaded files. No assumptions — only evidence.</div>
-                  {/* Evidence chain */}
-                  <div style={{background:"rgba(16,185,129,0.05)",borderRadius:4,padding:"8px 10px",marginBottom:8}}>
-                    <div style={{fontSize:"8px",fontWeight:"700",color:"#10b981",marginBottom:4}}>EVIDENCE CHAIN — SOURCE OF EVERY NUMBER:</div>
-                    {uploadResult.evidence_chain.map((e,i)=><div key={i} style={{display:"flex",gap:6,fontSize:"9px",marginBottom:2}}>
-                      <span style={{color:"#10b981",flexShrink:0}}>→</span>
-                      <span style={{color:"#cbd5e1"}}>{e}</span>
-                    </div>)}
-                  </div>
-                  {/* What CASEY inferred */}
-                  {uploadResult.evidence_inferred?.length > 0 && <div style={{background:"rgba(245,158,11,0.06)",borderRadius:4,padding:"8px 10px",marginBottom:8}}>
-                    <div style={{fontSize:"8px",fontWeight:"700",color:"#f59e0b",marginBottom:4}}>⚙ CASEY INFERRED (upload these files to replace with evidence):</div>
-                    {uploadResult.evidence_inferred.map((e,i)=><div key={i} style={{fontSize:"9px",color:"#94a3b8",marginBottom:2}}>• {e}</div>)}
-                  </div>}
-                  {/* File status */}
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginBottom:10}}>
-                    {[["📅 XER Schedule",uploadResult.model?.xer_health?.from_upload],
-                      ["📊 Cost Workbook",uploadResult.model?.evidence_files?.cost],
-                      ["📋 Risk Register",uploadResult.model?.evidence_files?.risk_register]].map(([label,has])=>(
-                      <div key={label} style={{padding:"6px 8px",background:has?"rgba(16,185,129,0.08)":"rgba(255,255,255,0.02)",border:`1px solid ${has?"rgba(16,185,129,0.2)":"rgba(255,255,255,0.06)"}`,borderRadius:4,textAlign:"center"}}>
-                        <div style={{fontSize:"13px"}}>{has?"✅":"❌"}</div>
-                        <div style={{fontSize:"8px",color:has?"#10b981":"#475569",marginTop:2}}>{label}</div>
-                      </div>
-                    ))}
-                  </div>
-                  {/* XER health from upload */}
-                  {uploadResult.xer_health?.from_upload && <div style={{background:"rgba(6,182,212,0.06)",borderRadius:4,padding:"8px 10px",marginBottom:8}}>
-                    <div style={{fontSize:"8px",fontWeight:"700",color:"#06b6d4",marginBottom:4}}>XER HEALTH SCORE FROM YOUR FILE:</div>
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6}}>
-                      {[["Activities",uploadResult.xer_health.activity_count],
-                        ["Logic Quality",uploadResult.xer_health.logic_quality],
-                        ["Float Quality",uploadResult.xer_health.float_quality],
-                        ["Critical Path",uploadResult.xer_health.critical_pct+"%"],
-                        ["Open Ends",uploadResult.xer_health.open_ends],
-                        ["CP Confidence",uploadResult.xer_health.critical_path_confidence+"/100"]].map(([k,v])=>(
-                        <div key={k} style={{textAlign:"center"}}>
-                          <div style={{fontSize:"7px",color:"#64748b"}}>{k}</div>
-                          <div style={{fontSize:"11px",fontWeight:"700",color:v==="GOOD"?"#10b981":v==="REVIEW"?"#f59e0b":v==="POOR"?"#ef4444":"#06b6d4"}}>{v}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>}
-                </div>
-              : <div>
-                  {/* PARTIAL RESULT */}
-                  <div style={{fontSize:"9px",fontWeight:"800",color:"#64748b",marginBottom:6}}>
-                    {uploadResult.evidence?.length > 0 ? "CASEY READ FILES — partial data extracted" : "No data extracted — check file format"}
-                  </div>
-                  {(uploadResult.evidence||[]).map((e,i)=><div key={i} style={{fontSize:"9px",color:"#94a3b8",marginBottom:2}}>
-                    <span style={{color:"#10b981",marginRight:4}}>✓</span>{e}
-                  </div>)}
-                  {(uploadResult.format_hints||[]).map((h,i)=><div key={i} style={{fontSize:"9px",color:"#f59e0b",padding:"2px 0"}}>💡 {h}</div>)}
-                </div>
-            }
-            {/* Conflicts */}
-            {uploadResult.conflicts?.length > 0 && <div style={{marginTop:8,background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)",borderRadius:4,padding:"8px 10px"}}>
-              <div style={{fontSize:"9px",fontWeight:"800",color:"#ef4444",marginBottom:4}}>⚠ CONFLICTS BETWEEN FILES</div>
-              {uploadResult.conflicts.map((c,i)=><div key={i} style={{fontSize:"9px",color:"#fca5a5",marginBottom:2}}>• {c}</div>)}
-            </div>}
-          </div>}
-        </div>;
-      })()}
-
-      {/* DEMO SCENARIOS */}
-      <div style={{background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:"5px",padding:"8px 10px"}}>
-        <div style={{fontSize:"9px",fontWeight:"800",color:"#64748b",letterSpacing:".08em",marginBottom:"6px"}}>DEMO SCENARIOS — click to load pre-filled data</div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"5px"}}>
-          {Object.entries(DEMOS).map(([k,v])=><button key={k} onClick={()=>loadDemo(k)} style={{
-            padding:"7px 9px",background:demo===k?"rgba(141,247,255,0.1)":"rgba(255,255,255,0.03)",
-            border:"1px solid "+(demo===k?"rgba(141,247,255,0.3)":"rgba(255,255,255,0.07)"),
-            borderRadius:"4px",cursor:"pointer",textAlign:"left"
-          }}>
-            <div style={{fontSize:"10px",fontWeight:"700",color:"#e2e8f0",marginBottom:"1px"}}>{v.l}</div>
-            <div style={{fontSize:"8px",color:"#475569",lineHeight:"1.3"}}>{v.d}</div>
-          </button>)}
-        </div>
-      </div>
-
-      {/* CORE INPUTS */}
-      <div style={{background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:"5px",padding:"8px 10px"}}>
-        <div style={{fontSize:"9px",fontWeight:"800",color:"#64748b",letterSpacing:".08em",marginBottom:"7px"}}>CORE PROGRAMME PERFORMANCE</div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"7px"}}>
-          {[{k:"progress_pct",l:"Programme % complete",p:"e.g. 25",h:"Physical completion. Not spend.",u:"%"},
-            {k:"actual_cost_pct",l:"Actual spend vs plan (100 = on budget)",p:"e.g. 108",h:"108 means 8% above planned spend rate.",u:"%"},
-            {k:"earned_value_pct",l:"Earned value % (EV divided by BAC x 100)",p:"e.g. 92",h:"The most important number. Below 90% = overrun trajectory.",u:"%"},
-            {k:"schedule_slip_months",l:"Schedule slip from baseline",p:"e.g. 3",h:"Months slipped from approved baseline.",u:"mo"},
-            {k:"scope_changes_count",l:"Scope changes approved since baseline",p:"e.g. 2",h:"Each one adds cost and schedule risk.",u:"#"},
-          ].map(f=><div key={f.k}>
-            <label style={{fontSize:"9px",fontWeight:"700",color:"#64748b",display:"block",marginBottom:"2px"}} title={f.h}>{f.l} <span style={{color:"#334155"}}>({f.u})</span></label>
-            <input type="number" placeholder={f.p} value={inputs[f.k]!==undefined?inputs[f.k]:""} onChange={e=>setI(f.k,parseFloat(e.target.value)||0)}
-              title={f.h} style={{width:"100%",background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:"3px",padding:"5px 7px",color:"#e2e8f0",fontSize:"11px"}}/>
-            <div style={{fontSize:"8px",color:"#334155",marginTop:"1px"}}>{f.h}</div>
-          </div>)}
-        </div>
-      </div>
-
-      {/* SECTOR SIGNALS */}
-      {sectorFields.length>0 && <div style={{background:"rgba(141,247,255,0.03)",border:"1px solid rgba(141,247,255,0.12)",borderRadius:"5px",padding:"8px 10px"}}>
-        <div style={{fontSize:"9px",fontWeight:"800",color:"#8df7ff",letterSpacing:".08em",marginBottom:"7px"}}>{(sk||"SECTOR").toUpperCase()} SECTOR SIGNALS — warning signs specific to this programme type</div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"7px"}}>
-          {sectorFields.map(f=><div key={f.k}>
-            <label style={{fontSize:"9px",fontWeight:"700",color:"#64748b",display:"block",marginBottom:"2px"}} title={f.h}>
-              {f.l}{f.bm?<span style={{color:"#334155",fontWeight:"400"}}> (benchmark: {f.bm}{f.t==="pct"?"%":""})</span>:""}
-            </label>
-            {f.t==="bool"
-              ?<select value={inputs[f.k]!==undefined?String(inputs[f.k]):""} onChange={e=>setI(f.k,e.target.value===""?null:Number(e.target.value))}
-                  title={f.h} style={{width:"100%",background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:"3px",padding:"5px 7px",color:"#e2e8f0",fontSize:"11px"}}>
-                  <option value="">Not yet assessed</option>
-                  <option value="1">Yes — achieved / confirmed</option>
-                  <option value="0">No — not yet achieved</option>
-                </select>
-              :<input type="number" placeholder={f.bm?"benchmark: "+f.bm:"enter value"} value={inputs[f.k]!==undefined?inputs[f.k]:""} onChange={e=>setI(f.k,parseFloat(e.target.value)||0)}
-                  title={f.h} style={{width:"100%",background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:"3px",padding:"5px 7px",color:"#e2e8f0",fontSize:"11px"}}/>}
-            <div style={{fontSize:"8px",color:"#334155",marginTop:"1px",lineHeight:"1.3"}}>{f.h}</div>
-          </div>)}
-        </div>
-      </div>}
-
-      <button onClick={runTwin} disabled={busy} style={{
-        width:"100%",padding:"12px",
-        background:busy?"rgba(141,247,255,0.04)":"linear-gradient(135deg,rgba(141,247,255,0.15),rgba(141,247,255,0.06))",
-        border:"1px solid rgba(141,247,255,0.3)",borderRadius:"5px",
-        color:"#8df7ff",fontSize:"13px",fontWeight:"900",cursor:busy?"not-allowed":"pointer",letterSpacing:".04em"
-      }}>{busy?"Updating twin...":"⚡ UPDATE TWIN — Recalculate from real data"}</button>
-    </div>
-
-    {/* RIGHT PANEL — Results */}
-    <div style={{display:"flex",flexDirection:"column",gap:"10px"}}>
-      {!result && <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"420px",gap:"14px",border:"2px dashed rgba(141,247,255,0.1)",borderRadius:"6px",color:"#334155",textAlign:"center",padding:"24px"}}>
-        <span style={{fontSize:"40px",opacity:.3}}>⚡</span>
-        <div style={{fontSize:"13px",fontWeight:"800",color:"#475569"}}>Load a demo scenario or fill in the inputs, then click Update Twin</div>
-        <div style={{fontSize:"10px",color:"#334155",maxWidth:"280px",lineHeight:"1.6"}}>The twin returns: forecast-at-completion, governing constraint, board defensibility score, failure pattern match, recovery options, decision recommendation and executive narrative.</div>
-      </div>}
-
-      {result && <>
-        {/* DECISION BANNER */}
-        {(() => {
-          const dec = result.decision||"";
-          const col = dec.includes("REBASELINE")?"#ef4444":dec.includes("PAUSE")?"#f59e0b":dec.includes("APPROVE")?"#10b981":"#8df7ff";
-          return <div style={{padding:"10px 14px",background:col+"14",border:"2px solid "+col+"40",borderLeft:"4px solid "+col,borderRadius:"5px"}}>
-            <div style={{fontSize:"10px",fontWeight:"900",color:col,letterSpacing:".06em",marginBottom:"3px"}}>BOARD RECOMMENDATION</div>
-            <div style={{fontSize:"14px",fontWeight:"900",color:"#f1f5f9"}}>{dec}</div>
-            <div style={{fontSize:"10px",color:"#94a3b8",marginTop:"3px",lineHeight:"1.5"}}>{result.decision_reason}</div>
-          </div>;
-        })()}
-
-        {/* EXECUTIVE NARRATIVE */}
-        {result.executive_narrative && <div style={{padding:"10px 14px",background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.09)",borderRadius:"5px"}}>
-          <div style={{fontSize:"9px",fontWeight:"800",color:"#64748b",letterSpacing:".08em",marginBottom:"5px"}}>EXECUTIVE NARRATIVE</div>
-          <p style={{fontSize:"11px",color:"#94a3b8",lineHeight:"1.7",margin:0}}>{result.executive_narrative}</p>
-        </div>}
-
-        {/* KPI GRID */}
-        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"6px"}}>
-          {[{l:"Forecast at Completion",v:result.new_p50,s:"was "+result.base_p50+" at baseline",c:Math.abs(result.cost_change_pct||0)>10?"#ef4444":Math.abs(result.cost_change_pct||0)>5?"#f59e0b":"#10b981"},
-            {l:"Live Confidence",v:result.new_conf+"%",s:(result.conf_change>=0?"+":"")+result.conf_change+" pts from baseline",c:colC(result.new_conf)},
-            {l:"CPI",v:result.cpi,s:"below 0.9 = critical overrun",c:result.cpi>=0.95?"#10b981":result.cpi>=0.9?"#f59e0b":"#ef4444"},
-            {l:"Revised Schedule",v:result.new_months+" mo",s:(result.new_months-result.base_months>=0?"+":"")+(result.new_months-result.base_months)+" mo from baseline",c:result.new_months>result.base_months?"#f59e0b":"#10b981"},
-            {l:"Baseline P50",v:result.base_p50,s:"original approved estimate",c:"#64748b"},
-            {l:"Board Decision",v:result.board_decision,s:"see defensibility breakdown",c:result.board_decision==="NOT BOARD DEFENSIBLE"?"#ef4444":result.board_decision==="CONDITIONAL"?"#f59e0b":"#10b981"},
-          ].map(({l,v,s,c})=><div key={l} style={{padding:"8px 10px",background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:"4px"}}>
-            <div style={{fontSize:"8px",color:"#334155",marginBottom:"2px",fontWeight:"600"}}>{l}</div>
-            <div style={{fontSize:"17px",fontWeight:"900",color:c,lineHeight:1.1}}>{v}</div>
-            <div style={{fontSize:"8px",color:"#334155",marginTop:"1px"}}>{s}</div>
-          </div>)}
-        </div>
-
-        {/* BOARD DEFENSIBILITY */}
-        {result.board_defensibility && <div style={{padding:"9px 12px",background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:"5px"}}>
-          <div style={{fontSize:"9px",fontWeight:"800",color:"#64748b",letterSpacing:".08em",marginBottom:"7px"}}>BOARD DEFENSIBILITY — by dimension</div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:"6px"}}>
-            {Object.entries(result.board_defensibility).map(([dim,score])=><div key={dim} style={{textAlign:"center",padding:"7px 4px",background:"rgba(255,255,255,0.03)",borderRadius:"4px",border:"1px solid "+defCol(score)+"30"}}>
-              <div style={{fontSize:"8px",color:"#64748b",marginBottom:"3px",fontWeight:"600"}}>{dim.toUpperCase()}</div>
-              <div style={{fontSize:"14px",fontWeight:"900",color:defCol(score)}}>{score}</div>
-            </div>)}
-          </div>
-        </div>}
-
-        {/* GOVERNING CONSTRAINT */}
-        {result.governing_constraint && <div style={{padding:"9px 12px",background:"rgba(245,158,11,0.06)",border:"1px solid rgba(245,158,11,0.2)",borderLeft:"3px solid #f59e0b",borderRadius:"5px"}}>
-          <div style={{fontSize:"9px",fontWeight:"800",color:"#f59e0b",letterSpacing:".08em",marginBottom:"4px"}}>GOVERNING CONSTRAINT — the one thing that actually matters</div>
-          <p style={{fontSize:"10px",color:"#e2e8f0",lineHeight:"1.5",margin:"0 0 4px 0"}}>{result.governing_constraint.constraint}</p>
-          <p style={{fontSize:"9px",color:"#94a3b8",margin:0}}>Reference: {result.governing_constraint.reference}</p>
-        </div>}
-
-        {/* FAILURE PATTERN */}
-        {result.failure_pattern && <div style={{padding:"9px 12px",background:"rgba(239,68,68,0.06)",border:"1px solid rgba(239,68,68,0.2)",borderLeft:"3px solid #ef4444",borderRadius:"5px"}}>
-          <div style={{fontSize:"9px",fontWeight:"800",color:"#ef4444",letterSpacing:".08em",marginBottom:"4px"}}>FAILURE PATTERN MATCH: {result.failure_pattern.name}</div>
-          <p style={{fontSize:"10px",color:"#e2e8f0",lineHeight:"1.5",margin:"0 0 4px 0"}}>{result.failure_pattern.description}</p>
-          <div style={{fontSize:"9px",color:"#94a3b8"}}>Precedents: {(result.failure_pattern.programmes||[]).join(" | ")}</div>
-          <div style={{fontSize:"9px",color:"#f59e0b",marginTop:"3px",fontWeight:"700"}}>Warning sign: {result.failure_pattern.warning_sign}</div>
-        </div>}
-
-        {/* RECOVERY OPTIONS */}
-        {(result.recovery_options||[]).length>0 && <div>
-          <div style={{fontSize:"9px",fontWeight:"800",color:"#64748b",letterSpacing:".08em",marginBottom:"6px"}}>RECOVERY OPTIONS — choose your path</div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"6px"}}>
-            {result.recovery_options.map((o)=><div key={o.option} style={{padding:"8px 10px",background:o.recommendation?"rgba(16,185,129,0.07)":"rgba(255,255,255,0.03)",border:"1px solid "+(o.recommendation?"rgba(16,185,129,0.25)":"rgba(255,255,255,0.08)"),borderRadius:"5px"}}>
-              <div style={{fontSize:"9px",fontWeight:"900",color:o.recommendation?"#10b981":"#64748b",marginBottom:"3px"}}>OPTION {o.option}{o.recommendation?" — RECOMMENDED":""}</div>
-              <div style={{fontSize:"11px",fontWeight:"800",color:"#e2e8f0",marginBottom:"3px"}}>{o.label}</div>
-              <div style={{fontSize:"9px",color:"#94a3b8",marginBottom:"4px",lineHeight:"1.4"}}>{o.description}</div>
-              <div style={{fontSize:"9px",color:"#8df7ff"}}>+{o.additional_cost} cost</div>
-              <div style={{fontSize:"9px",color:"#f59e0b"}}>{o.months_recovered>0?o.months_recovered+" mo recovered":"No schedule recovery"}</div>
-              <div style={{fontSize:"9px",color:colC(o.new_confidence)}}>{o.new_confidence}% confidence</div>
-            </div>)}
-          </div>
-        </div>}
-
-        {/* ALERTS */}
-        {(result.alerts||[]).length>0 && <div>
-          <div style={{fontSize:"9px",fontWeight:"800",color:"#64748b",letterSpacing:".08em",marginBottom:"5px"}}>BOARD ALERTS</div>
-          {result.alerts.map((a,i)=>{
-            const c=a.level==="CRITICAL"?"#ef4444":a.level==="HIGH"?"#f59e0b":a.level==="GREEN"?"#10b981":"#8df7ff";
-            return <div key={i} style={{marginBottom:"5px",padding:"7px 10px",background:c+"0d",border:"1px solid "+c+"22",borderLeft:"3px solid "+c,borderRadius:"4px",display:"flex",gap:"8px",alignItems:"flex-start"}}>
-              <span style={{background:c+"20",color:c,fontSize:"7px",fontWeight:"900",padding:"2px 5px",borderRadius:"2px",flexShrink:0,marginTop:"1px"}}>{a.level}</span>
-              <span style={{fontSize:"10px",color:"#e2e8f0",lineHeight:"1.5"}}>{a.msg}</span>
-            </div>;
-          })}
-        </div>}
-
-        {/* BOARD QUESTIONS */}
-        {(result.board_questions||[]).length>0 && <div>
-          <div style={{fontSize:"9px",fontWeight:"800",color:"#64748b",letterSpacing:".08em",marginBottom:"5px"}}>BOARD QUESTIONS — questions the investment committee will ask</div>
-          {result.board_questions.map((q,i)=><div key={i} style={{marginBottom:"4px",padding:"7px 10px",background:"rgba(255,255,255,0.02)",borderRadius:"3px",border:"1px solid rgba(255,255,255,0.06)",fontSize:"10px",color:"#94a3b8",lineHeight:"1.5"}}>
-            <span style={{color:"#8df7ff",marginRight:"6px",fontWeight:"800"}}>{i+1}.</span>{q}
-          </div>)}
-        </div>}
-      </>}
-    </div>
-  </section>;
 }
 
 
@@ -5126,7 +4643,7 @@ function ChallengeAnaloguePanel({ model }) {
     <button onClick={()=>run("analogue")} disabled={busy} style={{
       padding:"9px 18px",background:"rgba(141,247,255,0.08)",border:"1px solid rgba(141,247,255,0.2)",
       borderRadius:"5px",color:"#8df7ff",fontSize:"12px",fontWeight:"800",cursor:"pointer"
-    }}>📚 HISTORICAL ANALOGUES</button>
+    }}>📚 SECTOR ANALOGUES</button>
     <button onClick={saveSnapshot} style={{
       padding:"9px 14px",background:"rgba(16,185,129,0.08)",border:"1px solid rgba(16,185,129,0.2)",
       borderRadius:"5px",color:"#10b981",fontSize:"11px",fontWeight:"700",cursor:"pointer"
@@ -5153,9 +4670,9 @@ function ChallengeAnaloguePanel({ model }) {
         const conf_drift = curr_conf - prev_conf;
         const acc = Math.max(0, 100 - Math.abs(drift));
         return <div style={{marginTop:"6px",padding:"6px 8px",background:"rgba(255,255,255,0.02)",borderRadius:"3px",fontSize:"9px",color:"#94a3b8"}}>
-          Forecast drift over {mem.length} snapshots: <span style={{color:drift>10?"#ef4444":drift>5?"#f59e0b":"#10b981",fontWeight:"700"}}>{drift>0?"+":""}{drift}%</span>
-          {"  "}Confidence drift: <span style={{color:conf_drift<-5?"#ef4444":conf_drift>5?"#10b981":"#f59e0b",fontWeight:"700"}}>{conf_drift>0?"+":""}{conf_drift} pts</span>
-          {"  "}Forecast stability: <span style={{color:acc>85?"#10b981":acc>70?"#f59e0b":"#ef4444",fontWeight:"700"}}>{acc.toFixed(0)}%</span>
+          Forecast drift over {mem.length} snapshots: <span style={{color:drift>10?"#ef4444":drift>5?"#f59e0b":"#10b981",fontWeight:"700"}}>{(drift>0?"+":"")+drift+'%'}</span>
+          {"  "}Confidence drift: <span style={{color:conf_drift<-5?"#ef4444":conf_drift>5?"#10b981":"#f59e0b",fontWeight:"700"}}>{(conf_drift>0?"+":"")+conf_drift} pts</span>
+          {"  "}Forecast stability: <span style={{color:acc>85?"#10b981":acc>70?"#f59e0b":"#ef4444",fontWeight:"700"}}>{acc.toFixed(0)+'%'}</span>
         </div>;
       }
       return null;
@@ -5187,7 +4704,7 @@ function ChallengeAnaloguePanel({ model }) {
     <p style={{fontSize:"10px",color:"#64748b",marginBottom:"10px"}}>{result.summary}</p>
     {(result.analogues||[]).map((a,i)=><div key={i} style={{marginBottom:"8px",padding:"9px 12px",background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:"4px",display:"flex",gap:"12px"}}>
       <div style={{flexShrink:0,textAlign:"center",width:"52px"}}>
-        <div style={{fontSize:"22px",fontWeight:"900",color:i===0?"#ef4444":i===1?"#f59e0b":"#94a3b8"}}>{a.match_pct}%</div>
+        <div style={{fontSize:"22px",fontWeight:"900",color:i===0?"#ef4444":i===1?"#f59e0b":"#94a3b8"}}>{a.match_pct+'%'}</div>
         <div style={{fontSize:"8px",color:"#475569"}}>match</div>
       </div>
       <div style={{flex:1}}>
@@ -5297,7 +4814,7 @@ function SavedProjectsPanel({ projects, onLoad, onDelete, onClose }) {
       {(projects||[]).map((p,i) => <div key={i} style={{marginBottom:"8px",padding:"10px 12px",background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:"5px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <div>
           <div style={{fontSize:"11px",fontWeight:"700",color:"#e2e8f0",marginBottom:"2px"}}>{p.title || p.subsector || "Project"}</div>
-          <div style={{fontSize:"9px",color:"#475569"}}>{p.cost_p50} · {p.schedule_months}mo · {p.confidence_pct}%</div>
+          <div style={{fontSize:"9px",color:"#475569"}}>{p.cost_p50} · {p.schedule_months}mo · {p.confidence_pct+'%'}</div>
         </div>
         <div style={{display:"flex",gap:"6px"}}>
           <button onClick={()=>onLoad(p)} style={{padding:"5px 10px",background:"rgba(141,247,255,0.1)",border:"1px solid rgba(141,247,255,0.2)",color:"#8df7ff",borderRadius:"3px",cursor:"pointer",fontSize:"10px",fontWeight:"700"}}>Load</button>
