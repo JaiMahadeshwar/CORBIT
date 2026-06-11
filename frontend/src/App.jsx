@@ -3949,7 +3949,7 @@ const scenarioTrade95 = {
             <div style={{fontSize:'9px',fontWeight:'800',color:'#10b981',letterSpacing:'.14em',marginBottom:6}}>🔧 PROCUREMENT INTELLIGENCE — KEY LONG-LEAD ITEMS</div>
             <div style={{fontSize:'12px',color:'#fff',fontWeight:'600',marginBottom:8}}>{model.procurement_intelligence.headline}</div>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6,marginBottom:8}}>
-              {model.procurement_intelligence.items.map((p,i)=>(
+              {model.procurement_intelligence?.items?.map((p,i)=>(
                 <div key={i} style={{display:'flex',alignItems:'flex-start',gap:8,padding:'8px 10px',background:'rgba(255,255,255,0.03)',borderRadius:5,border:`1px solid ${p.secured?'rgba(16,185,129,0.2)':p.priority==='CRITICAL'?'rgba(239,68,68,0.3)':'rgba(245,158,11,0.2)'}`}}>
                   <div style={{fontSize:'14px',marginTop:1}}>{p.secured?'✅':p.priority==='CRITICAL'?'🔴':'🟡'}</div>
                   <div style={{flex:1}}>
@@ -3967,7 +3967,7 @@ const scenarioTrade95 = {
           {model?.cost_concentration?.top3_packages?.length > 0 && <div style={{gridColumn:'1/-1',background:'rgba(6,182,212,0.06)',border:'1px solid rgba(6,182,212,0.2)',borderRadius:8,padding:'16px 20px',marginBottom:12}}>
             <div style={{fontSize:'9px',fontWeight:'800',color:'#06b6d4',letterSpacing:'.14em',marginBottom:8}}>📊 COST CONCENTRATION — WHERE THE MONEY IS</div>
             {isNonBase && <div style={{display:'inline-block',padding:'2px 8px',background:'rgba(6,182,212,0.1)',border:'1px solid rgba(6,182,212,0.2)',borderRadius:12,fontSize:'8px',color:'#06b6d4',fontWeight:'700',marginBottom:6}}>{(model.scenario_label||'').toUpperCase()} SCENARIO — cost scaled {((model.scenario_cost_mult||1)*100-100).toFixed(0)}% vs Base</div>}
-            <div style={{fontSize:'13px',color:'#fff',fontWeight:'600',marginBottom:10}}>{model.cost_concentration.top3_pct_of_total}% of total cost sits in {model.cost_concentration.top3_packages.length} packages — these are the board cost control priorities.</div>
+            <div style={{fontSize:'13px',color:'#fff',fontWeight:'600',marginBottom:10}}>{model.cost_concentration?.top3_pct_of_total||0}% of total cost sits in {model.cost_concentration?.top3_packages?.length} packages — these are the board cost control priorities.</div>
             <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8,marginBottom:10}}>
               {model.cost_concentration.top3_packages.map((p,i)=>(
                 <div key={i} style={{background:'rgba(6,182,212,0.08)',border:'1px solid rgba(6,182,212,0.2)',borderRadius:6,padding:'10px 12px'}}>
@@ -4035,7 +4035,7 @@ const scenarioTrade95 = {
             <div style={{fontSize:'9px',fontWeight:'800',color:'#f59e0b',letterSpacing:'.14em',marginBottom:6}}>⛓ SCHEDULE KILLER CHAIN — CRITICAL PATH SEQUENCE</div>
             <div style={{fontSize:'13px',color:'#fff',fontWeight:'600',marginBottom:10}}>{model.schedule_killer_chain.headline}</div>
             <div style={{display:'flex',alignItems:'center',flexWrap:'wrap',gap:0}}>
-              {model.schedule_killer_chain.chain.map((a,i)=>(
+              {model.schedule_killer_chain?.chain?.map((a,i)=>(
                 <div key={i} style={{display:'flex',alignItems:'center',gap:0}}>
                   <div style={{background:a.linked_risk_emv_bn>0?'rgba(239,68,68,0.12)':'rgba(245,158,11,0.08)',border:a.linked_risk_emv_bn>0?'1px solid rgba(239,68,68,0.3)':'1px solid rgba(245,158,11,0.2)',borderRadius:6,padding:'8px 12px',minWidth:120,textAlign:'center'}}>
                     <div style={{fontSize:'8px',color:'#64748b',marginBottom:2}}>{a.activity_id}</div>
@@ -4085,9 +4085,9 @@ const scenarioTrade95 = {
           {model?.board_risk_summary?.top5?.length > 0 && <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:8,padding:'14px 18px',marginBottom:12}}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
               <div style={{fontSize:'9px',fontWeight:'800',color:'#e2e8f0',letterSpacing:'.12em'}}>🎯 TOP RISKS — MONETISED BOARD EXPOSURE</div>
-              <div style={{fontSize:'9px',color:'#64748b'}}>{model.board_risk_summary.top5_pct}% of total EMV in top 5</div>
+              <div style={{fontSize:'9px',color:'#64748b'}}>{model.board_risk_summary?.top5_pct}% of total EMV in top 5</div>
             </div>
-            {model.board_risk_summary.top5.map((r,i)=>(
+            {model.board_risk_summary?.top5?.map((r,i)=>(
               <div key={i} style={{display:'grid',gridTemplateColumns:'2fr 1fr 1fr 1fr 1fr 1fr',gap:6,alignItems:'center',marginBottom:5,padding:'8px 12px',background:i===0?'rgba(239,68,68,0.08)':'rgba(255,255,255,0.02)',borderRadius:5,border:i===0?'1px solid rgba(239,68,68,0.25)':'1px solid rgba(255,255,255,0.04)'}}>
                 <div>
                   <div style={{fontSize:'10px',color:'#fff',fontWeight:'600'}}>{r.title?.slice?.(0,50)}</div>
@@ -4184,7 +4184,7 @@ const scenarioTrade95 = {
           {model?.confidence_trajectory?.length > 0 && <div style={{background:'rgba(6,182,212,0.06)',border:'1px solid rgba(6,182,212,0.2)',borderRadius:8,padding:'14px 18px',marginBottom:12}}>
             <div style={{fontSize:'9px',fontWeight:'800',color:'#06b6d4',letterSpacing:'.12em',marginBottom:8}}>CONFIDENCE TRAJECTORY — HOW YOUR NUMBER GETS STRONGER</div>
             <div style={{display:'flex',alignItems:'center',gap:0,marginBottom:8}}>
-              {model.confidence_trajectory.map((stage,i)=>(
+              {model.confidence_trajectory?.map((stage,i)=>(
                 <div key={i} style={{flex:1,textAlign:'center',padding:'8px 4px',background:stage.is_current?'rgba(6,182,212,0.15)':'transparent',borderRadius:6,border:stage.is_current?'1px solid rgba(6,182,212,0.4)':'1px solid transparent',position:'relative'}}>
                   {stage.is_current && <div style={{position:'absolute',top:-8,left:'50%',transform:'translateX(-50%)',fontSize:'8px',background:'#06b6d4',color:'#fff',padding:'1px 5px',borderRadius:3,fontWeight:'700',whiteSpace:'nowrap'}}>YOU ARE HERE</div>}
                   <div style={{fontSize:'8px',color:stage.is_current?'#8df7ff':'#64748b',fontWeight:stage.is_current?'800':'400'}}>{stage.label}</div>
