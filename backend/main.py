@@ -640,7 +640,7 @@ def location_factor(t: str):
         # ── SPACE ────────────────────────────────────────────────────
         ("Lunar Surface", 2.9, ["moon","lunar","lunar surface","lunar south pole","lunar base"], "NASA/ESA/JAXA/ISRO", "Remote logistics, ISRU dependency, no recovery"),
         ("Mars Surface", 3.8, ["mars","martian","mars surface","mars base","mars colony"], "NASA/ESA international", "7-month transit, no real-time comms, autonomous ops only"),
-        ("Low Earth Orbit", 2.5, ["leo ","low earth orbit","orbital platform","space station","iss"], "NASA/ESA/Roscosmos/CNSA", "Launch window dependency, radiation environment"),
+        ("Low Earth Orbit", 2.5, ["leo ","low earth orbit","orbital platform","space station","international space station"," iss "], "NASA/ESA/Roscosmos/CNSA", "Launch window dependency, radiation environment"),
         ("Geostationary Orbit", 2.2, ["geo ","geostationary","geo orbit","geo satellite"], "ITU frequency coordination", "Long integration lead, launch procurement single-source"),
         ("Cislunar Space", 2.7, ["cislunar","cis-lunar","lunar gateway","l2 ","lagrange"], "NASA Artemis framework", "FOAK infrastructure, 3-day Earth contingency minimum"),
         ("Deep Space", 4.3, ["deep space","asteroid","interplanetary","mars transit","outer planet"], "NASA/ESA deep space", "No contingency window — autonomous ops mandatory"),
@@ -13915,6 +13915,11 @@ def build_model(prompt: str='', client: str='', class_level: int=3, schedule_lev
         'curve': [], 'tornado': [], 'qcra_tornado': [], 'qsra_tornado': [],
     }
 
+    # Pre-compute route/scope assumptions before downstream intelligence references it
+    _route_assumptions_pre = _extract_route_assumptions(prompt, subsector)
+
+    # Currency symbol needed by downstream board-risk text
+    _lc = get_currency_symbol(loc_name, prompt)
     # ── RESERVE & OUTTURN INTELLIGENCE ─────────────────────────────────────
     _p80_val = float(p80 or 0)
     _p50_val = float(p50 or 0)
