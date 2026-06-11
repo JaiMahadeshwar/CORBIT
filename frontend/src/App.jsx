@@ -2687,7 +2687,10 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [chatQ, setChatQ] = useState('');
-  const [chat, setChat] = useState([{ role: 'assistant', text: 'Ask CASEY why cost, schedule, contingency or risk confidence is moving.' }]);
+  const [chat, setChat] = useState([{ role: 'assistant', text: 'Ask CASEY anything about this programme — cost, schedule, risk, board questions, benchmarks, or governing constraints. Be direct.' }]);
+  const [chatUsed, setChatUsed] = useState(0); // free advisor questions used
+  const FREE_ADVISOR_LIMIT = 1; // 1 free advisor question, unlimited for admin
+  const [advisorModel, setAdvisorModel] = useState(null); // which AI is active
   const [uploadResult, setUploadResult] = useState(null);
   const [viewMode, setViewMode] = useState('exec');
   const [propagating, setPropagating] = useState(false);
@@ -3329,9 +3332,17 @@ function parseMoneyLocal(v) {
     const q = advisorQuestionText(overrideQ);
     if (!q) return;
     if (!model) {
-      setChat(x => [...x, {role:'user',text:q}, {role:'assistant',text:'**No project loaded yet**\n\nGenerate a project first, then come back to challenge it. Board attack answers are grounded in the live model.'}]);
+      setChat(x => [...x, {role:'user',text:q}, {role:'assistant',text:'**No project loaded**\n\nGenerate or load a project first, then ask CASEY anything about cost, schedule, risk, or board strategy.'}]);
       return;
     }
+    // Advisor lock: 1 free question for non-admin users
+    if (!isAdminUser && chatUsed >= FREE_ADVISOR_LIMIT) {
+      setChat(x => [...x, {role:'user',text:q}, {role:'assistant',text:'**CASEY Advisor — Access Required**\n\nYou have used your free advisor question. The CASEY Advisor uses live AI to challenge your programme with the authority of an IPA reviewer.\n\nRequest full access at hello@controlorbit.com or enter your access code.'}]);
+      setEmailGateOpen(true);
+      setEmailGateFor('advisor');
+      return;
+    }
+    setChatUsed(n => n + 1);
     setChatQ('');
     setChat(x => [...x, { role: 'user', text: q }]);
     const ql = q.toLowerCase();
@@ -3603,6 +3614,23 @@ function parseMoneyLocal(v) {
 
           {/* ── EXECUTIVE / CFO VIEW ─────────────────────────────────────── */}
           {viewMode === 'exec' && <>
+            {/* TOP 5 — WHAT KEEPS AN EXECUTIVE AWAKE */}
+            {model && <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:6,marginBottom:10}}>
+              {[
+                ['1','Did I approve the right number?',model.cost_p50,'#8df7ff','vs OBA outturn: '+(model.outturn||'—')],
+                ['2','What will embarrass me?',(model.mortality_event?.title||'Assess').slice(0,28),'#ef4444','Programme mortality'],
+                ['3','Is my reserve enough?',(model.p80_reserve_pct||0)+'% held (need '+(model.reserve_vs_benchmark_pct||18)+'%)',(model.p80_reserve_pct||0)>=(model.reserve_vs_benchmark_pct||18)?'#10b981':'#ef4444',(model.p80_reserve_pct||0)>=(model.reserve_vs_benchmark_pct||18)?'Reserve adequate':'Shortfall: '+(model.currency_symbol||'')+(model.reserve_gap_bn||0).toFixed(2)+'B'],
+                ['4','What will the board ask?',(model.board_attack_simulation||[]).length+' predicted questions','#f59e0b','See Board Pack →'],
+                ['5','Is confidence improving?',(model.confidence_pct||0)+'%',(model.confidence_pct||0)>=65?'#10b981':(model.confidence_pct||0)>=50?'#f59e0b':'#ef4444',(model.approval_pathway||'See QCRA →').slice(0,40)],
+              ].map(([n,q,signal,col,sub],i)=>(
+                <div key={i} style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:7,padding:'8px 10px'}}>
+                  <div style={{fontSize:'18px',fontWeight:'900',color:col,marginBottom:2}}>{n}</div>
+                  <div style={{fontSize:'8px',color:'#64748b',marginBottom:3,lineHeight:1.3}}>{q}</div>
+                  <div style={{fontSize:'10px',fontWeight:'800',color:col}}>{signal}</div>
+                  <div style={{fontSize:'7px',color:'#475569',marginTop:1}}>{sub}</div>
+                </div>
+              ))}
+            </div>}
             {/* APPROVAL STATUS — the headline */}
             <ApprovalStatus model={model}/>
 
@@ -3631,6 +3659,23 @@ function parseMoneyLocal(v) {
 
           {/* ── PROJECT DIRECTOR VIEW ────────────────────────────────────── */}
           {viewMode === 'board' && <>
+            {/* TOP 5 — WHAT KEEPS A PROJECT DIRECTOR AWAKE */}
+            {model && <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:6,marginBottom:10}}>
+              {[
+                ['1','Is the governing constraint owned?',(model.governing_constraint_prominent||model.governing_constraint_full?.statement||'Not confirmed').slice(0,30),'#f59e0b','Name owner + date →'],
+                ['2','Will the board accept my recommendation?',(model.confidence_pct||0)+'% confidence',(model.confidence_pct||0)>=75?'#10b981':'#ef4444',(model.confidence_pct||0)>=75?'Board-defensible':'Need 75%+ for approval'],
+                ['3','Which procurement item will kill us?',(model.procurement_intelligence?.items?.filter(x=>x.status==='CRITICAL')||[]).length+' CRITICAL items','#ef4444','See Cost → Procurement'],
+                ['4','What does the schedule hide?',(model.xer_health?.logic_quality||'Upload XER'),(model.xer_health?.logic_quality==='GOOD')?'#10b981':'#f59e0b',model.xer_health ? (model.xer_health.open_ends||0)+' open ends, '+( model.xer_health.activity_count||0)+' activities' : 'Upload XER for health score'],
+                ['5','Which benchmark do we most resemble?',((model.benchmark_comparison||[])[0]?.name||'See Benchmarks →').slice(0,28),'#a78bfa',((model.benchmark_comparison||[])[0]?.cost_growth_pct||0)+'% cost growth in comparable'],
+              ].map(([n,q,signal,col,sub],i)=>(
+                <div key={i} style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:7,padding:'8px 10px'}}>
+                  <div style={{fontSize:'18px',fontWeight:'900',color:col,marginBottom:2}}>{n}</div>
+                  <div style={{fontSize:'8px',color:'#64748b',marginBottom:3,lineHeight:1.3}}>{q}</div>
+                  <div style={{fontSize:'10px',fontWeight:'800',color:col}}>{signal}</div>
+                  <div style={{fontSize:'7px',color:'#475569',marginTop:1}}>{sub}</div>
+                </div>
+              ))}
+            </div>}
             {/* Governing constraint — PD's first question */}
             {(model?.governing_constraint_prominent || model?.governing_constraint_full?.statement) && <div style={{background:'rgba(245,158,11,0.08)',border:'2px solid rgba(245,158,11,0.4)',borderRadius:10,padding:'14px 18px',marginBottom:12}}>
               <div style={{fontSize:'9px',fontWeight:'800',color:'#f59e0b',letterSpacing:'.14em',marginBottom:4}}>⛔ GOVERNING CONSTRAINT — BOARD MUST CONFIRM BEFORE APPROVAL</div>
@@ -3684,6 +3729,23 @@ function parseMoneyLocal(v) {
 
           {/* ── PROJECT MANAGER VIEW ─────────────────────────────────────── */}
           {viewMode === 'pm' && <>
+            {/* TOP 5 — WHAT KEEPS A PROJECT MANAGER AWAKE */}
+            {model && <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:6,marginBottom:10}}>
+              {[
+                ['1','Is my P50 defensible?',model.estimate_class_name||'Class 3 Budget','#8df7ff','Upload cost file for evidence'],
+                ['2','Are all risks owned?',(model.risks||[]).filter(r=>!r.owner||r.owner==='TBC').length+' unowned risks','#ef4444',(model.risks||[]).filter(r=>!r.owner||r.owner==='TBC').length===0?'All risks owned ✓':'Assign owners now'],
+                ['3','Does my schedule reflect reality?',model.xer_health?.float_quality||'Upload XER','#f59e0b',model.xer_health ? (model.xer_health.critical_pct||0)+'% critical path' : 'Schedule quality unknown'],
+                ['4','What is my contingency gap?',model.p80_reserve||'—',(model.p80_reserve_pct||0)>=(model.reserve_vs_benchmark_pct||18)?'#10b981':'#ef4444','Benchmark: '+(model.reserve_vs_benchmark_pct||18)+'% | You: '+(model.p80_reserve_pct||0)+'%'],
+                ['5','Prolific cost per unit?',model.prolific_cost_str||model.prolific_cost_per_unit+'M/'+( model.prolific_unit_label||'unit'),'#06b6d4','vs benchmark unit rates'],
+              ].map(([n,q,signal,col,sub],i)=>(
+                <div key={i} style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:7,padding:'8px 10px'}}>
+                  <div style={{fontSize:'18px',fontWeight:'900',color:col,marginBottom:2}}>{n}</div>
+                  <div style={{fontSize:'8px',color:'#64748b',marginBottom:3,lineHeight:1.3}}>{q}</div>
+                  <div style={{fontSize:'10px',fontWeight:'800',color:col}}>{signal}</div>
+                  <div style={{fontSize:'7px',color:'#475569',marginTop:1}}>{sub}</div>
+                </div>
+              ))}
+            </div>}
             {/* Scenario delta + KPI bar */}
             {model?.scenario !== 'base' && <div style={{background:'rgba(6,182,212,0.06)',border:'1px solid rgba(6,182,212,0.2)',borderRadius:8,padding:'8px 14px',marginBottom:10,display:'flex',gap:16,alignItems:'center',flexWrap:'wrap'}}>
               <div style={{fontSize:'9px',fontWeight:'800',color:'#06b6d4'}}>{(model.scenario_label||'').toUpperCase()} vs BASE</div>
@@ -4155,6 +4217,13 @@ function parseMoneyLocal(v) {
           <section className="layout two">
             <Card>
               <h2>CASEY Advisor</h2>
+              {/* API STATUS INDICATOR */}
+              <div style={{marginBottom:8,padding:'6px 10px',background:advisorModel?.advisor_active?'rgba(16,185,129,0.06)':'rgba(245,158,11,0.06)',border:'1px solid '+(advisorModel?.advisor_active?'rgba(16,185,129,0.2)':'rgba(245,158,11,0.2)'),borderRadius:5,display:'flex',alignItems:'center',gap:8}}>
+                <span style={{fontSize:'8px',width:6,height:6,borderRadius:'50%',background:advisorModel?.advisor_active?'#10b981':'#f59e0b',display:'inline-block',flexShrink:0}}/>
+                <div style={{fontSize:'8px',color:advisorModel?.advisor_active?'#10b981':'#f59e0b',fontWeight:'700'}}>{advisorModel?.advisor_active ? advisorModel.advisor_model+' — Live AI active' : 'Pattern matching active — Set ANTHROPIC_API_KEY or OPENAI_API_KEY in Render to enable AI'}</div>
+                {!isAdminUser && chatUsed >= FREE_ADVISOR_LIMIT && <div style={{marginLeft:'auto',fontSize:'8px',color:'#ef4444',fontWeight:'700'}}>1 free question used — <span style={{cursor:'pointer',textDecoration:'underline'}} onClick={()=>{setEmailGateOpen(true);setEmailGateFor('advisor');}}>Request access</span></div>}
+                {isAdminUser && <div style={{marginLeft:'auto',fontSize:'8px',color:'#475569'}}>Admin — unlimited</div>}
+              </div>
               {/* SCENARIO CONTEXT FOR ADVISOR */}
               {model?.scenario !== 'base' && <div style={{background:'rgba(6,182,212,0.06)',border:'1px solid rgba(6,182,212,0.2)',borderRadius:6,padding:'8px 14px',marginBottom:10,display:'flex',gap:12,alignItems:'center'}}>
                 <div style={{fontSize:'10px',fontWeight:'800',color:'#06b6d4'}}>{(model.scenario_label||'').toUpperCase()} SCENARIO ACTIVE</div>
@@ -4351,6 +4420,14 @@ function parseMoneyLocal(v) {
           </Card>
         </section>}
         {tab === 'defence' && <>
+          {/* BLOOMBERG HEADLINE — the one sentence that matters */}
+          {model && <div style={{background:'linear-gradient(90deg,rgba(6,182,212,0.08),rgba(139,92,246,0.06))',border:'1px solid rgba(6,182,212,0.2)',borderRadius:8,padding:'10px 16px',marginBottom:10,display:'flex',gap:10,alignItems:'center'}}>
+            <span style={{fontSize:'8px',fontWeight:'900',color:'#06b6d4',letterSpacing:'.18em',flexShrink:0}}>CASEY VERDICT</span>
+            <div style={{fontSize:'11px',fontWeight:'700',color:'#fff',lineHeight:1.4}}>
+              {model.institutional_authority_line || ((model.confidence_pct||0)>=75 ? model.cost_p50+' '+( model.estimate_class_name)+'. '+model.confidence_pct+'% board confidence. Approval-ready.' : (model.confidence_pct||0)>=55 ? model.cost_p50+' '+( model.estimate_class_name)+'. '+model.confidence_pct+'% confidence — conditional. Governing constraint not confirmed.' : model.cost_p50+' '+( model.estimate_class_name)+'. '+model.confidence_pct+'% confidence. Do not approve without closing '+(model.reserve_gap_bn>0?'£'+model.reserve_gap_bn.toFixed(2)+'B reserve shortfall and ':'')+' governing constraint evidence.')}
+            </div>
+          </div>}
+
           {/* SCENARIO CONTEXT */}
           {model?.scenario !== 'base' && <div style={{background:'rgba(6,182,212,0.06)',border:'1px solid rgba(6,182,212,0.2)',borderRadius:6,padding:'8px 14px',marginBottom:10,display:'flex',gap:12,alignItems:'center'}}>
             <div style={{fontSize:'9px',fontWeight:'800',color:'#06b6d4'}}>{(model.scenario_label||'').toUpperCase()} SCENARIO — Board Pack reflects this scenario vs Base</div>
