@@ -11,7 +11,8 @@ import {
 } from 'recharts';
 import './style.css';
 
-const PROD_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL || 'https://corbit-1.onrender.com';
+const CASEY_ENV = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : {};
+const PROD_URL = CASEY_ENV.VITE_API_URL || CASEY_ENV.VITE_BACKEND_URL || 'https://corbit-1.onrender.com';
 if (typeof window !== 'undefined') window._CASEY_API = PROD_URL;
 // Only use localhost fallbacks in development - never in production (triggers browser security warnings)
 const IS_DEV = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
@@ -23,6 +24,19 @@ const API_CANDIDATES = IS_DEV
   ? [PROD_URL, 'http://127.0.0.1:8000', 'http://localhost:8000'].filter(Boolean)
   : [PROD_URL].filter(Boolean);
 let API = API_CANDIDATES[0];
+
+const safeStorage = {
+  get(key, fallback = '') {
+    try { return window.localStorage.getItem(key) ?? fallback; } catch (_) { return fallback; }
+  },
+  set(key, value) {
+    try { window.localStorage.setItem(key, String(value)); } catch (_) {}
+  },
+  remove(key) {
+    try { window.localStorage.removeItem(key); } catch (_) {}
+  }
+};
+
 async function apiFetch(path, options, timeoutMs = 90000) {
   let lastError;
   for (const base of API_CANDIDATES) {
@@ -322,71 +336,38 @@ function normalizeChatAnswer(r) {
   return safeRender(r);
 }
 class CaseyErrorBoundary extends React.Component {
-  constructor(props) { super(props); this.state = { error: null }; }
-  static getDerivedStateFromError(error) { return { error }; }
-  componentDidCatch(error, info) { console.error('CASEY UI crash guard:', error, info); }
+  constructor(props) {
+    super(props);
+    this.state = { error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+
+  componentDidCatch(error, info) {
+    console.error('CASEY UI crash guard:', error, info);
+  }
+
   render() {
     if (this.state.error) {
-      return <div className="app v50EliteApp">
-    {showLanding && <div style={{position:'fixed',inset:0,background:'#070d1a',zIndex:9998,overflowY:'auto'}}>
-      <div style={{maxWidth:'860px',margin:'0 auto',padding:'40px 24px 80px'}}>
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'52px'}}>
-          <div style={{fontFamily:'monospace',fontSize:'12px',fontWeight:'800',color:'#22d3ee',letterSpacing:'.2em'}}>CASEY · CONTROLORBIT.COM</div>
-          <button onClick={()=>{localStorage.setItem('casey_seen_landing','1');setShowLanding(false);}} style={{padding:'9px 22px',background:'#0e7490',color:'#fff',border:'none',borderRadius:'4px',fontWeight:'700',fontSize:'12px',cursor:'pointer'}}>Enter the tool →</button>
+      const message = safeRender(this.state.error?.message || this.state.error || 'Unknown render error');
+      return (
+        <div className="app v50EliteApp">
+          <main className="v50Console">
+            <section className="layout one">
+              <div className="card shockCard">
+                <h2>CASEY UI recovered</h2>
+                <p>
+                  The interface caught a render exception instead of going blank.
+                  Refresh once. If it repeats, copy the error below.
+                </p>
+                <pre style={{ whiteSpace: 'pre-wrap' }}>{message}</pre>
+              </div>
+            </section>
+          </main>
         </div>
-        <div style={{marginBottom:'56px'}}>
-          <div style={{fontSize:'10px',fontWeight:'800',color:'#ef4444',letterSpacing:'.14em',marginBottom:'14px'}}>THE PROBLEM</div>
-          <h1 style={{fontSize:'clamp(26px,4vw,50px)',fontWeight:'900',color:'#fff',lineHeight:'1.1',marginBottom:'16px'}}>Every major programme is approved at <span style={{color:'#ef4444'}}>the wrong number</span>.</h1>
-          <p style={{fontSize:'16px',color:'#94a3b8',lineHeight:'1.6',maxWidth:'600px',marginBottom:'28px'}}>The UK reference class shows infrastructure programmes overrun by an average of <strong style={{color:'#fff'}}>+44%</strong>. HM Treasury requires OBA adjustment in every major board submission. Most boards never see it. CASEY applies it in 12 seconds.</p>
-          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))',gap:'10px',maxWidth:'600px'}}>
-            {[['HS2','£33B → £88B → OBA £127B','+285%'],['Vogtle','$14B → $35B','+150%'],['Crossrail','£14.8B → £18.9B','+28%'],['JWST','$1.6B → $10B','+525%']].map(([n,d,p])=><div key={n} style={{background:'rgba(239,68,68,0.06)',border:'1px solid rgba(239,68,68,0.15)',borderRadius:'5px',padding:'12px'}}>
-              <div style={{fontSize:'12px',fontWeight:'800',color:'#fff',marginBottom:'3px'}}>{n}</div>
-              <div style={{fontSize:'9px',color:'#64748b',marginBottom:'5px'}}>{d}</div>
-              <div style={{fontSize:'16px',fontWeight:'900',color:'#ef4444'}}>{p}</div>
-            </div>)}
-          </div>
-        </div>
-        <div style={{marginBottom:'52px'}}>
-          <div style={{fontSize:'10px',fontWeight:'800',color:'#22d3ee',letterSpacing:'.14em',marginBottom:'14px'}}>WHAT CASEY DELIVERS</div>
-          <h2 style={{fontSize:'26px',fontWeight:'800',color:'#fff',marginBottom:'12px'}}>Board-ready intelligence. 12 seconds. Any programme. Anywhere.</h2>
-          <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:'7px',maxWidth:'580px'}}>
-            {['P50/P80/P90 cost with OBA-adjusted outturn','QSRA P80 schedule — not Gantt chart optimism','Risk register — quantified EMV, named owners','5 scenario trade-offs from a single description','Board attack questions from live model data','137 named global benchmarks (HS2 to JWST)','PDF board pack, Excel, Risk Register, P6 XER','Live Open Crawl: World Bank, GDELT, FX, weather'].map((f,i)=><div key={i} style={{display:'flex',gap:'6px'}}><span style={{color:'#22d3ee',fontSize:'10px',fontWeight:'800',marginTop:'1px',flexShrink:0}}>✓</span><span style={{fontSize:'11px',color:'#94a3b8',lineHeight:'1.5'}}>{f}</span></div>)}
-          </div>
-        </div>
-        <div style={{marginBottom:'48px'}}>
-          <div style={{fontSize:'10px',fontWeight:'800',color:'#22d3ee',letterSpacing:'.14em',marginBottom:'14px'}}>PRICING</div>
-          <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'10px',maxWidth:'680px'}}>
-            {[{t:'Free',p:'£0',b:'Earth Demo · Space Demo · 200-programme Showcase · 1 free project run',cta:'Start free',go:true},
-              {t:'Professional',p:'£99 / mo',b:'Unlimited runs · All exports · Advisor · Digital Twin · File ingestion',cta:'Join waitlist →',go:false,hi:true},
-              {t:'Team',p:'£349 / mo',b:'5 seats · White-label PDF · Priority support · Everything in Pro',cta:'Join waitlist →',go:false}
-            ].map(({t,p,b,cta,go,hi})=><div key={t} style={{background:hi?'rgba(14,116,144,0.1)':'rgba(255,255,255,0.03)',border:hi?'1px solid #0e7490':'1px solid rgba(255,255,255,0.07)',borderRadius:'5px',padding:'16px',display:'flex',flexDirection:'column',gap:'7px'}}>
-              <div style={{fontSize:'9px',fontWeight:'800',color:'#22d3ee'}}>{t}</div>
-              <div style={{fontSize:'20px',fontWeight:'900',color:'#fff'}}>{p}</div>
-              <div style={{fontSize:'10px',color:'#64748b',lineHeight:'1.5',flex:1}}>{b}</div>
-              <button onClick={go?()=>{localStorage.setItem('casey_seen_landing','1');setShowLanding(false);}:()=>window.open('mailto:hello@controlorbit.com?subject=CASEY+Waitlist','_blank')} style={{padding:'7px 10px',background:go?'#0e7490':'rgba(255,255,255,0.06)',color:go?'#fff':'#64748b',border:'none',borderRadius:'3px',fontWeight:'700',fontSize:'10px',cursor:'pointer'}}>{cta}</button>
-            </div>)}
-          </div>
-        </div>
-        <div style={{textAlign:'center',borderTop:'1px solid rgba(255,255,255,0.06)',paddingTop:'32px'}}>
-          <button onClick={()=>{localStorage.setItem('casey_seen_landing','1');setShowLanding(false);}} style={{padding:'12px 36px',background:'#0e7490',color:'#fff',border:'none',borderRadius:'5px',fontWeight:'800',fontSize:'14px',cursor:'pointer',marginBottom:'8px',display:'block',margin:'0 auto 8px'}}>Try CASEY free →</button>
-          <p style={{fontSize:'10px',color:'#475569'}}>1 free project run · Earth Demo + Space Demo always free · No card</p>
-        </div>
-      </div>
-    </div>}
-    {emailGateOpen && <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',zIndex:9999,display:'flex',alignItems:'center',justifyContent:'center'}}>
-      <div style={{background:'#0c1a2e',border:'1px solid #0e7490',borderRadius:'8px',padding:'28px',maxWidth:'380px',width:'100%',margin:'0 16px'}}>
-        <div style={{fontSize:'9px',fontWeight:'800',color:'#22d3ee',letterSpacing:'.12em',marginBottom:'8px'}}>1 FREE RUN</div>
-        <h2 style={{fontSize:'18px',fontWeight:'800',color:'#fff',marginBottom:'7px'}}>Enter your email to continue</h2>
-        <p style={{fontSize:'11px',color:'#94a3b8',marginBottom:'16px',lineHeight:'1.5'}}>1 free project run — P50/P80/P90, 5 scenarios, risk register, board pack PDF. Earth Demo and Space Demo always free.</p>
-        <input type="email" id="egate-input" placeholder="your@email.com"
-          style={{width:'100%',padding:'9px 11px',background:'#0a0f1e',border:'1px solid #0e7490',borderRadius:'4px',color:'#fff',fontSize:'12px',marginBottom:'9px',outline:'none',boxSizing:'border-box'}}
-          onKeyDown={e=>{if(e.key==='Enter'){const v=e.target.value;if(v.includes('@'))saveEmailAndContinue(v);}}}/>
-        <div style={{display:'flex',gap:'7px'}}>
-          <button onClick={()=>{const v=document.getElementById('egate-input').value;if(v.includes('@'))saveEmailAndContinue(v);}} style={{flex:1,padding:'9px',background:'#0e7490',color:'#fff',border:'none',borderRadius:'4px',fontWeight:'700',fontSize:'12px',cursor:'pointer'}}>Get my free run →</button>
-          <button onClick={()=>setEmailGateOpen(false)} style={{padding:'9px 12px',background:'transparent',color:'#64748b',border:'1px solid #334155',borderRadius:'4px',fontSize:'11px',cursor:'pointer'}}>Cancel</button>
-        </div>
-      </div>
-    </div>}<main className="v50Console"><section className="layout one"><div className="card shockCard"><h2>CASEY UI recovered</h2><p>The interface caught a render exception instead of going blank. Refresh and re-run the same programme, or use the preset advisor buttons while the custom question guard is active.</p><pre>{safeRender(this.state.error?.message || this.state.error)}</pre></div></section></main></div>;
+      );
     }
     return this.props.children;
   }
@@ -2702,12 +2683,12 @@ function App() {
 
   
   // ── Usage limits & email gate (localStorage-tracked) ──────────────────
-  const [showLanding, setShowLanding] = React.useState(() => !localStorage.getItem('casey_seen_landing'));
+  const [showLanding, setShowLanding] = React.useState(() => !safeStorage.get('casey_seen_landing'));
   const [emailGateOpen, setEmailGateOpen] = React.useState(false);
   const [emailGateFor, setEmailGateFor] = React.useState('');
-  const [capturedEmail, setCapturedEmail] = React.useState(() => localStorage.getItem('casey_email') || '');
-  const [freeRunsUsed, setFreeRunsUsed] = React.useState(() => parseInt(localStorage.getItem('casey_free_runs') || '0'));
-  const [freeCompareUsed, setFreeCompareUsed] = React.useState(() => parseInt(localStorage.getItem('casey_free_compare') || '0'));
+  const [capturedEmail, setCapturedEmail] = React.useState(() => safeStorage.get('casey_email', ''));
+  const [freeRunsUsed, setFreeRunsUsed] = React.useState(() => parseInt(safeStorage.get('casey_free_runs', '0') || '0'));
+  const [freeCompareUsed, setFreeCompareUsed] = React.useState(() => parseInt(safeStorage.get('casey_free_compare', '0') || '0'));
   const FREE_RUN_LIMIT = 1;
   const FREE_COMPARE_LIMIT = 1;
   const isUnlimited = false;
@@ -2725,11 +2706,11 @@ function App() {
   };
   const recordUsage = (action) => {
     if (isUnlimited) return;
-    if (action === 'run') { const n = freeRunsUsed + 1; setFreeRunsUsed(n); localStorage.setItem('casey_free_runs', String(n)); }
-    if (action === 'compare') { const n = freeCompareUsed + 1; setFreeCompareUsed(n); localStorage.setItem('casey_free_compare', String(n)); }
+    if (action === 'run') { const n = freeRunsUsed + 1; setFreeRunsUsed(n); safeStorage.set('casey_free_runs', String(n)); }
+    if (action === 'compare') { const n = freeCompareUsed + 1; setFreeCompareUsed(n); safeStorage.set('casey_free_compare', String(n)); }
   };
   const saveEmailAndContinue = (email) => {
-    localStorage.setItem('casey_email', email);
+    safeStorage.set('casey_email', email);
     setCapturedEmail(email);
     fetch(API + '/capture-email', {method:'POST',credentials:'omit',headers:{'Content-Type':'application/json'},body:JSON.stringify({email, action: emailGateFor})}).catch(()=>{});
     setEmailGateOpen(false);
@@ -4826,4 +4807,9 @@ function SavedProjectsPanel({ projects, onLoad, onDelete, onClose }) {
 }
 
 
-createRoot(document.getElementById('root')).render(<CaseyErrorBoundary><App/></CaseyErrorBoundary>);
+const caseyRoot = document.getElementById('root');
+if (caseyRoot) {
+  createRoot(caseyRoot).render(<CaseyErrorBoundary><App/></CaseyErrorBoundary>);
+} else {
+  console.error('CASEY failed to mount: #root element was not found');
+}
