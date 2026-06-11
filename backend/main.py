@@ -4592,6 +4592,53 @@ def project(project_id:int):
     return json.loads(row["model_json"])
 
 
+# ── LEARNING CORPUS ─────────────────────────────────────────────────────────
+import json
+_LEARNING_FILE = "/tmp/casey_learning.jsonl"
+
+@app.post("/feedback")
+async def feedback(request: Request):
+    """Store user feedback to improve CASEY's calibration."""
+    try:
+        data = await request.json()
+        entry = {
+            "timestamp": __import__("datetime").datetime.utcnow().isoformat(),
+            "prompt": str(data.get("prompt",""))[:200],
+            "sector": str(data.get("sector","")),
+            "p50_predicted": data.get("p50_predicted"),
+            "p50_actual": data.get("p50_actual"),
+            "confidence_predicted": data.get("confidence_predicted"),
+            "was_accurate": data.get("was_accurate"),
+            "notes": str(data.get("notes",""))[:500],
+        }
+        with open(_LEARNING_FILE, "a") as f:
+            f.write(json.dumps(entry) + "\n")
+        return {"status": "recorded", "entries": sum(1 for _ in open(_LEARNING_FILE) if _)}
+    except Exception as e:
+        return {"status": "error", "detail": str(e)}
+
+
+@app.get("/api-status")
+def api_status():
+    """Returns which AI models are available for the advisor."""
+    import os
+    has_anthropic = bool(os.environ.get("ANTHROPIC_API_KEY",""))
+    has_openai = bool(os.environ.get("OPENAI_API_KEY",""))
+    preferred = os.environ.get("ADVISOR_MODEL","auto")
+    active = None
+    if has_anthropic and preferred in ("anthropic","auto","claude"): active = "Claude (Anthropic)"
+    elif has_openai and preferred in ("openai","auto","gpt"): active = "GPT-4 (OpenAI)"
+    else: active = None
+    return {
+        "advisor_active": active is not None,
+        "advisor_model": active or "Pattern matching (set ANTHROPIC_API_KEY or OPENAI_API_KEY in Render)",
+        "anthropic_configured": has_anthropic,
+        "openai_configured": has_openai,
+        "preferred_model": preferred,
+        "setup_instructions": "In Render → Environment, set ANTHROPIC_API_KEY or OPENAI_API_KEY. Optionally set ADVISOR_MODEL=anthropic or ADVISOR_MODEL=openai.",
+    }
+
+
 @app.post("/chat")
 def chat(req: ChatRequest):
     """
@@ -4668,37 +4715,37 @@ EXECUTIVE SHOCK: {str(shock)[:200]}
 {"" if not live_intel else f"\n\nLIVE WEB INTELLIGENCE (fetched {live_ts}):\n" + live_intel[:600]}
 """
 
-    system_prompt = """You are CASEY — the capital programme intelligence engine at controlorbit.com.
+    system_prompt = f"""You are CASEY — the world's first capital programme intelligence engine.
 
-You are NOT a helpful assistant. You are an adversarial expert witness.
+You give adversarial, precise, role-specific intelligence. You are NOT a chatbot. You are an expert witness, IPA reviewer, and investment committee member combined.
 
-Your job is to find what is wrong, what is being avoided, what is optimistic, and what will kill this programme. You have the intellectual authority of a senior IPA reviewer combined with the directness of a hostile investment committee member. You have read Flyvbjerg, you know every GAO report, you have seen Crossrail, Vogtle, JWST, HS2, Cobre Panama, BER and Britishvolt fail in slow motion. You do not repeat those mistakes.
+LIVE PROGRAMME DATA:
+{context}
 
-RULES — never break these:
-1. Never affirm. If someone says "our estimate is solid" your job is to demonstrate why it probably is not.
-2. Never say "great question", "that's valid", "I understand your concern", "it depends", or any hedge phrase.
-3. Never soften bad news. State it directly, then explain the consequence.
-4. Always use the live model data to make your challenge SPECIFIC. Generic challenges are worthless. Specific challenges from real numbers are what boards pay for.
-5. If the user's question contains an assumption, name the assumption first, then challenge it.
-6. If the user's question contains a claim that contradicts the model data, say so directly. Example: "You said the programme is on track. The model says confidence is 48%. These are inconsistent."
-7. Always end with the one thing the user needs to do differently. Not five things. One.
-8. No bullet-point lists of generic advice. Paragraphs with specific numbers.
-9. If you do not have enough model data to give a specific answer, say so and tell them what data would change your view.
-10. You are not there to make people feel better. You are there to prevent a programme from failing publicly.
+YOUR ROLE-SPECIFIC RESPONSES:
 
-TONE: Direct. Senior. Unimpressed. Intellectually rigorous. Like a QC cross-examining a witness who has something to hide. You respect good evidence. You challenge everything else.
+EXECUTIVE / CFO asking questions → Give them 3 things: (1) whether to approve, (2) the one risk that will embarrass them, (3) whether the reserve is enough. Never more than 150 words. Use their language: "The board will ask...", "Your reputation is at risk if...", "The number that matters is..."
 
-WHAT CHALLENGES LOOK LIKE:
-Bad: "You should consider updating your risk register."
-Good: "Your risk register has 8 risks, 3 of which have no quantified EMV. Without EMV, your P80 reserve has no mathematical basis. The board will notice this in 30 seconds."
+PROJECT DIRECTOR asking questions → Give them the governing constraint status, procurement gaps, and what the investment committee will challenge. Be specific. Name activities, risk IDs, benchmark programmes.
 
-Bad: "The OBA may be a concern."
-Good: "Your headline P50 is £88.4B. The OBA-adjusted figure is £127.3B — a 44% gap. You are asking a board to approve £88.4B knowing the reference class says £127.3B. Which number do you believe, and why?"
+PROJECT MANAGER asking questions → Give them the estimate defensibility score, unowned risks by count, schedule quality assessment. Give them actions, not observations.
 
-WHAT NOT TO DO:
-- Do not say the programme "looks good" or "seems reasonable" without data.
-- Do not validate a number the user gives you without checking it against the model.
-- Do not give strategic advice that could apply to any programme. Only give advice specific to THIS programme's data."""
+QS / ANALYST asking questions → Give them the full technical detail: unit rates, CBS structure, OBA basis, QCRA correlation model, QSRA P80 derivation. Cite benchmarks by name.
+
+RULES:
+- Never say "great question" or any affirmation
+- Never soften a finding
+- Every answer must reference the specific programme data above
+- If the data is missing something critical, say so directly
+- Maximum 200 words unless the question requires technical detail
+- End every response with one action the user must take today
+
+WHAT KEEPS EACH ROLE AWAKE:
+Executive: "Did I approve the right number?" / "What will embarrass me?" / "Do I have enough reserve?"
+PD: "Is the governing constraint owned?" / "Will procurement kill us?" / "What does the schedule hide?"
+PM: "Is my P50 defensible?" / "Are risks all owned?" / "What's my reserve gap?"
+QS: "Are unit rates benchmarked?" / "Is OBA correctly applied?" / "Is the CBS traceable?"
+"""
 
     import os
     anthropic_key = os.environ.get("ANTHROPIC_API_KEY", "")
@@ -12183,15 +12230,42 @@ def _fetch_live_intel(sector, location, mode="Earth", prompt="", curr_symbol="$"
     else:
         wiki_q = "{} {} infrastructure programme cost 2024 2025".format(sector, location)
 
-    results = {"wb": {}, "wiki": {}, "sx": {}, "fx": {}, "meteo": {}, "gdelt": {}, "news": {}}
+    results = {"wb": {}, "wiki": {}, "sx": {}, "fx": {}, "meteo": {}, "gdelt": {}, "news": {}, "nasa": {}, "esa": {}}
 
     def run(key, fn, *args):
         try: results[key] = fn(*args)
         except Exception: pass
 
+    def _nasa_fetch(is_space):
+        # NASA APOD free API (no key needed for DEMO_KEY)
+        if not is_space: return {}
+        try:
+            import urllib.request, json as _json
+            url = "https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY&count=1"
+            with urllib.request.urlopen(url, timeout=4) as r:
+                data = _json.loads(r.read())
+            if isinstance(data, list): data = data[0]
+            return {"title": data.get("title",""), "explanation": data.get("explanation","")[:200]}
+        except: return {}
+
+    def _esa_fetch(is_space):
+        # ESA space news RSS (free, no key)
+        if not is_space: return {}
+        try:
+            import urllib.request, re as _re
+            url = "https://www.esa.int/rssfeed/Our_Activities/Space_Science"
+            with urllib.request.urlopen(url, timeout=4) as r:
+                text = r.read().decode("utf-8", errors="replace")
+            # Extract titles from RSS (handles both CDATA and plain)
+            titles = [t.strip() for t in _re.findall(r"<title[^>]*>(.*?)</title>", text, _re.DOTALL) if "ESA" not in t][:3]
+            return {"headlines": titles}
+        except: return {}
+
     threads = [
         threading.Thread(target=run, args=("wb", _wb_fetch, iso), daemon=True),
         threading.Thread(target=run, args=("wiki", _wiki_fetch, wiki_q), daemon=True),
+        threading.Thread(target=run, args=("nasa", _nasa_fetch, mode=="Space"), daemon=True),
+        threading.Thread(target=run, args=("esa", _esa_fetch, mode=="Space"), daemon=True),
         threading.Thread(target=run, args=("meteo", _meteo_fetch, lat, lon), daemon=True),
         threading.Thread(target=run, args=("fx", _fx_fetch, curr_symbol), daemon=True),
     ]
@@ -12227,6 +12301,8 @@ def _fetch_live_intel(sector, location, mode="Earth", prompt="", curr_symbol="$"
     if results["wiki"]: sources.append("Wikipedia")
     if results["sx"]: sources.append("SpaceX API")
     if results["fx"]: sources.append("Open Exchange Rates")
+    if results.get("nasa",{}).get("title"): sources.append("NASA APOD")
+    if results.get("esa",{}).get("headlines"): sources.append("ESA Space News")
     if results["meteo"]: sources.append("Open-Meteo")
     if results["gdelt"]: sources.append("GDELT News")
     if results["news"]: sources.append("NewsAPI ({} articles)".format(len(results["news"].get("articles",[]))))
