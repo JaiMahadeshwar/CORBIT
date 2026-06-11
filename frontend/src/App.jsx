@@ -2466,6 +2466,13 @@ function SelfChallenge({ sc, programme }) {
 
   const dimList = Object.values(dims);
 
+  // Self-challenge panel render
+  return <div className="v50SelfChallenge" style={{background:'rgba(255,255,255,0.02)',border:'1px solid '+trafficBorder(traffic),borderRadius:6,padding:'10px 14px'}}>
+    <div style={{fontSize:'10px',fontWeight:'700',color:trafficColor(traffic)}}>⚡ CASEY OUTPUT CHALLENGE — {sc?.verdict||''}</div>
+    <div style={{fontSize:'9px',color:'#94a3b8',marginTop:4}}>{overall}% overall · {totalIssues} items to address</div>
+  </div>;
+}
+
 
 function App() {
   const [show, setShow] = useState(true);
@@ -3428,70 +3435,6 @@ function parseMoneyLocal(v) {
                   <div><b style={{color:'#fff'}}>Class {model?.estimate_class} accuracy range:</b> Your P50 could reasonably be {({1:'±10%',2:'±15%',3:'±20%',4:'±35%',5:'±50%'})[model?.estimate_class] || '±20%'} higher or lower.</div>
                 </div>;
               };
-
-
-  return (
-    <div style={{background:'#0a0f1e',border:`1px solid ${trafficBorder(traffic)}`,borderRadius:6,marginBottom:16,overflow:'hidden'}}>
-      {/* Header row */}
-      <div onClick={()=>setExpanded(!expanded)}
-           style={{display:'flex',alignItems:'center',gap:12,padding:'10px 16px',cursor:'pointer',
-                   background:trafficBg(traffic)}}>
-        <div style={{display:'flex',alignItems:'center',gap:6,flex:1}}>
-          <span style={{fontSize:'9px',fontWeight:'800',color:trafficColor(traffic),letterSpacing:'.12em'}}>
-            ⚡ CASEY OUTPUT CHALLENGE
-          </span>
-          <span style={{fontSize:'10px',color:'#475569',marginLeft:4}}>
-            — {programme || 'This programme'}
-          </span>
-        </div>
-        <div style={{display:'flex',gap:16,alignItems:'center'}}>
-          {dimList.slice(0,4).map(d=>(
-            <div key={d.label} style={{display:'flex',alignItems:'center',gap:4}}>
-              {dot(d.traffic)}
-              <span style={{fontSize:'9px',color:'#64748b'}}>{d.label?.split(' ')[0]}</span>
-              <span style={{fontSize:'10px',fontWeight:'700',color:trafficColor(d.traffic)}}>{d.score+'%'}</span>
-            </div>
-          ))}
-          <div style={{width:1,height:14,background:'rgba(255,255,255,0.08)'}}/>
-          <span style={{fontSize:'11px',fontWeight:'800',color:trafficColor(traffic)}}>{overall+'%'}</span>
-          <span style={{fontSize:'9px',color:'#475569',fontFamily:'monospace'}}>{expanded?'▲':'▼'}</span>
-        </div>
-      </div>
-
-      {/* Expanded detail */}
-      {expanded && <div style={{padding:'12px 16px',borderTop:`1px solid ${trafficBorder(traffic)}`}}>
-        <div style={{fontSize:'11px',color:'#94a3b8',marginBottom:12,lineHeight:'1.5'}}>
-          {sc.verdict}
-        </div>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:10}}>
-          {dimList.map(d=>(
-            <div key={d.label} style={{background:'rgba(255,255,255,0.03)',border:`1px solid rgba(255,255,255,0.07)`,borderRadius:4,padding:'10px 12px'}}>
-              <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:d.issues?.length?8:0}}>
-                {dot(d.traffic)}
-                <span style={{fontSize:'10px',fontWeight:'700',color:'#fff'}}>{d.label}</span>
-                <span style={{fontSize:'11px',fontWeight:'800',color:trafficColor(d.traffic),marginLeft:'auto'}}>{d.score+'%'}</span>
-              </div>
-              {d.issues?.map((iss,i)=>(
-                <div key={i} style={{display:'flex',gap:6,marginTop:4}}>
-                  <span style={{color:trafficColor(d.traffic),fontSize:'10px',flexShrink:0,marginTop:1}}>→</span>
-                  <span style={{fontSize:'10px',color:'#94a3b8',lineHeight:'1.5'}}>{iss}</span>
-                </div>
-              ))}
-              {(!d.issues || d.issues.length===0) && (
-                <div style={{fontSize:'10px',color:'#10b981',marginTop:2}}>✓ No issues identified</div>
-              )}
-            </div>
-          ))}
-        </div>
-        {totalIssues === 0 && (
-          <div style={{marginTop:10,fontSize:'10px',color:'#10b981',textAlign:'center'}}>
-            ✅ Output passed all CASEY self-challenge checks — board-defensible
-          </div>
-        )}
-      </div>}
-    </div>
-  );
-}
 
 const scenarioInsightMap95 = {
   base: 'Mechanical completion is not the true finish line; validated production readiness and deviation closure are the real board decision gates.',
