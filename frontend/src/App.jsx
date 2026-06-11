@@ -11,8 +11,7 @@ import {
 } from 'recharts';
 import './style.css';
 
-const CASEY_ENV = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : {};
-const PROD_URL = CASEY_ENV.VITE_API_URL || CASEY_ENV.VITE_BACKEND_URL || 'https://corbit-1.onrender.com';
+const PROD_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL || 'https://corbit-1.onrender.com';
 if (typeof window !== 'undefined') window._CASEY_API = PROD_URL;
 // Only use localhost fallbacks in development - never in production (triggers browser security warnings)
 const IS_DEV = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
@@ -24,19 +23,6 @@ const API_CANDIDATES = IS_DEV
   ? [PROD_URL, 'http://127.0.0.1:8000', 'http://localhost:8000'].filter(Boolean)
   : [PROD_URL].filter(Boolean);
 let API = API_CANDIDATES[0];
-
-const safeStorage = {
-  get(key, fallback = '') {
-    try { return window.localStorage.getItem(key) ?? fallback; } catch (_) { return fallback; }
-  },
-  set(key, value) {
-    try { window.localStorage.setItem(key, String(value)); } catch (_) {}
-  },
-  remove(key) {
-    try { window.localStorage.removeItem(key); } catch (_) {}
-  }
-};
-
 async function apiFetch(path, options, timeoutMs = 90000) {
   let lastError;
   for (const base of API_CANDIDATES) {
@@ -2434,6 +2420,35 @@ function EmailGateForm({ onSubmit, onDismiss }) {
   </div>;
 }
 
+
+function ApprovalStatus({ model }) {
+  const conf = Number(model?.confidence_pct || 0);
+  const ready = conf >= 75;
+  const partial = conf >= 55;
+  const status = ready ? 'APPROVAL READY' : partial ? 'CONDITIONAL — EVIDENCE GAPS REMAIN' : 'NOT READY FOR BOARD';
+  const color = ready ? '#10b981' : partial ? '#f59e0b' : '#ef4444';
+  const bg = ready ? 'rgba(16,185,129,0.08)' : partial ? 'rgba(245,158,11,0.06)' : 'rgba(239,68,68,0.08)';
+  const border = ready ? 'rgba(16,185,129,0.4)' : partial ? 'rgba(245,158,11,0.35)' : 'rgba(239,68,68,0.5)';
+  return (
+    <div style={{background:bg,border:`2px solid ${border}`,borderRadius:10,padding:'16px 20px',marginBottom:12,display:'grid',gridTemplateColumns:'1fr auto',alignItems:'center',gap:16}}>
+      <div>
+        <div style={{fontSize:'10px',fontWeight:'800',color,letterSpacing:'.14em',marginBottom:4}}>{status}</div>
+        <div style={{fontSize:'22px',fontWeight:'900',color:'#fff',marginBottom:6}}>
+          {safeRender(model?.cost_p50 || '—')} &nbsp;<span style={{fontSize:'14px',fontWeight:'400',color:'#64748b'}}>P50</span>&nbsp;&nbsp;
+          {safeRender(model?.cost_p80 || model?.cost_p90 || '—')} &nbsp;<span style={{fontSize:'14px',fontWeight:'400',color:'#64748b'}}>P80</span>&nbsp;&nbsp;
+          {safeRender(model?.schedule || '—')} &nbsp;<span style={{fontSize:'14px',fontWeight:'400',color:'#64748b'}}>delivery</span>
+        </div>
+        <div style={{fontSize:'11px',color:'#94a3b8'}}>{safeRender(model?.subsector || 'Programme')} · {safeRender(model?.location || 'Global')} · {safeRender(model?.estimate_class_name || '')}</div>
+      </div>
+      <div style={{textAlign:'center',padding:'10px 20px',background:'rgba(255,255,255,0.03)',borderRadius:8,border:'1px solid rgba(255,255,255,0.07)'}}>
+        <div style={{fontSize:'9px',color:'#64748b',marginBottom:4}}>BOARD CONFIDENCE</div>
+        <div style={{fontSize:'36px',fontWeight:'900',color,lineHeight:1}}>{conf ? conf + '%' : '—'}</div>
+        <div style={{fontSize:'8px',color:'#475569',marginTop:3}}>{conf>=75?'Board-defensible':'Target: 75%+'}</div>
+      </div>
+    </div>
+  );
+}
+
 // ── CASEY Self-Challenge Component ─────────────────────────────────────────
 function SelfChallenge({ sc, programme }) {
   const [expanded, setExpanded] = React.useState(false);
@@ -2683,12 +2698,12 @@ function App() {
 
   
   // ── Usage limits & email gate (localStorage-tracked) ──────────────────
-  const [showLanding, setShowLanding] = React.useState(() => !safeStorage.get('casey_seen_landing'));
+  const [showLanding, setShowLanding] = React.useState(() => !localStorage.getItem('casey_seen_landing'));
   const [emailGateOpen, setEmailGateOpen] = React.useState(false);
   const [emailGateFor, setEmailGateFor] = React.useState('');
-  const [capturedEmail, setCapturedEmail] = React.useState(() => safeStorage.get('casey_email', ''));
-  const [freeRunsUsed, setFreeRunsUsed] = React.useState(() => parseInt(safeStorage.get('casey_free_runs', '0') || '0'));
-  const [freeCompareUsed, setFreeCompareUsed] = React.useState(() => parseInt(safeStorage.get('casey_free_compare', '0') || '0'));
+  const [capturedEmail, setCapturedEmail] = React.useState(() => localStorage.getItem('casey_email') || '');
+  const [freeRunsUsed, setFreeRunsUsed] = React.useState(() => parseInt(localStorage.getItem('casey_free_runs') || '0'));
+  const [freeCompareUsed, setFreeCompareUsed] = React.useState(() => parseInt(localStorage.getItem('casey_free_compare') || '0'));
   const FREE_RUN_LIMIT = 1;
   const FREE_COMPARE_LIMIT = 1;
   const isUnlimited = false;
@@ -2706,11 +2721,11 @@ function App() {
   };
   const recordUsage = (action) => {
     if (isUnlimited) return;
-    if (action === 'run') { const n = freeRunsUsed + 1; setFreeRunsUsed(n); safeStorage.set('casey_free_runs', String(n)); }
-    if (action === 'compare') { const n = freeCompareUsed + 1; setFreeCompareUsed(n); safeStorage.set('casey_free_compare', String(n)); }
+    if (action === 'run') { const n = freeRunsUsed + 1; setFreeRunsUsed(n); localStorage.setItem('casey_free_runs', String(n)); }
+    if (action === 'compare') { const n = freeCompareUsed + 1; setFreeCompareUsed(n); localStorage.setItem('casey_free_compare', String(n)); }
   };
   const saveEmailAndContinue = (email) => {
-    safeStorage.set('casey_email', email);
+    localStorage.setItem('casey_email', email);
     setCapturedEmail(email);
     fetch(API + '/capture-email', {method:'POST',credentials:'omit',headers:{'Content-Type':'application/json'},body:JSON.stringify({email, action: emailGateFor})}).catch(()=>{});
     setEmailGateOpen(false);
@@ -3589,7 +3604,7 @@ function parseMoneyLocal(v) {
           {/* ── EXECUTIVE / CFO VIEW ─────────────────────────────────────── */}
           {viewMode === 'exec' && <>
             {/* APPROVAL STATUS — the headline */}
-            {renderApprovalStatus()}
+            <ApprovalStatus model={model}/>
 
             {/* THE ONE RISK — full width, commanding */}
             {model?.mortality_event?.title && <div style={{background:'rgba(239,68,68,0.08)',border:'2px solid rgba(239,68,68,0.5)',borderRadius:10,padding:'16px 20px',marginBottom:12}}>
@@ -4807,9 +4822,4 @@ function SavedProjectsPanel({ projects, onLoad, onDelete, onClose }) {
 }
 
 
-const caseyRoot = document.getElementById('root');
-if (caseyRoot) {
-  createRoot(caseyRoot).render(<CaseyErrorBoundary><App/></CaseyErrorBoundary>);
-} else {
-  console.error('CASEY failed to mount: #root element was not found');
-}
+createRoot(document.getElementById('root')).render(<CaseyErrorBoundary><App/></CaseyErrorBoundary>);
