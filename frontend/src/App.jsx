@@ -2421,7 +2421,6 @@ function EmailGateForm({ onSubmit, onDismiss }) {
 }
 
 
-
 function ApprovalStatus({ model }) {
   const conf = Number(model?.confidence_pct || 0);
   const ready = conf >= 75;
@@ -2467,199 +2466,6 @@ function SelfChallenge({ sc, programme }) {
 
   const dimList = Object.values(dims);
 
-  const renderApprovalStatus = () => {
-              const conf = model?.confidence_pct || 0;
-              const ready = conf >= 75; const partial = conf >= 55;
-              const status = ready ? 'APPROVAL READY' : partial ? 'CONDITIONAL — EVIDENCE GAPS REMAIN' : 'NOT READY FOR BOARD';
-              const color = ready ? '#10b981' : partial ? '#f59e0b' : '#ef4444';
-              const bg = ready ? 'rgba(16,185,129,0.08)' : partial ? 'rgba(245,158,11,0.06)' : 'rgba(239,68,68,0.08)';
-              const border = ready ? 'rgba(16,185,129,0.4)' : partial ? 'rgba(245,158,11,0.35)' : 'rgba(239,68,68,0.5)';
-              return <div style={{background:bg,border:`2px solid ${border}`,borderRadius:10,padding:'16px 20px',marginBottom:12,display:'grid',gridTemplateColumns:'1fr auto',alignItems:'center',gap:16}}>
-                <div>
-                  <div style={{fontSize:'10px',fontWeight:'800',color,letterSpacing:'.14em',marginBottom:4}}>{status}</div>
-                  <div style={{fontSize:'22px',fontWeight:'900',color:'#fff',marginBottom:6}}>{model?.cost_p50} &nbsp;<span style={{fontSize:'14px',fontWeight:'400',color:'#64748b'}}>P50</span>&nbsp;&nbsp;{model?.cost_p80} &nbsp;<span style={{fontSize:'14px',fontWeight:'400',color:'#64748b'}}>P80</span>&nbsp;&nbsp;{model?.schedule} &nbsp;<span style={{fontSize:'14px',fontWeight:'400',color:'#64748b'}}>delivery</span></div>
-                  <div style={{fontSize:'11px',color:'#94a3b8'}}>{model?.subsector} · {model?.location} · {model?.estimate_class_name}</div>
-                </div>
-                <div style={{textAlign:'center',padding:'10px 20px',background:'rgba(255,255,255,0.03)',borderRadius:8,border:'1px solid rgba(255,255,255,0.07)'}}>
-                  <div style={{fontSize:'9px',color:'#64748b',marginBottom:4}}>BOARD CONFIDENCE</div>
-                  <div style={{fontSize:'36px',fontWeight:'900',color,lineHeight:1}}>{model?.confidence_pct+'%'}</div>
-                  <div style={{fontSize:'8px',color:'#475569',marginTop:3}}>{conf>=75?'Board-defensible':'Target: 75%+'}</div>
-                </div>
-              </div>;
-            };
-
-  const renderScenarioCompare = () => {
-  const baseRow=scenarioMatrix.find(x=>x.scenario==='base')||{};
-  const bCost=parseMoneyLocal(baseRow.cost_p50||baseRow.cost||'0');
-  const bConf=parseInt(String(baseRow.confidence_pct||baseRow.confidence||'50'));
-  const bSched=parseInt(String(baseRow.schedule_months||'0'));
-  const tradeNotes={
-    base:'Reference case. Balanced cost, schedule and evidence posture for board challenge.',
-    faster:'Time bought at cost of money and float. Confidence falls — board will ask if saving is real.',
-    cheaper:'Lower number carries higher residual risk. Evidence deferred — board must accept this explicitly.',
-    lower_risk:'Reserve adds confidence but costs more time and money. Requires QCRA evidence it is risk-linked.',
-    premium:'Full optionality at premium capex. Requires explicit board decision to pay for resilience.'
-  };
-  const worsens={base:[],faster:['Cost ↑','Confidence ↓','Risk ↑'],cheaper:['Schedule ↑','Confidence ↓','Risk ↑'],lower_risk:['Cost ↑','Schedule ↑'],premium:['Cost ↑↑']};
-  const improves={base:[],faster:['Schedule ↓'],cheaper:['Cost ↓'],lower_risk:['Confidence ↑','Risk ↓'],premium:['Confidence ↑','Risk ↓']};
-  return <div className="scenarioCompare upgraded">{scenarios.map(s=>{
-    const active=s===scenario;
-    const row=scenarioMatrix.find(x=>x.scenario===s)||{};
-    const rCost=parseMoneyLocal(row.cost_p50||row.cost||'0');
-    const rConf=parseInt(String(row.confidence_pct||row.confidence||'50'));
-    const rSched=parseInt(String(row.schedule_months||'0'));
-    const costD=bCost>0?Math.round((rCost-bCost)/bCost*100):0;
-    const confD=bConf>0?rConf-bConf:0;
-    const schedD=bSched>0?rSched-bSched:0;
-    const rCol=(row.risk||'').toLowerCase().includes('high')?'#ef4444':(row.risk||'').toLowerCase().includes('medium')?'#f59e0b':'#10b981';
-    const cCol=rConf>=65?'#10b981':rConf>=50?'#f59e0b':'#ef4444';
-    const ws=worsens[s]||[]; const im=improves[s]||[];
-    return <button key={s} className={active?'active':''} onClick={()=>generate(s,model?.prompt||prompt,model||projectContext)}>
-      <b style={{textTransform:'uppercase',letterSpacing:'.06em',fontSize:'13px'}}>{(row.label||s).replace('_',' ')}</b>
-      <strong style={{fontSize:'16px',display:'block',margin:'4px 0'}}>{row.cost_p50||row.cost||'—'}</strong>
-      <div style={{fontSize:'11px',color:'#94a3b8',marginBottom:'4px'}}>{row.schedule_months||'—'} months · <span style={{color:cCol,fontWeight:'700'}}>{row.confidence_pct||row.confidence||'—'+'%'}</span> · <span style={{color:rCol,fontWeight:'700'}}>{row.risk||'—'}</span></div>
-      {s!=='base'&&bCost>0&&<div style={{display:'flex',gap:'5px',flexWrap:'wrap',marginBottom:'3px'}}>
-        {costD!==0&&<span style={{background:'rgba(239,68,68,0.12)',color:costD>0?'#ef4444':'#10b981',padding:'1px 6px',borderRadius:'2px',fontSize:'10px',fontWeight:'900'}}>{(costD>0?'+':'-')+Math.abs(costD)+'% cost'}</span>}
-        {confD!==0&&<span style={{background:'rgba(6,182,212,0.12)',color:confD>0?'#10b981':'#ef4444',padding:'1px 6px',borderRadius:'2px',fontSize:'10px',fontWeight:'900'}}>{(confD>0?'+':'-')+Math.abs(confD)+'pt conf'}</span>}
-        {schedD!==0&&<span style={{background:'rgba(245,158,11,0.12)',color:schedD<0?'#10b981':'#f59e0b',padding:'1px 6px',borderRadius:'2px',fontSize:'10px',fontWeight:'900'}}>{(schedD>0?'+':'-')+Math.abs(schedD)+'mo'}</span>}
-      </div>}
-      {ws.length>0&&<div style={{fontSize:'9px',color:'#ef4444',fontWeight:'700',letterSpacing:'.05em'}}>WORSE: {ws.join(' · ')}</div>}
-      {im.length>0&&<div style={{fontSize:'9px',color:'#10b981',fontWeight:'700',letterSpacing:'.05em'}}>BETTER: {im.join(' · ')}</div>}
-      <em style={{fontSize:'10px',color:'#64748b',fontStyle:'normal',lineHeight:'1.3',display:'block',marginTop:'4px'}}>{active?'▶ ACTIVE — '+scenario.toUpperCase():tradeNotes[s]||''}</em>
-    </button>;
-  })}</div>;
-};
-
-  const renderChatMsg = (m) => {
-    const lines = String(m.text||'').split('\n');
-    const textBlock = lines.map((line, li) => {
-      if (!line.trim()) return <div key={li} style={{height:'5px'}}/>;
-      if (line.startsWith('**') && line.endsWith('**') && line.length > 4)
-        return <div key={li} className="chatHeading">{line.replace(/\*\*/g,'')}</div>;
-      const parts = line.split(/\*\*([^*]+)\*\*/g);
-      return <p key={li} className="chatLine">{parts.map((p,pi)=>pi%2===1?<strong key={pi}>{p}</strong>:p)}</p>;
-    });
-    const srcBadge = m.role === 'assistant' && m.source ? <div style={{marginTop:'4px',fontSize:'9px',color:'#334155',fontFamily:'monospace'}}>
-      {m.source === 'claude' ? '⚡ Claude (Anthropic)' : m.source === 'openai' ? '🤖 GPT-4o (OpenAI)' : m.source === 'pattern' ? '⚙ Pattern match (set API key for AI)' : ''}
-    </div> : null;
-    const d = m.delta;
-    const deltaBlock = d && !d.error ? <div style={{marginTop:'10px',background:'rgba(141,247,255,0.05)',border:'1px solid rgba(141,247,255,0.2)',borderRadius:'4px',padding:'10px 12px'}}>
-      <div style={{fontSize:'9px',fontWeight:'800',letterSpacing:'.12em',color:'#8df7ff',marginBottom:'6px'}}>◆ MODEL RECALCULATED — CONSTRAINT APPLIED</div>
-      <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'8px',marginBottom:'8px'}}>
-        {d.cost_delta_bn !== undefined && <div style={{textAlign:'center',padding:'6px',background:'rgba(255,255,255,0.03)',borderRadius:'3px'}}>
-          <div style={{fontSize:'9px',color:'#475569',marginBottom:'2px'}}>Cost delta</div>
-          <div style={{fontSize:'13px',fontWeight:'800',color:d.cost_delta_bn>0?'#fca5a5':'#10b981'}}>{(d.cost_delta_bn>0?'+':'')+((d.cost_delta_bn||0).toFixed(1))+'B'}</div>
-          <div style={{fontSize:'10px',color:'#8df7ff'}}>{d.new_p50}</div>
-        </div>}
-        {d.confidence_delta !== undefined && <div style={{textAlign:'center',padding:'6px',background:'rgba(255,255,255,0.03)',borderRadius:'3px'}}>
-          <div style={{fontSize:'9px',color:'#475569',marginBottom:'2px'}}>Confidence</div>
-          <div style={{fontSize:'13px',fontWeight:'800',color:d.confidence_delta<0?'#fca5a5':'#10b981'}}>{(d.confidence_delta>0?'+':'')+d.confidence_delta+'pts'}</div>
-          <div style={{fontSize:'10px',color:'#8df7ff'}}>{d.new_confidence+'%'}</div>
-        </div>}
-        {d.schedule_delta_months !== undefined && <div style={{textAlign:'center',padding:'6px',background:'rgba(255,255,255,0.03)',borderRadius:'3px'}}>
-          <div style={{fontSize:'9px',color:'#475569',marginBottom:'2px'}}>Schedule delta</div>
-          <div style={{fontSize:'13px',fontWeight:'800',color:d.schedule_delta_months>0?'#fca5a5':'#10b981'}}>{(d.schedule_delta_months>0?'+':'')+d.schedule_delta_months+'mo'}</div>
-          <div style={{fontSize:'10px',color:'#8df7ff'}}>{d.new_schedule}</div>
-        </div>}
-      </div>
-      {d.new_governing_constraint && <div style={{fontSize:'10px',color:'#94a3b8',borderTop:'1px solid rgba(255,255,255,0.06)',paddingTop:'6px'}}>New governing constraint: <b style={{color:'#e2e8f0'}}>{d.new_governing_constraint}</b></div>}
-    </div> : null;
-    return <>{textBlock}{srcBadge}{deltaBlock}</>;
-  };
-
-  const renderBenchmarkStats = () => {
-                const bms = model.benchmark_comparison || [];
-                const costGrowths = bms.map(b=>b.cost_growth_pct||0).sort((a,b)=>a-b);
-                const slips = bms.map(b=>b.schedule_slip_months||0).sort((a,b)=>a-b);
-                const p50Val = model?.p50_cost_bn || 0;
-                const anchorVals = bms.map(b=>parseFloat((b.anchor_cost||'0').replace(/[^0-9.]/g,''))).filter(v=>v>0).sort((a,b)=>a-b);
-                const costPct = anchorVals.length ? Math.round(anchorVals.filter(v=>v<=p50Val*1000).length/anchorVals.length*100) : null;
-                return <div style={{fontSize:'11px',color:'#cbd5e1',lineHeight:'1.6'}}>
-                  {costPct !== null && <div style={{marginBottom:3}}><b style={{color:'#fff'}}>Cost:</b> Your P50 is at the <span style={{color:'#a78bfa',fontWeight:'700'}}>{costPct}th percentile</span> of this cohort by anchor cost.</div>}
-                  <div style={{marginBottom:3}}><b style={{color:'#fff'}}>Risk profile:</b> {model?.confidence_pct >= 65 ? 'Above median confidence for this cohort.' : 'Below median confidence — higher than average delivery risk.'}</div>
-                  <div><b style={{color:'#fff'}}>Class {model?.estimate_class} accuracy range:</b> Your P50 could reasonably be {({1:'±10%',2:'±15%',3:'±20%',4:'±35%',5:'±50%'})[model?.estimate_class] || '±20%'} higher or lower.</div>
-                </div>;
-              };
-
-
-  return (
-    <div style={{background:'#0a0f1e',border:`1px solid ${trafficBorder(traffic)}`,borderRadius:6,marginBottom:16,overflow:'hidden'}}>
-      {/* Header row */}
-      <div onClick={()=>setExpanded(!expanded)}
-           style={{display:'flex',alignItems:'center',gap:12,padding:'10px 16px',cursor:'pointer',
-                   background:trafficBg(traffic)}}>
-        <div style={{display:'flex',alignItems:'center',gap:6,flex:1}}>
-          <span style={{fontSize:'9px',fontWeight:'800',color:trafficColor(traffic),letterSpacing:'.12em'}}>
-            ⚡ CASEY OUTPUT CHALLENGE
-          </span>
-          <span style={{fontSize:'10px',color:'#475569',marginLeft:4}}>
-            — {programme || 'This programme'}
-          </span>
-        </div>
-        <div style={{display:'flex',gap:16,alignItems:'center'}}>
-          {dimList.slice(0,4).map(d=>(
-            <div key={d.label} style={{display:'flex',alignItems:'center',gap:4}}>
-              {dot(d.traffic)}
-              <span style={{fontSize:'9px',color:'#64748b'}}>{d.label?.split(' ')[0]}</span>
-              <span style={{fontSize:'10px',fontWeight:'700',color:trafficColor(d.traffic)}}>{d.score+'%'}</span>
-            </div>
-          ))}
-          <div style={{width:1,height:14,background:'rgba(255,255,255,0.08)'}}/>
-          <span style={{fontSize:'11px',fontWeight:'800',color:trafficColor(traffic)}}>{overall+'%'}</span>
-          <span style={{fontSize:'9px',color:'#475569',fontFamily:'monospace'}}>{expanded?'▲':'▼'}</span>
-        </div>
-      </div>
-
-      {/* Expanded detail */}
-      {expanded && <div style={{padding:'12px 16px',borderTop:`1px solid ${trafficBorder(traffic)}`}}>
-        <div style={{fontSize:'11px',color:'#94a3b8',marginBottom:12,lineHeight:'1.5'}}>
-          {sc.verdict}
-        </div>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:10}}>
-          {dimList.map(d=>(
-            <div key={d.label} style={{background:'rgba(255,255,255,0.03)',border:`1px solid rgba(255,255,255,0.07)`,borderRadius:4,padding:'10px 12px'}}>
-              <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:d.issues?.length?8:0}}>
-                {dot(d.traffic)}
-                <span style={{fontSize:'10px',fontWeight:'700',color:'#fff'}}>{d.label}</span>
-                <span style={{fontSize:'11px',fontWeight:'800',color:trafficColor(d.traffic),marginLeft:'auto'}}>{d.score+'%'}</span>
-              </div>
-              {d.issues?.map((iss,i)=>(
-                <div key={i} style={{display:'flex',gap:6,marginTop:4}}>
-                  <span style={{color:trafficColor(d.traffic),fontSize:'10px',flexShrink:0,marginTop:1}}>→</span>
-                  <span style={{fontSize:'10px',color:'#94a3b8',lineHeight:'1.5'}}>{iss}</span>
-                </div>
-              ))}
-              {(!d.issues || d.issues.length===0) && (
-                <div style={{fontSize:'10px',color:'#10b981',marginTop:2}}>✓ No issues identified</div>
-              )}
-            </div>
-          ))}
-        </div>
-        {totalIssues === 0 && (
-          <div style={{marginTop:10,fontSize:'10px',color:'#10b981',textAlign:'center'}}>
-            ✅ Output passed all CASEY self-challenge checks — board-defensible
-          </div>
-        )}
-      </div>}
-    </div>
-  );
-}
-
-const scenarioInsightMap95 = {
-  base: 'Mechanical completion is not the true finish line; validated production readiness and deviation closure are the real board decision gates.',
-  faster: 'Acceleration is now the risk: CQV, clean-utility validation and media-fill readiness are being forced into the same window. The programme may finish construction before it is safe to release product.',
-  cheaper: 'The cheaper case is not simply cheaper. It has likely transferred cost into operational fragility: leaner redundancy, weaker qualification float and higher late-stage validation disruption.',
-  lower_risk: 'The lower-risk case buys regulatory confidence by protecting CQV float, GMP turnover and deviation closure before commercial ramp-up.',
-  premium: 'Premium delivery protects market launch by buying utility resilience, validation capacity and stronger batch-release readiness.'
-};
-
-const scenarioTrade95 = {
-  base: ['Balanced cost, time and evidence posture.','Maintains a credible reference case for board challenge.','Does not buy extra time certainty or capital efficiency.'],
-  faster: ['You bought time by spending money and consuming recovery float.','Earlier revenue / market-entry option and stronger strategic timing.','CQV float, interface stability, procurement optionality and late-stage recovery.'],
-  cheaper: ['You cut capital authorization by moving risk into resilience, redundancy and start-up.','Lower initial approval number and reduced near-term capital draw.','Operational resilience, commissioning flexibility, contingency adequacy and lifecycle certainty.'],
-  lower_risk: ['You bought confidence by adding assurance, float and procurement evidence.','Reduced P80/P90 exposure and stronger board approval defensibility.','Earlier revenue date and lean capital posture.'],
-  premium: ['You bought resilience, redundancy and strategic optionality.','Higher operational resilience, stronger procurement certainty and better downside protection.','Lowest-capex authorization case.']
-};
 
 function App() {
   const [show, setShow] = useState(true);
@@ -2671,6 +2477,11 @@ function App() {
   const [classLevel, setClassLevel] = useState(3);
   const [scheduleLevel, setScheduleLevel] = useState(4);
   const [model, setModel] = useState(null);
+  // Scenario helpers - available throughout App
+  const isNonBase = !!(model?.scenario && model.scenario !== 'base');
+  const sCostMult = parseFloat(model?.scenario_cost_mult || 1.0);
+  const sRiskMult = parseFloat(model?.scenario_risk_mult || 1.0);
+  const sSchedMult = parseFloat(model?.scenario_sched_mult || 1.0);
   const [projectContext, setProjectContext] = useState(null);
   const [tab, setTab] = useState('overview');
   const [healthProg, setHealthProg] = React.useState(null);
@@ -2688,7 +2499,10 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [chatQ, setChatQ] = useState('');
-  const [chat, setChat] = useState([{ role: 'assistant', text: 'Ask CASEY why cost, schedule, contingency or risk confidence is moving.' }]);
+  const [chat, setChat] = useState([{ role: 'assistant', text: 'Ask CASEY anything about this programme — cost, schedule, risk, board questions, benchmarks, or governing constraints. Be direct.' }]);
+  const [chatUsed, setChatUsed] = useState(0); // free advisor questions used
+  const FREE_ADVISOR_LIMIT = 1; // 1 free advisor question, unlimited for admin
+  const [advisorModel, setAdvisorModel] = useState(null); // which AI is active
   const [uploadResult, setUploadResult] = useState(null);
   const [viewMode, setViewMode] = useState('exec');
   const [propagating, setPropagating] = useState(false);
@@ -3330,9 +3144,17 @@ function parseMoneyLocal(v) {
     const q = advisorQuestionText(overrideQ);
     if (!q) return;
     if (!model) {
-      setChat(x => [...x, {role:'user',text:q}, {role:'assistant',text:'**No project loaded yet**\n\nGenerate a project first, then come back to challenge it. Board attack answers are grounded in the live model.'}]);
+      setChat(x => [...x, {role:'user',text:q}, {role:'assistant',text:'**No project loaded**\n\nGenerate or load a project first, then ask CASEY anything about cost, schedule, risk, or board strategy.'}]);
       return;
     }
+    // Advisor lock: 1 free question for non-admin users
+    if (!isAdminUser && chatUsed >= FREE_ADVISOR_LIMIT) {
+      setChat(x => [...x, {role:'user',text:q}, {role:'assistant',text:'**CASEY Advisor — Access Required**\n\nYou have used your free advisor question. The CASEY Advisor uses live AI to challenge your programme with the authority of an IPA reviewer.\n\nRequest full access at hello@controlorbit.com or enter your access code.'}]);
+      setEmailGateOpen(true);
+      setEmailGateFor('advisor');
+      return;
+    }
+    setChatUsed(n => n + 1);
     setChatQ('');
     setChat(x => [...x, { role: 'user', text: q }]);
     const ql = q.toLowerCase();
@@ -3490,6 +3312,202 @@ function parseMoneyLocal(v) {
   const p80Talk = model ? p80PlainEnglish(model) : null;
   const tradePack = model ? gainedSacrificedExposed(model) : null;
 
+
+
+  const renderApprovalStatus = () => {
+              const conf = model?.confidence_pct || 0;
+              const ready = conf >= 75; const partial = conf >= 55;
+              const status = ready ? 'APPROVAL READY' : partial ? 'CONDITIONAL — EVIDENCE GAPS REMAIN' : 'NOT READY FOR BOARD';
+              const color = ready ? '#10b981' : partial ? '#f59e0b' : '#ef4444';
+              const bg = ready ? 'rgba(16,185,129,0.08)' : partial ? 'rgba(245,158,11,0.06)' : 'rgba(239,68,68,0.08)';
+              const border = ready ? 'rgba(16,185,129,0.4)' : partial ? 'rgba(245,158,11,0.35)' : 'rgba(239,68,68,0.5)';
+              return <div style={{background:bg,border:`2px solid ${border}`,borderRadius:10,padding:'16px 20px',marginBottom:12,display:'grid',gridTemplateColumns:'1fr auto',alignItems:'center',gap:16}}>
+                <div>
+                  <div style={{fontSize:'10px',fontWeight:'800',color,letterSpacing:'.14em',marginBottom:4}}>{status}</div>
+                  <div style={{fontSize:'22px',fontWeight:'900',color:'#fff',marginBottom:6}}>{model?.cost_p50} &nbsp;<span style={{fontSize:'14px',fontWeight:'400',color:'#64748b'}}>P50</span>&nbsp;&nbsp;{model?.cost_p80} &nbsp;<span style={{fontSize:'14px',fontWeight:'400',color:'#64748b'}}>P80</span>&nbsp;&nbsp;{model?.schedule} &nbsp;<span style={{fontSize:'14px',fontWeight:'400',color:'#64748b'}}>delivery</span></div>
+                  <div style={{fontSize:'11px',color:'#94a3b8'}}>{model?.subsector} · {model?.location} · {model?.estimate_class_name}</div>
+                </div>
+                <div style={{textAlign:'center',padding:'10px 20px',background:'rgba(255,255,255,0.03)',borderRadius:8,border:'1px solid rgba(255,255,255,0.07)'}}>
+                  <div style={{fontSize:'9px',color:'#64748b',marginBottom:4}}>BOARD CONFIDENCE</div>
+                  <div style={{fontSize:'36px',fontWeight:'900',color,lineHeight:1}}>{model?.confidence_pct+'%'}</div>
+                  <div style={{fontSize:'8px',color:'#475569',marginTop:3}}>{conf>=75?'Board-defensible':'Target: 75%+'}</div>
+                </div>
+              </div>;
+            };
+
+  const renderScenarioCompare = () => {
+  const baseRow=scenarioMatrix.find(x=>x.scenario==='base')||{};
+  const bCost=parseMoneyLocal(baseRow.cost_p50||baseRow.cost||'0');
+  const bConf=parseInt(String(baseRow.confidence_pct||baseRow.confidence||'50'));
+  const bSched=parseInt(String(baseRow.schedule_months||'0'));
+  const tradeNotes={
+    base:'Reference case. Balanced cost, schedule and evidence posture for board challenge.',
+    faster:'Time bought at cost of money and float. Confidence falls — board will ask if saving is real.',
+    cheaper:'Lower number carries higher residual risk. Evidence deferred — board must accept this explicitly.',
+    lower_risk:'Reserve adds confidence but costs more time and money. Requires QCRA evidence it is risk-linked.',
+    premium:'Full optionality at premium capex. Requires explicit board decision to pay for resilience.'
+  };
+  const worsens={base:[],faster:['Cost ↑','Confidence ↓','Risk ↑'],cheaper:['Schedule ↑','Confidence ↓','Risk ↑'],lower_risk:['Cost ↑','Schedule ↑'],premium:['Cost ↑↑']};
+  const improves={base:[],faster:['Schedule ↓'],cheaper:['Cost ↓'],lower_risk:['Confidence ↑','Risk ↓'],premium:['Confidence ↑','Risk ↓']};
+  return <div className="scenarioCompare upgraded">{scenarios.map(s=>{
+    const active=s===scenario;
+    const row=scenarioMatrix.find(x=>x.scenario===s)||{};
+    const rCost=parseMoneyLocal(row.cost_p50||row.cost||'0');
+    const rConf=parseInt(String(row.confidence_pct||row.confidence||'50'));
+    const rSched=parseInt(String(row.schedule_months||'0'));
+    const costD=bCost>0?Math.round((rCost-bCost)/bCost*100):0;
+    const confD=bConf>0?rConf-bConf:0;
+    const schedD=bSched>0?rSched-bSched:0;
+    const rCol=(row.risk||'').toLowerCase().includes('high')?'#ef4444':(row.risk||'').toLowerCase().includes('medium')?'#f59e0b':'#10b981';
+    const cCol=rConf>=65?'#10b981':rConf>=50?'#f59e0b':'#ef4444';
+    const ws=worsens[s]||[]; const im=improves[s]||[];
+    return <button key={s} className={active?'active':''} onClick={()=>generate(s,model?.prompt||prompt,model||projectContext)}>
+      <b style={{textTransform:'uppercase',letterSpacing:'.06em',fontSize:'13px'}}>{(row.label||s).replace('_',' ')}</b>
+      <strong style={{fontSize:'16px',display:'block',margin:'4px 0'}}>{row.cost_p50||row.cost||'—'}</strong>
+      <div style={{fontSize:'11px',color:'#94a3b8',marginBottom:'4px'}}>{row.schedule_months||'—'} months · <span style={{color:cCol,fontWeight:'700'}}>{row.confidence_pct||row.confidence||'—'+'%'}</span> · <span style={{color:rCol,fontWeight:'700'}}>{row.risk||'—'}</span></div>
+      {s!=='base'&&bCost>0&&<div style={{display:'flex',gap:'5px',flexWrap:'wrap',marginBottom:'3px'}}>
+        {costD!==0&&<span style={{background:'rgba(239,68,68,0.12)',color:costD>0?'#ef4444':'#10b981',padding:'1px 6px',borderRadius:'2px',fontSize:'10px',fontWeight:'900'}}>{(costD>0?'+':'-')+Math.abs(costD)+'% cost'}</span>}
+        {confD!==0&&<span style={{background:'rgba(6,182,212,0.12)',color:confD>0?'#10b981':'#ef4444',padding:'1px 6px',borderRadius:'2px',fontSize:'10px',fontWeight:'900'}}>{(confD>0?'+':'-')+Math.abs(confD)+'pt conf'}</span>}
+        {schedD!==0&&<span style={{background:'rgba(245,158,11,0.12)',color:schedD<0?'#10b981':'#f59e0b',padding:'1px 6px',borderRadius:'2px',fontSize:'10px',fontWeight:'900'}}>{(schedD>0?'+':'-')+Math.abs(schedD)+'mo'}</span>}
+      </div>}
+      {ws.length>0&&<div style={{fontSize:'9px',color:'#ef4444',fontWeight:'700',letterSpacing:'.05em'}}>WORSE: {ws.join(' · ')}</div>}
+      {im.length>0&&<div style={{fontSize:'9px',color:'#10b981',fontWeight:'700',letterSpacing:'.05em'}}>BETTER: {im.join(' · ')}</div>}
+      <em style={{fontSize:'10px',color:'#64748b',fontStyle:'normal',lineHeight:'1.3',display:'block',marginTop:'4px'}}>{active?'▶ ACTIVE — '+scenario.toUpperCase():tradeNotes[s]||''}</em>
+    </button>;
+  })}</div>;
+};
+
+  const renderChatMsg = (m) => {
+    const lines = String(m.text||'').split('\n');
+    const textBlock = lines.map((line, li) => {
+      if (!line.trim()) return <div key={li} style={{height:'5px'}}/>;
+      if (line.startsWith('**') && line.endsWith('**') && line.length > 4)
+        return <div key={li} className="chatHeading">{line.replace(/\*\*/g,'')}</div>;
+      const parts = line.split(/\*\*([^*]+)\*\*/g);
+      return <p key={li} className="chatLine">{parts.map((p,pi)=>pi%2===1?<strong key={pi}>{p}</strong>:p)}</p>;
+    });
+    const srcBadge = m.role === 'assistant' && m.source ? <div style={{marginTop:'4px',fontSize:'9px',color:'#334155',fontFamily:'monospace'}}>
+      {m.source === 'claude' ? '⚡ Claude (Anthropic)' : m.source === 'openai' ? '🤖 GPT-4o (OpenAI)' : m.source === 'pattern' ? '⚙ Pattern match (set API key for AI)' : ''}
+    </div> : null;
+    const d = m.delta;
+    const deltaBlock = d && !d.error ? <div style={{marginTop:'10px',background:'rgba(141,247,255,0.05)',border:'1px solid rgba(141,247,255,0.2)',borderRadius:'4px',padding:'10px 12px'}}>
+      <div style={{fontSize:'9px',fontWeight:'800',letterSpacing:'.12em',color:'#8df7ff',marginBottom:'6px'}}>◆ MODEL RECALCULATED — CONSTRAINT APPLIED</div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'8px',marginBottom:'8px'}}>
+        {d.cost_delta_bn !== undefined && <div style={{textAlign:'center',padding:'6px',background:'rgba(255,255,255,0.03)',borderRadius:'3px'}}>
+          <div style={{fontSize:'9px',color:'#475569',marginBottom:'2px'}}>Cost delta</div>
+          <div style={{fontSize:'13px',fontWeight:'800',color:d.cost_delta_bn>0?'#fca5a5':'#10b981'}}>{(d.cost_delta_bn>0?'+':'')+((d.cost_delta_bn||0).toFixed(1))+'B'}</div>
+          <div style={{fontSize:'10px',color:'#8df7ff'}}>{d.new_p50}</div>
+        </div>}
+        {d.confidence_delta !== undefined && <div style={{textAlign:'center',padding:'6px',background:'rgba(255,255,255,0.03)',borderRadius:'3px'}}>
+          <div style={{fontSize:'9px',color:'#475569',marginBottom:'2px'}}>Confidence</div>
+          <div style={{fontSize:'13px',fontWeight:'800',color:d.confidence_delta<0?'#fca5a5':'#10b981'}}>{(d.confidence_delta>0?'+':'')+d.confidence_delta+'pts'}</div>
+          <div style={{fontSize:'10px',color:'#8df7ff'}}>{d.new_confidence+'%'}</div>
+        </div>}
+        {d.schedule_delta_months !== undefined && <div style={{textAlign:'center',padding:'6px',background:'rgba(255,255,255,0.03)',borderRadius:'3px'}}>
+          <div style={{fontSize:'9px',color:'#475569',marginBottom:'2px'}}>Schedule delta</div>
+          <div style={{fontSize:'13px',fontWeight:'800',color:d.schedule_delta_months>0?'#fca5a5':'#10b981'}}>{(d.schedule_delta_months>0?'+':'')+d.schedule_delta_months+'mo'}</div>
+          <div style={{fontSize:'10px',color:'#8df7ff'}}>{d.new_schedule}</div>
+        </div>}
+      </div>
+      {d.new_governing_constraint && <div style={{fontSize:'10px',color:'#94a3b8',borderTop:'1px solid rgba(255,255,255,0.06)',paddingTop:'6px'}}>New governing constraint: <b style={{color:'#e2e8f0'}}>{d.new_governing_constraint}</b></div>}
+    </div> : null;
+    return <>{textBlock}{srcBadge}{deltaBlock}</>;
+  };
+
+  const renderBenchmarkStats = () => {
+                const bms = model.benchmark_comparison || [];
+                const costGrowths = bms.map(b=>b.cost_growth_pct||0).sort((a,b)=>a-b);
+                const slips = bms.map(b=>b.schedule_slip_months||0).sort((a,b)=>a-b);
+                const p50Val = model?.p50_cost_bn || 0;
+                const anchorVals = bms.map(b=>parseFloat((b.anchor_cost||'0').replace(/[^0-9.]/g,''))).filter(v=>v>0).sort((a,b)=>a-b);
+                const costPct = anchorVals.length ? Math.round(anchorVals.filter(v=>v<=p50Val*1000).length/anchorVals.length*100) : null;
+                return <div style={{fontSize:'11px',color:'#cbd5e1',lineHeight:'1.6'}}>
+                  {costPct !== null && <div style={{marginBottom:3}}><b style={{color:'#fff'}}>Cost:</b> Your P50 is at the <span style={{color:'#a78bfa',fontWeight:'700'}}>{costPct}th percentile</span> of this cohort by anchor cost.</div>}
+                  <div style={{marginBottom:3}}><b style={{color:'#fff'}}>Risk profile:</b> {model?.confidence_pct >= 65 ? 'Above median confidence for this cohort.' : 'Below median confidence — higher than average delivery risk.'}</div>
+                  <div><b style={{color:'#fff'}}>Class {model?.estimate_class} accuracy range:</b> Your P50 could reasonably be {({1:'±10%',2:'±15%',3:'±20%',4:'±35%',5:'±50%'})[model?.estimate_class] || '±20%'} higher or lower.</div>
+                </div>;
+              };
+
+
+  return (
+    <div style={{background:'#0a0f1e',border:`1px solid ${trafficBorder(traffic)}`,borderRadius:6,marginBottom:16,overflow:'hidden'}}>
+      {/* Header row */}
+      <div onClick={()=>setExpanded(!expanded)}
+           style={{display:'flex',alignItems:'center',gap:12,padding:'10px 16px',cursor:'pointer',
+                   background:trafficBg(traffic)}}>
+        <div style={{display:'flex',alignItems:'center',gap:6,flex:1}}>
+          <span style={{fontSize:'9px',fontWeight:'800',color:trafficColor(traffic),letterSpacing:'.12em'}}>
+            ⚡ CASEY OUTPUT CHALLENGE
+          </span>
+          <span style={{fontSize:'10px',color:'#475569',marginLeft:4}}>
+            — {programme || 'This programme'}
+          </span>
+        </div>
+        <div style={{display:'flex',gap:16,alignItems:'center'}}>
+          {dimList.slice(0,4).map(d=>(
+            <div key={d.label} style={{display:'flex',alignItems:'center',gap:4}}>
+              {dot(d.traffic)}
+              <span style={{fontSize:'9px',color:'#64748b'}}>{d.label?.split(' ')[0]}</span>
+              <span style={{fontSize:'10px',fontWeight:'700',color:trafficColor(d.traffic)}}>{d.score+'%'}</span>
+            </div>
+          ))}
+          <div style={{width:1,height:14,background:'rgba(255,255,255,0.08)'}}/>
+          <span style={{fontSize:'11px',fontWeight:'800',color:trafficColor(traffic)}}>{overall+'%'}</span>
+          <span style={{fontSize:'9px',color:'#475569',fontFamily:'monospace'}}>{expanded?'▲':'▼'}</span>
+        </div>
+      </div>
+
+      {/* Expanded detail */}
+      {expanded && <div style={{padding:'12px 16px',borderTop:`1px solid ${trafficBorder(traffic)}`}}>
+        <div style={{fontSize:'11px',color:'#94a3b8',marginBottom:12,lineHeight:'1.5'}}>
+          {sc.verdict}
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:10}}>
+          {dimList.map(d=>(
+            <div key={d.label} style={{background:'rgba(255,255,255,0.03)',border:`1px solid rgba(255,255,255,0.07)`,borderRadius:4,padding:'10px 12px'}}>
+              <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:d.issues?.length?8:0}}>
+                {dot(d.traffic)}
+                <span style={{fontSize:'10px',fontWeight:'700',color:'#fff'}}>{d.label}</span>
+                <span style={{fontSize:'11px',fontWeight:'800',color:trafficColor(d.traffic),marginLeft:'auto'}}>{d.score+'%'}</span>
+              </div>
+              {d.issues?.map((iss,i)=>(
+                <div key={i} style={{display:'flex',gap:6,marginTop:4}}>
+                  <span style={{color:trafficColor(d.traffic),fontSize:'10px',flexShrink:0,marginTop:1}}>→</span>
+                  <span style={{fontSize:'10px',color:'#94a3b8',lineHeight:'1.5'}}>{iss}</span>
+                </div>
+              ))}
+              {(!d.issues || d.issues.length===0) && (
+                <div style={{fontSize:'10px',color:'#10b981',marginTop:2}}>✓ No issues identified</div>
+              )}
+            </div>
+          ))}
+        </div>
+        {totalIssues === 0 && (
+          <div style={{marginTop:10,fontSize:'10px',color:'#10b981',textAlign:'center'}}>
+            ✅ Output passed all CASEY self-challenge checks — board-defensible
+          </div>
+        )}
+      </div>}
+    </div>
+  );
+}
+
+const scenarioInsightMap95 = {
+  base: 'Mechanical completion is not the true finish line; validated production readiness and deviation closure are the real board decision gates.',
+  faster: 'Acceleration is now the risk: CQV, clean-utility validation and media-fill readiness are being forced into the same window. The programme may finish construction before it is safe to release product.',
+  cheaper: 'The cheaper case is not simply cheaper. It has likely transferred cost into operational fragility: leaner redundancy, weaker qualification float and higher late-stage validation disruption.',
+  lower_risk: 'The lower-risk case buys regulatory confidence by protecting CQV float, GMP turnover and deviation closure before commercial ramp-up.',
+  premium: 'Premium delivery protects market launch by buying utility resilience, validation capacity and stronger batch-release readiness.'
+};
+
+const scenarioTrade95 = {
+  base: ['Balanced cost, time and evidence posture.','Maintains a credible reference case for board challenge.','Does not buy extra time certainty or capital efficiency.'],
+  faster: ['You bought time by spending money and consuming recovery float.','Earlier revenue / market-entry option and stronger strategic timing.','CQV float, interface stability, procurement optionality and late-stage recovery.'],
+  cheaper: ['You cut capital authorization by moving risk into resilience, redundancy and start-up.','Lower initial approval number and reduced near-term capital draw.','Operational resilience, commissioning flexibility, contingency adequacy and lifecycle certainty.'],
+  lower_risk: ['You bought confidence by adding assurance, float and procurement evidence.','Reduced P80/P90 exposure and stronger board approval defensibility.','Earlier revenue date and lean capital posture.'],
+  premium: ['You bought resilience, redundancy and strategic optionality.','Higher operational resilience, stronger procurement certainty and better downside protection.','Lowest-capex authorization case.']
+};
+
   return <div className="app v50EliteApp">
     <Briefing open={briefing} onClose={() => setBriefing(false)} onEarth={runEarth} onSpace={runSpace}/>
     <OneShotDemo open={trialOpen} onClose={() => setTrialOpen(false)} onComplete={(m) => { const nm = normalizeModelForUI(m); setModel(nm); setProjectContext(lockedProjectContext(nm, nm?.prompt || prompt)); setShow(false); setTrialOpen(false); setTab('overview'); }} />
@@ -3604,6 +3622,23 @@ function parseMoneyLocal(v) {
 
           {/* ── EXECUTIVE / CFO VIEW ─────────────────────────────────────── */}
           {viewMode === 'exec' && <>
+            {/* TOP 5 — WHAT KEEPS AN EXECUTIVE AWAKE */}
+            {model && <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:6,marginBottom:10}}>
+              {[
+                ['1','Did I approve the right number?',model.cost_p50,'#8df7ff','vs OBA outturn: '+(model.outturn||'—')],
+                ['2','What will embarrass me?',(model.mortality_event?.title||'Assess').slice(0,28),'#ef4444','Programme mortality'],
+                ['3','Is my reserve enough?',(model.p80_reserve_pct||0)+'% held (need '+(model.reserve_vs_benchmark_pct||18)+'%)',(model.p80_reserve_pct||0)>=(model.reserve_vs_benchmark_pct||18)?'#10b981':'#ef4444',(model.p80_reserve_pct||0)>=(model.reserve_vs_benchmark_pct||18)?'Reserve adequate':'Shortfall: '+(model.currency_symbol||'')+(model.reserve_gap_bn||0).toFixed(2)+'B'],
+                ['4','What will the board ask?',(model.board_attack_simulation||[]).length+' predicted questions','#f59e0b','See Board Pack →'],
+                ['5','Is confidence improving?',(model.confidence_pct||0)+'%',(model.confidence_pct||0)>=65?'#10b981':(model.confidence_pct||0)>=50?'#f59e0b':'#ef4444',(model.approval_pathway||'See QCRA →').slice(0,40)],
+              ].map(([n,q,signal,col,sub],i)=>(
+                <div key={i} style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:7,padding:'8px 10px'}}>
+                  <div style={{fontSize:'18px',fontWeight:'900',color:col,marginBottom:2}}>{n}</div>
+                  <div style={{fontSize:'8px',color:'#64748b',marginBottom:3,lineHeight:1.3}}>{q}</div>
+                  <div style={{fontSize:'10px',fontWeight:'800',color:col}}>{signal}</div>
+                  <div style={{fontSize:'7px',color:'#475569',marginTop:1}}>{sub}</div>
+                </div>
+              ))}
+            </div>}
             {/* APPROVAL STATUS — the headline */}
             <ApprovalStatus model={model}/>
 
@@ -3632,6 +3667,23 @@ function parseMoneyLocal(v) {
 
           {/* ── PROJECT DIRECTOR VIEW ────────────────────────────────────── */}
           {viewMode === 'board' && <>
+            {/* TOP 5 — WHAT KEEPS A PROJECT DIRECTOR AWAKE */}
+            {model && <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:6,marginBottom:10}}>
+              {[
+                ['1','Is the governing constraint owned?',(model.governing_constraint_prominent||model.governing_constraint_full?.statement||'Not confirmed').slice(0,30),'#f59e0b','Name owner + date →'],
+                ['2','Will the board accept my recommendation?',(model.confidence_pct||0)+'% confidence',(model.confidence_pct||0)>=75?'#10b981':'#ef4444',(model.confidence_pct||0)>=75?'Board-defensible':'Need 75%+ for approval'],
+                ['3','Which procurement item will kill us?',(model.procurement_intelligence?.items?.filter(x=>x.status==='CRITICAL')||[]).length+' CRITICAL items','#ef4444','See Cost → Procurement'],
+                ['4','What does the schedule hide?',(model.xer_health?.logic_quality||'Upload XER'),(model.xer_health?.logic_quality==='GOOD')?'#10b981':'#f59e0b',model.xer_health ? (model.xer_health.open_ends||0)+' open ends, '+( model.xer_health.activity_count||0)+' activities' : 'Upload XER for health score'],
+                ['5','Which benchmark do we most resemble?',((model.benchmark_comparison||[])[0]?.name||'See Benchmarks →').slice(0,28),'#a78bfa',((model.benchmark_comparison||[])[0]?.cost_growth_pct||0)+'% cost growth in comparable'],
+              ].map(([n,q,signal,col,sub],i)=>(
+                <div key={i} style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:7,padding:'8px 10px'}}>
+                  <div style={{fontSize:'18px',fontWeight:'900',color:col,marginBottom:2}}>{n}</div>
+                  <div style={{fontSize:'8px',color:'#64748b',marginBottom:3,lineHeight:1.3}}>{q}</div>
+                  <div style={{fontSize:'10px',fontWeight:'800',color:col}}>{signal}</div>
+                  <div style={{fontSize:'7px',color:'#475569',marginTop:1}}>{sub}</div>
+                </div>
+              ))}
+            </div>}
             {/* Governing constraint — PD's first question */}
             {(model?.governing_constraint_prominent || model?.governing_constraint_full?.statement) && <div style={{background:'rgba(245,158,11,0.08)',border:'2px solid rgba(245,158,11,0.4)',borderRadius:10,padding:'14px 18px',marginBottom:12}}>
               <div style={{fontSize:'9px',fontWeight:'800',color:'#f59e0b',letterSpacing:'.14em',marginBottom:4}}>⛔ GOVERNING CONSTRAINT — BOARD MUST CONFIRM BEFORE APPROVAL</div>
@@ -3685,6 +3737,23 @@ function parseMoneyLocal(v) {
 
           {/* ── PROJECT MANAGER VIEW ─────────────────────────────────────── */}
           {viewMode === 'pm' && <>
+            {/* TOP 5 — WHAT KEEPS A PROJECT MANAGER AWAKE */}
+            {model && <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:6,marginBottom:10}}>
+              {[
+                ['1','Is my P50 defensible?',model.estimate_class_name||'Class 3 Budget','#8df7ff','Upload cost file for evidence'],
+                ['2','Are all risks owned?',(model.risks||[]).filter(r=>!r.owner||r.owner==='TBC').length+' unowned risks','#ef4444',(model.risks||[]).filter(r=>!r.owner||r.owner==='TBC').length===0?'All risks owned ✓':'Assign owners now'],
+                ['3','Does my schedule reflect reality?',model.xer_health?.float_quality||'Upload XER','#f59e0b',model.xer_health ? (model.xer_health.critical_pct||0)+'% critical path' : 'Schedule quality unknown'],
+                ['4','What is my contingency gap?',model.p80_reserve||'—',(model.p80_reserve_pct||0)>=(model.reserve_vs_benchmark_pct||18)?'#10b981':'#ef4444','Benchmark: '+(model.reserve_vs_benchmark_pct||18)+'% | You: '+(model.p80_reserve_pct||0)+'%'],
+                ['5','Prolific cost per unit?',model.prolific_cost_str||model.prolific_cost_per_unit+'M/'+( model.prolific_unit_label||'unit'),'#06b6d4','vs benchmark unit rates'],
+              ].map(([n,q,signal,col,sub],i)=>(
+                <div key={i} style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:7,padding:'8px 10px'}}>
+                  <div style={{fontSize:'18px',fontWeight:'900',color:col,marginBottom:2}}>{n}</div>
+                  <div style={{fontSize:'8px',color:'#64748b',marginBottom:3,lineHeight:1.3}}>{q}</div>
+                  <div style={{fontSize:'10px',fontWeight:'800',color:col}}>{signal}</div>
+                  <div style={{fontSize:'7px',color:'#475569',marginTop:1}}>{sub}</div>
+                </div>
+              ))}
+            </div>}
             {/* Scenario delta + KPI bar */}
             {model?.scenario !== 'base' && <div style={{background:'rgba(6,182,212,0.06)',border:'1px solid rgba(6,182,212,0.2)',borderRadius:8,padding:'8px 14px',marginBottom:10,display:'flex',gap:16,alignItems:'center',flexWrap:'wrap'}}>
               <div style={{fontSize:'9px',fontWeight:'800',color:'#06b6d4'}}>{(model.scenario_label||'').toUpperCase()} vs BASE</div>
@@ -4156,6 +4225,13 @@ function parseMoneyLocal(v) {
           <section className="layout two">
             <Card>
               <h2>CASEY Advisor</h2>
+              {/* API STATUS INDICATOR */}
+              <div style={{marginBottom:8,padding:'6px 10px',background:advisorModel?.advisor_active?'rgba(16,185,129,0.06)':'rgba(245,158,11,0.06)',border:'1px solid '+(advisorModel?.advisor_active?'rgba(16,185,129,0.2)':'rgba(245,158,11,0.2)'),borderRadius:5,display:'flex',alignItems:'center',gap:8}}>
+                <span style={{fontSize:'8px',width:6,height:6,borderRadius:'50%',background:advisorModel?.advisor_active?'#10b981':'#f59e0b',display:'inline-block',flexShrink:0}}/>
+                <div style={{fontSize:'8px',color:advisorModel?.advisor_active?'#10b981':'#f59e0b',fontWeight:'700'}}>{advisorModel?.advisor_active ? advisorModel.advisor_model+' — Live AI active' : 'Pattern matching active — Set ANTHROPIC_API_KEY or OPENAI_API_KEY in Render to enable AI'}</div>
+                {!isAdminUser && chatUsed >= FREE_ADVISOR_LIMIT && <div style={{marginLeft:'auto',fontSize:'8px',color:'#ef4444',fontWeight:'700'}}>1 free question used — <span style={{cursor:'pointer',textDecoration:'underline'}} onClick={()=>{setEmailGateOpen(true);setEmailGateFor('advisor');}}>Request access</span></div>}
+                {isAdminUser && <div style={{marginLeft:'auto',fontSize:'8px',color:'#475569'}}>Admin — unlimited</div>}
+              </div>
               {/* SCENARIO CONTEXT FOR ADVISOR */}
               {model?.scenario !== 'base' && <div style={{background:'rgba(6,182,212,0.06)',border:'1px solid rgba(6,182,212,0.2)',borderRadius:6,padding:'8px 14px',marginBottom:10,display:'flex',gap:12,alignItems:'center'}}>
                 <div style={{fontSize:'10px',fontWeight:'800',color:'#06b6d4'}}>{(model.scenario_label||'').toUpperCase()} SCENARIO ACTIVE</div>
@@ -4352,6 +4428,14 @@ function parseMoneyLocal(v) {
           </Card>
         </section>}
         {tab === 'defence' && <>
+          {/* BLOOMBERG HEADLINE — the one sentence that matters */}
+          {model && <div style={{background:'linear-gradient(90deg,rgba(6,182,212,0.08),rgba(139,92,246,0.06))',border:'1px solid rgba(6,182,212,0.2)',borderRadius:8,padding:'10px 16px',marginBottom:10,display:'flex',gap:10,alignItems:'center'}}>
+            <span style={{fontSize:'8px',fontWeight:'900',color:'#06b6d4',letterSpacing:'.18em',flexShrink:0}}>CASEY VERDICT</span>
+            <div style={{fontSize:'11px',fontWeight:'700',color:'#fff',lineHeight:1.4}}>
+              {model.institutional_authority_line || ((model.confidence_pct||0)>=75 ? model.cost_p50+' '+( model.estimate_class_name)+'. '+model.confidence_pct+'% board confidence. Approval-ready.' : (model.confidence_pct||0)>=55 ? model.cost_p50+' '+( model.estimate_class_name)+'. '+model.confidence_pct+'% confidence — conditional. Governing constraint not confirmed.' : model.cost_p50+' '+( model.estimate_class_name)+'. '+model.confidence_pct+'% confidence. Do not approve without closing '+(model.reserve_gap_bn>0?'£'+model.reserve_gap_bn.toFixed(2)+'B reserve shortfall and ':'')+' governing constraint evidence.')}
+            </div>
+          </div>}
+
           {/* SCENARIO CONTEXT */}
           {model?.scenario !== 'base' && <div style={{background:'rgba(6,182,212,0.06)',border:'1px solid rgba(6,182,212,0.2)',borderRadius:6,padding:'8px 14px',marginBottom:10,display:'flex',gap:12,alignItems:'center'}}>
             <div style={{fontSize:'9px',fontWeight:'800',color:'#06b6d4'}}>{(model.scenario_label||'').toUpperCase()} SCENARIO — Board Pack reflects this scenario vs Base</div>
