@@ -4461,6 +4461,140 @@ def public_demo_feedback(req: PublicDemoFeedback):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+# MAGIC LINK AUTHENTICATION
+# Set RESEND_API_KEY in Render environment to enable email auth.
+# Without it, magic links still work but emails are not sent (dev mode).
+# ══════════════════════════════════════════════════════════════════════════════
+
+def _send_magic_link_email(email: str, token: str, base_url: str = "https://www.controlorbit.com"):
+    """Send magic link via Resend API. Falls back to log if no API key."""
+    api_key = os.environ.get("RESEND_API_KEY", "")
+    magic_url = f"{base_url}/?magic_token={token}"
+    
+    if not api_key:
+        # Dev mode — log the link so it can be tested without email
+        print(f"[MAGIC LINK - no RESEND_API_KEY] {email}: {magic_url}")
+        return True
+    
+    try:
+        import urllib.request
+        payload = json.dumps({
+            "from": "CASEY <casey@controlorbit.com>",
+            "to": [email],
+            "subject": "Your CASEY login link",
+            "html": f"""
+<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#0d1526;color:#e2e8f0;border-radius:8px">
+  <div style="font-size:22px;font-weight:900;color:#8df7ff;margin-bottom:8px">CASEY</div>
+  <div style="font-size:13px;color:#94a3b8;margin-bottom:24px">Capital Programme Intelligence</div>
+  <div style="font-size:15px;font-weight:700;color:#e2e8f0;margin-bottom:8px">Click to sign in</div>
+  <div style="font-size:12px;color:#64748b;margin-bottom:20px">This link expires in 15 minutes and can only be used once.</div>
+  <a href="{magic_url}" style="display:inline-block;padding:12px 24px;background:#8df7ff;color:#0d1526;font-weight:800;font-size:13px;border-radius:6px;text-decoration:none">Sign in to CASEY →</a>
+  <div style="margin-top:24px;font-size:10px;color:#475569">If you didn't request this, ignore this email. This link is valid for 15 minutes.</div>
+</div>""",
+        }).encode()
+        req = urllib.request.Request(
+            "https://api.resend.com/emails",
+            data=payload,
+            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            method="POST"
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return resp.status == 200
+    except Exception as e:
+        print(f"[RESEND ERROR] {e}")
+        return False
+
+
+@app.post("/auth/magic-link")
+async def request_magic_link(request: Request):
+    """Request a magic link for email login. Works without RESEND_API_KEY (dev mode)."""
+    try:
+        data = await request.json()
+        email = str(data.get("email", "")).strip().lower()
+        if not email or "@" not in email:
+            raise HTTPException(400, "valid email required")
+        
+        import secrets, datetime as _dt
+        token = secrets.token_urlsafe(32)
+        now = _dt.datetime.utcnow()
+        expires = (now + _dt.timedelta(minutes=15)).isoformat()
+        
+        con = db()
+        # Upsert user account
+        con.execute("""INSERT INTO user_accounts(email,email_hash,created_at,last_seen,run_count)
+                       VALUES(?,?,?,?,0) ON CONFLICT(email) DO UPDATE SET last_seen=excluded.last_seen""",
+                    (email, hashlib.sha256(email.encode()).hexdigest()[:16], now.isoformat(), now.isoformat()))
+        # Store magic link token
+        con.execute("""INSERT INTO magic_links(email,token,used,created_at,expires_at)
+                       VALUES(?,?,0,?,?)""",
+                    (email, token, now.isoformat(), expires))
+        con.commit(); con.close()
+        
+        # Try to send email
+        base_url = str(request.headers.get("origin", "https://www.controlorbit.com"))
+        sent = _send_magic_link_email(email, token, base_url)
+        
+        return {
+            "ok": True,
+            "email": email,
+            "sent": sent,
+            "message": "Check your email for the login link." if sent else "Magic link created (email not configured — check server logs for the link).",
+            "dev_token": token if not os.environ.get("RESEND_API_KEY") else None,  # Only expose in dev
+        }
+    except HTTPException: raise
+    except Exception as e: raise HTTPException(500, str(e))
+
+
+@app.get("/auth/verify")
+async def verify_magic_link(request: Request):
+    """Verify a magic link token and return the user's email."""
+    token = str(request.query_params.get("token", "")).strip()
+    if not token:
+        raise HTTPException(400, "token required")
+    
+    import datetime as _dt
+    now = _dt.datetime.utcnow().isoformat()
+    
+    con = db()
+    row = con.execute(
+        "SELECT * FROM magic_links WHERE token=? AND used=0 AND expires_at>?",
+        (token, now)
+    ).fetchone()
+    
+    if not row:
+        con.close()
+        raise HTTPException(401, "Invalid or expired link. Request a new one.")
+    
+    row = dict(row)
+    email = row["email"]
+    
+    # Mark as used
+    con.execute("UPDATE magic_links SET used=1 WHERE token=?", (token,))
+    con.execute("UPDATE user_accounts SET last_seen=? WHERE email=?", (now, email))
+    con.commit(); con.close()
+    
+    return {
+        "ok": True,
+        "email": email,
+        "message": "Authenticated successfully.",
+    }
+
+
+@app.get("/auth/me")
+async def get_user(request: Request):
+    """Get user account info by email."""
+    email = str(request.query_params.get("email", "")).strip().lower()
+    if not email:
+        raise HTTPException(400, "email required")
+    con = db()
+    row = con.execute("SELECT email,created_at,last_seen,run_count FROM user_accounts WHERE email=?", (email,)).fetchone()
+    con.close()
+    if not row:
+        raise HTTPException(404, "User not found")
+    return dict(row)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 # PROJECT PERSISTENCE — save, load, list per user
 # ══════════════════════════════════════════════════════════════════════════════
 
