@@ -194,6 +194,19 @@ def init_db():
         webhook_sent INTEGER DEFAULT 0,
         created_at TEXT
     )""")
+    # Replay snapshots
+    cur.execute("""CREATE TABLE IF NOT EXISTS project_snapshots(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        project_id INTEGER NOT NULL,
+        snapshot_date TEXT NOT NULL,
+        cost_p50 TEXT,
+        cost_p80 TEXT,
+        schedule_months INTEGER,
+        confidence_pct INTEGER,
+        narrative TEXT,
+        model_json TEXT,
+        UNIQUE(project_id, snapshot_date)
+    )""")
     con.commit(); con.close()
 init_db()
 
@@ -4447,10 +4460,468 @@ def public_demo_feedback(req: PublicDemoFeedback):
     return {"status": "saved", "message": "Feedback saved for CASEY improvement loop."}
 
 
+# ══════════════════════════════════════════════════════════════════════════════
+# PROJECT PERSISTENCE — save, load, list per user
+# ══════════════════════════════════════════════════════════════════════════════
+
+@app.post("/save-project")
+async def save_project(request: Request):
+    """Save a project to the user's account. Creates account if email new."""
+    try:
+        data = await request.json()
+        email = str(data.get("email","")).strip().lower()
+        model_json = data.get("model")
+        prompt = str(data.get("prompt",""))[:500]
+        title = str(data.get("title","Untitled"))[:200]
+        
+        if not email or not model_json:
+            raise HTTPException(400, "email and model required")
+        
+        import datetime as _dt
+        now = _dt.datetime.utcnow().isoformat()
+        
+        con = db()
+        # Upsert user account
+        con.execute("""INSERT INTO user_accounts(email,email_hash,created_at,last_seen,run_count)
+                       VALUES(?,?,?,?,1) ON CONFLICT(email) DO UPDATE SET
+                       last_seen=excluded.last_seen, run_count=run_count+1""",
+                    (email, hashlib.sha256(email.encode()).hexdigest()[:16], now, now))
+        
+        # Save project
+        m = model_json if isinstance(model_json, dict) else {}
+        cur = con.execute("""INSERT INTO user_projects(email,title,subsector,prompt,cost_p50,schedule,
+                              confidence_pct,risk,scenario,model_json,saved_at)
+                              VALUES(?,?,?,?,?,?,?,?,?,?,?)""",
+                    (email, title, str(m.get("subsector","")),
+                     prompt, str(m.get("cost_p50","")), str(m.get("schedule","")),
+                     int(m.get("confidence_pct",0) or 0), str(m.get("risk","")),
+                     str(m.get("scenario","base")), json.dumps(m), now))
+        project_id = cur.lastrowid
+        
+        # Store time series snapshot for Replay
+        try:
+            con.execute("""INSERT OR IGNORE INTO project_snapshots(project_id,snapshot_date,
+                            cost_p50,cost_p80,schedule_months,confidence_pct,model_json)
+                            VALUES(?,?,?,?,?,?,?)""",
+                        (project_id, now[:10],
+                         str(m.get("cost_p50","")), str(m.get("cost_p80","")),
+                         int(str(m.get("schedule","0")).replace(" months","").split()[0] if m.get("schedule") else 0),
+                         int(m.get("confidence_pct",0) or 0), json.dumps(m)))
+        except Exception:
+            pass  # snapshots table may not exist yet
+        
+        con.commit(); con.close()
+        return {"ok": True, "project_id": project_id, "saved_at": now}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+
+@app.get("/my-projects")
+async def my_projects(request: Request):
+    """List all projects for an email address."""
+    email = str(request.query_params.get("email","")).strip().lower()
+    if not email:
+        raise HTTPException(400, "email required")
+    con = db()
+    rows = [dict(r) for r in con.execute(
+        """SELECT id,title,subsector,cost_p50,schedule,confidence_pct,risk,scenario,saved_at
+           FROM user_projects WHERE email=? ORDER BY saved_at DESC LIMIT 50""",
+        (email,))]
+    con.close()
+    return {"projects": rows, "count": len(rows)}
+
+
+@app.get("/my-projects/{project_id}")
+async def load_project(project_id: int, request: Request):
+    """Load a specific saved project."""
+    email = str(request.query_params.get("email","")).strip().lower()
+    con = db()
+    row = con.execute("SELECT * FROM user_projects WHERE id=?", (project_id,)).fetchone()
+    con.close()
+    if not row:
+        raise HTTPException(404, "Project not found")
+    row = dict(row)
+    if row.get("model_json"):
+        try: row["model"] = json.loads(row["model_json"])
+        except: pass
+    return row
+
+
+@app.delete("/my-projects/{project_id}")
+async def delete_project(project_id: int, request: Request):
+    """Delete a saved project."""
+    email = str(request.query_params.get("email","")).strip().lower()
+    con = db()
+    con.execute("DELETE FROM user_projects WHERE id=? AND email=?", (project_id, email))
+    con.commit(); con.close()
+    return {"ok": True}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# RATE LIMITING — protect /generate from abuse
+# ══════════════════════════════════════════════════════════════════════════════
+
+_rate_store: dict = {}
+
+def check_rate_limit(ip: str, limit: int = 10, window_seconds: int = 3600) -> tuple:
+    """Simple in-memory rate limiter. Returns (allowed, remaining, reset_in)."""
+    import time
+    now = time.time()
+    key = ip
+    if key not in _rate_store:
+        _rate_store[key] = []
+    # Remove old entries
+    _rate_store[key] = [t for t in _rate_store[key] if now - t < window_seconds]
+    count = len(_rate_store[key])
+    if count >= limit:
+        reset_in = int(window_seconds - (now - _rate_store[key][0]))
+        return False, 0, reset_in
+    _rate_store[key].append(now)
+    return True, limit - count - 1, window_seconds
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# PROJECT REPLAY — time series snapshots for Bloomberg-style history
+# ══════════════════════════════════════════════════════════════════════════════
+
+@app.get("/replay/{project_id}")
+async def replay(project_id: int, request: Request):
+    """Return time series snapshots for a project (for Replay view)."""
+    try:
+        con = db()
+        snapshots = [dict(r) for r in con.execute(
+            """SELECT snapshot_date, cost_p50, cost_p80, schedule_months,
+                      confidence_pct, narrative
+               FROM project_snapshots WHERE project_id=?
+               ORDER BY snapshot_date ASC""",
+            (project_id,))]
+        con.close()
+        
+        if not snapshots:
+            return {"snapshots": [], "narrative": "No historical data yet. Save this project over multiple sessions to build a replay timeline."}
+        
+        # Generate Bloomberg-style narrative
+        if len(snapshots) >= 2:
+            first = snapshots[0]
+            last = snapshots[-1]
+            try:
+                cost_change = float(str(last["cost_p50"]).replace("£","").replace("B","").replace("$","")) -                               float(str(first["cost_p50"]).replace("£","").replace("B","").replace("$",""))
+                conf_change = (last["confidence_pct"] or 0) - (first["confidence_pct"] or 0)
+                narrative = f"Since first saved: cost moved {'+' if cost_change >= 0 else ''}{cost_change:.1f}B. "
+                narrative += f"Confidence {'improved' if conf_change > 0 else 'declined'} by {abs(conf_change)}pts. "
+                narrative += f"Tracked across {len(snapshots)} sessions."
+            except:
+                narrative = f"Tracked across {len(snapshots)} sessions."
+        else:
+            narrative = "First snapshot recorded. Continue saving to build replay history."
+        
+        return {"snapshots": snapshots, "narrative": narrative, "count": len(snapshots)}
+    except Exception as e:
+        return {"snapshots": [], "narrative": str(e)}
+
+
+@app.post("/snapshot")
+async def snapshot(request: Request):
+    """Add a time series snapshot to an existing project."""
+    try:
+        data = await request.json()
+        project_id = int(data.get("project_id", 0))
+        model = data.get("model", {})
+        note = str(data.get("note", ""))[:200]
+        if not project_id: raise HTTPException(400, "project_id required")
+        
+        import datetime as _dt
+        now = _dt.datetime.utcnow().isoformat()
+        
+        con = db()
+        con.execute("""INSERT OR REPLACE INTO project_snapshots
+                       (project_id, snapshot_date, cost_p50, cost_p80, schedule_months, 
+                        confidence_pct, narrative, model_json)
+                       VALUES(?,?,?,?,?,?,?,?)""",
+                    (project_id, now[:10],
+                     str(model.get("cost_p50","")), str(model.get("cost_p80","")),
+                     int(str(model.get("schedule","0")).replace(" months","").split()[0] if model.get("schedule") else 0),
+                     int(model.get("confidence_pct",0) or 0),
+                     note, json.dumps(model)))
+        con.commit(); con.close()
+        return {"ok": True, "snapshot_date": now[:10]}
+    except HTTPException: raise
+    except Exception as e: raise HTTPException(500, str(e))
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# PORTFOLIO — aggregate multiple projects to programme level
+# ══════════════════════════════════════════════════════════════════════════════
+
+@app.get("/portfolio")
+async def portfolio(request: Request):
+    """Aggregate all projects for an email into a portfolio view."""
+    email = str(request.query_params.get("email","")).strip().lower()
+    if not email: raise HTTPException(400, "email required")
+    
+    con = db()
+    rows = [dict(r) for r in con.execute(
+        "SELECT * FROM user_projects WHERE email=? ORDER BY saved_at DESC LIMIT 20", (email,))]
+    con.close()
+    
+    if not rows:
+        return {"projects": [], "portfolio_p50": "£0B", "portfolio_p80": "£0B",
+                "total_confidence": 0, "project_count": 0}
+    
+    # Parse models and aggregate
+    models = []
+    for r in rows:
+        try: models.append(json.loads(r.get("model_json","{}") or "{}"))
+        except: pass
+    
+    def parse_cost(v):
+        try: return float(str(v or 0).replace("£","").replace("$","").replace("B","").replace(",",""))
+        except: return 0.0
+    
+    total_p50 = sum(parse_cost(m.get("cost_p50",0)) for m in models)
+    total_p80 = sum(parse_cost(m.get("cost_p80") or m.get("cost_p50",0)) for m in models)
+    avg_conf = int(sum(m.get("confidence_pct",0) or 0 for m in models) / max(len(models),1))
+    
+    # Top risks across portfolio
+    all_risks = []
+    for m in models:
+        for r in (m.get("risks") or [])[:3]:
+            if r: all_risks.append({**r, "_project": m.get("subsector","")})
+    all_risks.sort(key=lambda r: float(r.get("cost_emv_bn") or 0), reverse=True)
+    
+    currency = models[0].get("currency_symbol","£") if models else "£"
+    
+    return {
+        "projects": [{"id":r["id"],"title":r["title"],"subsector":r["subsector"],
+                       "cost_p50":r["cost_p50"],"schedule":r["schedule"],
+                       "confidence_pct":r["confidence_pct"],"scenario":r["scenario"],
+                       "saved_at":r["saved_at"]} for r in rows],
+        "portfolio_p50": f"{currency}{total_p50:.1f}B",
+        "portfolio_p80": f"{currency}{total_p80:.1f}B",
+        "total_confidence": avg_conf,
+        "project_count": len(rows),
+        "top_risks": all_risks[:5],
+        "currency": currency,
+    }
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# INVESTOR VIEW — IRR sensitivity and capital at risk
+# ══════════════════════════════════════════════════════════════════════════════
+
+@app.post("/investor-analysis")
+async def investor_analysis(request: Request):
+    """Generate investor-grade analysis: IRR sensitivity, funding gap, capital at risk."""
+    try:
+        data = await request.json()
+        model = data.get("model", {})
+        
+        def parse_cost(v):
+            try: return float(str(v or 0).replace("£","").replace("$","").replace("B","").replace(",",""))
+            except: return 0.0
+        
+        p50 = parse_cost(model.get("cost_p50",0))
+        p80 = parse_cost(model.get("cost_p80") or model.get("cost_p50",0))
+        p90 = parse_cost(model.get("monte_carlo",{}).get("qcra",{}).get("p90") if model.get("monte_carlo") else 0) or p80 * 1.15
+        oba = parse_cost(model.get("outturn") or model.get("outturn_bn",0)) or p80 * 1.22
+        conf = int(model.get("confidence_pct",0) or 0)
+        currency = model.get("currency_symbol","£")
+        
+        prob_overrun_p80 = max(0, min(100, 100 - conf))
+        
+        return {
+            "funding_gap_at_p80": f"{currency}{max(0,p80-p50):.2f}B",
+            "funding_gap_at_p90": f"{currency}{max(0,p90-p50):.2f}B",
+            "outturn_exposure": f"{currency}{oba:.2f}B",
+            "probability_overrun": f"{prob_overrun_p80}%",
+            "capital_at_risk": f"{currency}{max(0,p80-p50):.2f}B",
+            "confidence_to_approve": f"{conf}% (target: 75%+)",
+            "reserve_adequacy": f"{model.get('p80_reserve_pct',0) or 0}% held (benchmark: {model.get('reserve_vs_benchmark_pct',18) or 18}%+)",
+            "irr_sensitivity": [
+                {"scenario": "Base (P50)", "cost": f"{currency}{p50:.1f}B", "note": "If delivered on estimate"},
+                {"scenario": "P80 exposure", "cost": f"{currency}{p80:.1f}B", "note": "50% probability of staying within"},
+                {"scenario": "P90 stress", "cost": f"{currency}{p90:.1f}B", "note": "10% chance of exceeding"},
+                {"scenario": "OBA outturn", "cost": f"{currency}{oba:.1f}B", "note": "Historical reference class outturn"},
+            ],
+            "recommendation": (
+                "Funding structure should be sized to P80 minimum. "
+                f"{'Reserve is adequate.' if (model.get('p80_reserve_pct') or 0) >= (model.get('reserve_vs_benchmark_pct') or 18) else 'Reserve is below benchmark — increase before investment committee approval.'}"
+            )
+        }
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# RECOVERY PLAN — automated from current state
+# ══════════════════════════════════════════════════════════════════════════════
+
+@app.post("/recovery-plan")
+async def recovery_plan(request: Request):
+    """Generate an automated recovery plan from current programme state."""
+    try:
+        data = await request.json()
+        model = data.get("model", {})
+        
+        conf = int(model.get("confidence_pct",0) or 0)
+        currency = model.get("currency_symbol","£")
+        
+        actions = []
+        
+        # Confidence gap
+        if conf < 75:
+            gap = 75 - conf
+            actions.append({
+                "priority": 1,
+                "action": f"Close {gap}pt confidence gap",
+                "steps": [
+                    f"Advance estimate to {'Class 2' if (model.get('estimate_class') or 3) >= 3 else 'Class 1'} — expected +12pts",
+                    "Upload P6 XER schedule with logic ties — expected +6pts",
+                    "Complete risk register with named owners — expected +8pts",
+                    "Confirm governing constraint with written evidence — expected +9pts",
+                ],
+                "timeline": "4-8 weeks",
+                "cost_impact": "£0 (process improvement only)"
+            })
+        
+        # Reserve gap
+        reserve_pct = model.get("p80_reserve_pct") or 0
+        benchmark_pct = model.get("reserve_vs_benchmark_pct") or 18
+        if reserve_pct < benchmark_pct:
+            gap_bn = model.get("reserve_gap_bn") or 0
+            actions.append({
+                "priority": 2,
+                "action": f"Uplift contingency reserve to {benchmark_pct}% benchmark",
+                "steps": [
+                    f"Current reserve: {reserve_pct}% ({model.get('p80_reserve','—')})",
+                    f"Benchmark minimum: {benchmark_pct}% — shortfall: {currency}{gap_bn:.2f}B" if gap_bn else f"Benchmark minimum: {benchmark_pct}%",
+                    "Review OBA disclosure — must appear on page 1 of executive summary",
+                    "Present reserve case to investment committee for approval",
+                ],
+                "timeline": "2-4 weeks",
+                "cost_impact": f"{currency}{gap_bn:.2f}B additional contingency" if gap_bn else "Funding approval required"
+            })
+        
+        # Governing constraint
+        gc = model.get("governing_constraint_full") or {}
+        if not gc.get("owner") or gc.get("owner") == "TBC":
+            actions.append({
+                "priority": 3,
+                "action": "Name governing constraint owner with committed date",
+                "steps": [
+                    f"Constraint: {model.get('governing_constraint_prominent','Not yet named')}",
+                    "Appoint named senior responsible owner with board mandate",
+                    "Obtain written commitment from dependency holder (grid operator / planning authority / regulator)",
+                    "Set a committed closure date — board to challenge if not met",
+                ],
+                "timeline": "1-2 weeks",
+                "cost_impact": "No direct cost — governance action"
+            })
+        
+        # Unowned risks
+        risks = model.get("risks") or model.get("risk_register") or []
+        unowned = [r for r in risks if not r.get("owner") or r.get("owner") == "TBC"]
+        if unowned:
+            actions.append({
+                "priority": 4,
+                "action": f"Assign owners to {len(unowned)} unowned risks",
+                "steps": [
+                    f"{len(unowned)} risks have no named owner — these create uncontrolled exposure",
+                    "Each risk must have: named owner, mitigation action, residual probability",
+                    "Risk owner accountable to Project Director monthly",
+                    "Escalate any risk over £100M EMV to board attention",
+                ],
+                "timeline": "1 week",
+                "cost_impact": "None — risk management process"
+            })
+        
+        verdict = ("PROGRAMME RECOVERABLE" if conf >= 55 else "SIGNIFICANT RECOVERY REQUIRED")
+        
+        return {
+            "verdict": verdict,
+            "current_confidence": conf,
+            "target_confidence": 75,
+            "confidence_gap": max(0, 75 - conf),
+            "actions": actions,
+            "total_actions": len(actions),
+            "estimated_timeline": "4-8 weeks to reach 75% confidence" if actions else "No recovery actions required",
+        }
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# MONTHLY CONTROLS PACK — automated delta report
+# ══════════════════════════════════════════════════════════════════════════════
+
+@app.post("/monthly-pack")
+async def monthly_pack(request: Request):
+    """Generate monthly controls pack: delta from previous state."""
+    try:
+        data = await request.json()
+        current = data.get("current_model", {})
+        previous = data.get("previous_model", {})
+        project_id = data.get("project_id")
+        
+        import datetime as _dt
+        month = _dt.datetime.utcnow().strftime("%B %Y")
+        
+        def parse_cost(v):
+            try: return float(str(v or 0).replace("£","").replace("$","").replace("B","").replace(",",""))
+            except: return 0.0
+        
+        cur_p50 = parse_cost(current.get("cost_p50",0))
+        prev_p50 = parse_cost(previous.get("cost_p50",0)) if previous else cur_p50
+        cost_delta = cur_p50 - prev_p50
+        
+        cur_conf = int(current.get("confidence_pct",0) or 0)
+        prev_conf = int(previous.get("confidence_pct",0) or 0) if previous else cur_conf
+        
+        cur_sched = int(str(current.get("schedule","0")).replace(" months","").split()[0] if current.get("schedule") else 0)
+        prev_sched = int(str(previous.get("schedule","0")).replace(" months","").split()[0] if previous and previous.get("schedule") else cur_sched)
+        
+        currency = current.get("currency_symbol","£")
+        
+        return {
+            "month": month,
+            "summary": {
+                "cost_p50": current.get("cost_p50","—"),
+                "cost_p80": current.get("cost_p80","—"),
+                "schedule": current.get("schedule","—"),
+                "confidence": f"{cur_conf}%",
+                "scenario": current.get("scenario_label","Base"),
+            },
+            "deltas": {
+                "cost": f"{'+' if cost_delta >= 0 else ''}{cost_delta:.2f}B vs previous",
+                "confidence": f"{'+' if (cur_conf-prev_conf) >= 0 else ''}{cur_conf-prev_conf}pts vs previous",
+                "schedule": f"{'+' if (cur_sched-prev_sched) >= 0 else ''}{cur_sched-prev_sched}mo vs previous",
+            },
+            "status": "GREEN" if cur_conf >= 75 else "AMBER" if cur_conf >= 55 else "RED",
+            "top_movements": [
+                {"item": "Programme confidence", "current": f"{cur_conf}%", "previous": f"{prev_conf}%", "delta": f"{cur_conf-prev_conf:+d}pts"},
+                {"item": "P50 cost", "current": current.get("cost_p50","—"), "previous": previous.get("cost_p50","—") if previous else "—", "delta": f"{'+' if cost_delta >= 0 else ''}{cost_delta:.2f}B"},
+                {"item": "Schedule", "current": current.get("schedule","—"), "previous": previous.get("schedule","—") if previous else "—", "delta": f"{cur_sched-prev_sched:+d}mo"},
+            ],
+            "governing_constraint": current.get("governing_constraint_prominent","Not identified"),
+            "top_risk": (current.get("risks") or [{}])[0].get("title","—") if current.get("risks") else "—",
+            "recommended_actions": [a.get("action","") for a in (await recovery_plan(type("R",(),{"json": lambda s: {"model": current}})())).get("actions",[])[:3]] if cur_conf < 75 else ["No recovery actions required — programme at target confidence"],
+        }
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+
 @app.post("/generate")
 def generate(req: GenerateRequest, request: Request):
+    # Rate limiting: 20 runs per hour per IP
+    ip = client_ip(request)
+    allowed, remaining, reset_in = check_rate_limit(ip, limit=20, window_seconds=3600)
+    if not allowed:
+        raise HTTPException(429, f"Rate limit exceeded. Resets in {reset_in} seconds.")
+    
     if req.demo:
-        ip=client_ip(request); status=check_demo_allowance(ip)
+        status=check_demo_allowance(ip)
         if False and not status["allowed"]: raise HTTPException(403,"Public demo allowance used. Launch/private mode can still generate when deployed behind login.")
         record_demo_use(ip)
 
