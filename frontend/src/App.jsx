@@ -2484,6 +2484,12 @@ function App() {
 
   // ── NEW FEATURE STATE ──────────────────────────────────────────────────────
   const [userEmail, setUserEmail] = useState(() => { try { return localStorage.getItem('casey_email') || ''; } catch(e) { return ''; } });
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authMode, setAuthMode] = useState('request');
+  const [authEmail, setAuthEmail] = useState('');
+  const [authToken, setAuthToken] = useState('');
+  const [authMsg, setAuthMsg] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
   const [savedProjectId, setSavedProjectId] = useState(null);
   const [myProjects, setMyProjects] = useState([]);
   const [showMyProjects, setShowMyProjects] = useState(false);
@@ -2496,6 +2502,8 @@ function App() {
   const [recoveryData, setRecoveryData] = useState(null);
   const [showRecovery, setShowRecovery] = useState(false);
   const [savingProject, setSavingProject] = useState(false);
+  const [monthlyPackData, setMonthlyPackData] = useState(null);
+  const [showMonthlyPack, setShowMonthlyPack] = useState(false);
   const [saveMsg, setSaveMsg] = useState('');
   // Scenario helpers - available throughout App
 
@@ -3585,6 +3593,156 @@ const scenarioTrade95 = {
     apiFetch('/api-status').then(r => r.json()).then(d => setAdvisorApiStatus(d)).catch(() => {});
   }, []);
 
+
+  async function loadMonthlyPack() {
+    if (!model) return;
+    try {
+      const r = await fetch(PROD_URL+'/monthly-pack', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ current_model: model, previous_model: null, project_id: savedProjectId })
+      });
+      const d = await r.json();
+      setMonthlyPackData(d); setShowMonthlyPack(true);
+    } catch(e) { console.error(e); }
+  }
+
+
+  // ── AUTH — Magic link ───────────────────────────────────────────────────────
+  async function requestMagicLink() {
+    if (!authEmail || !authEmail.includes('@')) { setAuthMsg('Enter a valid email'); return; }
+    setAuthLoading(true); setAuthMsg('');
+    try {
+      const r = await fetch(PROD_URL+'/auth/magic-link', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({email: authEmail})
+      });
+      const d = await r.json();
+      if (d.ok) {
+        setAuthMsg(d.message || 'Check your email for the login link.');
+        setAuthMode('verify');
+        // Dev mode: auto-fill token if returned
+        if (d.dev_token) { setAuthToken(d.dev_token); setAuthMsg('Dev mode: token pre-filled. Click Verify.'); }
+      } else { setAuthMsg('Something went wrong. Try again.'); }
+    } catch(e) { setAuthMsg('Connection error. Try again.'); }
+    setAuthLoading(false);
+  }
+
+  async function verifyMagicLink() {
+    if (!authToken.trim()) { setAuthMsg('Enter the token from your email'); return; }
+    setAuthLoading(true); setAuthMsg('');
+    try {
+      const r = await fetch(PROD_URL+'/auth/verify?token='+encodeURIComponent(authToken.trim()));
+      const d = await r.json();
+      if (d.ok && d.email) {
+        setUserEmail(d.email);
+        try { localStorage.setItem('casey_email', d.email); } catch(e) {}
+        setAuthMode('done');
+        setAuthMsg('Signed in as '+d.email);
+        setTimeout(() => { setShowAuthModal(false); setAuthMode(''); setAuthMsg(''); }, 1500);
+      } else { setAuthMsg('Invalid or expired link. Request a new one.'); }
+    } catch(e) { setAuthMsg('Connection error. Try again.'); }
+    setAuthLoading(false);
+  }
+
+  // Check magic_token in URL on load
+  React.useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get('magic_token');
+      if (token) {
+        setAuthToken(token);
+        setShowAuthModal(true);
+        setAuthMode('verify');
+        setAuthMsg('Click Verify to sign in.');
+        // Clean URL
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    } catch(e) {}
+  }, []);
+
+
+  // ── MAGIC LINK AUTH ──────────────────────────────────────────────────────────
+  async function requestMagicLink() {
+    if (!authEmail||!authEmail.includes('@')){ setAuthMsg('Enter a valid email address'); return; }
+    setAuthLoading(true); setAuthMsg('');
+    try {
+      const r = await fetch(PROD_URL+'/auth/magic-link',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({email:authEmail.trim().toLowerCase()})
+      });
+      const d = await r.json();
+      if(d.ok){
+        setAuthMsg(d.message||'Check your email for a login link.');
+        setAuthMode('verify');
+        if(d.dev_token){ setAuthToken(d.dev_token); setAuthMsg('Dev mode: token pre-filled. Click Verify.'); }
+      } else { setAuthMsg('Something went wrong — try again.'); }
+    } catch(e){ setAuthMsg('Connection error.'); }
+    setAuthLoading(false);
+  }
+
+  async function verifyMagicLink() {
+    if(!authToken.trim()){ setAuthMsg('Paste the token from your email'); return; }
+    setAuthLoading(true); setAuthMsg('');
+    try {
+      const r = await fetch(PROD_URL+'/auth/verify?token='+encodeURIComponent(authToken.trim()));
+      const d = await r.json();
+      if(d.ok && d.email){
+        setUserEmail(d.email);
+        try{ localStorage.setItem('casey_email',d.email); }catch(e){}
+        setAuthMode('done');
+        setAuthMsg('Signed in as '+d.email+' ✓');
+        setTimeout(()=>{ setShowAuthModal(false); setAuthMode('request'); setAuthMsg(''); },1800);
+      } else { setAuthMsg('Invalid or expired link. Request a new one.'); setAuthMode('request'); }
+    } catch(e){ setAuthMsg('Connection error.'); }
+    setAuthLoading(false);
+  }
+
+  React.useEffect(()=>{
+    try{
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get('magic_token');
+      if(token){
+        setAuthToken(token); setShowAuthModal(true); setAuthMode('verify');
+        setAuthMsg('Click Verify to complete sign-in.');
+        window.history.replaceState({},'',window.location.pathname);
+      }
+    }catch(e){}
+  },[]);
+
+
+  async function requestMagicLink() {
+    if(!authEmail||!authEmail.includes('@')){setAuthMsg('Enter a valid email');return;}
+    setAuthLoading(true);setAuthMsg('');
+    try{
+      const r=await fetch(PROD_URL+'/auth/magic-link',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:authEmail.trim().toLowerCase()})});
+      const d=await r.json();
+      if(d.ok){setAuthMsg(d.message||'Check your email.');setAuthMode('verify');if(d.dev_token){setAuthToken(d.dev_token);setAuthMsg('Dev mode: token ready. Click Verify.');}}
+      else{setAuthMsg('Something went wrong.');}
+    }catch(e){setAuthMsg('Connection error.');}
+    setAuthLoading(false);
+  }
+
+  async function verifyMagicLink() {
+    if(!authToken.trim()){setAuthMsg('Paste your login token');return;}
+    setAuthLoading(true);setAuthMsg('');
+    try{
+      const r=await fetch(PROD_URL+'/auth/verify?token='+encodeURIComponent(authToken.trim()));
+      const d=await r.json();
+      if(d.ok&&d.email){
+        setUserEmail(d.email);try{localStorage.setItem('casey_email',d.email);}catch(e){}
+        setAuthMode('done');setAuthMsg('Signed in as '+d.email+' ✓');
+        setTimeout(()=>{setShowAuthModal(false);setAuthMode('request');setAuthMsg('');},1800);
+      }else{setAuthMsg('Invalid or expired. Request a new link.');setAuthMode('request');}
+    }catch(e){setAuthMsg('Connection error.');}
+    setAuthLoading(false);
+  }
+
+  React.useEffect(()=>{
+    try{const p=new URLSearchParams(window.location.search);const t=p.get('magic_token');
+    if(t){setAuthToken(t);setShowAuthModal(true);setAuthMode('verify');setAuthMsg('Click Verify to sign in.');window.history.replaceState({},'',window.location.pathname);}
+    }catch(e){}
+  },[]);
+
 return <div className="app v50EliteApp">
 
     {/* ── MY PROJECTS MODAL ──────────────────────────────────────────────── */}
@@ -3619,37 +3777,82 @@ return <div className="app v50EliteApp">
         <div style={{padding:'12px 16px',background:'rgba(6,182,212,0.06)',border:'1px solid rgba(6,182,212,0.2)',borderRadius:8,marginBottom:16,fontSize:'13px',color:'#8df7ff',lineHeight:1.6}}>
           {replayData.narrative}
         </div>
-        {/* Timeline */}
-        {replayData.snapshots && replayData.snapshots.length > 0 ? (
-          <div>
-            <div style={{fontSize:'10px',color:'#475569',fontWeight:'700',textTransform:'uppercase',marginBottom:8}}>Cost · Schedule · Confidence timeline</div>
-            {/* Visual timeline */}
-            <div style={{position:'relative',marginBottom:16}}>
-              <div style={{position:'absolute',left:80,top:0,bottom:0,width:1,background:'rgba(255,255,255,0.06)'}}/>
-              {replayData.snapshots.map((s, i) => {
-                const isFirst = i === 0;
-                const isLast = i === replayData.snapshots.length - 1;
-                return (
-                  <div key={i} style={{display:'grid',gridTemplateColumns:'80px 1fr',gap:12,marginBottom:12,alignItems:'flex-start'}}>
-                    <div style={{fontSize:'10px',color:'#64748b',textAlign:'right',paddingRight:12,paddingTop:4}}>{(s.snapshot_date||'').slice(0,7)}</div>
-                    <div style={{padding:'8px 12px',background:isLast?'rgba(141,247,255,0.06)':isFirst?'rgba(255,255,255,0.02)':'transparent',border:isLast?'1px solid rgba(141,247,255,0.2)':'1px solid transparent',borderRadius:6}}>
-                      <div style={{display:'flex',gap:16,flexWrap:'wrap'}}>
-                        <span style={{fontSize:'13px',fontWeight:'700',color:'#8df7ff'}}>{s.cost_p50}</span>
-                        <span style={{fontSize:'12px',color:'#f59e0b'}}>{s.schedule_months+'mo'}</span>
-                        <span style={{fontSize:'12px',color:(s.confidence_pct||0)>=75?'#10b981':'#ef4444'}}>{s.confidence_pct+'%'}</span>
-                        {isLast && <span style={{fontSize:'10px',color:'#06b6d4',fontWeight:'700'}}>← NOW</span>}
-                        {isFirst && <span style={{fontSize:'10px',color:'#475569'}}>← FIRST SAVED</span>}
+        {/* ── REPLAY CHARTS — Bloomberg-style ────────────────────────────── */}
+        {replayData.snapshots && replayData.snapshots.length >= 2 ? (() => {
+          const chartData = replayData.snapshots.map((s,i) => ({
+            date: (s.snapshot_date||'').slice(0,7),
+            confidence: s.confidence_pct || 0,
+            schedule: s.schedule_months || 0,
+            label: i === 0 ? 'First' : i === replayData.snapshots.length-1 ? 'Now' : '',
+          }));
+          return (
+            <div>
+              {/* Confidence chart */}
+              <div style={{fontSize:'10px',color:'#475569',fontWeight:'700',textTransform:'uppercase',marginBottom:6}}>Confidence % over time</div>
+              <ResponsiveContainer width="100%" height={140}>
+                <LineChart data={chartData} margin={{top:4,right:20,left:0,bottom:4}}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)"/>
+                  <XAxis dataKey="date" tick={{fontSize:10,fill:'#64748b'}} axisLine={false} tickLine={false}/>
+                  <YAxis tick={{fontSize:10,fill:'#64748b'}} axisLine={false} tickLine={false} domain={[0,100]}/>
+                  <Tooltip contentStyle={{background:'#0d1526',border:'1px solid rgba(141,247,255,0.2)',borderRadius:6,fontSize:11}} formatter={(v)=>[v+'%','Confidence']}/>
+                  <ReferenceLine y={75} stroke="rgba(16,185,129,0.5)" strokeDasharray="4 2" label={{value:'75% target',position:'right',fontSize:9,fill:'#10b981'}}/>
+                  <Line type="monotone" dataKey="confidence" stroke="#8df7ff" strokeWidth={2.5}
+                    dot={{r:4,fill:'#8df7ff',strokeWidth:0}} activeDot={{r:6,fill:'#8df7ff'}}/>
+                </LineChart>
+              </ResponsiveContainer>
+              {/* Schedule chart */}
+              <div style={{fontSize:'10px',color:'#475569',fontWeight:'700',textTransform:'uppercase',margin:'14px 0 6px'}}>Schedule (months) over time</div>
+              <ResponsiveContainer width="100%" height={120}>
+                <LineChart data={chartData} margin={{top:4,right:20,left:0,bottom:4}}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)"/>
+                  <XAxis dataKey="date" tick={{fontSize:10,fill:'#64748b'}} axisLine={false} tickLine={false}/>
+                  <YAxis tick={{fontSize:10,fill:'#64748b'}} axisLine={false} tickLine={false}/>
+                  <Tooltip contentStyle={{background:'#0d1526',border:'1px solid rgba(245,158,11,0.2)',borderRadius:6,fontSize:11}} formatter={(v)=>[v+'mo','Schedule']}/>
+                  <Line type="monotone" dataKey="schedule" stroke="#f59e0b" strokeWidth={2.5}
+                    dot={{r:4,fill:'#f59e0b',strokeWidth:0}} activeDot={{r:6,fill:'#f59e0b'}}/>
+                </LineChart>
+              </ResponsiveContainer>
+              {/* Snapshot rows below chart */}
+              <div style={{fontSize:'10px',color:'#475569',fontWeight:'700',textTransform:'uppercase',margin:'14px 0 8px'}}>Snapshot history</div>
+              <div style={{position:'relative'}}>
+                <div style={{position:'absolute',left:72,top:0,bottom:0,width:1,background:'rgba(255,255,255,0.06)'}}/>
+                {replayData.snapshots.map((s,i)=>{
+                  const isLast=i===replayData.snapshots.length-1;
+                  const isFirst=i===0;
+                  return (
+                    <div key={i} style={{display:'grid',gridTemplateColumns:'72px 1fr',gap:10,marginBottom:8}}>
+                      <div style={{fontSize:'10px',color:'#64748b',textAlign:'right',paddingRight:10,paddingTop:3,lineHeight:1.3}}>{(s.snapshot_date||'').slice(0,7)}</div>
+                      <div style={{padding:'6px 10px',background:isLast?'rgba(141,247,255,0.06)':'transparent',border:isLast?'1px solid rgba(141,247,255,0.2)':'1px solid transparent',borderRadius:5}}>
+                        <div style={{display:'flex',gap:12,flexWrap:'wrap',alignItems:'center'}}>
+                          <span style={{fontSize:'12px',fontWeight:'700',color:'#8df7ff'}}>{s.cost_p50}</span>
+                          <span style={{fontSize:'11px',color:'#f59e0b'}}>{s.schedule_months+'mo'}</span>
+                          <span style={{fontSize:'11px',fontWeight:'700',color:(s.confidence_pct||0)>=75?'#10b981':'#ef4444'}}>{s.confidence_pct+'%'}</span>
+                          {isLast&&<span style={{fontSize:'9px',color:'#06b6d4',fontWeight:'700'}}>← NOW</span>}
+                          {isFirst&&!isLast&&<span style={{fontSize:'9px',color:'#475569'}}>← FIRST</span>}
+                        </div>
+                        {s.narrative&&<div style={{fontSize:'10px',color:'#64748b',marginTop:2}}>{s.narrative}</div>}
                       </div>
-                      {s.narrative && <div style={{fontSize:'10px',color:'#64748b',marginTop:4}}>{s.narrative}</div>}
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })() : replayData.snapshots && replayData.snapshots.length === 1 ? (
+          <div>
+            <div style={{padding:'10px 14px',background:'rgba(6,182,212,0.06)',borderRadius:6,marginBottom:12,fontSize:'12px',color:'#8df7ff'}}>
+              First snapshot recorded. Save this project again next time to start building your chart.
+            </div>
+            <div style={{display:'flex',gap:16,padding:'8px 12px',background:'rgba(255,255,255,0.02)',borderRadius:5}}>
+              <span style={{fontSize:'13px',fontWeight:'700',color:'#8df7ff'}}>{replayData.snapshots[0].cost_p50}</span>
+              <span style={{fontSize:'12px',color:'#f59e0b'}}>{replayData.snapshots[0].schedule_months+'mo'}</span>
+              <span style={{fontSize:'12px',color:'#ef4444'}}>{replayData.snapshots[0].confidence_pct+'%'}</span>
+              <span style={{fontSize:'10px',color:'#475569'}}>← First save on {(replayData.snapshots[0].snapshot_date||'').slice(0,10)}</span>
             </div>
           </div>
         ) : (
           <div style={{fontSize:'12px',color:'#475569',padding:'20px 0',textAlign:'center'}}>
-            Save this project over multiple sessions to build a replay history. Each save creates a snapshot.
+            Save this project over multiple sessions to build replay history. Each save creates a time-series snapshot.
           </div>
         )}
       </div>
@@ -3747,12 +3950,94 @@ return <div className="app v50EliteApp">
       </div>
     </div>}
 
+    
+    {/* ══ MONTHLY CONTROLS PACK MODAL ═══════════════════════════════════════ */}
+    {showMonthlyPack && monthlyPackData && <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.92)',zIndex:2000,display:'flex',alignItems:'center',justifyContent:'center',padding:16}} onClick={()=>setShowMonthlyPack(false)}>
+      <div style={{background:'#0d1526',border:'1px solid rgba(141,247,255,0.2)',borderRadius:12,padding:'24px 28px',width:'min(680px,95vw)',maxHeight:'88vh',overflowY:'auto'}} onClick={e=>e.stopPropagation()}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
+          <div style={{fontSize:'13px',fontWeight:'800',color:'#8df7ff',letterSpacing:'.1em'}}>MONTHLY CONTROLS PACK — {monthlyPackData.month}</div>
+          <button onClick={()=>setShowMonthlyPack(false)} style={{background:'none',border:'none',color:'#475569',cursor:'pointer',fontSize:'18px'}}>✕</button>
+        </div>
+        <div style={{display:'flex',gap:10,alignItems:'center',marginBottom:14}}>
+          <div style={{padding:'6px 14px',background:monthlyPackData.status==='GREEN'?'rgba(16,185,129,0.12)':monthlyPackData.status==='AMBER'?'rgba(245,158,11,0.12)':'rgba(239,68,68,0.12)',border:'1px solid '+(monthlyPackData.status==='GREEN'?'rgba(16,185,129,0.4)':monthlyPackData.status==='AMBER'?'rgba(245,158,11,0.4)':'rgba(239,68,68,0.4)'),borderRadius:6,fontSize:'13px',fontWeight:'800',color:monthlyPackData.status==='GREEN'?'#10b981':monthlyPackData.status==='AMBER'?'#f59e0b':'#ef4444'}}>
+            ● {monthlyPackData.status}
+          </div>
+          <div style={{fontSize:'12px',color:'#64748b'}}>{monthlyPackData.summary?.confidence} confidence · {monthlyPackData.summary?.cost_p50} P50 · {monthlyPackData.summary?.schedule}</div>
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8,marginBottom:14}}>
+          {Object.entries(monthlyPackData.deltas||{}).map(([k,v])=>(
+            <div key={k} style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:6,padding:'10px 12px',textAlign:'center'}}>
+              <div style={{fontSize:'9px',color:'#475569',fontWeight:'700',textTransform:'uppercase',marginBottom:4}}>{k}</div>
+              <div style={{fontSize:'14px',fontWeight:'800',color:String(v).startsWith('+')?'#ef4444':String(v).startsWith('-')&&k.includes('cost')?'#10b981':'#94a3b8'}}>{v}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{marginBottom:8}}>
+          <div style={{fontSize:'10px',color:'#475569',fontWeight:'700',textTransform:'uppercase',marginBottom:5}}>Governing constraint</div>
+          <div style={{fontSize:'12px',color:'#f59e0b',padding:'6px 10px',background:'rgba(245,158,11,0.06)',borderRadius:4}}>{monthlyPackData.governing_constraint||'—'}</div>
+        </div>
+        <div style={{marginBottom:8}}>
+          <div style={{fontSize:'10px',color:'#475569',fontWeight:'700',textTransform:'uppercase',marginBottom:5}}>Top risk</div>
+          <div style={{fontSize:'12px',color:'#fca5a5',padding:'6px 10px',background:'rgba(239,68,68,0.06)',borderRadius:4}}>{monthlyPackData.top_risk||'—'}</div>
+        </div>
+        {(monthlyPackData.recommended_actions||[]).filter(Boolean).length>0&&<div style={{marginTop:10}}>
+          <div style={{fontSize:'10px',color:'#475569',fontWeight:'700',textTransform:'uppercase',marginBottom:5}}>Recommended actions</div>
+          {(monthlyPackData.recommended_actions||[]).filter(Boolean).map((a,i)=>(
+            <div key={i} style={{fontSize:'11px',color:'#94a3b8',marginBottom:4,display:'flex',gap:8,lineHeight:1.5}}><span style={{color:'#8df7ff',flexShrink:0}}>{i+1}.</span><span>{a}</span></div>
+          ))}
+        </div>}
+      </div>
+    </div>}
+
+    
+    {/* ══ AUTH MODAL — Magic Link Login ════════════════════════════════════ */}
+    {showAuthModal && <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.92)',zIndex:3000,display:'flex',alignItems:'center',justifyContent:'center',padding:16}} onClick={()=>{setShowAuthModal(false);setAuthMode('request');setAuthMsg('');}}>
+      <div style={{background:'#0d1526',border:'1px solid rgba(141,247,255,0.2)',borderRadius:12,padding:'32px 36px',width:'min(440px,95vw)'}} onClick={e=>e.stopPropagation()}>
+        <div style={{fontSize:'20px',fontWeight:'900',color:'#8df7ff',marginBottom:4}}>CASEY</div>
+        <div style={{fontSize:'12px',color:'#64748b',marginBottom:24}}>Capital Programme Intelligence</div>
+        {authMode==='done' ? (
+          <div style={{textAlign:'center',padding:'20px 0'}}>
+            <div style={{fontSize:'32px',marginBottom:8}}>✓</div>
+            <div style={{fontSize:'14px',fontWeight:'700',color:'#10b981'}}>{authMsg}</div>
+          </div>
+        ) : authMode==='verify' ? (
+          <div>
+            <div style={{fontSize:'13px',fontWeight:'700',color:'#e2e8f0',marginBottom:6}}>Verify your login</div>
+            <div style={{fontSize:'11px',color:'#94a3b8',marginBottom:14}}>{authMsg||'Check your email and paste the token below, or click the link in your email.'}</div>
+            <input value={authToken} onChange={e=>setAuthToken(e.target.value)} placeholder="Paste token from email..."
+              style={{width:'100%',padding:'10px 12px',background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.12)',borderRadius:6,color:'#e2e8f0',fontSize:'12px',outline:'none',marginBottom:10,boxSizing:'border-box',fontFamily:'monospace'}}/>
+            <div style={{display:'flex',gap:8}}>
+              <button onClick={verifyMagicLink} disabled={authLoading} style={{flex:1,padding:'10px',background:'rgba(141,247,255,0.1)',border:'1px solid rgba(141,247,255,0.3)',borderRadius:6,color:'#8df7ff',fontWeight:'700',fontSize:'13px',cursor:'pointer'}}>
+                {authLoading?'Verifying…':'Verify →'}
+              </button>
+              <button onClick={()=>{setAuthMode('request');setAuthMsg('');}} style={{padding:'10px 14px',background:'none',border:'1px solid rgba(255,255,255,0.1)',borderRadius:6,color:'#475569',cursor:'pointer',fontSize:'12px'}}>Back</button>
+            </div>
+          </div>
+        ) : (
+          <div>
+            <div style={{fontSize:'13px',fontWeight:'700',color:'#e2e8f0',marginBottom:6}}>Sign in with your email</div>
+            <div style={{fontSize:'11px',color:'#94a3b8',marginBottom:14}}>We'll send you a secure login link. No password needed.</div>
+            <input value={authEmail} onChange={e=>setAuthEmail(e.target.value)} onKeyDown={e=>e.key==='Enter'&&requestMagicLink()}
+              placeholder="your@email.com" type="email"
+              style={{width:'100%',padding:'10px 12px',background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.12)',borderRadius:6,color:'#e2e8f0',fontSize:'13px',outline:'none',marginBottom:10,boxSizing:'border-box'}}/>
+            {authMsg&&<div style={{fontSize:'11px',color:authMsg.includes('Check')||authMsg.includes('Dev')?'#10b981':'#ef4444',marginBottom:10}}>{authMsg}</div>}
+            <button onClick={requestMagicLink} disabled={authLoading} style={{width:'100%',padding:'11px',background:'rgba(141,247,255,0.1)',border:'1px solid rgba(141,247,255,0.3)',borderRadius:6,color:'#8df7ff',fontWeight:'700',fontSize:'13px',cursor:'pointer'}}>
+              {authLoading?'Sending…':'Send Login Link →'}
+            </button>
+            <div style={{marginTop:12,fontSize:'10px',color:'#475569',textAlign:'center'}}>Your projects are linked to your email. Sign in to access them from any device.</div>
+          </div>
+        )}
+        <button onClick={()=>{setShowAuthModal(false);setAuthMode('request');setAuthMsg('');}} style={{position:'absolute',top:16,right:16,background:'none',border:'none',color:'#475569',cursor:'pointer',fontSize:'18px'}}>✕</button>
+      </div>
+    </div>}
+
     <Briefing open={briefing} onClose={() => setBriefing(false)} onEarth={runEarth} onSpace={runSpace}/>
     <OneShotDemo open={trialOpen} onClose={() => setTrialOpen(false)} onComplete={(m) => { const nm = normalizeModelForUI(m); setModel(nm); setProjectContext(lockedProjectContext(nm, nm?.prompt || prompt)); setShow(false); setTrialOpen(false); setTab('overview'); }} />
     <AnimatePresence>{loading && <Loading text="Building full CASEY intelligence pack..."/>}</AnimatePresence>
     {show && !model && <Hero onBriefing={() => setBriefing(true)} onEarth={runEarth} onSpace={runSpace} onConsole={() => setShow(false)} onTryDemo={() => setTrialOpen(true)}/>} 
     <header className="v50ConsoleTop"><Logo/><nav>
       <button onClick={() => { setModel(null); setProjectContext(null); setShowShowcase(false); setShow(true); setError(''); }}>Home</button>
+      {userEmail ? <button onClick={()=>setShowAuthModal(true)} style={{color:'#10b981',fontWeight:'700',fontSize:'11px'}}>{userEmail.split('@')[0]} ✓</button> : <button onClick={()=>{setAuthMode('request');setAuthEmail('');setAuthMsg('');setShowAuthModal(true);}} style={{color:'#8df7ff',fontWeight:'700',border:'1px solid rgba(141,247,255,0.3)',padding:'3px 10px',borderRadius:4,background:'rgba(141,247,255,0.06)'}}>Sign In</button>}
       <button onClick={() => setBriefing(true)}>Film</button>
       <button onClick={() => setTrialOpen(true)}>Free run</button>
       <button onClick={() => { setModel(null); setShow(false); setShowShowcase(true); setError(''); }}>Showcase library</button>
@@ -3763,6 +4048,7 @@ return <div className="app v50EliteApp">
       {savedProjectId && model && <button onClick={loadReplay} style={{color:'#06b6d4',fontWeight:'700'}}>Replay ⏪</button>}
       {model && <button onClick={loadInvestorAnalysis} style={{color:'#fbbf24',fontWeight:'700'}}>Investor</button>}
       {model && <button onClick={loadRecoveryPlan} style={{color:'#f59e0b',fontWeight:'700'}}>Recovery Plan</button>}
+      {model && <button onClick={loadMonthlyPack} style={{color:'#94a3b8',fontWeight:'700',border:'1px solid rgba(148,163,184,0.3)',padding:'3px 10px',borderRadius:4,background:'rgba(148,163,184,0.06)'}}>Monthly Pack</button>}
       {model && <button onClick={saveCurrentProject} style={{color:'#8df7ff',fontWeight:'700'}}>↓ Save (local)</button>}
       <button onClick={() => setShowAccount(s => !s)} style={{color:'#8df7ff',fontWeight:'700'}}>Account</button>
       <button onClick={() => setShowCompare(s => !s)} style={{color:'#b18cff',fontWeight:'700'}}>Compare ◆</button>
@@ -4139,7 +4425,7 @@ return <div className="app v50EliteApp">
                   const prob=parseFloat(r.probability_pct||r.probability||30);
                   const p10=+(emv*0.4).toFixed(3), p80=+(emv*2.1).toFixed(3);
                   const sched=parseFloat(r.schedule_impact_months||2).toFixed(1);
-                  const unowned=!r.owner||r.owner==='TBC'||r.owner==='Unknown';
+                  const unowned=!r.owner||r.owner===''||r.owner==='TBC'||r.owner==='Unknown'||r.owner==='N/A'||r.owner==='tbc';
                   return <div key={i} style={{padding:'8px 10px',background:i===0?'rgba(239,68,68,0.07)':'rgba(255,255,255,0.01)',borderRadius:6,border:'1px solid '+(i===0?'rgba(239,68,68,0.2)':'rgba(255,255,255,0.04)')}}>
                     <div style={{display:'flex',justifyContent:'space-between',marginBottom:3}}>
                       <span style={{fontSize:'11px',fontWeight:'700',color:'#e2e8f0',flex:1}}>{(r.title||r.risk||r.risk_title||('Risk '+(i+1))).slice(0,38)}</span>
@@ -4156,7 +4442,7 @@ return <div className="app v50EliteApp">
                   </div>;
                 })}
               </div>
-              {(model.risks||model.risk_register||[]).filter(r=>!r.owner||r.owner==='TBC').length>0&&<div style={{marginTop:8,padding:'6px 10px',background:'rgba(239,68,68,0.07)',borderRadius:5,fontSize:'11px',color:'#ef4444',fontWeight:'700'}}>⚠ {(model.risks||model.risk_register||[]).filter(r=>!r.owner||r.owner==='TBC').length} risks have no named owner — assign before board submission</div>}
+              {(model.risks||model.risk_register||[]).filter(r=>!r.owner||r.owner===''||r.owner==='TBC'||r.owner==='Unknown'||r.owner==='N/A'||r.owner==='tbc').length>0&&<div style={{marginTop:8,padding:'6px 10px',background:'rgba(239,68,68,0.07)',borderRadius:5,fontSize:'11px',color:'#ef4444',fontWeight:'700'}}>⚠ {(model.risks||model.risk_register||[]).filter(r=>!r.owner||r.owner===''||r.owner==='TBC'||r.owner==='Unknown'||r.owner==='N/A'||r.owner==='tbc').length} risks have no named owner — assign before board submission</div>}
             </div>}
 
             {/* WATCH LIST */}
@@ -4260,7 +4546,7 @@ return <div className="app v50EliteApp">
                   </div>
                 ))}
               </div>}
-              <p style={{fontSize:'11px',color:'#64748b',marginBottom:'10px'}}>Select a scenario to recalculate. Each recalculates cost, schedule, confidence, risk register and exports from the same source of truth — instantly.</p>{model?.stress_test_applied && <div style={{background:"rgba(245,158,11,0.1)",border:"1px solid rgba(245,158,11,0.3)",borderRadius:"3px",padding:"8px 12px",marginBottom:"10px",fontSize:"11px",color:"#f59e0b"}}><b>STRESS TEST ACTIVE: {String(model.stress_test_applied).replace(/_/g," ").toUpperCase()}</b><br/>{model.stress_test_note} — P50 now {safeRender(model.cost_p50)}, confidence {model.confidence_pct}%. Scenario re-runs below use the stressed baseline.</div>}<div className="runtimeInline"><button onClick={()=>setTab('compare')}><Zap size={15}/> Open Live Stress Test</button><button onClick={()=>runShock('signalling_slip')}>Simulate 4-month signalling slip</button><button onClick={()=>runShock('procurement_gap')}>Simulate procurement evidence gap</button></div>{renderScenarioCompare()}</Card><Card><h2>Buyer decision lens</h2>{['Base: balanced reference case for board challenge','Faster: more capex, lower confidence, shorter duration','Cheaper: lower authorisation number, longer schedule, higher residual risk','Lower Risk: higher reserve, longer duration, stronger confidence','Premium: resilience and optionality bought with visible capex premium'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}<h3>Current trade-off</h3><div className="triLens"><b>Gained</b>{tradePack.gained.map(x=><span key={x}>{x}</span>)}<b>Sacrificed</b>{tradePack.sacrificed.map(x=><span key={x}>{x}</span>)}<b>Exposed</b>{tradePack.exposed.map(x=><span key={x}>{x}</span>)}</div></Card></section>}
+              <p style={{fontSize:'11px',color:'#64748b',marginBottom:'10px'}}>Select a scenario to recalculate. Each recalculates cost, schedule, confidence, risk register and exports from the same source of truth — instantly.</p>{model?.stress_test_applied && <div style={{background:"rgba(245,158,11,0.1)",border:"1px solid rgba(245,158,11,0.3)",borderRadius:"3px",padding:"8px 12px",marginBottom:"10px",fontSize:"11px",color:"#f59e0b"}}><b>STRESS TEST ACTIVE: {String(model.stress_test_applied).replace(/_/g," ").toUpperCase()}</b><br/>{model.stress_test_note} — P50 now {safeRender(model.cost_p50)}, confidence {model.confidence_pct}%. Scenario re-runs below use the stressed baseline.</div>}<div className="runtimeInline"><button onClick={()=>setTab('twin')} style={{padding:'4px 12px',background:'rgba(141,247,255,0.1)',border:'1px solid rgba(141,247,255,0.3)',borderRadius:4,color:'#8df7ff',fontWeight:'700',cursor:'pointer'}}><Zap size={15}/> Open Live Stress Test</button><button onClick={()=>runShock('signalling_slip')}>Simulate 4-month signalling slip</button><button onClick={()=>runShock('procurement_gap')}>Simulate procurement evidence gap</button></div>{renderScenarioCompare()}</Card><Card><h2>Buyer decision lens</h2>{['Base: balanced reference case for board challenge','Faster: more capex, lower confidence, shorter duration','Cheaper: lower authorisation number, longer schedule, higher residual risk','Lower Risk: higher reserve, longer duration, stronger confidence','Premium: resilience and optionality bought with visible capex premium'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}<h3>Current trade-off</h3><div className="triLens"><b>Gained</b>{tradePack.gained.map(x=><span key={x}>{x}</span>)}<b>Sacrificed</b>{tradePack.sacrificed.map(x=><span key={x}>{x}</span>)}<b>Exposed</b>{tradePack.exposed.map(x=><span key={x}>{x}</span>)}</div></Card></section>}
         {tab === 'cost' && <section className="layout two">
           {/* PROCUREMENT INTELLIGENCE */}
           {model?.procurement_intelligence?.items?.length > 0 && <div style={{gridColumn:'1/-1',background:'rgba(16,185,129,0.06)',border:'1px solid rgba(16,185,129,0.2)',borderRadius:8,padding:'14px 18px',marginBottom:12}}>
@@ -4732,7 +5018,7 @@ return <div className="app v50EliteApp">
             <div style={{overflowX:'auto'}}>
               <table style={{width:'100%',borderCollapse:'collapse',fontSize:'11px'}}>
                 <thead><tr style={{borderBottom:'1px solid rgba(255,255,255,0.1)'}}>
-                  {['Programme','Sector','P50 Anchor','Duration','Cost Growth','Slip (mo)','Primary Failure Mode'].map(h=><th key={h} style={{padding:'6px 8px',textAlign:'left',color:'#64748b',fontWeight:'800',letterSpacing:'.08em'}}>{h}</th>)}
+                  {['Programme','Sector','P50 Anchor','Duration','Cost Growth','Slip (mo)','Primary Failure Mode',''].map(h=><th key={h} style={{padding:'6px 8px',textAlign:'left',color:'#64748b',fontWeight:'800',letterSpacing:'.08em'}}>{h}</th>)}
                 </tr></thead>
                 <tbody>{(model?.benchmark_comparison||[]).map((b,i)=><tr key={i} style={{borderBottom:'1px solid rgba(255,255,255,0.04)',background:i%2===0?'rgba(255,255,255,0.01)':'transparent'}}>
                   <td style={{padding:'7px 8px',color:'#e2e8f0',fontWeight:'700'}}>{b.name||b.archetype}</td>
@@ -4741,7 +5027,8 @@ return <div className="app v50EliteApp">
                   <td style={{padding:'7px 8px',color:'#94a3b8'}}>{b.anchor_duration_months ? b.anchor_duration_months + ' mo' : '—'}</td>
                   <td style={{padding:'7px 8px',color:Number(b.cost_growth_pct??b.growth)>50?'#ef4444':Number(b.cost_growth_pct??b.growth)>20?'#f59e0b':'#10b981',fontWeight:'700'}}>{(b.cost_growth_pct??b.growth) ? '+'+(b.cost_growth_pct??b.growth)+'%' : '—'}</td>
                   <td style={{padding:'7px 8px',color:b.schedule_slip_months>24?'#ef4444':b.schedule_slip_months>12?'#f59e0b':'#94a3b8',fontWeight:'700'}}>{b.schedule_slip_months ? '+'+b.schedule_slip_months : '—'}</td>
-                  <td style={{padding:'7px 8px',color:'#64748b',maxWidth:'220px',lineHeight:'1.4'}}>{(b.failure_mode||b.failure||'—')}</td>
+                  <td style={{padding:'7px 8px',color:'#64748b',maxWidth:'180px',lineHeight:'1.4'}}>{(b.failure_mode||b.failure||'—').slice(0,80)}</td>
+                  <td style={{padding:'7px 8px'}}><button onClick={()=>{ setComparePromptA(b.prompt||(b.name+' — real programme. Sector: '+b.sector+'. Cost growth: +'+b.cost_growth_pct+'%. Schedule slip: +'+b.schedule_slip_months+' months. Primary failure: '+(b.failure_mode||b.failure||'')+'. Lesson: '+(b.lesson||b.why||'')+'. Generate full CASEY intelligence analysis.')); setShowCompare(true); }} style={{padding:'4px 10px',background:'rgba(139,92,246,0.1)',border:'1px solid rgba(139,92,246,0.35)',borderRadius:4,color:'#c4b5fd',fontSize:'10px',fontWeight:'700',cursor:'pointer',whiteSpace:'nowrap'}}>Compare →</button></td>
                 </tr>)}
                 </tbody>
               </table>
