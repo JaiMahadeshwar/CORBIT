@@ -2497,10 +2497,6 @@ function App() {
   const [showRecovery, setShowRecovery] = useState(false);
   const [savingProject, setSavingProject] = useState(false);
   const [saveMsg, setSaveMsg] = useState('');
-  const isNonBase = !!(model?.scenario && model.scenario !== 'base');
-  const sCostMult = parseFloat(model?.scenario_cost_mult || 1.0);
-  const sRiskMult = parseFloat(model?.scenario_risk_mult || 1.0);
-  const sSchedMult = parseFloat(model?.scenario_sched_mult || 1.0);
   // Scenario helpers - available throughout App
 
   const [projectContext, setProjectContext] = useState(null);
@@ -2524,7 +2520,6 @@ function App() {
   const [chatUsed, setChatUsed] = useState(0);
   const FREE_ADVISOR_LIMIT = 1;
   const [advisorApiStatus, setAdvisorApiStatus] = useState(null); // free advisor questions used
-  const FREE_ADVISOR_LIMIT = 1; // 1 free advisor question, unlimited for admin
   const [advisorModel, setAdvisorModel] = useState(null); // which AI is active
   const [uploadResult, setUploadResult] = useState(null);
   const [viewMode, setViewMode] = useState('exec');
