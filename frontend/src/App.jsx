@@ -3775,16 +3775,18 @@ return <div className="app v50EliteApp">
         })() : (
           <div>
             {model ? <div>
-              <div style={{padding:'8px 12px',background:'rgba(245,158,11,0.06)',border:'1px solid rgba(245,158,11,0.18)',borderRadius:6,marginBottom:12,fontSize:'11px',color:'#f59e0b',lineHeight:1.5}}><b>Demo chart</b> — estimated trajectory based on your programme. Save this project repeatedly to build your real time-series history.</div>
+              <div style={{padding:'8px 12px',background:'rgba(245,158,11,0.06)',border:'1px solid rgba(245,158,11,0.18)',borderRadius:6,marginBottom:12,fontSize:'11px',color:'#f59e0b',lineHeight:1.5}}>
+                <b>Demo chart</b> — estimated confidence arc based on your programme. Save this project repeatedly to build your real time-series history.
+              </div>
               <div style={{fontSize:'10px',color:'#475569',fontWeight:'700',textTransform:'uppercase',letterSpacing:'.1em',marginBottom:6}}>Confidence % — estimated arc to current position</div>
               <ResponsiveContainer width="100%" height={180}>
                 <LineChart data={[{d:'Inception',c:Math.max(18,(model.confidence_pct||64)-26)},{d:'Concept',c:Math.max(28,(model.confidence_pct||64)-18)},{d:'Feasibility',c:Math.max(40,(model.confidence_pct||64)-11)},{d:'Scheme',c:Math.max(52,(model.confidence_pct||64)-5)},{d:'Now',c:model.confidence_pct||64}]} margin={{top:8,right:40,left:0,bottom:4}}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false}/>
                   <XAxis dataKey="d" tick={{fontSize:10,fill:'#475569'}} axisLine={false} tickLine={false}/>
                   <YAxis tick={{fontSize:10,fill:'#475569'}} axisLine={false} tickLine={false} domain={[0,100]} tickFormatter={v=>v+'%'}/>
-                  <Tooltip contentStyle={{background:'#040810',border:'1px solid rgba(141,247,255,0.2)',borderRadius:6,fontSize:11}} formatter={(v)=>[v+'%','Confidence']} labelStyle={{color:'#8df7ff',fontWeight:'700'}}/>
-                  <ReferenceLine y={75} stroke="rgba(16,185,129,0.5)" strokeDasharray="5 3" label={{value:'75% target',position:'right',fontSize:9,fill:'#10b981',fontWeight:'700'}}/>
-                  <Line type="monotone" dataKey="c" stroke="#8df7ff" strokeWidth={2.5} dot={{r:5,fill:'#8df7ff',stroke:'#040810',strokeWidth:2}} activeDot={{r:7}} isAnimationActive={true} animationDuration={1400} animationEasing="ease-out" name="Confidence"/>
+                  <Tooltip contentStyle={{background:'#030a18',border:'1px solid rgba(141,247,255,0.2)',borderRadius:6,fontSize:11}} formatter={(v)=>[v+'%','Confidence']} labelStyle={{color:'#8df7ff',fontWeight:'700'}}/>
+                  <ReferenceLine y={75} stroke="rgba(16,185,129,0.5)" strokeDasharray="5 3" label={{value:'75% board target',position:'right',fontSize:9,fill:'#10b981',fontWeight:'700'}}/>
+                  <Line type="monotone" dataKey="c" stroke="#8df7ff" strokeWidth={2.5} dot={{r:5,fill:'#8df7ff',stroke:'#030a18',strokeWidth:2}} activeDot={{r:7}} isAnimationActive={true} animationDuration={1400} animationEasing="ease-out" name="Confidence"/>
                 </LineChart>
               </ResponsiveContainer>
               <div style={{fontSize:'10px',color:'#475569',fontWeight:'700',textTransform:'uppercase',letterSpacing:'.1em',margin:'12px 0 6px'}}>Schedule (months)</div>
@@ -3793,11 +3795,11 @@ return <div className="app v50EliteApp">
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false}/>
                   <XAxis dataKey="d" tick={{fontSize:10,fill:'#475569'}} axisLine={false} tickLine={false}/>
                   <YAxis tick={{fontSize:10,fill:'#475569'}} axisLine={false} tickLine={false} tickFormatter={v=>v+'mo'}/>
-                  <Tooltip contentStyle={{background:'#040810',border:'1px solid rgba(245,158,11,0.2)',borderRadius:6,fontSize:11}} formatter={(v)=>[v+' months','Schedule']} labelStyle={{color:'#fbbf24',fontWeight:'700'}}/>
-                  <Line type="monotone" dataKey="s" stroke="#f59e0b" strokeWidth={2.5} dot={{r:4,fill:'#f59e0b',stroke:'#040810',strokeWidth:2}} activeDot={{r:6}} isAnimationActive={true} animationDuration={1600} animationEasing="ease-out" name="Schedule"/>
+                  <Tooltip contentStyle={{background:'#030a18',border:'1px solid rgba(245,158,11,0.2)',borderRadius:6,fontSize:11}} formatter={(v)=>[v+' months','Schedule']} labelStyle={{color:'#fbbf24',fontWeight:'700'}}/>
+                  <Line type="monotone" dataKey="s" stroke="#f59e0b" strokeWidth={2.5} dot={{r:4,fill:'#f59e0b',stroke:'#030a18',strokeWidth:2}} activeDot={{r:6}} isAnimationActive={true} animationDuration={1600} animationEasing="ease-out" name="Schedule"/>
                 </LineChart>
               </ResponsiveContainer>
-            </div> : <div style={{padding:'32px 0',textAlign:'center'}}><div style={{fontSize:'13px',color:'#94a3b8'}}>Open Replay after generating a project.</div></div>}
+            </div> : <div style={{padding:'28px 0',textAlign:'center'}}><div style={{fontSize:'13px',color:'#94a3b8'}}>Open Replay after generating a project.</div></div>}
           </div>
         )}
       </div>
@@ -3870,32 +3872,32 @@ return <div className="app v50EliteApp">
 
     {/* ── RECOVERY PLAN MODAL ──────────────────────────────────────────────── */}
     {showRecovery && recoveryData && <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.92)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center',padding:16}} onClick={()=>setShowRecovery(false)}>
-      <div style={{background:'#030810',border:'1px solid rgba(141,247,255,0.14)',borderRadius:12,padding:'24px 28px',width:'min(760px,96vw)',maxHeight:'90vh',overflowY:'auto'}} onClick={e=>e.stopPropagation()}>
+      <div style={{background:'#030a18',border:'1px solid rgba(141,247,255,0.14)',borderRadius:12,padding:'24px 28px',width:'min(760px,96vw)',maxHeight:'90vh',overflowY:'auto'}} onClick={e=>e.stopPropagation()}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:14}}>
           <div>
-            <div style={{fontSize:'15px',fontWeight:'900',color:'#8df7ff',marginBottom:4}}>Recovery Plan</div>
-            <div style={{fontSize:'11px',color:'#475569',lineHeight:1.6}}>What to do — in order — to reach 75% board confidence. P1 = do first. Each action shows the confidence points it adds.</div>
+            <div style={{fontSize:'16px',fontWeight:'900',color:'#8df7ff',marginBottom:4}}>Recovery Plan</div>
+            <div style={{fontSize:'11px',color:'#475569',lineHeight:1.6}}>These are the exact steps to reach 75% board confidence, in priority order. P1 = do first.</div>
           </div>
-          <button onClick={()=>setShowRecovery(false)} style={{background:'none',border:'none',color:'#475569',cursor:'pointer',fontSize:'20px',flexShrink:0,lineHeight:1,marginLeft:16}}>✕</button>
+          <button onClick={()=>setShowRecovery(false)} style={{background:'none',border:'none',color:'#475569',cursor:'pointer',fontSize:'22px',flexShrink:0,marginLeft:16,lineHeight:1}}>✕</button>
         </div>
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:10,marginBottom:16}}>
-          <div style={{padding:'11px 14px',background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:8,textAlign:'center'}}>
+          <div style={{padding:'12px 16px',background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:8,textAlign:'center'}}>
             <div style={{fontSize:'9px',color:'#475569',fontWeight:'700',textTransform:'uppercase',letterSpacing:'.1em',marginBottom:4}}>Current confidence</div>
-            <div style={{fontSize:'28px',fontWeight:'900',color:(recoveryData.current_confidence||0)>=75?'#10b981':'#ef4444'}}>{recoveryData.current_confidence||0+'%'}</div>
+            <div style={{fontSize:'30px',fontWeight:'900',color:(recoveryData.current_confidence||0)>=75?'#10b981':'#ef4444'}}>{recoveryData.current_confidence||0+'%'}</div>
           </div>
-          <div style={{padding:'11px 14px',background:'rgba(141,247,255,0.04)',border:'1px solid rgba(141,247,255,0.14)',borderRadius:8,textAlign:'center'}}>
+          <div style={{padding:'12px 16px',background:'rgba(141,247,255,0.04)',border:'1px solid rgba(141,247,255,0.14)',borderRadius:8,textAlign:'center'}}>
             <div style={{fontSize:'9px',color:'#475569',fontWeight:'700',textTransform:'uppercase',letterSpacing:'.1em',marginBottom:4}}>Board target</div>
-            <div style={{fontSize:'28px',fontWeight:'900',color:'#8df7ff'}}>75%</div>
+            <div style={{fontSize:'30px',fontWeight:'900',color:'#8df7ff'}}>75%</div>
           </div>
-          <div style={{padding:'11px 14px',background:(recoveryData.confidence_gap||0)<=0?'rgba(16,185,129,0.05)':'rgba(245,158,11,0.05)',border:'1px solid '+((recoveryData.confidence_gap||0)<=0?'rgba(16,185,129,0.18)':'rgba(245,158,11,0.18)'),borderRadius:8,textAlign:'center'}}>
+          <div style={{padding:'12px 16px',background:(recoveryData.confidence_gap||0)<=0?'rgba(16,185,129,0.05)':'rgba(245,158,11,0.05)',border:'1px solid '+((recoveryData.confidence_gap||0)<=0?'rgba(16,185,129,0.18)':'rgba(245,158,11,0.18)'),borderRadius:8,textAlign:'center'}}>
             <div style={{fontSize:'9px',color:'#475569',fontWeight:'700',textTransform:'uppercase',letterSpacing:'.1em',marginBottom:4}}>Gap to close</div>
-            <div style={{fontSize:'28px',fontWeight:'900',color:(recoveryData.confidence_gap||0)<=0?'#10b981':'#f59e0b'}}>{(recoveryData.confidence_gap||0)<=0?'None ✓':(recoveryData.confidence_gap||0)+' pts'}</div>
+            <div style={{fontSize:'30px',fontWeight:'900',color:(recoveryData.confidence_gap||0)<=0?'#10b981':'#f59e0b'}}>{(recoveryData.confidence_gap||0)<=0?'None ✓':(recoveryData.confidence_gap||0)+' pts'}</div>
           </div>
         </div>
-        <div style={{padding:'9px 14px',background:(recoveryData.total_actions||0)===0?'rgba(16,185,129,0.06)':'rgba(245,158,11,0.06)',border:'1px solid '+((recoveryData.total_actions||0)===0?'rgba(16,185,129,0.22)':'rgba(245,158,11,0.22)'),borderRadius:7,marginBottom:14,display:'flex',gap:10,alignItems:'center'}}>
+        <div style={{padding:'9px 14px',background:(recoveryData.total_actions||0)===0?'rgba(16,185,129,0.06)':'rgba(245,158,11,0.06)',border:'1px solid '+((recoveryData.total_actions||0)===0?'rgba(16,185,129,0.2)':'rgba(245,158,11,0.2)'),borderRadius:7,marginBottom:16,display:'flex',gap:10,alignItems:'center'}}>
           <div style={{fontSize:'18px'}}>{(recoveryData.total_actions||0)===0?'✅':'⚠️'}</div>
           <div>
-            <div style={{fontSize:'12px',fontWeight:'800',color:(recoveryData.total_actions||0)===0?'#10b981':'#f59e0b'}}>{recoveryData.verdict||'Recovery plan generated'}</div>
+            <div style={{fontSize:'12px',fontWeight:'800',color:(recoveryData.total_actions||0)===0?'#10b981':'#f59e0b'}}>{recoveryData.verdict||'Recovery actions needed'}</div>
             <div style={{fontSize:'11px',color:'#64748b',marginTop:2}}>{recoveryData.estimated_timeline||''}</div>
           </div>
         </div>
@@ -3913,17 +3915,17 @@ return <div className="app v50EliteApp">
             </div>
             <div style={{padding:'10px 14px'}}>
               {(action.steps||[]).map((step,j)=>(
-                <div key={j} style={{display:'flex',gap:8,marginBottom:6,alignItems:'flex-start'}}>
+                <div key={j} style={{display:'flex',gap:8,marginBottom:5,alignItems:'flex-start'}}>
                   <div style={{width:16,height:16,borderRadius:'50%',background:'rgba(141,247,255,0.07)',border:'1px solid rgba(141,247,255,0.14)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,marginTop:2}}>
                     <span style={{fontSize:'8px',fontWeight:'800',color:'#8df7ff'}}>{j+1}</span>
                   </div>
-                  <div style={{fontSize:'11px',color:'#94a3b8',lineHeight:1.5}}>{step}</div>
+                  <div style={{fontSize:'11px',color:'#94a3b8',lineHeight:1.55}}>{step}</div>
                 </div>
               ))}
             </div>
           </div>
         ))}
-        {(recoveryData.actions||[]).length===0&&<div style={{textAlign:'center',padding:'24px 0',color:'#10b981'}}><div style={{fontSize:'40px',marginBottom:8}}>✓</div><div style={{fontSize:'14px',fontWeight:'800',marginBottom:4}}>No recovery actions needed</div><div style={{fontSize:'12px',color:'#475569'}}>This programme is at or above the 75% board confidence threshold.</div></div>}
+        {(recoveryData.actions||[]).length===0&&<div style={{textAlign:'center',padding:'24px 0',color:'#10b981'}}><div style={{fontSize:'40px',marginBottom:8}}>✓</div><div style={{fontSize:'14px',fontWeight:'800',marginBottom:4}}>No recovery actions needed</div><div style={{fontSize:'12px',color:'#475569'}}>Programme is at or above the 75% board threshold.</div></div>}
       </div>
     </div>}
 
@@ -4067,64 +4069,157 @@ return <div className="app v50EliteApp">
 
 {/* ── PROGRAMME DIRECTOR ── Steve Jobs: big number, clear signal, no noise */}
           {viewMode === 'exec' && <>
-            {/* VERDICT */}
-            {model && <div style={{borderLeft:'4px solid '+((model.confidence_pct||0)>=75?'#10b981':(model.confidence_pct||0)>=55?'#f59e0b':'#ef4444'),background:(model.confidence_pct||0)>=75?'rgba(16,185,129,0.06)':(model.confidence_pct||0)>=55?'rgba(245,158,11,0.05)':'rgba(239,68,68,0.06)',borderRadius:'0 8px 8px 0',padding:'11px 20px',marginBottom:14,display:'flex',alignItems:'center',gap:16,flexWrap:'wrap'}}>
-              <div style={{fontSize:'8px',fontWeight:'900',color:'#334155',letterSpacing:'.22em'}}>CASEY VERDICT</div>
-              <div style={{fontSize:'14px',fontWeight:'800',color:'#f1f5f9',lineHeight:1.5,flex:1,minWidth:200}}>{model.institutional_authority_line||((model.confidence_pct||0)>=75?model.cost_p50+' · '+(model.estimate_class_name||'Class 3')+' · '+(model.confidence_pct||0)+'% board confidence. Ready for capital commitment.':(model.confidence_pct||0)>=55?model.cost_p50+' · '+(model.estimate_class_name||'Class 3')+' · '+(model.confidence_pct||0)+'% confidence. Conditional — '+(75-(model.confidence_pct||0))+' points short of board threshold.':model.cost_p50+' · '+(model.estimate_class_name||'Class 3')+' · '+(model.confidence_pct||0)+'% confidence. Do not approve.')}</div>
-              <div style={{padding:'6px 18px',borderRadius:20,fontSize:'12px',fontWeight:'900',letterSpacing:'.12em',flexShrink:0,background:(model.confidence_pct||0)>=75?'#10b981':(model.confidence_pct||0)>=55?'#f59e0b':'#ef4444',color:(model.confidence_pct||0)>=75?'#022c22':(model.confidence_pct||0)>=55?'#451a03':'#450a0a'}}>{(model.confidence_pct||0)>=75?'✓ APPROVE':(model.confidence_pct||0)>=55?'⚠ CONDITIONAL':'✗ DO NOT APPROVE'}</div>
-            </div>}
-            {/* 4 KPI CARDS */}
-            {model && <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:10,marginBottom:14}}>
-              <div style={{background:'#060d1f',border:'1px solid rgba(6,182,212,0.2)',borderRadius:12,padding:'20px 18px',position:'relative'}}>
-                <div style={{position:'absolute',top:12,right:14,width:6,height:6,borderRadius:'50%',background:'#06b6d4',boxShadow:'0 0 8px #06b6d4'}}/>
-                <div style={{fontSize:'9px',fontWeight:'900',color:'#06b6d4',letterSpacing:'.2em',marginBottom:8,textTransform:'uppercase'}}>Approve at P80</div>
-                <div style={{fontSize:'42px',fontWeight:'900',color:'#8df7ff',lineHeight:1,marginBottom:4,letterSpacing:'-.02em'}}>{model.cost_p80||model.cost_p50}</div>
-                <div style={{fontSize:'11px',color:'#334155',marginBottom:10}}>P50: {model.cost_p50} · Outturn: {model.outturn||'—'}</div>
-                <div style={{height:1,background:'rgba(6,182,212,0.12)',marginBottom:10}}/>
-                <div style={{fontSize:'11px',fontWeight:'700',color:(model.p80_reserve_pct||0)>=(model.reserve_vs_benchmark_pct||18)?'#10b981':'#ef4444'}}>Reserve {model.p80_reserve} ({model.p80_reserve_pct}%) {(model.p80_reserve_pct||0)>=(model.reserve_vs_benchmark_pct||18)?'✓':'⚠ need '+(model.reserve_vs_benchmark_pct||18)+'%'}</div>
+
+            {/* ═══════════════════════════════════════════════════════════════
+                VERDICT — one sentence. the whole story.
+                Left border = green/amber/red decision signal.
+            ═══════════════════════════════════════════════════════════════ */}
+            {model && <div style={{
+              borderLeft:'4px solid '+((model.confidence_pct||0)>=75?'#10b981':(model.confidence_pct||0)>=55?'#f59e0b':'#ef4444'),
+              background:(model.confidence_pct||0)>=75?'rgba(16,185,129,0.06)':(model.confidence_pct||0)>=55?'rgba(245,158,11,0.05)':'rgba(239,68,68,0.06)',
+              borderRadius:'0 8px 8px 0',padding:'12px 22px',marginBottom:16,
+              display:'flex',alignItems:'center',gap:16,flexWrap:'wrap',
+            }}>
+              <div style={{fontSize:'8px',fontWeight:'900',color:'#334155',letterSpacing:'.22em',flexShrink:0,textTransform:'uppercase'}}>Casey Verdict</div>
+              <div style={{fontSize:'14px',fontWeight:'800',color:'#f1f5f9',lineHeight:1.5,flex:1,minWidth:220}}>
+                {model.institutional_authority_line || (
+                  (model.confidence_pct||0)>=75
+                    ? `${model.cost_p50} · ${model.estimate_class_name||'Class 3'} · ${model.confidence_pct}% board confidence. Ready for capital commitment.`
+                    : (model.confidence_pct||0)>=55
+                    ? `${model.cost_p50} · ${model.estimate_class_name||'Class 3'} · ${model.confidence_pct}% confidence. Conditional — ${75-(model.confidence_pct||0)} points short of 75% board threshold.`
+                    : `${model.cost_p50} · ${model.estimate_class_name||'Class 3'} · ${model.confidence_pct}% confidence. Do not approve.`
+                )}
               </div>
-              <div style={{background:'#060d1f',border:'1px solid rgba(245,158,11,0.2)',borderRadius:12,padding:'20px 18px',position:'relative'}}>
-                <div style={{position:'absolute',top:12,right:14,width:6,height:6,borderRadius:'50%',background:'#f59e0b',boxShadow:'0 0 8px #f59e0b'}}/>
-                <div style={{fontSize:'9px',fontWeight:'900',color:'#f59e0b',letterSpacing:'.2em',marginBottom:8,textTransform:'uppercase'}}>Commit to schedule</div>
-                <div style={{fontSize:'42px',fontWeight:'900',color:'#fbbf24',lineHeight:1,marginBottom:4,letterSpacing:'-.02em'}}>{model.schedule}</div>
-                <div style={{fontSize:'11px',color:'#334155',marginBottom:10}}>P80: {model.monte_carlo?.qsra?.p80||Math.round(parseInt(model.schedule||189)*1.15)+' mo'} · P90: {model.monte_carlo?.qsra?.p90||Math.round(parseInt(model.schedule||189)*1.28)+' mo'}</div>
-                <div style={{height:1,background:'rgba(245,158,11,0.12)',marginBottom:10}}/>
-                <div style={{fontSize:'11px',fontWeight:'700',color:'#f59e0b',lineHeight:1.3}}>{(model.governing_constraint_prominent||'Governing constraint — see board pack').slice(0,56)}</div>
-              </div>
-              <div style={{background:'#060d1f',border:'1px solid '+((model.confidence_pct||0)>=75?'rgba(16,185,129,0.22)':(model.confidence_pct||0)>=55?'rgba(245,158,11,0.22)':'rgba(239,68,68,0.25)'),borderRadius:12,padding:'20px 18px',position:'relative'}}>
-                <div style={{position:'absolute',top:12,right:14,width:6,height:6,borderRadius:'50%',background:(model.confidence_pct||0)>=75?'#10b981':(model.confidence_pct||0)>=55?'#f59e0b':'#ef4444',boxShadow:'0 0 8px '+((model.confidence_pct||0)>=75?'#10b981':(model.confidence_pct||0)>=55?'#f59e0b':'#ef4444')}}/>
-                <div style={{fontSize:'9px',fontWeight:'900',color:(model.confidence_pct||0)>=75?'#10b981':(model.confidence_pct||0)>=55?'#f59e0b':'#ef4444',letterSpacing:'.2em',marginBottom:8,textTransform:'uppercase'}}>{(model.confidence_pct||0)>=75?'Board-ready':(model.confidence_pct||0)>=55?'Conditional':'Below threshold'}</div>
-                <div style={{fontSize:'42px',fontWeight:'900',color:(model.confidence_pct||0)>=75?'#10b981':(model.confidence_pct||0)>=55?'#f59e0b':'#ef4444',lineHeight:1,marginBottom:8,letterSpacing:'-.02em'}}>{(model.confidence_pct||0)+'%'}</div>
-                <div style={{height:4,background:'rgba(255,255,255,0.05)',borderRadius:2,marginBottom:8,overflow:'hidden',position:'relative'}}>
-                  <div style={{height:'100%',width:(model.confidence_pct||0)+'%',background:(model.confidence_pct||0)>=75?'#10b981':(model.confidence_pct||0)>=55?'#f59e0b':'#ef4444',borderRadius:2,transition:'width 1s ease-out'}}/>
-                  <div style={{position:'absolute',top:0,bottom:0,left:'75%',width:1,background:'rgba(255,255,255,0.4)'}}/>
-                </div>
-                <div style={{fontSize:'11px',fontWeight:'700',color:(model.confidence_pct||0)>=75?'#10b981':'#ef4444'}}>{(model.confidence_pct||0)>=75?'No action required':'Close '+(75-(model.confidence_pct||0))+' pts → QCRA/QSRA tab'}</div>
-              </div>
-              <div style={{background:'#060d1f',border:'1px solid rgba(239,68,68,0.28)',borderRadius:12,padding:'20px 18px',position:'relative'}}>
-                <div style={{position:'absolute',top:12,right:14,width:6,height:6,borderRadius:'50%',background:'#ef4444',boxShadow:'0 0 10px #ef4444',animation:'pulse 1.8s ease-in-out infinite'}}/>
-                <div style={{fontSize:'9px',fontWeight:'900',color:'#ef4444',letterSpacing:'.2em',marginBottom:8,textTransform:'uppercase'}}>Programme killer</div>
-                <div style={{fontSize:'14px',fontWeight:'800',color:'#fca5a5',lineHeight:1.35,marginBottom:6,minHeight:46}}>{(model.mortality_event?.title||model.programme_mortality_risk?.title||'Systems integration failure').slice(0,52)}</div>
-                <div style={{height:1,background:'rgba(239,68,68,0.12)',marginBottom:8}}/>
-                <div style={{fontSize:'11px',color:'#334155',marginBottom:6}}>{model.mortality_event?.probability||65}% probability · {model.currency_symbol}{model.mortality_event?.exposure||'4.5B'} exposure</div>
-                <div style={{fontSize:'10px',fontWeight:'700',color:'#ef4444',lineHeight:1.4}}>{(model.mortality_event?.board_action||'Must resolve before capital commitment').slice(0,68)}</div>
+              <div style={{
+                padding:'7px 22px',borderRadius:20,fontSize:'12px',fontWeight:'900',letterSpacing:'.14em',flexShrink:0,
+                background:(model.confidence_pct||0)>=75?'#10b981':(model.confidence_pct||0)>=55?'#f59e0b':'#ef4444',
+                color:'#000',
+              }}>
+                {(model.confidence_pct||0)>=75?'✓  APPROVE':(model.confidence_pct||0)>=55?'⚠  CONDITIONAL':'✗  DO NOT APPROVE'}
               </div>
             </div>}
-            {/* SCENARIO vs BENCHMARK */}
-            {model && <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:14}}>
-              <div style={{background:'#030810',border:'1px solid rgba(255,255,255,0.06)',borderRadius:10,padding:'14px 16px'}}>
-                <div style={{padding:'7px 10px',background:'rgba(141,247,255,0.03)',borderRadius:5,marginBottom:10,fontSize:'11px',color:'#8df7ff',lineHeight:1.55}}><b>BASE</b> = your programme as submitted. <b>FASTER / CHEAPER / LOWER RISK / PREMIUM</b> = what changes if the board demands a different approach. Each row shows the real absolute numbers.</div>
-                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}><div style={{fontSize:'9px',fontWeight:'900',color:'#8df7ff',letterSpacing:'.18em'}}>SCENARIO COMPARISON</div><div style={{display:'flex',alignItems:'center',gap:4}}><div style={{width:5,height:5,borderRadius:'50%',background:'#10b981',boxShadow:'0 0 4px #10b981'}}/><div style={{fontSize:'8px',color:'#334155',fontWeight:'700'}}>LIVE</div></div></div>
-                <div style={{display:'grid',gridTemplateColumns:'96px 1fr 68px 56px 64px',gap:4,padding:'4px 6px',borderBottom:'1px solid rgba(255,255,255,0.05)',marginBottom:5}}>
-                  {['','COST P50','SCHED','CONF',''].map((h,i)=><div key={i} style={{fontSize:'8px',color:'#1e2d3d',fontWeight:'800',letterSpacing:'.1em'}}>{h}</div>)}
+
+            {/* ═══════════════════════════════════════════════════════════════
+                4 KPI CARDS — SpaceX scale. Each number fills the card.
+                Numbers are 48px. Pulsing dot = live signal.
+                Confidence card has an animated fill bar.
+            ═══════════════════════════════════════════════════════════════ */}
+            {model && <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:12,marginBottom:16}}>
+
+              {/* COST */}
+              <div style={{background:'#060d1e',border:'1px solid rgba(6,182,212,0.22)',borderRadius:12,padding:'22px 18px',position:'relative',overflow:'hidden'}}>
+                <div style={{position:'absolute',top:14,right:16,width:7,height:7,borderRadius:'50%',background:'#06b6d4',boxShadow:'0 0 10px 3px rgba(6,182,212,0.5)'}}/>
+                <div style={{fontSize:'10px',fontWeight:'900',color:'#06b6d4',letterSpacing:'.18em',marginBottom:10,textTransform:'uppercase'}}>Approve at P80</div>
+                <div style={{fontSize:'48px',fontWeight:'900',color:'#8df7ff',lineHeight:1,marginBottom:5,letterSpacing:'-.02em'}}>{model.cost_p80||model.cost_p50}</div>
+                <div style={{fontSize:'11px',color:'#334155',marginBottom:12}}>P50: {model.cost_p50} · Outturn: {model.outturn||'—'}</div>
+                <div style={{height:1,background:'rgba(6,182,212,0.1)',marginBottom:12}}/>
+                <div style={{fontSize:'11px',fontWeight:'700',color:(model.p80_reserve_pct||0)>=(model.reserve_vs_benchmark_pct||18)?'#10b981':'#ef4444',lineHeight:1.4}}>
+                  Reserve {model.p80_reserve} ({model.p80_reserve_pct}%)
+                  {(model.p80_reserve_pct||0)>=(model.reserve_vs_benchmark_pct||18)?' ✓':' ⚠ need '+(model.reserve_vs_benchmark_pct||18)+'%'}
                 </div>
-                <div style={{display:'grid',gridTemplateColumns:'96px 1fr 68px 56px 64px',gap:4,padding:'5px 6px',background:'rgba(255,255,255,0.025)',borderRadius:4,marginBottom:4}}>
-                  <div style={{fontSize:'11px',fontWeight:'700',color:'#475569'}}>BASE</div>
-                  <div style={{fontSize:'12px',fontWeight:'800',color:'#64748b'}}>{model._base_cost||model.cost_p50}</div>
-                  <div style={{fontSize:'11px',color:'#475569'}}>{parseInt(model._base_months||model.schedule||189)+'mo'}</div>
-                  <div style={{fontSize:'11px',color:'#475569'}}>{model._base_confidence_pct||model.confidence_pct+'%'}</div>
-                  <div style={{fontSize:'9px',color:'#1e2d3d',textAlign:'right'}}>REF</div>
+              </div>
+
+              {/* SCHEDULE */}
+              <div style={{background:'#060d1e',border:'1px solid rgba(245,158,11,0.22)',borderRadius:12,padding:'22px 18px',position:'relative',overflow:'hidden'}}>
+                <div style={{position:'absolute',top:14,right:16,width:7,height:7,borderRadius:'50%',background:'#f59e0b',boxShadow:'0 0 10px 3px rgba(245,158,11,0.5)'}}/>
+                <div style={{fontSize:'10px',fontWeight:'900',color:'#f59e0b',letterSpacing:'.18em',marginBottom:10,textTransform:'uppercase'}}>Commit to schedule</div>
+                <div style={{fontSize:'48px',fontWeight:'900',color:'#fbbf24',lineHeight:1,marginBottom:5,letterSpacing:'-.02em'}}>{model.schedule}</div>
+                <div style={{fontSize:'11px',color:'#334155',marginBottom:12}}>P80: {model.monte_carlo?.qsra?.p80||Math.round(parseInt(model.schedule||189)*1.15)+' mo'} · P90: {model.monte_carlo?.qsra?.p90||Math.round(parseInt(model.schedule||189)*1.28)+' mo'}</div>
+                <div style={{height:1,background:'rgba(245,158,11,0.1)',marginBottom:12}}/>
+                <div style={{fontSize:'11px',fontWeight:'700',color:'#f59e0b',lineHeight:1.4}}>{(model.governing_constraint_prominent||'Governing constraint — see board pack').slice(0,58)}</div>
+              </div>
+
+              {/* CONFIDENCE — animated fill bar */}
+              <div style={{
+                background:'#060d1e',
+                border:'1px solid '+((model.confidence_pct||0)>=75?'rgba(16,185,129,0.3)':(model.confidence_pct||0)>=55?'rgba(245,158,11,0.3)':'rgba(239,68,68,0.3)'),
+                borderRadius:12,padding:'22px 18px',position:'relative',overflow:'hidden',
+              }}>
+                <div style={{
+                  position:'absolute',top:14,right:16,width:7,height:7,borderRadius:'50%',
+                  background:(model.confidence_pct||0)>=75?'#10b981':(model.confidence_pct||0)>=55?'#f59e0b':'#ef4444',
+                  boxShadow:'0 0 10px 3px '+((model.confidence_pct||0)>=75?'rgba(16,185,129,0.5)':(model.confidence_pct||0)>=55?'rgba(245,158,11,0.5)':'rgba(239,68,68,0.5)'),
+                }}/>
+                <div style={{fontSize:'10px',fontWeight:'900',letterSpacing:'.18em',marginBottom:10,textTransform:'uppercase',color:(model.confidence_pct||0)>=75?'#10b981':(model.confidence_pct||0)>=55?'#f59e0b':'#ef4444'}}>
+                  {(model.confidence_pct||0)>=75?'Board-ready':(model.confidence_pct||0)>=55?'Conditional':'Below threshold'}
                 </div>
+                <div style={{fontSize:'48px',fontWeight:'900',lineHeight:1,marginBottom:10,letterSpacing:'-.02em',color:(model.confidence_pct||0)>=75?'#10b981':(model.confidence_pct||0)>=55?'#f59e0b':'#ef4444'}}>
+                  {(model.confidence_pct||0)+'%'}
+                </div>
+                {/* ANIMATED BAR — draws itself on load */}
+                <div style={{position:'relative',height:6,background:'rgba(255,255,255,0.06)',borderRadius:3,marginBottom:12,overflow:'hidden'}}>
+                  <div style={{
+                    position:'absolute',inset:0,
+                    width:(model.confidence_pct||0)+'%',
+                    background:(model.confidence_pct||0)>=75?'linear-gradient(90deg,#059669,#10b981)':(model.confidence_pct||0)>=55?'linear-gradient(90deg,#d97706,#f59e0b)':'linear-gradient(90deg,#dc2626,#ef4444)',
+                    borderRadius:3,
+                    transition:'width 1.4s cubic-bezier(.4,0,.2,1)',
+                  }}/>
+                  {/* 75% marker — the target */}
+                  <div style={{position:'absolute',top:0,bottom:0,left:'75%',width:2,background:'rgba(255,255,255,0.5)',zIndex:2}}/>
+                </div>
+                <div style={{display:'flex',justifyContent:'space-between',marginBottom:10}}>
+                  <div style={{fontSize:'9px',color:'#334155'}}>0%</div>
+                  <div style={{fontSize:'9px',fontWeight:'800',color:'rgba(255,255,255,0.4)'}}>75% ← target</div>
+                  <div style={{fontSize:'9px',color:'#334155'}}>100%</div>
+                </div>
+                <div style={{fontSize:'11px',fontWeight:'700',color:(model.confidence_pct||0)>=75?'#10b981':'#ef4444'}}>
+                  {(model.confidence_pct||0)>=75?'No action required':'Close '+(75-(model.confidence_pct||0))+' pts → QCRA tab'}
+                </div>
+              </div>
+
+              {/* PROGRAMME KILLER */}
+              <div style={{background:'#060d1e',border:'1px solid rgba(239,68,68,0.3)',borderRadius:12,padding:'22px 18px',position:'relative',overflow:'hidden'}}>
+                <div style={{position:'absolute',top:14,right:16,width:7,height:7,borderRadius:'50%',background:'#ef4444',boxShadow:'0 0 10px 3px rgba(239,68,68,0.5)',animation:'pulse 1.8s ease-in-out infinite'}}/>
+                <div style={{fontSize:'10px',fontWeight:'900',color:'#ef4444',letterSpacing:'.18em',marginBottom:10,textTransform:'uppercase'}}>Programme killer</div>
+                <div style={{fontSize:'16px',fontWeight:'900',color:'#fca5a5',lineHeight:1.3,marginBottom:8,minHeight:52}}>
+                  {(model.mortality_event?.title||model.programme_mortality_risk?.title||'Systems integration failure').slice(0,54)}
+                </div>
+                <div style={{height:1,background:'rgba(239,68,68,0.1)',marginBottom:10}}/>
+                <div style={{fontSize:'11px',color:'#334155',marginBottom:8}}>{model.mortality_event?.probability||65}% probability · {model.currency_symbol}{model.mortality_event?.exposure||'4.5B'} exposure</div>
+                <div style={{fontSize:'10px',fontWeight:'700',color:'#ef4444',lineHeight:1.4}}>{(model.mortality_event?.board_action||'Must resolve before capital commitment').slice(0,70)}</div>
+              </div>
+            </div>}
+
+            {/* ═══════════════════════════════════════════════════════════════
+                BASE vs SCENARIO vs BENCHMARK
+                This is the comparison that matters. Three panels.
+                Left: What changed when you switched scenario.
+                Right: What real programmes did vs yours.
+                Labels make it impossible to misread.
+            ═══════════════════════════════════════════════════════════════ */}
+            {model && <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:16}}>
+
+              {/* SCENARIO PANEL */}
+              <div style={{background:'#030a18',border:'1px solid rgba(141,247,255,0.1)',borderRadius:12,padding:'18px 20px'}}>
+
+                {/* Plain English label */}
+                <div style={{fontSize:'9px',fontWeight:'900',color:'#8df7ff',letterSpacing:'.2em',marginBottom:8,textTransform:'uppercase'}}>Scenario Comparison</div>
+                <div style={{padding:'9px 12px',background:'rgba(141,247,255,0.04)',borderRadius:6,marginBottom:14,fontSize:'11px',color:'#94a3b8',lineHeight:1.6}}>
+                  <span style={{color:'#8df7ff',fontWeight:'700'}}>BASE</span> = your programme as submitted, no changes.&nbsp;
+                  <span style={{color:'#f59e0b',fontWeight:'700'}}>Other scenarios</span> = what happens if the board demands a different approach.
+                  Click any row to switch and recalculate everything.
+                </div>
+
+                {/* Column headers */}
+                <div style={{display:'grid',gridTemplateColumns:'1fr 100px 72px 62px',gap:6,padding:'4px 8px',borderBottom:'1px solid rgba(255,255,255,0.06)',marginBottom:6}}>
+                  {['Scenario','Cost P50','Schedule','Confidence'].map((h,i)=>(
+                    <div key={i} style={{fontSize:'8px',color:'#334155',fontWeight:'900',textTransform:'uppercase',letterSpacing:'.1em'}}>{h}</div>
+                  ))}
+                </div>
+
+                {/* BASE row — always first */}
+                <div style={{display:'grid',gridTemplateColumns:'1fr 100px 72px 62px',gap:6,padding:'8px',background:'rgba(255,255,255,0.03)',borderRadius:6,marginBottom:4,border:'1px solid rgba(255,255,255,0.05)'}}>
+                  <div>
+                    <div style={{fontSize:'12px',fontWeight:'800',color:'#94a3b8'}}>BASE</div>
+                    <div style={{fontSize:'9px',color:'#334155',marginTop:1}}>reference</div>
+                  </div>
+                  <div style={{fontSize:'14px',fontWeight:'800',color:'#94a3b8'}}>{model._base_cost||model.cost_p50}</div>
+                  <div style={{fontSize:'13px',color:'#64748b'}}>{parseInt(model._base_months||model.schedule||189)}<span style={{fontSize:'9px',marginLeft:1}}>mo</span></div>
+                  <div style={{fontSize:'13px',color:'#64748b'}}>{model._base_confidence_pct||model.confidence_pct}<span style={{fontSize:'9px',marginLeft:1}}>%</span></div>
+                </div>
+
+                {/* Scenario rows */}
                 {(model.scenario_matrix||[]).filter(s=>s.scenario!=='base').slice(0,5).map((s,i)=>{
                   const bC=parseFloat(String(model._base_cost||model.cost_p50||0).replace(/[£$€B,]/g,''))||0;
                   const sC=parseFloat(String(s.cost_p50||s.cost||0).replace(/[£$€B,]/g,''))||bC;
@@ -4136,42 +4231,87 @@ return <div className="app v50EliteApp">
                   const sCf=parseInt(s.confidence_pct||s.confidence||bCf);
                   const cfd=sCf-bCf;
                   const active=model.scenario===s.scenario;
-                  return <div key={i} onClick={()=>generate&&generate(s.scenario||'base',model?.prompt||'',model||{})} style={{display:'grid',gridTemplateColumns:'96px 1fr 68px 56px 64px',gap:4,padding:'5px 6px',background:active?'rgba(141,247,255,0.05)':'transparent',borderRadius:4,marginBottom:2,border:active?'1px solid rgba(141,247,255,0.14)':'1px solid transparent',cursor:'pointer'}}>
-                    <div style={{fontSize:'11px',fontWeight:active?'800':'500',color:active?'#8df7ff':'#475569'}}>{(s.scenario_label||s.scenario||'').replace(/_/g,' ').toUpperCase().slice(0,10)}{active&&<span style={{marginLeft:4,fontSize:'8px',background:'rgba(141,247,255,0.12)',color:'#8df7ff',padding:'1px 4px',borderRadius:2}}>LIVE</span>}</div>
-                    <div><span style={{fontSize:'12px',fontWeight:'700',color:cd>0?'#ef4444':cd<0?'#10b981':'#94a3b8'}}>{s.cost_p50||s.cost||'—'}</span><span style={{fontSize:'9px',color:cd>0?'#ef4444':cd<0?'#10b981':'#475569',marginLeft:3}}>{cd>0?'+':''}{cd+'%'}</span></div>
-                    <div style={{fontSize:'11px',color:sd>0?'#ef4444':sd<0?'#10b981':'#64748b'}}>{sM}mo{sd!==0&&<span style={{fontSize:'9px',marginLeft:1,color:sd>0?'#ef4444':'#10b981'}}>{sd>0?'+':''}{sd}</span>}</div>
-                    <div style={{fontSize:'11px',color:cfd>0?'#10b981':cfd<0?'#ef4444':'#64748b'}}>{sCf}%{cfd!==0&&<span style={{fontSize:'9px',marginLeft:1}}>{cfd>0?'+':''}{cfd}</span>}</div>
-                    <div style={{textAlign:'right'}}>{!active&&<span style={{fontSize:'9px',padding:'2px 5px',background:'rgba(255,255,255,0.03)',borderRadius:3,color:'#475569'}}>Run</span>}</div>
-                  </div>;
-                })}
-                {(!model.scenario_matrix||model.scenario_matrix.length<=1)&&<div style={{fontSize:'11px',color:'#1e2d3d',padding:'10px 6px',textAlign:'center'}}>Click FASTER · CHEAPER · LOWER RISK above to populate</div>}
-              </div>
-              <div style={{background:'#030810',border:'1px solid rgba(255,255,255,0.06)',borderRadius:10,padding:'14px 16px'}}>
-                <div style={{padding:'7px 10px',background:'rgba(139,92,246,0.04)',borderRadius:5,marginBottom:10,fontSize:'11px',color:'#c4b5fd',lineHeight:1.55}}><b>Real programmes</b> from public record — Crossrail, HS2, ITER, CalHSR. The % is their actual cost overrun. The bar shows severity. This is what your programme is being compared against.</div>
-                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}><div style={{fontSize:'9px',fontWeight:'900',color:'#a78bfa',letterSpacing:'.18em'}}>COMPARABLE PROGRAMMES</div><div style={{fontSize:'8px',color:'#1e2d3d',fontWeight:'700'}}>FLYVBJERG / IPA</div></div>
-                {(model.benchmark_comparison||[]).slice(0,4).map((bm,i)=>{
-                  const g=bm.cost_growth_pct||0;
-                  const sev=g>100?{col:'#ef4444',bg:'rgba(239,68,68,0.1)',lbl:'SEVERE'}:g>40?{col:'#f59e0b',bg:'rgba(245,158,11,0.08)',lbl:'HIGH'}:{col:'#10b981',bg:'rgba(16,185,129,0.08)',lbl:'MOD'};
-                  return <div key={i} style={{marginBottom:11,paddingBottom:11,borderBottom:i<3?'1px solid rgba(255,255,255,0.04)':'none'}}>
-                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4}}>
-                      <div style={{fontSize:'12px',fontWeight:'800',color:'#c4b5fd',flex:1}}>{bm.name||bm.programme}</div>
-                      <div style={{display:'flex',gap:5,alignItems:'center',flexShrink:0}}>
-                        <span style={{fontSize:'12px',fontWeight:'900',color:sev.col}}>+{g+'%'}</span>
-                        <span style={{fontSize:'7px',padding:'2px 5px',background:sev.bg,borderRadius:3,color:sev.col,fontWeight:'900',letterSpacing:'.1em'}}>{sev.lbl}</span>
+                  return (
+                    <div key={i} onClick={()=>generate&&generate(s.scenario||'base',model?.prompt||'',model||{})}
+                      style={{display:'grid',gridTemplateColumns:'1fr 100px 72px 62px',gap:6,padding:'8px',background:active?'rgba(141,247,255,0.06)':'transparent',borderRadius:6,marginBottom:3,border:active?'1px solid rgba(141,247,255,0.18)':'1px solid transparent',cursor:'pointer',transition:'all .12s'}}>
+                      <div>
+                        <div style={{fontSize:'12px',fontWeight:active?'800':'600',color:active?'#8df7ff':'#475569'}}>
+                          {(s.scenario_label||s.scenario||'').replace(/_/g,' ').toUpperCase().slice(0,12)}
+                          {active&&<span style={{marginLeft:6,fontSize:'8px',background:'rgba(141,247,255,0.15)',color:'#8df7ff',padding:'1px 5px',borderRadius:3,fontWeight:'900'}}>LIVE</span>}
+                        </div>
+                        {!active&&<div style={{fontSize:'9px',color:'#334155',marginTop:1}}>click to run</div>}
+                      </div>
+                      {/* Cost: absolute + delta */}
+                      <div>
+                        <div style={{fontSize:'14px',fontWeight:'700',color:cd>0?'#ef4444':cd<0?'#10b981':'#94a3b8'}}>{s.cost_p50||s.cost||'—'}</div>
+                        {cd!==0&&<div style={{fontSize:'9px',color:cd>0?'#ef4444':'#10b981',fontWeight:'700',marginTop:1}}>{cd>0?'▲ +':' ▼'}{Math.abs(cd)}% vs base</div>}
+                      </div>
+                      {/* Schedule: absolute + delta */}
+                      <div>
+                        <div style={{fontSize:'13px',color:sd>0?'#ef4444':sd<0?'#10b981':'#64748b'}}>{sM}<span style={{fontSize:'9px',marginLeft:1}}>mo</span></div>
+                        {sd!==0&&<div style={{fontSize:'9px',color:sd>0?'#ef4444':'#10b981',fontWeight:'700',marginTop:1}}>{sd>0?'+':''}{sd} mo</div>}
+                      </div>
+                      {/* Confidence: absolute + delta */}
+                      <div>
+                        <div style={{fontSize:'13px',color:cfd>0?'#10b981':cfd<0?'#ef4444':'#64748b'}}>{sCf}<span style={{fontSize:'9px',marginLeft:1}}>%</span></div>
+                        {cfd!==0&&<div style={{fontSize:'9px',color:cfd>0?'#10b981':'#ef4444',fontWeight:'700',marginTop:1}}>{cfd>0?'+':''}{cfd} pts</div>}
                       </div>
                     </div>
-                    <div style={{height:3,background:'rgba(255,255,255,0.04)',borderRadius:2,marginBottom:4,overflow:'hidden'}}><div style={{height:'100%',width:Math.min(100,Math.round(g/3))+'%',background:'linear-gradient(90deg,'+sev.col+'44,'+sev.col+'bb)',borderRadius:2}}/></div>
-                    <div style={{fontSize:'10px',color:'#475569',lineHeight:1.45}}>+{bm.schedule_slip_months}mo slip · {(bm.failure_mode||bm.lesson||'').slice(0,68)}</div>
-                  </div>;
+                  );
                 })}
-                {(!model.benchmark_comparison||!model.benchmark_comparison.length)&&<div style={{fontSize:'11px',color:'#1e2d3d',padding:'8px 0',textAlign:'center'}}>Generate a project to see comparable programmes</div>}
+                {(!model.scenario_matrix||model.scenario_matrix.length<=1)&&(
+                  <div style={{fontSize:'11px',color:'#1e2a3a',padding:'10px 8px',textAlign:'center',fontStyle:'italic'}}>Run FASTER · CHEAPER · LOWER RISK above to compare scenarios</div>
+                )}
+              </div>
+
+              {/* BENCHMARK PANEL */}
+              <div style={{background:'#030a18',border:'1px solid rgba(139,92,246,0.12)',borderRadius:12,padding:'18px 20px'}}>
+
+                <div style={{fontSize:'9px',fontWeight:'900',color:'#a78bfa',letterSpacing:'.2em',marginBottom:8,textTransform:'uppercase'}}>Comparable Programmes</div>
+                <div style={{padding:'9px 12px',background:'rgba(139,92,246,0.04)',borderRadius:6,marginBottom:14,fontSize:'11px',color:'#94a3b8',lineHeight:1.6}}>
+                  <span style={{color:'#c4b5fd',fontWeight:'700'}}>Real programmes</span> from public record — Crossrail, HS2, ITER, CalHSR.
+                  The % is their actual cost overrun. The bar shows severity. Click <span style={{color:'#c4b5fd',fontWeight:'700'}}>Compare →</span> to run a side-by-side.
+                </div>
+
+                {(model.benchmark_comparison||[]).slice(0,4).map((bm,i)=>{
+                  const g=bm.cost_growth_pct||0;
+                  const sev=g>100?{col:'#ef4444',bg:'rgba(239,68,68,0.12)',lbl:'SEVERE'}
+                           :g>40?{col:'#f59e0b',bg:'rgba(245,158,11,0.08)',lbl:'HIGH'}
+                           :{col:'#10b981',bg:'rgba(16,185,129,0.08)',lbl:'MODERATE'};
+                  return (
+                    <div key={i} style={{marginBottom:12,paddingBottom:12,borderBottom:i<3?'1px solid rgba(255,255,255,0.04)':'none'}}>
+                      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:5}}>
+                        <div style={{fontSize:'12px',fontWeight:'800',color:'#c4b5fd',flex:1}}>{bm.name||bm.programme}</div>
+                        <div style={{display:'flex',gap:5,alignItems:'center',flexShrink:0}}>
+                          <span style={{fontSize:'13px',fontWeight:'900',color:sev.col}}>+{g+'%'}</span>
+                          <span style={{fontSize:'7px',padding:'2px 6px',background:sev.bg,borderRadius:4,color:sev.col,fontWeight:'900',letterSpacing:'.1em'}}>{sev.lbl}</span>
+                        </div>
+                      </div>
+                      {/* Severity bar */}
+                      <div style={{height:4,background:'rgba(255,255,255,0.05)',borderRadius:2,marginBottom:6,overflow:'hidden'}}>
+                        <div style={{height:'100%',width:Math.min(100,Math.round(g/3))+'%',background:'linear-gradient(90deg,'+sev.col+'44,'+sev.col+'bb)',borderRadius:2}}/>
+                      </div>
+                      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                        <div style={{fontSize:'10px',color:'#475569',lineHeight:1.4,flex:1}}>+{bm.schedule_slip_months}mo slip · {(bm.failure_mode||bm.lesson||'').slice(0,55)}</div>
+                        <button onClick={()=>{setComparePromptA(bm.prompt||(bm.name+' — real programme, '+bm.sector+', cost growth +'+g+'%, schedule slip +'+(bm.schedule_slip_months||0)+'mo, failure: '+(bm.failure_mode||''))); setShowCompare(true);}}
+                          style={{marginLeft:8,padding:'4px 10px',background:'rgba(139,92,246,0.1)',border:'1px solid rgba(139,92,246,0.3)',borderRadius:4,color:'#c4b5fd',fontSize:'10px',fontWeight:'800',cursor:'pointer',flexShrink:0,whiteSpace:'nowrap'}}>
+                          Compare →
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+                {(!model.benchmark_comparison||!model.benchmark_comparison.length)&&(
+                  <div style={{fontSize:'11px',color:'#1e2a3a',padding:'8px 0',textAlign:'center',fontStyle:'italic'}}>Generate a project to see comparable programme data</div>
+                )}
               </div>
             </div>}
+
             <ApprovalStatus model={model}/>
-            {(model?.board_attack_simulation||[]).length>0 && <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:10,marginTop:12}}>
+            {(model?.board_attack_simulation||[]).length>0&&<div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:10,marginTop:12}}>
               {model.board_attack_simulation.slice(0,3).map((d,i)=>(
-                <div key={i} style={{background:'#060d1f',border:'1px solid rgba(255,255,255,0.06)',borderRadius:10,padding:'14px 16px'}}>
-                  <div style={{fontSize:'28px',fontWeight:'900',color:'rgba(255,255,255,0.06)',marginBottom:8,lineHeight:1}}>{i+1}</div>
+                <div key={i} style={{background:'#060d1e',border:'1px solid rgba(255,255,255,0.06)',borderRadius:10,padding:'14px 16px'}}>
+                  <div style={{fontSize:'28px',fontWeight:'900',color:'rgba(255,255,255,0.07)',marginBottom:8,lineHeight:1}}>{i+1}</div>
                   <div style={{fontSize:'12px',color:'#cbd5e1',fontWeight:'600',lineHeight:1.65}}>{(typeof d==='string'?d:(d?.question||'')).slice(0,140)}</div>
                 </div>
               ))}
@@ -4628,14 +4768,19 @@ return <div className="app v50EliteApp">
           </div>}
 
           {/* FULL RISK REGISTER */}
-          <div style={{gridColumn:'1/-1',background:'#030810',border:'1px solid rgba(255,255,255,0.06)',borderRadius:10,padding:'16px 20px'}}>
-            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4}}>
+          <div style={{gridColumn:'1/-1',background:'#030a18',border:'1px solid rgba(255,255,255,0.07)',borderRadius:10,padding:'18px 22px'}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:6}}>
               <div style={{fontSize:'14px',fontWeight:'900',color:'#e2e8f0'}}>Risk Register</div>
-              <div style={{fontSize:'10px',color:'#475569'}}>P10 = optimistic · P50 = expected monetary value · P80 = stress case</div>
+              <div style={{fontSize:'10px',color:'#334155'}}>★ = P50 EMV — what the reserve must cover. P80 = board stress case.</div>
             </div>
-            <div style={{fontSize:'11px',color:'#475569',marginBottom:12,lineHeight:1.55}}>P50 (EMV) = probability × impact — what the reserve must cover. P80 = what the board needs to be safe. Red probability = high-risk. ⚠ = no named owner — unowned risks are not mitigated.</div>
-            <div style={{display:'grid',gridTemplateColumns:'2.2fr 54px 84px 86px 90px 86px 74px 106px',gap:4,padding:'5px 8px',borderBottom:'1px solid rgba(255,255,255,0.06)',marginBottom:5}}>
-              {['Risk / mitigation','Prob','Likelihood','P10 cost','P50 EMV ★','P80 cost','Schedule','Owner'].map(h=><div key={h} style={{fontSize:'8px',color:'#1e2d3d',fontWeight:'900',textTransform:'uppercase',letterSpacing:'.08em'}}>{h}</div>)}
+            <div style={{fontSize:'11px',color:'#475569',marginBottom:12,lineHeight:1.55,padding:'8px 12px',background:'rgba(255,255,255,0.02)',borderRadius:6}}>
+              <b style={{color:'#64748b'}}>How to read this:</b> Probability % shows likelihood. P50 EMV is probability × impact — the number your reserve must cover.
+              P80 is the stress case. ⚠ = no named owner — unowned risks are not mitigated.
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'2.1fr 52px 82px 86px 90px 84px 72px 104px',gap:4,padding:'5px 8px',borderBottom:'1px solid rgba(255,255,255,0.07)',marginBottom:6}}>
+              {['Risk / mitigation','Prob','Likelihood','P10','P50 EMV ★','P80','Schedule','Owner'].map(h=>(
+                <div key={h} style={{fontSize:'8px',color:'#1e2a3a',fontWeight:'900',textTransform:'uppercase',letterSpacing:'.08em'}}>{h}</div>
+              ))}
             </div>
             {(model?.risks||[]).slice(0,35).map((r,i)=>{
               const emv=parseFloat(r.cost_emv_bn||r.emv_bn||0);
@@ -4645,22 +4790,26 @@ return <div className="app v50EliteApp">
               const sched=parseFloat(r.schedule_impact_months||2).toFixed(1);
               const unowned=!r.owner||r.owner===''||r.owner==='TBC'||r.owner==='Unknown'||r.owner==='N/A';
               const lh=prob>=70?{lbl:'HIGH',col:'#ef4444',bg:'rgba(239,68,68,0.14)'}:prob>=40?{lbl:'MED',col:'#f59e0b',bg:'rgba(245,158,11,0.12)'}:{lbl:'LOW',col:'#10b981',bg:'rgba(16,185,129,0.12)'};
-              return <div key={i} style={{display:'grid',gridTemplateColumns:'2.2fr 54px 84px 86px 90px 86px 74px 106px',gap:4,padding:'7px 8px',background:i===0?'rgba(239,68,68,0.04)':i%2===0?'rgba(255,255,255,0.01)':'transparent',borderRadius:4,marginBottom:2,borderLeft:i===0?'3px solid rgba(239,68,68,0.5)':'3px solid transparent',alignItems:'start'}}>
-                <div>
-                  <div style={{fontSize:'11px',fontWeight:'700',color:'#e2e8f0',marginBottom:1,lineHeight:1.3}}>{(r.title||r.risk||('Risk '+(i+1))).slice(0,54)}</div>
-                  <div style={{fontSize:'9px',color:'#475569',lineHeight:1.3}}>{(r.mitigation||r.cause||'').slice(0,65)}</div>
+              return (
+                <div key={i} style={{display:'grid',gridTemplateColumns:'2.1fr 52px 82px 86px 90px 84px 72px 104px',gap:4,padding:'7px 8px',background:i===0?'rgba(239,68,68,0.04)':i%2===0?'rgba(255,255,255,0.01)':'transparent',borderRadius:4,marginBottom:2,borderLeft:i===0?'3px solid rgba(239,68,68,0.5)':'3px solid transparent',alignItems:'start'}}>
+                  <div>
+                    <div style={{fontSize:'11px',fontWeight:'700',color:'#e2e8f0',marginBottom:2,lineHeight:1.3}}>{(r.title||r.risk||('Risk '+(i+1))).slice(0,54)}</div>
+                    <div style={{fontSize:'9px',color:'#475569',lineHeight:1.3}}>{(r.mitigation||r.cause||'').slice(0,65)}</div>
+                  </div>
+                  <div style={{fontSize:'12px',fontWeight:'800',color:prob>=70?'#ef4444':prob>=40?'#f59e0b':'#10b981',textAlign:'center',paddingTop:2}}>{prob+'%'}</div>
+                  <div style={{textAlign:'center',paddingTop:2}}><span style={{padding:'3px 8px',background:lh.bg,borderRadius:4,fontSize:'9px',fontWeight:'800',color:lh.col,whiteSpace:'nowrap'}}>{lh.lbl}</span></div>
+                  <div style={{textAlign:'right',fontSize:'11px',color:'#64748b',fontFamily:'monospace',paddingTop:2}}>{model?.currency_symbol}{p10+'B'}</div>
+                  <div style={{textAlign:'right',fontSize:'12px',fontWeight:'800',color:'#ef4444',fontFamily:'monospace',paddingTop:2}}>{model?.currency_symbol}{emv.toFixed(3)+'B'}</div>
+                  <div style={{textAlign:'right',fontSize:'11px',color:'#fca5a5',fontFamily:'monospace',paddingTop:2}}>{model?.currency_symbol}{p80+'B'}</div>
+                  <div style={{textAlign:'center',fontSize:'11px',color:'#f59e0b',fontWeight:'700',paddingTop:2}}>+{sched+'mo'}</div>
+                  <div style={{textAlign:'center',fontSize:'10px',fontWeight:'700',color:unowned?'#ef4444':'#94a3b8',paddingTop:2}}>{unowned?'⚠ unowned':(r.owner||'').slice(0,14)}</div>
                 </div>
-                <div style={{fontSize:'12px',fontWeight:'800',color:prob>=70?'#ef4444':prob>=40?'#f59e0b':'#10b981',textAlign:'center',paddingTop:1}}>{prob+'%'}</div>
-                <div style={{textAlign:'center',paddingTop:2}}><span style={{padding:'3px 8px',background:lh.bg,borderRadius:4,fontSize:'9px',fontWeight:'800',color:lh.col,whiteSpace:'nowrap'}}>{lh.lbl}</span></div>
-                <div style={{textAlign:'right',fontSize:'11px',color:'#64748b',fontFamily:'monospace',paddingTop:1}}>{model?.currency_symbol}{p10+'B'}</div>
-                <div style={{textAlign:'right',fontSize:'12px',fontWeight:'800',color:'#ef4444',fontFamily:'monospace',paddingTop:1}}>{model?.currency_symbol}{emv.toFixed(3)+'B'}</div>
-                <div style={{textAlign:'right',fontSize:'11px',color:'#fca5a5',fontFamily:'monospace',paddingTop:1}}>{model?.currency_symbol}{p80+'B'}</div>
-                <div style={{textAlign:'center',fontSize:'11px',color:'#f59e0b',fontWeight:'700',paddingTop:1}}>+{sched+'mo'}</div>
-                <div style={{textAlign:'center',fontSize:'10px',fontWeight:'700',color:unowned?'#ef4444':'#94a3b8',paddingTop:1}}>{unowned?'⚠ unowned':(r.owner||'').slice(0,14)}</div>
-              </div>;
+              );
             })}
             {(model?.risks||[]).filter(r=>!r.owner||r.owner===''||r.owner==='TBC').length>0&&(
-              <div style={{marginTop:8,padding:'7px 12px',background:'rgba(239,68,68,0.06)',borderRadius:5,fontSize:'11px',color:'#ef4444',fontWeight:'700'}}>⚠ {(model?.risks||[]).filter(r=>!r.owner||r.owner===''||r.owner==='TBC').length} risks unowned — assign named owners before board submission</div>
+              <div style={{marginTop:8,padding:'7px 12px',background:'rgba(239,68,68,0.06)',borderRadius:5,fontSize:'11px',color:'#ef4444',fontWeight:'700'}}>
+                ⚠ {(model?.risks||[]).filter(r=>!r.owner||r.owner===''||r.owner==='TBC').length} risks unowned — assign before board submission
+              </div>
             )}
           </div>
         </section>}
@@ -4762,40 +4911,43 @@ return <div className="app v50EliteApp">
                 </div>
               ))}
             </div>
-          {model && <div style={{background:'#030810',border:'1px solid rgba(6,182,212,0.14)',borderRadius:10,padding:'16px 20px',marginTop:14}}>
+          {model && <div style={{background:'#030a18',border:'1px solid rgba(6,182,212,0.14)',borderRadius:10,padding:'18px 22px',marginTop:16}}>
             <div style={{fontSize:'12px',fontWeight:'900',color:'#06b6d4',letterSpacing:'.1em',marginBottom:4}}>🎯 HOW TO REACH 75% BOARD CONFIDENCE</div>
-            <div style={{fontSize:'11px',color:'#475569',marginBottom:14,lineHeight:1.6}}>You need <b style={{color:(model.confidence_pct||0)>=75?'#10b981':'#f59e0b'}}>{(model.confidence_pct||0)>=75?'nothing more — already board-ready':(75-(model.confidence_pct||0))+' more points'}</b>. Each card shows exactly how many points that action adds and what it costs you.</div>
-            <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8,marginBottom:16}}>
+            <div style={{fontSize:'11px',color:'#475569',marginBottom:14,lineHeight:1.6}}>
+              You are at <b style={{color:(model.confidence_pct||0)>=75?'#10b981':'#f59e0b'}}>{model.confidence_pct+'%'}</b>.
+              {(model.confidence_pct||0)<75&&<> You need <b style={{color:'#f59e0b'}}>{75-(model.confidence_pct||0)} more points</b> to reach the 75% board approval threshold. Each card below shows exactly how many points an action adds.</>}
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8,marginBottom:18}}>
               {[
-                {icon:'📐',action:'Advance estimate class',gain:12,detail:'Move from '+(model.estimate_class_name||'Class 3')+' to Class 2. Requires scope freeze and detailed cost plan.',cost:'2–4 weeks',done:(model.estimate_class||3)<=2},
-                {icon:'📅',action:'Upload real P6 schedule',gain:6,detail:'Replace proxy schedule with your actual Primavera XER. Removes schedule uncertainty from the model.',cost:'XER export from Primavera',done:!!model.xer_health},
-                {icon:'👤',action:'Name all risk owners',gain:8,detail:((model.risks||[]).filter(r=>!r.owner||r.owner==='TBC').length)+' risks have no named owner. Unowned risks are not mitigated for board purposes.',cost:'Risk workshop — 1 day',done:(model.risks||[]).filter(r=>!r.owner||r.owner==='TBC').length===0},
-                {icon:'⛔',action:'Evidence governing constraint',gain:9,detail:'The constraint that can kill the schedule needs a named owner with written closure evidence.',cost:'SRO letter + board minute',done:!!(model.governing_constraint_full?.evidence)},
-                {icon:'💰',action:'Uplift reserve to benchmark',gain:5,detail:'At '+(model.p80_reserve_pct||0)+'%. Benchmark minimum: '+(model.reserve_vs_benchmark_pct||18)+'%. Closing the gap shows investment readiness.',cost:(model.reserve_gap_bn||0)>0?model.currency_symbol+(model.reserve_gap_bn||0).toFixed(2)+'B uplift':'Reserve adequate',done:(model.p80_reserve_pct||0)>=(model.reserve_vs_benchmark_pct||18)},
-                {icon:'🔀',action:'Model all 5 scenarios',gain:4,detail:'FASTER, CHEAPER, LOWER RISK scenarios show you have interrogated delivery options. Adds +4pts.',cost:'Click TOMORROW tab → Scenarios',done:(model.scenario_matrix||[]).length>=3},
+                {icon:'📐',a:'Advance estimate class',pts:12,d:'Move from '+(model.estimate_class_name||'Class 3')+' to Class 2. Requires scope freeze and detailed cost plan.',c:'2–4 weeks',done:(model.estimate_class||3)<=2},
+                {icon:'📅',a:'Upload real P6 schedule',pts:6,d:'Replace proxy schedule with your actual Primavera XER. Removes schedule uncertainty.',c:'XER export from Primavera P6',done:!!model.xer_health},
+                {icon:'👤',a:'Name all risk owners',pts:8,d:((model.risks||[]).filter(r=>!r.owner||r.owner==='TBC').length)+' risks have no owner. Each unowned risk reduces board defensibility.',c:'Risk workshop — 1 day',done:(model.risks||[]).filter(r=>!r.owner||r.owner==='TBC').length===0},
+                {icon:'⛔',a:'Evidence governing constraint',pts:9,d:'The constraint that can kill the schedule needs a named SRO with written closure evidence.',c:'SRO letter + board minute',done:!!(model.governing_constraint_full?.evidence)},
+                {icon:'💰',a:'Uplift reserve to benchmark',pts:5,d:'At '+(model.p80_reserve_pct||0)+'%. Benchmark minimum: '+(model.reserve_vs_benchmark_pct||18)+'%.',c:(model.reserve_gap_bn||0)>0?model.currency_symbol+(model.reserve_gap_bn||0).toFixed(2)+'B uplift required':'Reserve adequate',done:(model.p80_reserve_pct||0)>=(model.reserve_vs_benchmark_pct||18)},
+                {icon:'🔀',a:'Model all 5 scenarios',pts:4,d:'Showing FASTER, CHEAPER, LOWER RISK scenarios proves you interrogated delivery options.',c:'Click TOMORROW → Scenarios',done:(model.scenario_matrix||[]).length>=3},
               ].map((item,i)=>(
-                <div key={i} style={{padding:'11px 13px',background:item.done?'rgba(16,185,129,0.04)':'rgba(0,0,0,0.25)',border:'1px solid '+(item.done?'rgba(16,185,129,0.18)':'rgba(255,255,255,0.06)'),borderRadius:7}}>
+                <div key={i} style={{padding:'12px 14px',background:item.done?'rgba(16,185,129,0.04)':'rgba(0,0,0,0.3)',border:'1px solid '+(item.done?'rgba(16,185,129,0.18)':'rgba(255,255,255,0.06)'),borderRadius:7}}>
                   <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:6}}>
                     <span style={{fontSize:'16px'}}>{item.icon}</span>
-                    <span style={{fontSize:'11px',fontWeight:'900',color:item.done?'#10b981':'#f59e0b',padding:'2px 7px',background:item.done?'rgba(16,185,129,0.1)':'rgba(245,158,11,0.1)',borderRadius:4,flexShrink:0}}>{item.done?'Done ✓':'+'+item.gain+' pts'}</span>
+                    <span style={{fontSize:'11px',fontWeight:'900',padding:'2px 8px',background:item.done?'rgba(16,185,129,0.1)':'rgba(245,158,11,0.1)',borderRadius:4,flexShrink:0,color:item.done?'#10b981':'#f59e0b'}}>{item.done?'Done ✓':'+'+item.pts+' pts'}</span>
                   </div>
-                  <div style={{fontSize:'11px',fontWeight:'700',color:'#e2e8f0',marginBottom:4}}>{item.action}</div>
-                  <div style={{fontSize:'10px',color:'#475569',lineHeight:1.4,marginBottom:5}}>{item.detail}</div>
-                  <div style={{fontSize:'9px',color:'#334155',fontWeight:'700'}}>What it takes: {item.cost}</div>
+                  <div style={{fontSize:'11px',fontWeight:'700',color:'#e2e8f0',marginBottom:4}}>{item.a}</div>
+                  <div style={{fontSize:'10px',color:'#475569',lineHeight:1.4,marginBottom:5}}>{item.d}</div>
+                  <div style={{fontSize:'9px',color:'#1e2a3a',fontWeight:'700'}}>What it takes: {item.c}</div>
                 </div>
               ))}
             </div>
             <div style={{borderTop:'1px solid rgba(255,255,255,0.06)',paddingTop:14}}>
-              <div style={{fontSize:'10px',fontWeight:'800',color:'#475569',textTransform:'uppercase',letterSpacing:'.12em',marginBottom:4}}>What advancing your estimate class does to confidence — click to model it</div>
-              <div style={{fontSize:'11px',color:'#475569',marginBottom:10}}>CASEY will recalculate the full intelligence pack as if your estimate had that maturity level.</div>
+              <div style={{fontSize:'10px',fontWeight:'800',color:'#475569',textTransform:'uppercase',letterSpacing:'.12em',marginBottom:4}}>What advancing your estimate class does to confidence — click to model it instantly</div>
+              <div style={{fontSize:'11px',color:'#475569',marginBottom:12,lineHeight:1.5}}>CASEY will recalculate the full intelligence pack as if your estimate had that maturity level.</div>
               <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
                 {[['Class 5 — Screening',5,Math.max(20,(model.confidence_pct||0)-24)],['Class 4 — Concept',4,Math.max(30,(model.confidence_pct||0)-12)],['Class 3 — Budget',3,model.confidence_pct||0],['Class 2 — Feasibility',2,Math.min(95,(model.confidence_pct||0)+12)],['Class 1 — Definitive',1,Math.min(98,(model.confidence_pct||0)+24)]].map(([label,cls,conf])=>{
-                  const isCurrent=(model.estimate_class||3)===cls;
+                  const cur=(model.estimate_class||3)===cls;
                   const col=conf>=75?'#10b981':conf>=55?'#f59e0b':'#ef4444';
-                  return <div key={cls} style={{padding:'9px 13px',background:isCurrent?'rgba(141,247,255,0.07)':'rgba(255,255,255,0.02)',border:'1.5px solid '+(isCurrent?'rgba(141,247,255,0.3)':'rgba(255,255,255,0.06)'),borderRadius:7,cursor:'pointer',minWidth:120,transition:'all .15s'}} onClick={()=>generate&&generate(model.scenario||'base',(model.prompt||'')+' [Estimate advanced to '+label+'. Upgrade confidence and estimate class accordingly.]',model)}>
-                    <div style={{fontSize:'9px',fontWeight:'700',color:isCurrent?'#8df7ff':'#475569',marginBottom:4,lineHeight:1.3}}>{label}{isCurrent?' ◀ NOW':''}</div>
-                    <div style={{fontSize:'22px',fontWeight:'900',color:col,marginBottom:2}}>{conf+'%'}</div>
-                    <div style={{fontSize:'8px',color:'#475569'}}>projected confidence</div>
+                  return <div key={cls} style={{padding:'10px 14px',background:cur?'rgba(141,247,255,0.07)':'rgba(255,255,255,0.02)',border:'1.5px solid '+(cur?'rgba(141,247,255,0.3)':'rgba(255,255,255,0.07)'),borderRadius:7,cursor:'pointer',minWidth:120,transition:'all .15s'}} onClick={()=>generate&&generate(model.scenario||'base',(model.prompt||'')+' [Estimate advanced to '+label+'. Upgrade confidence and estimate class accordingly.]',model)}>
+                    <div style={{fontSize:'9px',fontWeight:'700',color:cur?'#8df7ff':'#475569',marginBottom:4,lineHeight:1.3}}>{label}{cur?' ◀ NOW':''}</div>
+                    <div style={{fontSize:'24px',fontWeight:'900',color:col,marginBottom:2}}>{conf+'%'}</div>
+                    <div style={{fontSize:'8px',color:'#475569'}}>projected</div>
                   </div>;
                 })}
               </div>
@@ -4839,28 +4991,25 @@ return <div className="app v50EliteApp">
         {tab === 'causal' && <section className="layout two"><CausalGraph model={model}/><BenchmarkIntelligence model={model}/><Card><h2>Evidence Mode: {viewMode}</h2>{evidenceScorecard(model).map((x,i)=><div className="reason" key={x.name}><span>{i+1}</span><b>{x.name}: {Math.round(x.score)+'%'}</b><br/>{x.note}</div>)}</Card></section>}
 
         {tab === 'export' && <section className="layout two">
-          <div style={{gridColumn:'1/-1',padding:'24px 0'}}>
+          <div style={{gridColumn:'1/-1',paddingTop:16}}>
             <div style={{fontSize:'15px',fontWeight:'900',color:'#e2e8f0',marginBottom:4}}>Export & Downloads</div>
-            <div style={{fontSize:'11px',color:'#475569',marginBottom:24,lineHeight:1.6}}>All exports are generated live from the current model — cost workbook, risk register, schedule, QCRA/QSRA and board pack. Click any button to download. Exports reflect the active scenario.</div>
-            <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12,marginBottom:24}}>
+            <div style={{fontSize:'11px',color:'#475569',marginBottom:24,lineHeight:1.6}}>All files generated live from the current model. Exports reflect the active scenario. Click any button to download.</div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12,marginBottom:20}}>
               {[
-                {label:'Board Pack PDF',sub:'Executive summary, KPIs, scenarios, benchmarks, board attack questions',icon:'📄',fn:()=>download('/export/pdf',model,model.id+'_CASEY_Board_Pack.pdf')},
-                {label:'Cost Workbook XLSX',sub:'Full CBS cost model — P10/P50/P90 by line, direct/indirect/reserve, unit rates',icon:'📊',fn:()=>download('/export/workbook',model,model.id+'_COST_WORKBOOK.xlsx')},
-                {label:'Risk Register XLSX',sub:'Full risk register with cause, event, impact, owner, EMV, mitigation, trigger',icon:'🛡',fn:()=>download('/export/risk-register',model,model.id+'_RISK_REGISTER.xlsx')},
-                {label:'Schedule XER',sub:'Primavera P6 compatible schedule file with phases, activities and logic',icon:'📅',fn:()=>download('/export/xer',model,model.id+'_SCHEDULE.xer')},
+                {label:'Board Pack PDF',sub:'Executive summary, KPIs, scenarios, benchmarks, board attack questions',icon:'📄',fn:()=>download('/export/pdf',model,model.id+'_Board_Pack.pdf')},
+                {label:'Cost Workbook XLSX',sub:'Full CBS cost model — P10/P50/P90 by line, unit rates, direct/indirect/reserve',icon:'📊',fn:()=>download('/export/workbook',model,model.id+'_Cost_Workbook.xlsx')},
+                {label:'Risk Register XLSX',sub:'Full risk register: cause, event, impact, owner, EMV, mitigation, trigger',icon:'🛡️',fn:()=>download('/export/risk-register',model,model.id+'_Risk_Register.xlsx')},
+                {label:'Schedule XER',sub:'Primavera P6 compatible schedule with phases, activities and logic ties',icon:'📅',fn:()=>download('/export/xer',model,model.id+'_Schedule.xer')},
                 {label:'QCRA/QSRA Pack',sub:'Monte Carlo cost and schedule probability curves, tornado chart, P80/P90',icon:'📈',fn:()=>download('/export/qcra-qsra',model,model.id+'_QCRA_QSRA.xlsx')},
-                {label:'Audit Model JSON',sub:'Full machine-readable model with all fields, benchmark provenance, evidence',icon:'🔬',fn:()=>download('/export/json',model,model.id+'_AUDIT.json')},
-              ].map((exp,i)=>(
-                <div key={i} style={{background:'#060d1f',border:'1px solid rgba(255,255,255,0.07)',borderRadius:10,padding:'18px 20px'}}>
-                  <div style={{fontSize:'24px',marginBottom:8}}>{exp.icon}</div>
-                  <div style={{fontSize:'13px',fontWeight:'800',color:'#e2e8f0',marginBottom:6}}>{exp.label}</div>
-                  <div style={{fontSize:'11px',color:'#475569',lineHeight:1.5,marginBottom:14}}>{exp.sub}</div>
-                  <button onClick={exp.fn} style={{width:'100%',padding:'9px',background:'rgba(141,247,255,0.08)',border:'1px solid rgba(141,247,255,0.2)',borderRadius:6,color:'#8df7ff',fontSize:'12px',fontWeight:'700',cursor:'pointer'}}>Download →</button>
+                {label:'Audit Model JSON',sub:'Full machine-readable model — all fields, benchmark provenance, evidence chain',icon:'🔬',fn:()=>download('/export/json',model,model.id+'_Audit.json')},
+              ].map((ex,i)=>(
+                <div key={i} style={{background:'#060d1e',border:'1px solid rgba(255,255,255,0.07)',borderRadius:10,padding:'18px 20px'}}>
+                  <div style={{fontSize:'24px',marginBottom:10}}>{ex.icon}</div>
+                  <div style={{fontSize:'13px',fontWeight:'800',color:'#e2e8f0',marginBottom:6}}>{ex.label}</div>
+                  <div style={{fontSize:'11px',color:'#475569',lineHeight:1.5,marginBottom:14}}>{ex.sub}</div>
+                  <button onClick={ex.fn} style={{width:'100%',padding:'9px',background:'rgba(141,247,255,0.08)',border:'1px solid rgba(141,247,255,0.2)',borderRadius:6,color:'#8df7ff',fontSize:'12px',fontWeight:'700',cursor:'pointer'}}>Download →</button>
                 </div>
               ))}
-            </div>
-            <div style={{padding:'12px 16px',background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:8,fontSize:'11px',color:'#475569',lineHeight:1.6}}>
-              <b style={{color:'#64748b'}}>Export tips:</b> The Board Pack PDF includes all sections — it's the deliverable for investment committee. The Cost Workbook and Risk Register are the working documents your QS and risk team will use. The QCRA/QSRA pack is for your programme controls lead. The XER imports directly into Primavera P6.
             </div>
           </div>
         </section>}
@@ -5005,7 +5154,7 @@ return <div className="app v50EliteApp">
                   <td style={{padding:'7px 8px',color:Number(b.cost_growth_pct??b.growth)>50?'#ef4444':Number(b.cost_growth_pct??b.growth)>20?'#f59e0b':'#10b981',fontWeight:'700'}}>{(b.cost_growth_pct??b.growth) ? '+'+(b.cost_growth_pct??b.growth)+'%' : '—'}</td>
                   <td style={{padding:'7px 8px',color:b.schedule_slip_months>24?'#ef4444':b.schedule_slip_months>12?'#f59e0b':'#94a3b8',fontWeight:'700'}}>{b.schedule_slip_months ? '+'+b.schedule_slip_months : '—'}</td>
                   <td style={{padding:'7px 8px',color:'#64748b',maxWidth:'200px',lineHeight:'1.4'}}>{(b.failure_mode||b.failure||'—').slice(0,80)}</td>
-                  <td style={{padding:'6px 8px'}}><button onClick={()=>{setComparePromptA(b.prompt||(b.name+' — '+b.sector+'. Cost growth: +'+b.cost_growth_pct+'%. Schedule slip: +'+(b.schedule_slip_months||0)+'mo. Primary failure: '+(b.failure_mode||b.failure||'')+'.')); setShowCompare(true);}} style={{padding:'4px 10px',background:'rgba(139,92,246,0.1)',border:'1px solid rgba(139,92,246,0.3)',borderRadius:4,color:'#c4b5fd',fontSize:'10px',fontWeight:'800',cursor:'pointer',whiteSpace:'nowrap'}}>Compare →</button></td>
+                  <td style={{padding:'6px 8px'}}><button onClick={()=>{setComparePromptA(b.prompt||(b.name+' — '+b.sector+'. Cost growth: +'+b.cost_growth_pct+'%. Slip: +'+(b.schedule_slip_months||0)+'mo. Failure: '+(b.failure_mode||b.failure||'')+'.')); setShowCompare(true);}} style={{padding:'4px 10px',background:'rgba(139,92,246,0.1)',border:'1px solid rgba(139,92,246,0.3)',borderRadius:4,color:'#c4b5fd',fontSize:'10px',fontWeight:'800',cursor:'pointer',whiteSpace:'nowrap'}}>Compare →</button></td>
                 </tr>)}
                 </tbody>
               </table>
