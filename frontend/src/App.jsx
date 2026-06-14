@@ -10,6 +10,15 @@ import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, ReferenceLine
 } from 'recharts';
 import './style.css';
+// ── CASEY UPGRADES + TIMELINE ─────────────────────────────────────────────────
+import ProjectTimeline from './ProjectTimeline';
+import {
+  EstimateClassControl, LandingHeroTimeline,
+  applyClassToModel, printOnePager,
+  boardPdfCoverData, xlsxCoverTabData,
+  WhiteLabelSettings, TimelineExportButton,
+} from './CASEY_Upgrades';
+import { MonthlyActualsFeed, DocumentUpload, RiskRegisterHeatmap, PortfolioDashboard, AdvisorMemoryPanel, useAdvisorMemory, buildXlsxCoverData, buildXlsxHeatmapData } from './CASEY_Features';
 
 const PROD_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL || 'https://corbit-1.onrender.com';
 if (typeof window !== 'undefined') window._CASEY_API = PROD_URL;
@@ -1197,19 +1206,44 @@ function OnboardingGuide({ onClose }) {
 }
 
 function Hero({ onBriefing, onEarth, onSpace, onConsole, onTryDemo }) {
-  return <section className="v50TakeoverHero">
-    <video className="v50HeroVideo" src="https://corbit.b-cdn.net/casey_hero_film.mp4" autoPlay muted loop playsInline preload="auto" crossOrigin="anonymous" />
-    <div className="v50HeroShade" />
-    <div className="v50TopBar"><Logo/><div className="v50TopActions"><button onClick={onBriefing}><Play size={15}/> Watch briefing</button><button onClick={onEarth}>Run Earth model</button><button onClick={onSpace}>Run Space model</button><button className="tryTopBtn" onClick={onTryDemo}>Try one free run</button><button onClick={onConsole}>Open console</button><a className="topBuyLink" href="mailto:hello@casey.ai?subject=CASEY%20Access%20Request">Request access</a></div></div>
-    <motion.div className="v50HeroCenter" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .7 }}>
-      <Logo large />
-      <p className="v50HeroLine">Cost · Schedule · Risk · Delivery</p>
-      <h1>Price the future before it gets built.</h1>
-      <p className="v50HeroSub">Run one free CASEY intelligence pack. Enter your email, describe one Earth or Space project, and receive a first-pass class estimate, schedule view and risk register.</p>
-      <div className="v50HeroButtons"><button className="heroBtn" onClick={onTryDemo}><Rocket size={18}/> Run One Free Intelligence Pack</button><button className="ghostBtn" onClick={onBriefing}><Play size={18}/> Play film</button></div>
-    </motion.div>
-    <div className="v50BottomBar"><span>AI data centres</span><span>Airports</span><span>Ports</span><span>Life sciences</span><span>Semiconductors</span><span>Lunar bases</span><button onClick={onTryDemo}>One free intelligence run</button><button onClick={onConsole}>View pricing</button></div>
-  </section>;
+  return (
+    <section className="v50TakeoverHero">
+      <video className="v50HeroVideo" src="https://corbit.b-cdn.net/casey_hero_film.mp4" autoPlay muted loop playsInline preload="auto" crossOrigin="anonymous" />
+      <div className="v50HeroShade" />
+      {/* Minimal top nav — logo + one action */}
+      <div className="v50TopBar">
+        <Logo/>
+        <div style={{display:'flex',gap:8,alignItems:'center'}}>
+          <button onClick={onBriefing} style={{background:'transparent',border:'1px solid rgba(255,255,255,.18)',color:'rgba(255,255,255,.7)',padding:'6px 14px',borderRadius:4,cursor:'pointer',fontSize:11,fontWeight:600,letterSpacing:'.04em'}}><Play size={12} style={{marginRight:5,verticalAlign:-1}}/> Film</button>
+          <a href="mailto:hello@controlorbit.com?subject=CASEY Full Access" style={{background:'rgba(141,247,255,.12)',border:'1px solid rgba(141,247,255,.3)',color:'#8df7ff',padding:'6px 16px',borderRadius:4,fontSize:11,fontWeight:700,letterSpacing:'.04em',textDecoration:'none'}}>Request access →</a>
+        </div>
+      </div>
+      {/* Hero centre — one headline, one sentence, three choices */}
+      <motion.div className="v50HeroCenter" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .65 }}>
+        <div style={{fontSize:11,fontWeight:700,letterSpacing:'.22em',color:'rgba(141,247,255,.55)',marginBottom:16,textTransform:'uppercase'}}>CASEY · Programme Intelligence</div>
+        <h1 style={{fontSize:'clamp(32px,5vw,58px)',fontWeight:900,color:'#fff',lineHeight:1.1,marginBottom:16,letterSpacing:'-.02em',textShadow:'0 0 60px rgba(141,247,255,.15)'}}>Price the future<br/>before it gets built.</h1>
+        <p style={{fontSize:16,color:'rgba(255,255,255,.55)',marginBottom:36,lineHeight:1.6,maxWidth:440}}>Cost estimate · Schedule · QCRA/QSRA · Risk register · Board pack — from one sentence, in 30 seconds.</p>
+        {/* Three clean choices — that's it */}
+        <div style={{display:'flex',gap:10,flexWrap:'wrap',justifyContent:'center'}}>
+          <button onClick={onEarth} style={{padding:'14px 28px',background:'#4a9eff',border:'none',borderRadius:6,color:'#fff',fontSize:14,fontWeight:700,cursor:'pointer',letterSpacing:'.02em',boxShadow:'0 0 32px rgba(74,158,255,.35)'}}>
+            Run Earth demo →
+          </button>
+          <button onClick={onSpace} style={{padding:'14px 28px',background:'rgba(155,127,232,.15)',border:'1px solid rgba(155,127,232,.4)',borderRadius:6,color:'#a78bfa',fontSize:14,fontWeight:700,cursor:'pointer',letterSpacing:'.02em'}}>
+            Run Space demo →
+          </button>
+          <button onClick={onTryDemo} style={{padding:'14px 28px',background:'transparent',border:'1px solid rgba(255,255,255,.18)',borderRadius:6,color:'rgba(255,255,255,.7)',fontSize:14,fontWeight:600,cursor:'pointer',letterSpacing:'.02em'}}>
+            Describe your project
+          </button>
+        </div>
+      </motion.div>
+      {/* Bottom strip — sectors only, no buttons */}
+      <div style={{position:'absolute',bottom:0,left:0,right:0,padding:'12px 24px',background:'linear-gradient(transparent,rgba(0,0,0,.6))',display:'flex',gap:16,justifyContent:'center',flexWrap:'wrap'}}>
+        {['Rail · Roads · Airports','Nuclear · Energy · Water','Life Sciences · Pharma','Data Centres · AI Campus','Defence · Space · Lunar'].map(s=>(
+          <span key={s} style={{fontSize:11,color:'rgba(255,255,255,.3)',letterSpacing:'.04em'}}>{s}</span>
+        ))}
+      </div>
+    </section>
+  );
 }
 function Briefing({ open, onClose, onEarth, onSpace }) {
   const videoRef = useRef(null);
@@ -1435,11 +1469,527 @@ function OneShotDemo({ open, onClose, onComplete }) {
 }
 
 
+
+/* ═══════════════════════════════════════════════════════════════
+   TYPEWRITER VERDICT — types itself when model loads
+   The most important sentence in CASEY. It should feel alive.
+═══════════════════════════════════════════════════════════════ */
+function TypewriterVerdict({ model }) {
+  const fullText = model.institutional_authority_line || (
+    (model.confidence_pct||0)>=75
+      ? `${model.cost_p50} · ${model.estimate_class_name||'Class 3'} · ${model.confidence_pct}% board confidence. Ready for capital commitment.`
+      : (model.confidence_pct||0)>=55
+      ? `${model.cost_p50} · ${model.estimate_class_name||'Class 3'} · ${model.confidence_pct}% confidence. Conditional — ${75-(model.confidence_pct||0)} points short of 75% board threshold.`
+      : `${model.cost_p50} · ${model.estimate_class_name||'Class 3'} · ${model.confidence_pct}% confidence. Do not approve — recovery plan required.`
+  );
+  const [displayed, setDisplayed] = useState('');
+  const [done, setDone] = useState(false);
+  useEffect(() => {
+    setDisplayed(''); setDone(false);
+    let i = 0;
+    const interval = setInterval(() => {
+      if (i >= fullText.length) { clearInterval(interval); setDone(true); return; }
+      setDisplayed(fullText.slice(0, ++i));
+    }, 18); // ~18ms per char = ~3 seconds for 160 chars
+    return () => clearInterval(interval);
+  }, [fullText]);
+  return (
+    <div style={{fontSize:'14px',fontWeight:'800',color:'#f1f5f9',lineHeight:1.5,flex:1,minWidth:220}}>
+      {displayed}
+      {!done && <span style={{opacity:0.7,animation:'blink 0.8s step-end infinite'}}>|</span>}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   COUNT-UP NUMBER — counts from 0 to target on mount
+   Used for confidence score. Makes the number feel live.
+═══════════════════════════════════════════════════════════════ */
+function CountUpNumber({ target, suffix = '', style = {} }) {
+  const [val, setVal] = useState(0);
+  useEffect(() => {
+    setVal(0);
+    const duration = 1400; // ms
+    const steps = 60;
+    const increment = target / steps;
+    let current = 0;
+    const timer = setInterval(() => {
+      current = Math.min(current + increment, target);
+      setVal(Math.round(current));
+      if (current >= target) clearInterval(timer);
+    }, duration / steps);
+    return () => clearInterval(timer);
+  }, [target]);
+  return <div style={style}>{val}{suffix}</div>;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ROTATING CHALLENGE — one question at a time, every 4 seconds
+   The advisor's best questions, shown one by one.
+   A CEO who reads "What is management not telling the board?"
+   and clicks it — that's the moment CASEY becomes indispensable.
+═══════════════════════════════════════════════════════════════ */
+const CHALLENGE_QS = [
+  'Why is this estimate probably wrong?',
+  'What is management not telling the board?',
+  'Which risk will kill this programme?',
+  'What assumption is most likely to be false?',
+  'Why should the board not approve this today?',
+  'Where is the optimism bias in this estimate?',
+  'What does the reference class say the outturn will be?',
+  'Which benchmark failure does this most resemble?',
+  'What one piece of evidence would change your view?',
+  'Challenge my confidence score — is it justified?',
+  'If this programme fails publicly, what is the cause?',
+  'What would make you reject this submission?',
+];
+
+function RotatingChallenge({ onAsk }) {
+  const [idx, setIdx] = useState(0);
+  const [fade, setFade] = useState(true);
+  useEffect(() => {
+    const t = setInterval(() => {
+      setFade(false);
+      setTimeout(() => { setIdx(i => (i + 1) % CHALLENGE_QS.length); setFade(true); }, 300);
+    }, 4000);
+    return () => clearInterval(t);
+  }, []);
+  return (
+    <div style={{marginBottom:10}}>
+      {/* Rotating spotlight question */}
+      <div style={{
+        background:'rgba(141,247,255,.04)',border:'1px solid rgba(141,247,255,.14)',
+        borderRadius:6,padding:'10px 14px',marginBottom:8,
+        display:'flex',alignItems:'center',gap:10,cursor:'pointer',
+        transition:'opacity .3s',opacity:fade?1:0,
+      }} onClick={() => onAsk(CHALLENGE_QS[idx])}>
+        <div style={{fontSize:10,color:'rgba(141,247,255,.4)',letterSpacing:'.1em',flexShrink:0,fontWeight:700}}>ASK NOW</div>
+        <div style={{flex:1,fontSize:12,fontStyle:'italic',color:'#8df7ff',fontWeight:600}}>"{CHALLENGE_QS[idx]}"</div>
+        <div style={{fontSize:10,color:'rgba(141,247,255,.5)',flexShrink:0}}>→</div>
+      </div>
+      {/* Progress dots */}
+      <div style={{display:'flex',gap:4,justifyContent:'center',marginBottom:8}}>
+        {CHALLENGE_QS.map((_,i)=>(
+          <div key={i} onClick={()=>{setIdx(i);setFade(true);}}
+            style={{width:i===idx?16:5,height:5,borderRadius:3,background:i===idx?'rgba(141,247,255,.6)':'rgba(255,255,255,.1)',cursor:'pointer',transition:'all .3s'}}/>
+        ))}
+      </div>
+      {/* All questions collapsed below */}
+      <details style={{marginTop:4}}>
+        <summary style={{fontSize:9,color:'rgba(255,255,255,.25)',cursor:'pointer',letterSpacing:'.06em',listStyle:'none',textAlign:'center'}}>
+          Show all {CHALLENGE_QS.length} challenge questions
+        </summary>
+        <div style={{marginTop:8,display:'flex',flexDirection:'column',gap:3}}>
+          {CHALLENGE_QS.map(q=>(
+            <button key={q} onClick={()=>onAsk(q)} style={{
+              textAlign:'left',background:'rgba(141,247,255,.04)',border:'1px solid rgba(141,247,255,.1)',
+              color:'#8df7ff',padding:'5px 10px',borderRadius:3,cursor:'pointer',fontSize:10,fontStyle:'italic',fontFamily:'inherit',
+            }}>"{q}"</button>
+          ))}
+        </div>
+      </details>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   VERSION HISTORY — lightweight audit trail
+   Stored in localStorage keyed by programme id.
+   Shows who changed what and when.
+   This closes T&T's counter-argument about audit trails.
+═══════════════════════════════════════════════════════════════ */
+function useVersionHistory(programmeId) {
+  const KEY = `casey_versions_${programmeId || 'global'}`;
+  const [versions, setVersions] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch { return []; }
+  });
+  function addVersion(model, event) {
+    const entry = {
+      id: Date.now(),
+      timestamp: new Date().toISOString(),
+      event: event || 'Model updated',
+      confidence_pct: model.confidence_pct,
+      cost_p50: model.cost_p50,
+      cost_p80: model.cost_p80,
+      schedule: model.schedule,
+      scenario: model.scenario_label || model.scenario || 'Base',
+      estimate_class: model.estimate_class_name || `Class ${model.estimate_class || 3}`,
+    };
+    const updated = [entry, ...versions].slice(0, 40);
+    setVersions(updated);
+    try { localStorage.setItem(KEY, JSON.stringify(updated)); } catch {}
+    return updated;
+  }
+  function clearVersions() {
+    setVersions([]);
+    try { localStorage.removeItem(KEY); } catch {}
+  }
+  return { versions, addVersion, clearVersions };
+}
+
+function VersionHistoryPanel({ programmeId, onClose }) {
+  const { versions, clearVersions } = useVersionHistory(programmeId);
+  function fmtTs(iso) {
+    try {
+      const d = new Date(iso);
+      return d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) + ' ' +
+             d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+    } catch { return iso; }
+  }
+  return (
+    <div style={{background:'#0b1422',border:'1px solid rgba(255,255,255,.07)',borderRadius:10,padding:0,overflow:'hidden',marginTop:12}}>
+      <div style={{background:'rgba(10,20,36,.9)',borderBottom:'1px solid rgba(255,255,255,.06)',padding:'10px 16px',display:'flex',alignItems:'center',gap:8}}>
+        <span style={{fontSize:11,fontWeight:700,color:'#e2eaf6',flex:1}}>Version history — {versions.length} snapshot{versions.length!==1?'s':''}</span>
+        {versions.length>0&&<button onClick={clearVersions} style={{fontSize:9,color:'rgba(239,68,68,.6)',background:'transparent',border:'1px solid rgba(239,68,68,.2)',borderRadius:3,padding:'2px 8px',cursor:'pointer',fontFamily:'inherit'}}>Clear</button>}
+        <button onClick={onClose} style={{fontSize:13,color:'rgba(255,255,255,.3)',background:'transparent',border:'none',cursor:'pointer',fontFamily:'inherit'}}>✕</button>
+      </div>
+      <div style={{maxHeight:280,overflowY:'auto',padding:'8px 16px'}}>
+        {versions.length===0
+          ? <div style={{fontSize:10,color:'rgba(255,255,255,.2)',padding:'8px 0'}}>No versions yet. Every scenario change, actuals update and class change is recorded here automatically.</div>
+          : versions.map((v,i)=>(
+            <div key={v.id} style={{display:'flex',gap:10,padding:'6px 0',borderBottom:'1px solid rgba(255,255,255,.04)',alignItems:'flex-start'}}>
+              <div style={{width:6,height:6,borderRadius:'50%',background:'#4a9eff',marginTop:4,flexShrink:0}}/>
+              <div style={{flex:1}}>
+                <div style={{display:'flex',gap:8,alignItems:'baseline',flexWrap:'wrap',marginBottom:2}}>
+                  <span style={{fontSize:10,fontWeight:600,color:'#e2eaf6'}}>{v.event}</span>
+                  <span style={{fontSize:9,color:'rgba(255,255,255,.25)',fontFamily:'monospace'}}>{fmtTs(v.timestamp)}</span>
+                </div>
+                <div style={{fontSize:9,color:'rgba(255,255,255,.35)',fontFamily:'monospace'}}>
+                  {v.cost_p50} · {v.schedule} · {v.confidence_pct}% conf · {v.scenario} · {v.estimate_class}
+                </div>
+              </div>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  );
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   COST COMPOSITION CHART — canvas-based, beautiful
+   Horizontal stacked bars with glow and animation
+   Shows Direct / Indirect / Reserve split visually
+═══════════════════════════════════════════════════════════════ */
+function CostCompositionChart({direct,indirect,reserves,currency='£'}){
+  const cvsRef=useRef(null);
+  useEffect(()=>{
+    const cvs=cvsRef.current;if(!cvs)return;
+    const DPR=window.devicePixelRatio||1;
+    const W=cvs.offsetWidth||400,H=220;
+    cvs.width=W*DPR;cvs.height=H*DPR;cvs.style.height=H+'px';
+    const ctx=cvs.getContext('2d');ctx.scale(DPR,DPR);
+
+    const parse=(s)=>{if(!s)return 0;const m=String(s).replace(/[^0-9.]/g,'');return parseFloat(m)||0;};
+    const d=parse(direct),ind=parse(indirect),r=parse(reserves);
+    const total=d+ind+r||1;
+
+    ctx.fillStyle='#030a18';ctx.fillRect(0,0,W,H);
+
+    const bars=[
+      {label:'Direct works',val:d,color:'#4a9eff',glow:'rgba(74,158,255,'},
+      {label:'Indirect / prelims',val:ind,color:'#10b981',glow:'rgba(16,185,129,'},
+      {label:'Risk reserve (P80)',val:r,color:'#f59e0b',glow:'rgba(245,158,11,'},
+    ];
+
+    const PL=18,PR=18,PT=28,PB=44;
+    const BARY=PT,BAR_H=(H-PT-PB)/bars.length-12;
+    const MAX_W=W-PL-PR-100;
+
+    bars.forEach((b,i)=>{
+      const y=BARY+i*(BAR_H+12);
+      const bw=Math.max(4,(b.val/total)*MAX_W);
+      const pct=Math.round(b.val/total*100);
+
+      // Background track
+      ctx.fillStyle='rgba(255,255,255,.04)';
+      ctx.beginPath();ctx.roundRect(PL,y,MAX_W,BAR_H,3);ctx.fill();
+
+      // Glow
+      ctx.save();ctx.shadowColor=b.color;ctx.shadowBlur=12;
+      // Gradient fill
+      const grad=ctx.createLinearGradient(PL,0,PL+bw,0);
+      grad.addColorStop(0,b.glow+'0.9)');grad.addColorStop(1,b.glow+'0.55)');
+      ctx.fillStyle=grad;
+      ctx.beginPath();ctx.roundRect(PL,y,bw,BAR_H,3);ctx.fill();
+      ctx.restore();
+
+      // Label
+      ctx.font=`700 9px 'SF Mono',monospace`;
+      ctx.fillStyle='rgba(255,255,255,.55)';ctx.textAlign='left';
+      ctx.fillText(b.label,PL,y-4);
+
+      // Value
+      ctx.font=`700 11px 'SF Mono',monospace`;ctx.fillStyle=b.color;
+      ctx.textAlign='left';
+      ctx.fillText(`${currency}${b.val.toFixed(1)}B (${pct}%)`,PL+bw+8,y+BAR_H/2+4);
+    });
+
+    // Total
+    ctx.font=`700 10px 'SF Mono',monospace`;ctx.fillStyle='rgba(255,255,255,.35)';ctx.textAlign='left';
+    ctx.fillText(`Total P50: ${currency}${total.toFixed(1)}B`,PL,H-10);
+
+    // P80 marker
+    const p80frac=Math.min(1,(d+ind+r*1.18)/(total));
+    const p80x=PL+p80frac*MAX_W;
+    ctx.save();ctx.strokeStyle='rgba(245,158,11,.45)';ctx.lineWidth=1;ctx.setLineDash([3,4]);
+    ctx.beginPath();ctx.moveTo(p80x,PT-8);ctx.lineTo(p80x,H-PB);ctx.stroke();ctx.setLineDash([]);
+    ctx.font=`700 7.5px 'SF Mono',monospace`;ctx.fillStyle='rgba(245,158,11,.6)';ctx.textAlign='center';
+    ctx.fillText('P80',p80x,PT-11);ctx.restore();
+
+  },[direct,indirect,reserves,currency]);
+
+  return <canvas ref={cvsRef} style={{display:'block',width:'100%',background:'#030a18',borderRadius:8,border:'1px solid rgba(255,255,255,.06)'}} height={220}/>;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   QCRA/QSRA PROBABILITY CURVES — canvas S-curve charts
+   The most important chart for T&T to see.
+   Left panel: cost probability curve (QCRA)
+   Right panel: schedule probability curve (QSRA)
+   P10/P50/P80/P90 markers with labels
+   Board approval threshold at P80 highlighted
+═══════════════════════════════════════════════════════════════ */
+function QCRAQSRAChart({model}){
+  const cvsRef=useRef(null);
+  useEffect(()=>{
+    const cvs=cvsRef.current;if(!cvs||!model)return;
+    const DPR=window.devicePixelRatio||1;
+    const W=cvs.offsetWidth||700,H=260;
+    cvs.width=W*DPR;cvs.height=H*DPR;cvs.style.height=H+'px';
+    const ctx=cvs.getContext('2d');ctx.scale(DPR,DPR);
+    ctx.fillStyle='#030a18';ctx.fillRect(0,0,W,H);
+
+    const parse=(s,fallback=0)=>{
+      if(typeof s==='number')return s;
+      const m=String(s||'').replace(/[^0-9.]/g,'');return parseFloat(m)||fallback;
+    };
+    const curr=model.currency_symbol||'£';
+
+    // Build QCRA data from model
+    const qcra=model.monte_carlo?.qcra||{};
+    const baseCost=parse(model.cost_p50_bn||model.p50_cost_bn||(String(model.cost_p50||'1').replace(/[^0-9.]/g,'')),1);
+    const cp10=parse(qcra.p10)||baseCost*0.85;
+    const cp50=baseCost;
+    const cp80=parse(qcra.p80||model.cost_p80)||baseCost*1.18;
+    const cp90=parse(qcra.p90)||baseCost*1.35;
+
+    // Build QSRA data from model
+    const qsra=model.monte_carlo?.qsra||{};
+    const baseMonths=parse(String(model.schedule||'').replace(/[^0-9]/g,''),24);
+    const sp10=parse(qsra.p10)||Math.round(baseMonths*0.87);
+    const sp50=baseMonths;
+    const sp80=parse(qsra.p80)||Math.round(baseMonths*1.15);
+    const sp90=parse(qsra.p90)||Math.round(baseMonths*1.28);
+
+    // Draw a beautiful S-curve panel
+    function drawPanel(x0,y0,W2,H2,pts,pMarkers,color,glow,title,unit,decimalPlaces=1){
+      const PL=36,PR=8,PT=22,PB=42;
+      const minV=pts[0],maxV=pts[pts.length-1];
+      const range=maxV-minV||1;
+      const cW=W2-PL-PR,cH=H2-PT-PB;
+
+      // Panel bg
+      ctx.save();
+      ctx.fillStyle='rgba(255,255,255,.015)';ctx.strokeStyle='rgba(255,255,255,.06)';ctx.lineWidth=.7;
+      ctx.beginPath();ctx.roundRect(x0,y0,W2,H2,6);ctx.fill();ctx.stroke();ctx.restore();
+
+      // Title
+      ctx.font=`700 9px 'SF Mono',monospace`;ctx.fillStyle=color;ctx.textAlign='left';
+      ctx.fillText(title,x0+PL,y0+12);
+
+      // S-curve points (cumulative probability 0→1 over pts range)
+      function scurveP(v){return 1/(1+Math.exp(-8*((v-minV)/range-0.5)));}
+      function toX(v){return x0+PL+(v-minV)/range*cW;}
+      function toY(p){return y0+PT+cH-(p*cH);}
+
+      // Area fill under curve
+      const areaGrad=ctx.createLinearGradient(0,y0+PT,0,y0+PT+cH);
+      areaGrad.addColorStop(0,glow+'0.18)');areaGrad.addColorStop(1,glow+'0.02)');
+      ctx.save();ctx.fillStyle=areaGrad;
+      ctx.beginPath();ctx.moveTo(toX(minV),toY(0));
+      for(let i=0;i<=100;i++){const v=minV+(i/100)*range;ctx.lineTo(toX(v),toY(scurveP(v)));}
+      ctx.lineTo(toX(maxV),toY(0));ctx.closePath();ctx.fill();
+
+      // Curve line
+      ctx.strokeStyle=color;ctx.lineWidth=2;ctx.lineCap='round';ctx.shadowColor=color;ctx.shadowBlur=8;
+      ctx.beginPath();let s=false;
+      for(let i=0;i<=120;i++){const v=minV+(i/120)*range;const x2=toX(v),y2=toY(scurveP(v));s?ctx.lineTo(x2,y2):(ctx.moveTo(x2,y2),s=true);}
+      ctx.stroke();ctx.restore();
+
+      // P80 highlight band (board approval zone)
+      const p80x=toX(pMarkers[2].v);
+      ctx.save();ctx.fillStyle='rgba(6,182,212,.06)';
+      ctx.fillRect(p80x,y0+PT,toX(maxV)-p80x,cH);
+      ctx.restore();
+
+      // P markers
+      pMarkers.forEach((pm,i)=>{
+        const px=toX(pm.v),py=toY(pm.p);
+        const label=`${pm.label}: ${unit==='£'||unit==='$'||unit==='€'||unit==='¥'?unit:''} ${pm.v.toFixed(decimalPlaces)}${unit!=='£'&&unit!=='$'&&unit!=='€'&&unit!=='¥'?' '+unit:''}`;
+        // Vertical dashed line
+        ctx.save();ctx.strokeStyle=pm.color+'80';ctx.lineWidth=.7;ctx.setLineDash([3,4]);
+        ctx.beginPath();ctx.moveTo(px,y0+PT);ctx.lineTo(px,y0+PT+cH);ctx.stroke();ctx.setLineDash([]);
+        // Dot on curve
+        ctx.shadowColor=pm.color;ctx.shadowBlur=8;
+        ctx.fillStyle=pm.color;ctx.beginPath();ctx.arc(px,py,4.5,0,Math.PI*2);ctx.fill();
+        ctx.strokeStyle='#030a18';ctx.lineWidth=1.2;ctx.beginPath();ctx.arc(px,py,4.5,0,Math.PI*2);ctx.stroke();
+        // Label
+        const above=i<2;const lx=Math.max(x0+PL+2,Math.min(px,x0+W2-8));
+        ctx.font=`700 7.5px 'SF Mono',monospace`;ctx.fillStyle=pm.color;ctx.textAlign=i>1?'right':'left';
+        const lStr=pm.label+(i===2?' ← BOARD':i===3?' ← STRESS':'');
+        ctx.fillText(lStr,px+(i>1?-4:4),above?py-7:py+14);
+        ctx.font=`7px 'SF Mono',monospace`;ctx.fillStyle=pm.color+'90';
+        const valStr=unit==='mo'?pm.v.toFixed(0)+' mo':`${curr}${pm.v.toFixed(decimalPlaces)}B`;
+        ctx.fillText(valStr,px+(i>1?-4:4),above?py-17:py+24);
+        ctx.restore();
+      });
+
+      // Y axis (probability)
+      ctx.font=`7px 'SF Mono',monospace`;ctx.fillStyle='rgba(42,66,100,.8)';ctx.textAlign='right';
+      [0,25,50,75,100].forEach(p=>{
+        const y2=toY(p/100);
+        ctx.fillText(p+'%',x0+PL-4,y2+3);
+        ctx.save();ctx.strokeStyle='rgba(255,255,255,.025)';ctx.lineWidth=.3;
+        ctx.beginPath();ctx.moveTo(x0+PL,y2);ctx.lineTo(x0+W2-PR,y2);ctx.stroke();ctx.restore();
+      });
+
+      // X axis label
+      ctx.font=`7px 'SF Mono',monospace`;ctx.fillStyle='rgba(42,66,100,.6)';ctx.textAlign='center';
+      ctx.fillText('←  '+title.replace('QCRA — ','').replace('QSRA — ','')+'  →',x0+PL+cW/2,y0+H2-6);
+    }
+
+    const halfW=Math.floor(W/2)-6;
+
+    // QCRA panel
+    drawPanel(2,4,halfW,H-8,
+      [cp10,cp50,cp80,cp90],
+      [{label:'P10',v:cp10,p:.1,color:'#10b981'},{label:'P50',v:cp50,p:.5,color:'#8df7ff'},{label:'P80',v:cp80,p:.8,color:'#06b6d4'},{label:'P90',v:cp90,p:.9,color:'#ef4444'}],
+      '#4a9eff','rgba(74,158,255,','QCRA — COST PROBABILITY',curr,1
+    );
+
+    // QSRA panel
+    drawPanel(halfW+10,4,W-halfW-12,H-8,
+      [sp10,sp50,sp80,sp90],
+      [{label:'P10',v:sp10,p:.1,color:'#10b981'},{label:'P50',v:sp50,p:.5,color:'#8df7ff'},{label:'P80',v:sp80,p:.8,color:'#f59e0b'},{label:'P90',v:sp90,p:.9,color:'#ef4444'}],
+      '#f59e0b','rgba(245,158,11,','QSRA — SCHEDULE PROBABILITY','mo',0
+    );
+
+  },[model]);
+
+  return(
+    <div style={{marginBottom:12}}>
+      <canvas ref={cvsRef} style={{display:'block',width:'100%',background:'#030a18',borderRadius:8,border:'1px solid rgba(255,255,255,.06)'}} height={260}/>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginTop:8}}>
+        {[
+          {label:'QCRA P80 — Board approval cost',val:model?.cost_p80||model?.monte_carlo?.qcra?.p80,color:'#06b6d4',note:'Approve at this number, not P50'},
+          {label:'QSRA P80 — Board approval schedule',val:(model?.monte_carlo?.qsra?.p80)+'mo',color:'#f59e0b',note:'P80 delivery date is the board commitment'},
+          {label:'OBA adjustment',val:`+${model?.oba_pct||35}%`,color:'#a78bfa',note:'Optimism bias — applied to base estimate'},
+          {label:'Reserve gap vs benchmark',val:(model?.reserve_gap_bn||0)>0?`${model?.currency_symbol||'£'}${(model?.reserve_gap_bn||0).toFixed?.(2)}B shortfall`:'Adequate',color:(model?.reserve_gap_bn||0)>0?'#ef4444':'#10b981',note:`Benchmark minimum: ${model?.reserve_vs_benchmark_pct||18}%`},
+        ].map((k,i)=>(
+          <div key={i} style={{background:'rgba(255,255,255,.02)',border:'1px solid rgba(255,255,255,.06)',borderRadius:6,padding:'10px 12px'}}>
+            <div style={{fontSize:8,color:'rgba(255,255,255,.3)',marginBottom:3,letterSpacing:'.08em',textTransform:'uppercase'}}>{k.label}</div>
+            <div style={{fontSize:14,fontWeight:700,color:k.color,fontFamily:'monospace',marginBottom:2}}>{k.val||'—'}</div>
+            <div style={{fontSize:9,color:'rgba(255,255,255,.2)'}}>{k.note}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TORNADO CHART — top risks by cost impact (horizontal bars)
+   The risk manager's single most important visual
+═══════════════════════════════════════════════════════════════ */
+function TornadoChart({risks,currency='£',maxBn}){
+  const cvsRef=useRef(null);
+  useEffect(()=>{
+    const cvs=cvsRef.current;if(!cvs||!risks?.length)return;
+    const DPR=window.devicePixelRatio||1;
+    const top=risks.slice(0,8);
+    const W=cvs.offsetWidth||400;
+    const H=Math.max(120,top.length*36+40);
+    cvs.width=W*DPR;cvs.height=H*DPR;cvs.style.height=H+'px';
+    const ctx=cvs.getContext('2d');ctx.scale(DPR,DPR);
+    ctx.fillStyle='#030a18';ctx.fillRect(0,0,W,H);
+
+    const PL=160,PR=80,PT=28,PB=16;
+    const cW=W-PL-PR;
+    const parse=(s)=>parseFloat(String(s||'0').replace(/[^0-9.]/g,''))||0;
+    const vals=top.map(r=>parse(r.cost_emv_bn||r.cost_impact_bn||0));
+    const maxVal=maxBn||Math.max(...vals,0.1);
+    const high=top.filter(r=>/high|critical/i.test(r.probability||r.impact||''));
+
+    // Title
+    ctx.font=`700 9px 'SF Mono',monospace`;ctx.fillStyle='rgba(239,68,68,.8)';ctx.textAlign='left';
+    ctx.fillText('COST TORNADO — TOP RISK DRIVERS',PL,14);
+
+    top.forEach((r,i)=>{
+      const y=PT+i*36;
+      const emv=parse(r.cost_emv_bn||r.cost_impact_bn||0);
+      const bw=Math.max(3,(emv/maxVal)*cW);
+      const isHigh=/high|critical/i.test(r.probability||r.impact||'');
+      const col=isHigh?'#ef4444':'#f59e0b';
+      const glow=isHigh?'rgba(239,68,68,':'rgba(245,158,11,';
+
+      // Risk label
+      const lbl=String(r.title||r.risk||'Risk '+(i+1)).slice(0,28);
+      ctx.font=`${isHigh?'700':'400'} 9.5px 'SF Mono',monospace`;
+      ctx.fillStyle=isHigh?'#e2eaf6':'rgba(255,255,255,.6)';ctx.textAlign='right';
+      ctx.fillText(lbl,PL-8,y+13);
+
+      // Bar bg
+      ctx.fillStyle='rgba(255,255,255,.04)';
+      ctx.beginPath();ctx.roundRect(PL,y,cW,22,3);ctx.fill();
+
+      // Bar fill
+      ctx.save();ctx.shadowColor=col;ctx.shadowBlur=8;
+      const grad=ctx.createLinearGradient(PL,0,PL+bw,0);
+      grad.addColorStop(0,glow+'0.8)');grad.addColorStop(1,glow+'0.4)');
+      ctx.fillStyle=grad;ctx.beginPath();ctx.roundRect(PL,y,bw,22,3);ctx.fill();ctx.restore();
+
+      // EMV label
+      if(emv>0){
+        ctx.font=`700 9px 'SF Mono',monospace`;ctx.fillStyle=col;ctx.textAlign='left';
+        ctx.fillText(currency+emv.toFixed(3)+'B',PL+bw+6,y+14);
+      }
+    });
+
+    // Total bar
+    const totalEmv=vals.reduce((a,b)=>a+b,0);
+    ctx.font=`700 9px 'SF Mono',monospace`;ctx.fillStyle='rgba(255,255,255,.35)';ctx.textAlign='right';
+    ctx.fillText(`Total EMV: ${currency}${totalEmv.toFixed(2)}B`,W-PR,H-4);
+
+  },[risks,currency,maxBn]);
+
+  if(!risks?.length)return null;
+  return <canvas ref={cvsRef} style={{display:'block',width:'100%',background:'#030a18',borderRadius:8,border:'1px solid rgba(255,255,255,.06)',marginBottom:12}} />;
+}
+
 function Loading({ text }) {
-  const stages = ['CASEY recalibrating confidence curves...', 'Applying live sector calibration signals...', 'Running procurement and delivery-tail model...', 'Comparing against benchmark archetypes...', 'Stamping scenario/base deltas into exports...'];
+  const stages = ['CASEY recalibrating confidence curves...', 'Applying live sector calibration signals...', 'Running procurement and delivery-tail model...', 'Comparing against 137+ benchmark programmes...', 'Stamping scenario deltas into board pack...'];
   const [i,setI] = useState(0);
+  const [slow,setSlow] = useState(false);
   useEffect(() => { const t = setInterval(() => setI(v => Math.min(v + 1, stages.length - 1)), 650); return () => clearInterval(t); }, []);
-  return <motion.div className="loading intelligenceLoading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><Rocket size={44}/><b>{text || 'Building connected model...'}</b><span>{stages[i]}</span><small>Cost · Schedule · QCRA · QSRA · Risk Register · Board Pack</small></motion.div>;
+  useEffect(() => { const t = setTimeout(() => setSlow(true), 8000); return () => clearTimeout(t); }, []);
+  useEffect(() => {
+    const s = document.createElement('style');
+    s.id = 'casey-animations';
+    if (!document.getElementById('casey-animations')) {
+      s.textContent = `@keyframes blink{0%,100%{opacity:1}50%{opacity:0}} @keyframes casey-pulse{0%,100%{opacity:1}50%{opacity:0.4}}`;
+      document.head.appendChild(s);
+    }
+    return () => {};
+  }, []);
+  return <motion.div className="loading intelligenceLoading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+    <Rocket size={44}/>
+    <b>{text || 'Building full CASEY intelligence pack...'}</b>
+    <span>{stages[i]}</span>
+    {slow && <div style={{marginTop:12,padding:'8px 16px',background:'rgba(245,158,11,0.08)',border:'1px solid rgba(245,158,11,0.2)',borderRadius:6,fontSize:11,color:'#f59e0b',maxWidth:380,textAlign:'center',lineHeight:1.5}}>First load takes 20–30 seconds while the backend wakes up. Instant after that.</div>}
+    <small>Cost · Schedule · QCRA · QSRA · Risk Register · Board Pack · Timeline</small>
+  </motion.div>;
 }
 function ScenarioSelector({ scenario, generate, matrix=[], model=null, prompt='', projectContext=null }) {
   const labels = {base:'Base', faster:'Faster', cheaper:'Cheaper', lower_risk:'Lower Risk', premium:'Premium'};
@@ -2500,7 +3050,7 @@ function App() {
   // Scenario helpers - available throughout App
 
   const [projectContext, setProjectContext] = useState(null);
-  const [tab, setTab] = useState('overview');
+  const [tab, setTab] = useState('timeline');
   const [healthProg, setHealthProg] = React.useState(null);
   const runHealthCheck = React.useCallback((prog) => {
     setPrompt(prog.caseySignal.prompt);
@@ -2899,6 +3449,12 @@ function parseMoneyLocal(v) {
     try { return !localStorage.getItem('casey_onboarding_done'); } catch { return true; }
   });
   const [backendStatus, setBackendStatus] = React.useState('unknown');
+  // ── WHITE LABEL + CLASS/SCHEDULE ─────────────────────────────────────────
+  const [whiteLabelLogo, setWhiteLabelLogo] = React.useState(()=>{try{return localStorage.getItem('casey_wl_logo')||null;}catch{return null;}});
+  function handleClassChange(field, value) {
+    if (field==='classLevel')   { setClassLevel(value);    if(model) setModel(applyClassToModel(model,value,scheduleLevel)); }
+    if (field==='scheduleLevel'){ setScheduleLevel(value); if(model) setModel(applyClassToModel(model,classLevel,value)); }
+  }
 
   // ── ACCOUNT STATE ──────────────────────────────────────────────────────────
   const [accountEmail, setAccountEmail] = React.useState(() => {
@@ -2955,7 +3511,7 @@ function parseMoneyLocal(v) {
         const m = normalizeModelForUI(d.model || d);
         setModel(m); setPrompt(d.prompt || ''); setScenario(d.scenario || 'base');
         setProjectContext(lockedProjectContext(m, d.prompt || ''));
-        setShowAccount(false); setShow(false); setTab('overview');
+        setShowAccount(false); setShow(false); setTab('timeline');
       }
     } catch(e) { console.error(e); }
   }
@@ -3015,7 +3571,7 @@ function parseMoneyLocal(v) {
     setProjectContext(lockedProjectContext(m, entry.prompt || ''));
     setShowSaved(false);
     setShow(false);
-    setTab('overview');
+    setTab('timeline');
   }
 
   // Mark the free run as used — only called after a real generate(), never after instant demos
@@ -3036,7 +3592,7 @@ function parseMoneyLocal(v) {
 
   async function loadInstantDemo(type) {
     const cfg = DEMO_CONFIGS[type] || DEMO_CONFIGS['earth'];
-    setLoading(true); setError(''); setModel(null); setTab('overview');
+    setLoading(true); setError(''); setModel(null); setTab('timeline');
     setShow(false); setShowShowcase(false);
     setSimulationStage('Loading ' + (type === 'earth' ? 'HS2 Phase 2b Earth Demo' : type === 'space' ? 'Lunar Base Alpha Space Demo' : 'reference case') + '…');
     try {
@@ -3063,7 +3619,7 @@ function parseMoneyLocal(v) {
       setPrompt(cfg.prompt);
       setScenario('base');
       setClient(cfg.client);
-      setTab('overview');
+      setTab('timeline');
     } catch(e) {
       const msg = String(e.message || e);
       setError(JSON.stringify({
@@ -3092,7 +3648,7 @@ function parseMoneyLocal(v) {
     setSimulationStage(nextScenario === 'base' ? 'Building base simulation…' : 'Re-running scenario from locked project context…');
     setConfidencePulse(true);
     setTimeout(() => setPropagating(false), 1600);
-    setLoading(true); setTab('overview');
+    setLoading(true); setTab('timeline');
     // Demo gate — fires only for brand-new project runs from the main console
     // NEVER fires for: showcase library, earth/space demo, scenario switching on existing model
     // Gate is handled by checkAndGate() on the Generate button before generate() is called.
@@ -3295,7 +3851,7 @@ function parseMoneyLocal(v) {
       stress_test_applied: kind,
       stress_test_note: shock.note,
     });
-    setTab('overview');
+    setTab('timeline');
   }
   const costs = model?.cost_breakdown || [];
   const risks = model?.risk_register || [];
@@ -3516,7 +4072,7 @@ const scenarioTrade95 = {
         const nm = normalizeModelForUI(data.model);
         setModel(nm);
         setShow(false);
-        setTab('overview');
+        setTab('timeline');
         setSavedProjectId(id);
         setShowMyProjects(false);
       }
@@ -3930,8 +4486,9 @@ return <div className="app v50EliteApp">
     </div>}
 
     <Briefing open={briefing} onClose={() => setBriefing(false)} onEarth={runEarth} onSpace={runSpace}/>
-    <OneShotDemo open={trialOpen} onClose={() => setTrialOpen(false)} onComplete={(m) => { const nm = normalizeModelForUI(m); setModel(nm); setProjectContext(lockedProjectContext(nm, nm?.prompt || prompt)); setShow(false); setTrialOpen(false); setTab('overview'); }} />
+    <OneShotDemo open={trialOpen} onClose={() => setTrialOpen(false)} onComplete={(m) => { const nm = normalizeModelForUI(m); setModel(nm); setProjectContext(lockedProjectContext(nm, nm?.prompt || prompt)); setShow(false); setTrialOpen(false); setTab('timeline'); }} />
     <AnimatePresence>{loading && <Loading text="Building full CASEY intelligence pack..."/>}</AnimatePresence>
+    {show && !model && <LandingHeroTimeline onRunEarth={runEarth} onRunSpace={runSpace} onRunFree={()=>{setShow(false);setTrialOpen(true);}}/>}
     {show && !model && <Hero onBriefing={() => setBriefing(true)} onEarth={runEarth} onSpace={runSpace} onConsole={() => setShow(false)} onTryDemo={() => setTrialOpen(true)}/>} 
     <header className="v50ConsoleTop"><Logo/><nav>
       <button onClick={() => { setModel(null); setProjectContext(null); setShowShowcase(false); setShow(true); setError(''); }}>Home</button>
@@ -3942,6 +4499,7 @@ return <div className="app v50EliteApp">
       <button onClick={loadMyProjects} style={{color:'#8df7ff',fontWeight:'700'}}>My Projects</button>
       <button onClick={loadPortfolio} style={{color:'#a78bfa',fontWeight:'700'}}>Portfolio</button>
       {model && <button onClick={saveProject} style={{color:'#10b981',fontWeight:'700',opacity:savingProject?0.6:1}} disabled={savingProject}>{savingProject?'Saving…':saveMsg||'Save'}</button>}
+      {model && <button onClick={()=>setShowVersions(v=>!v)} style={{color:'rgba(255,255,255,.35)',fontSize:'11px'}}>History</button>}
       {savedProjectId && model && <button onClick={loadReplay} style={{color:'#06b6d4',fontWeight:'700'}}>Replay ⏪</button>}
       {model && <button onClick={loadInvestorAnalysis} style={{color:'#fbbf24',fontWeight:'700'}}>Investor</button>}
       {model && <button onClick={loadRecoveryPlan} style={{color:'#f59e0b',fontWeight:'700'}}>Recovery Plan</button>}
@@ -3969,6 +4527,7 @@ return <div className="app v50EliteApp">
     </nav></header>
     {showOnboarding && <OnboardingGuide onClose={() => { setShowOnboarding(false); try { localStorage.setItem('casey_onboarding_done','1'); } catch {} }}/>}
     {showSaved && <SavedProjectsPanel projects={savedProjects} onLoad={loadSaved} onDelete={deleteSaved} onClose={() => setShowSaved(false)}/>}
+    {showVersions && model && <div style={{position:'fixed',top:52,right:16,zIndex:900,width:'min(480px,96vw)',maxHeight:'70vh',overflowY:'auto',boxShadow:'0 20px 60px rgba(0,0,0,.8)'}}><VersionHistoryPanel programmeId={model.id||model.subsector} onClose={()=>setShowVersions(false)}/></div>}
     {showAccount && <AccountPanel email={accountEmail} setEmail={setAccountEmail} projects={accountProjects} loading={accountLoading} onLoad={loadAccountProject} onDelete={deleteAccountProject} onSave={saveToAccount} onLoadProjects={loadAccountProjects} onClose={() => setShowAccount(false)} model={model}/>}
     {showCompare && <ComparePanel promptA={comparePromptA} setPromptA={setComparePromptA} promptB={comparePromptB} setPromptB={setComparePromptB} onRun={runComparison} loading={compareLoading} result={compareResult} error={compareError} onClose={() => setShowCompare(false)} currentModel={model}/>}
     {showHelp && <HelpPanel onClose={() => setShowHelp(false)}/>}
@@ -4018,52 +4577,106 @@ return <div className="app v50EliteApp">
         <TrustRuntimeBar model={model}/>
         <LiveCalibrationStrip model={model}/>
         <section className="kpis"><Kpi icon={Globe2} label="Mode / sector" value={safeRender(model.mode)} sub={safeRender(model.subsector)}/><Kpi icon={Activity} label="P50 cost" value={safeRender(model.cost_p50)} sub={safeRender(model.cost_range)}/><Kpi icon={Zap} label="Schedule" value={safeRender(model.schedule)} sub={`QSRA P80 ${model.monte_carlo?.qsra?.p80 || '—'} months`}/><Kpi icon={ShieldAlert} label="Delivery confidence" value={safeRender(confidenceLens(model)?.headline)} sub={`${safeRender(model.risk)} risk · ${safeRender(model.confidence_pct)}% · ${safeRender(model.scenario_label)}`} hot/></section>
+        {/* QUICK ACTIONS — board pack + one-pager, always visible, no Export tab hunting */}
+        {model && <div style={{display:'flex',gap:8,padding:'8px 20px',background:'rgba(4,7,15,.9)',borderBottom:'1px solid rgba(255,255,255,.05)',flexWrap:'wrap',alignItems:'center'}}>
+          <button onClick={()=>download('/export/board-pack-pptx',{...model,...boardPdfCoverData(model,whiteLabelLogo)},model.id+'_CASEY_Board_Pack.pptx')}
+            style={{padding:'6px 16px',fontSize:11,fontWeight:700,border:'1px solid rgba(141,247,255,.3)',borderRadius:4,background:'rgba(141,247,255,.08)',color:'#8df7ff',cursor:'pointer',letterSpacing:'.04em'}}>
+            📊 Board pack PPTX
+          </button>
+          <button onClick={()=>printOnePager(model,whiteLabelLogo)}
+            style={{padding:'6px 16px',fontSize:11,fontWeight:700,border:'1px solid rgba(16,185,129,.3)',borderRadius:4,background:'rgba(16,185,129,.07)',color:'#10b981',cursor:'pointer',letterSpacing:'.04em'}}>
+            ✦ One-page brief
+          </button>
+          <button onClick={()=>setTab('export')}
+            style={{padding:'6px 14px',fontSize:10,fontWeight:600,border:'1px solid rgba(255,255,255,.1)',borderRadius:4,background:'transparent',color:'rgba(255,255,255,.4)',cursor:'pointer'}}>
+            All exports →
+          </button>
+          {model.scenario && model.scenario!=='base' && <div style={{marginLeft:'auto',fontSize:9,color:'#06b6d4',fontWeight:700,letterSpacing:'.06em'}}>{(model.scenario_label||'').toUpperCase()} SCENARIO ACTIVE</div>}
+        </div>}
+        {savedProjects.length > 0 && !model && (
+          <div style={{background:'rgba(74,158,255,.06)',border:'1px solid rgba(74,158,255,.15)',borderBottom:'1px solid rgba(74,158,255,.15)',padding:'10px 20px',display:'flex',gap:12,alignItems:'center',flexWrap:'wrap',cursor:'pointer'}} onClick={()=>setTab('portfolio')}>
+            <div style={{width:8,height:8,borderRadius:'50%',background:'#4a9eff',boxShadow:'0 0 8px rgba(74,158,255,.6)',flexShrink:0}}/>
+            <div style={{flex:1,minWidth:0}}>
+              <span style={{fontSize:11,fontWeight:700,color:'#4a9eff',letterSpacing:'.04em'}}>◈  PORTFOLIO — {savedProjects.length} programme{savedProjects.length!==1?'s':''} saved</span>
+              <span style={{fontSize:10,color:'rgba(255,255,255,.3)',marginLeft:12}}>
+                {savedProjects.filter(p=>(+p.confidence_pct||60)<55).length > 0 && <span style={{color:'#ef4444',fontWeight:700}}>{savedProjects.filter(p=>(+p.confidence_pct||60)<55).length} needs attention · </span>}
+                Total P80 exposure: {(()=>{const total=savedProjects.reduce((s,p)=>{const v=+p.cost_p80_bn||+p.cost_p50_bn||0;return s+v;},0);const curr=savedProjects[0]?.currency_symbol||'£';return total>=1000?curr+(total/1000).toFixed(1)+'T':total>=1?curr+total.toFixed(0)+'B':curr+Math.round(total*1000)+'M';})()}
+              </span>
+            </div>
+            <span style={{fontSize:10,color:'rgba(74,158,255,.6)',flexShrink:0}}>View portfolio →</span>
+          </div>
+        )}
+
         <IntelligenceMeta model={model} mode={viewMode} setMode={setViewMode}/>
         <PropagationPulse scenario={scenario} active={propagating}/>
         <ScenarioSelector scenario={scenario} generate={generate} matrix={scenarioMatrix} model={model} prompt={prompt} projectContext={projectContext}/>
         <ExportStrip model={model}
-          onBoardPack={() => download('/export/pdf', model, `${model.id || 'casey'}_CASEY_Board_Pack.pdf`)}
-          onExcel={() => download('/export/workbook', model, `${model.id || 'casey'}_DEMO_COST_WORKBOOK.xlsx`)}
-          onRisk={() => download('/export/risk-register', model, `${model.id || 'casey'}_DEMO_RISK_REGISTER.xlsx`)}
-          onXer={() => download('/export/xer', model, `${model.id || 'casey'}_DEMO_SCHEDULE.xer`)}
-          onQcra={() => download('/export/qcra-qsra', model, `${model.id || 'casey'}_DEMO_QCRA_QSRA.xlsx`)}/>
-        {demoUsed && !isAdminUser && model && <div style={{background:'rgba(245,158,11,0.1)',borderBottom:'1px solid rgba(245,158,11,0.25)',padding:'8px 20px',display:'flex',gap:'16px',alignItems:'center',flexWrap:'wrap'}}>
+          onBoardPack={() => download('/export/board-pack-pptx', {...model,...boardPdfCoverData(model,whiteLabelLogo)}, `${model.id||'casey'}_CASEY_Board_Pack.pptx`)}
+          onExcel={() => download('/export/workbook-with-cover', {...model,...xlsxCoverTabData(model,whiteLabelLogo)}, `${model.id||'casey'}_CASEY_Cost_Workbook.xlsx`)}
+          onRisk={() => download('/export/risk-register', model, `${model.id||'casey'}_Risk_Register.xlsx`)}
+          onXer={() => download('/export/xer', model, `${model.id||'casey'}_Schedule.xer`)}
+          onQcra={() => download('/export/qcra-qsra', model, `${model.id||'casey'}_Risk_Curves.xlsx`)}/>
+{/* One-pager & board pack shortcuts live on the Export tab now */}
+      {demoUsed && !isAdminUser && model && <div style={{background:'rgba(245,158,11,0.1)',borderBottom:'1px solid rgba(245,158,11,0.25)',padding:'8px 20px',display:'flex',gap:'16px',alignItems:'center',flexWrap:'wrap'}}>
           <span style={{fontSize:'11px',color:'#f59e0b',fontWeight:'800'}}>✓ FREE RUN COMPLETE</span>
           <span style={{fontSize:'11px',color:'#94a3b8'}}>Exports available below. Earth Demo, Space Demo and Showcase Library always free.</span>
           <a href="mailto:hello@controlorbit.com?subject=CASEY Full Access" style={{marginLeft:'auto',fontSize:'11px',color:'#8df7ff',fontWeight:'700',textDecoration:'none',background:'rgba(141,247,255,0.1)',padding:'4px 12px',borderRadius:'3px',border:'1px solid rgba(141,247,255,0.3)'}}>Request full access →</a>
         </div>}
       <nav className="tabs">
-          {[['today','Today'],['tomorrow','Tomorrow'],['advisor','Advisor'],['export','Export']].map(([id,label]) => (
+          {/* 3 clean top-level tabs */}
+          {[
+            {id:'today',    label:'Intelligence', tabs:['timeline','overview','cost','schedule','risk','monte','assurance']},
+            {id:'tomorrow', label:'Compare',      tabs:['compare','twin','delta','causal']},
+            {id:'export',   label:'Exports',      tabs:['export','outputs']},
+          ].map(({id,label,tabs:tbs})=>(
             <button key={id}
-              className={(['overview','cost','schedule','risk','monte','assurance'].includes(tab)&&id==='today')||(['compare','twin'].includes(tab)&&id==='tomorrow')||(tab===id)?'active':''}
-              onClick={() => { if(id==='today') setTab('overview'); else if(id==='tomorrow') setTab('compare'); else setTab(id); }}
-              style={{fontSize:'11px',fontWeight:'700',padding:'6px 18px',letterSpacing:'.08em',textTransform:'uppercase'}}
+              className={(tbs.includes(tab)&&id!=='export')||tab===id?'active':''}
+              onClick={()=>{ if(id==='today')setTab('timeline'); else if(id==='tomorrow')setTab('compare'); else setTab(id); }}
+              style={{fontSize:'12px',fontWeight:'700',padding:'7px 20px',letterSpacing:'.06em',textTransform:'uppercase'}}
             >{label}</button>
           ))}
-          {['overview','cost','schedule','risk','monte','assurance'].includes(tab) && <div style={{display:'flex',gap:0,marginLeft:12,borderLeft:'1px solid rgba(255,255,255,0.1)',paddingLeft:12}}>
-            {[['overview','Overview'],['cost','Cost'],['schedule','Schedule'],['risk','Risk'],['monte','QCRA/QSRA'],['assurance','Assurance']].map(([id,label])=>(
-              <button key={id} className={tab===id?'active':''} onClick={()=>setTab(id)} style={{fontSize:'10px',padding:'4px 10px',opacity:tab===id?1:0.6}}>{label}</button>
-            ))}
-          </div>}
-          {['compare','twin'].includes(tab) && <div style={{display:'flex',gap:0,marginLeft:12,borderLeft:'1px solid rgba(255,255,255,0.1)',paddingLeft:12}}>
-            {[['compare','Scenarios'],['twin','Decision Sim']].map(([id,label])=>(
-              <button key={id} className={tab===id?'active':''} onClick={()=>setTab(id)} style={{fontSize:'10px',padding:'4px 10px',opacity:tab===id?1:0.6}}>{label}</button>
-            ))}
-          </div>}
+          {/* Intelligence sub-tabs */}
+          {['timeline','overview','cost','schedule','risk','monte','assurance'].includes(tab) && (
+            <div style={{display:'flex',gap:0,marginLeft:14,borderLeft:'1px solid rgba(255,255,255,.08)',paddingLeft:14}}>
+              {[['timeline','◎ Timeline'],['overview','Intelligence'],['cost','Cost'],['schedule','Schedule'],['risk','Risk'],['monte','Risk Curves'],['assurance','Board Pack']].map(([id,label])=>(
+                <button key={id} className={tab===id?'active':''} onClick={()=>setTab(id)}
+                  style={{fontSize:'10px',padding:'4px 10px',opacity:tab===id?1:0.5,fontWeight:tab===id?'700':'400',color:id==='timeline'&&tab===id?'#8df7ff':'inherit'}}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
+          {/* Compare sub-tabs */}
+          {['compare','twin','delta','causal','portfolio'].includes(tab) && (
+            <div style={{display:'flex',gap:0,marginLeft:14,borderLeft:'1px solid rgba(255,255,255,.08)',paddingLeft:14}}>
+              {[['compare','Scenarios'],['twin','Decision Sim'],['portfolio','Portfolio'],['delta','Delta']].map(([id,label])=>(
+                <button key={id} className={tab===id?'active':''} onClick={()=>setTab(id)} style={{fontSize:'10px',padding:'4px 10px',opacity:tab===id?1:0.5}}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
+          {/* Active scenario badge — right side of nav, not its own bar */}
+          {model?.scenario && model.scenario!=='base' && (
+            <div style={{marginLeft:'auto',padding:'3px 12px',background:'rgba(6,182,212,.1)',border:'1px solid rgba(6,182,212,.25)',borderRadius:12,fontSize:'8.5px',fontWeight:'700',color:'#06b6d4',letterSpacing:'.06em',alignSelf:'center'}}>
+              {(model.scenario_label||'').toUpperCase()} ACTIVE
+            </div>
+          )}
         </nav>
-        {tab === 'overview' && <>
-          {/* ── ROLE FILTER BAR ─────────────────────────────────────────── */}
-          <div style={{display:'flex',gap:6,marginBottom:12,padding:'8px 12px',background:'rgba(255,255,255,0.02)',borderRadius:8,border:'1px solid rgba(255,255,255,0.06)',alignItems:'center'}}>
-            <span style={{fontSize:'8px',fontWeight:'800',color:'#475569',letterSpacing:'.12em',marginRight:4}}>VIEWING AS</span>
-            {[['exec','Programme Director'],['board','Board'],['pm','Project Manager'],['analyst','QS · Scheduler · Risk']].map(([m,label])=>(
-              <button key={m} onClick={()=>setViewMode(m)} style={{padding:'5px 12px',borderRadius:20,border:`1px solid ${viewMode===m?'rgba(141,247,255,0.5)':'rgba(255,255,255,0.08)'}`,background:viewMode===m?'rgba(141,247,255,0.1)':'transparent',color:viewMode===m?'#8df7ff':'#475569',fontSize:'9px',fontWeight:viewMode===m?'800':'500',cursor:'pointer',transition:'all .15s'}}>
-                {label}
-              </button>
-            ))}
-            {model?.scenario && model.scenario !== 'base' && <div style={{marginLeft:'auto',padding:'3px 10px',background:'rgba(6,182,212,0.1)',border:'1px solid rgba(6,182,212,0.25)',borderRadius:12,fontSize:'8px',fontWeight:'700',color:'#06b6d4'}}>{(model.scenario_label||'').toUpperCase()} SCENARIO ACTIVE</div>}
-            {model?.evidence_mode && <div style={{marginLeft:model?.scenario&&model.scenario!=='base'?4:'auto',padding:'3px 10px',background:'rgba(16,185,129,0.1)',border:'1px solid rgba(16,185,129,0.3)',borderRadius:12,fontSize:'8px',fontWeight:'700',color:'#10b981'}}>🔗 EVIDENCE MODE</div>}
-          </div>
 
+        {/* EstimateClassControl — only on deep-analysis sub-tabs, not on timeline */}
+        {model && ['overview','cost','schedule','risk','monte','assurance'].includes(tab) && (
+          <EstimateClassControl classLevel={classLevel} scheduleLevel={scheduleLevel} onChange={handleClassChange} model={model}/>
+        )}
+
+        {/* TIMELINE — hero page */}
+        {tab === 'timeline' && (
+          <section style={{padding:'0 0 24px',background:'#06090f'}}>
+            <ProjectTimeline model={model} actualProgress={model?._actualsLoaded ? (model.actual_progress_t || 0) : 0}/>
+          </section>
+        )}
+
+        {tab === 'overview' && <>
           {/* ── EXECUTIVE / CFO VIEW ─────────────────────────────────────── */}
           {/* ── PROGRAMME DIRECTOR ─── */}
 
@@ -4081,15 +4694,7 @@ return <div className="app v50EliteApp">
               display:'flex',alignItems:'center',gap:16,flexWrap:'wrap',
             }}>
               <div style={{fontSize:'8px',fontWeight:'900',color:'#334155',letterSpacing:'.22em',flexShrink:0,textTransform:'uppercase'}}>Casey Verdict</div>
-              <div style={{fontSize:'14px',fontWeight:'800',color:'#f1f5f9',lineHeight:1.5,flex:1,minWidth:220}}>
-                {model.institutional_authority_line || (
-                  (model.confidence_pct||0)>=75
-                    ? `${model.cost_p50} · ${model.estimate_class_name||'Class 3'} · ${model.confidence_pct}% board confidence. Ready for capital commitment.`
-                    : (model.confidence_pct||0)>=55
-                    ? `${model.cost_p50} · ${model.estimate_class_name||'Class 3'} · ${model.confidence_pct}% confidence. Conditional — ${75-(model.confidence_pct||0)} points short of 75% board threshold.`
-                    : `${model.cost_p50} · ${model.estimate_class_name||'Class 3'} · ${model.confidence_pct}% confidence. Do not approve.`
-                )}
-              </div>
+              <TypewriterVerdict model={model}/>
               <div style={{
                 padding:'7px 22px',borderRadius:20,fontSize:'12px',fontWeight:'900',letterSpacing:'.14em',flexShrink:0,
                 background:(model.confidence_pct||0)>=75?'#10b981':(model.confidence_pct||0)>=55?'#f59e0b':'#ef4444',
@@ -4143,9 +4748,7 @@ return <div className="app v50EliteApp">
                 <div style={{fontSize:'10px',fontWeight:'900',letterSpacing:'.18em',marginBottom:10,textTransform:'uppercase',color:(model.confidence_pct||0)>=75?'#10b981':(model.confidence_pct||0)>=55?'#f59e0b':'#ef4444'}}>
                   {(model.confidence_pct||0)>=75?'Board-ready':(model.confidence_pct||0)>=55?'Conditional':'Below threshold'}
                 </div>
-                <div style={{fontSize:'48px',fontWeight:'900',lineHeight:1,marginBottom:10,letterSpacing:'-.02em',color:(model.confidence_pct||0)>=75?'#10b981':(model.confidence_pct||0)>=55?'#f59e0b':'#ef4444'}}>
-                  {(model.confidence_pct||0)+'%'}
-                </div>
+                <CountUpNumber target={model.confidence_pct||0} suffix="%" style={{fontSize:'48px',fontWeight:'900',lineHeight:1,marginBottom:10,letterSpacing:'-.02em',color:(model.confidence_pct||0)>=75?'#10b981':(model.confidence_pct||0)>=55?'#f59e0b':'#ef4444'}}/>
                 {/* ANIMATED BAR — draws itself on load */}
                 <div style={{position:'relative',height:6,background:'rgba(255,255,255,0.06)',borderRadius:3,marginBottom:12,overflow:'hidden'}}>
                   <div style={{
@@ -4635,7 +5238,7 @@ return <div className="app v50EliteApp">
                 const curr = model?.currency_symbol || '$';
                 if (col === 'unit_rate' && curr !== '$') return String(val).replace(/\$([0-9])/g, curr + '$1');
                 return String(val);
-              }}/></Card><Card><h2>Cost composition</h2><p className="chartCaption">Direct, indirect and reserve are scenario-controlled and reconciled to selected P50. For the detailed uncertainty view use QCRA/QSRA.</p><ResponsiveContainer width="100%" height={320}><BarChart data={[{name:'Direct',value:direct},{name:'Indirect',value:indirect},{name:'Reserve',value:reserves}]}><CartesianGrid strokeDasharray="3 3" stroke="#ffffff18"/><XAxis dataKey="name"/><YAxis/><Tooltip/><Bar dataKey="value" fill="#8df7ff"/></BarChart></ResponsiveContainer></Card></section>}
+              }}/></Card><Card><h2>Cost composition</h2><p className="chartCaption">Direct, indirect and reserve are scenario-controlled and reconciled to selected P50. Hover bars for detail.</p><CostCompositionChart direct={direct} indirect={indirect} reserves={reserves} currency={model?.currency_symbol||'£'}/></Card></section>}
         {tab === 'schedule' && <section className="layout two">
           {/* XER HEALTH ENGINE */}
           {model?.xer_health && <div style={{gridColumn:'1/-1',display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:10,marginBottom:12}}>
@@ -4878,27 +5481,8 @@ return <div className="app v50EliteApp">
             </div>
           </div>}
 
-          {/* QCRA + QSRA P VALUES */}
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:12}}>
-            <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:8,padding:'14px 18px'}}>
-              <div style={{fontSize:'9px',fontWeight:'800',color:'#ef4444',marginBottom:8}}>QCRA — COST RISK</div>
-              {[['P10 (optimistic)',model.monte_carlo?.qcra?.p10,'#10b981'],['P50 (base estimate)',model.cost_p50,'#8df7ff'],['P80 (board exposure)',model.cost_p80,'#06b6d4'],['P90 (stress case)',model.monte_carlo?.qcra?.p90,'#ef4444']].map(([k,v,col])=>(
-                <div key={k} style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:5,padding:'4px 8px',background:k.includes('P80')?'rgba(6,182,212,0.08)':'transparent',borderRadius:4}}>
-                  <span style={{fontSize:'9px',color:'#64748b'}}>{k}</span>
-                  <span style={{fontSize:k.includes('P80')?'15px':'11px',fontWeight:'800',color:col}}>{typeof v === 'number' ? (model.currency_symbol||'$')+(v).toFixed(2)+'B' : v}</span>
-                </div>
-              ))}
-            </div>
-            <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:8,padding:'14px 18px'}}>
-              <div style={{fontSize:'9px',fontWeight:'800',color:'#f59e0b',marginBottom:8}}>QSRA — SCHEDULE RISK</div>
-              {[['P10 (optimistic)',model.monte_carlo?.qsra?.p10+' months','#10b981'],['P50 (base duration)',model.schedule,'#8df7ff'],['P80 (board exposure)',model.monte_carlo?.qsra?.p80+' months','#f59e0b'],['P90 (stress case)',model.monte_carlo?.qsra?.p90+' months','#ef4444']].map(([k,v,col])=>(
-                <div key={k} style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:5,padding:'4px 8px',background:k.includes('P80')?'rgba(245,158,11,0.08)':'transparent',borderRadius:4}}>
-                  <span style={{fontSize:'9px',color:'#64748b'}}>{k}</span>
-                  <span style={{fontSize:k.includes('P80')?'15px':'11px',fontWeight:'800',color:col}}>{v}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+          {/* QCRA + QSRA — VISUAL PROBABILITY CURVES */}
+          <QCRAQSRAChart model={model}/>
 
           {/* CONFIDENCE DRIVERS */}
           {model?.confidence_breakdown?.length > 0 && <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:8,padding:'12px 16px'}}>
@@ -4990,31 +5574,55 @@ return <div className="app v50EliteApp">
 
         {tab === 'causal' && <section className="layout two"><CausalGraph model={model}/><BenchmarkIntelligence model={model}/><Card><h2>Evidence Mode: {viewMode}</h2>{evidenceScorecard(model).map((x,i)=><div className="reason" key={x.name}><span>{i+1}</span><b>{x.name}: {Math.round(x.score)+'%'}</b><br/>{x.note}</div>)}</Card></section>}
 
-        {tab === 'export' && <section className="layout two">
-          <div style={{gridColumn:'1/-1',paddingTop:16}}>
-            <div style={{fontSize:'15px',fontWeight:'900',color:'#e2e8f0',marginBottom:4}}>Export & Downloads</div>
-            <div style={{fontSize:'11px',color:'#475569',marginBottom:24,lineHeight:1.6}}>All files generated live from the current model. Exports reflect the active scenario. Click any button to download.</div>
-            <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12,marginBottom:20}}>
-              {[
-                {label:'Board Pack PDF',sub:'Executive summary, KPIs, scenarios, benchmarks, board attack questions',icon:'📄',fn:()=>download('/export/pdf',model,model.id+'_Board_Pack.pdf')},
-                {label:'Cost Workbook XLSX',sub:'Full CBS cost model — P10/P50/P90 by line, unit rates, direct/indirect/reserve',icon:'📊',fn:()=>download('/export/workbook',model,model.id+'_Cost_Workbook.xlsx')},
-                {label:'Risk Register XLSX',sub:'Full risk register: cause, event, impact, owner, EMV, mitigation, trigger',icon:'🛡️',fn:()=>download('/export/risk-register',model,model.id+'_Risk_Register.xlsx')},
-                {label:'Schedule XER',sub:'Primavera P6 compatible schedule with phases, activities and logic ties',icon:'📅',fn:()=>download('/export/xer',model,model.id+'_Schedule.xer')},
-                {label:'QCRA/QSRA Pack',sub:'Monte Carlo cost and schedule probability curves, tornado chart, P80/P90',icon:'📈',fn:()=>download('/export/qcra-qsra',model,model.id+'_QCRA_QSRA.xlsx')},
-                {label:'Audit Model JSON',sub:'Full machine-readable model — all fields, benchmark provenance, evidence chain',icon:'🔬',fn:()=>download('/export/json',model,model.id+'_Audit.json')},
-              ].map((ex,i)=>(
-                <div key={i} style={{background:'#060d1e',border:'1px solid rgba(255,255,255,0.07)',borderRadius:10,padding:'18px 20px'}}>
-                  <div style={{fontSize:'24px',marginBottom:10}}>{ex.icon}</div>
-                  <div style={{fontSize:'13px',fontWeight:'800',color:'#e2e8f0',marginBottom:6}}>{ex.label}</div>
-                  <div style={{fontSize:'11px',color:'#475569',lineHeight:1.5,marginBottom:14}}>{ex.sub}</div>
-                  <button onClick={ex.fn} style={{width:'100%',padding:'9px',background:'rgba(141,247,255,0.08)',border:'1px solid rgba(141,247,255,0.2)',borderRadius:6,color:'#8df7ff',fontSize:'12px',fontWeight:'700',cursor:'pointer'}}>Download →</button>
-                </div>
-              ))}
+        {tab === 'export' && model && <section style={{padding:'20px 20px 32px'}}>
+          {/* ONE-PAGE BRIEF — hero export, always first */}
+          <div style={{background:'linear-gradient(135deg,rgba(16,185,129,.06),rgba(16,185,129,.02))',border:'1px solid rgba(16,185,129,.2)',borderRadius:10,padding:'20px 24px',marginBottom:20,display:'flex',alignItems:'center',gap:20,flexWrap:'wrap'}}>
+            <div style={{flex:1,minWidth:200}}>
+              <div style={{fontSize:10,fontWeight:700,color:'#10b981',letterSpacing:'.12em',textTransform:'uppercase',marginBottom:4}}>✦ One-page executive brief</div>
+              <div style={{fontSize:13,fontWeight:700,color:'#e2e8f0',marginBottom:3}}>{model.title||model.subsector||'Programme'} · {model.cost_p50} · {model.confidence_pct}% confidence</div>
+              <div style={{fontSize:11,color:'rgba(255,255,255,.35)',lineHeight:1.5}}>A4 board-ready brief — P50/P80/P90, governing constraint, top risks, RAG verdict. Opens print dialog. One click to PDF.</div>
             </div>
+            <button onClick={()=>printOnePager(model,whiteLabelLogo)} style={{padding:'12px 28px',background:'#10b981',border:'none',borderRadius:6,color:'#fff',fontSize:13,fontWeight:700,cursor:'pointer',flexShrink:0,boxShadow:'0 0 24px rgba(16,185,129,.3)'}}>Generate one-page brief →</button>
+          </div>
+
+          {/* BOARD PACK — the main event */}
+          <div style={{background:'linear-gradient(135deg,rgba(141,247,255,.06),rgba(141,247,255,.02))',border:'1px solid rgba(141,247,255,.2)',borderRadius:10,padding:'20px 24px',marginBottom:20,display:'flex',alignItems:'center',gap:20,flexWrap:'wrap'}}>
+            <div style={{flex:1,minWidth:200}}>
+              <div style={{fontSize:10,fontWeight:700,color:'#8df7ff',letterSpacing:'.12em',textTransform:'uppercase',marginBottom:4}}>Board Pack PPTX — 13 slides</div>
+              <div style={{fontSize:13,fontWeight:700,color:'#e2e8f0',marginBottom:3}}>Cover · Executive summary · Cost model · Schedule · Risk register · QCRA/QSRA · Benchmark · Board assurance · Scenarios · Timeline · Decision · Recovery</div>
+              <div style={{fontSize:11,color:'rgba(255,255,255,.35)',lineHeight:1.5}}>World-class PowerPoint. Sector-coloured. Speaker notes included. Ready to send to a client unedited.</div>
+            </div>
+            <button onClick={()=>download('/export/board-pack-pptx',{...model,...boardPdfCoverData(model,whiteLabelLogo)},model.id+'_CASEY_Board_Pack.pptx')} style={{padding:'12px 28px',background:'rgba(141,247,255,.12)',border:'1px solid rgba(141,247,255,.35)',borderRadius:6,color:'#8df7ff',fontSize:13,fontWeight:700,cursor:'pointer',flexShrink:0}}>Download board pack →</button>
+          </div>
+
+          {/* SUPPORTING EXPORTS GRID */}
+          <div style={{fontSize:10,fontWeight:700,color:'rgba(255,255,255,.25)',letterSpacing:'.12em',textTransform:'uppercase',marginBottom:12}}>Supporting deliverables</div>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(240px,1fr))',gap:10}}>
+            {[
+              {label:'Cost Workbook',      detail:'CBS cost model · P10/P50/P80/P90 · direct/indirect/reserve · cover tab · risk heatmap',  color:'#4a9eff', fn:()=>download('/export/workbook-with-cover',{...model,...xlsxCoverTabData(model,whiteLabelLogo)},model.id+'_Cost_Workbook.xlsx')},
+              {label:'Risk Register',      detail:'Cause · event · impact · owner · EMV · mitigation · trigger',           color:'#f59e0b', fn:()=>download('/export/risk-register',model,model.id+'_Risk_Register.xlsx')},
+              {label:'Schedule XER',       detail:'Primavera P6 compatible · phases · activities · logic ties',            color:'#a78bfa', fn:()=>download('/export/xer',model,model.id+'_Schedule.xer')},
+              {label:'QCRA/QSRA Pack',     detail:'Monte Carlo curves · tornado chart · P80/P90 cost and schedule',        color:'#ef4444', fn:()=>download('/export/qcra-qsra',model,model.id+'_QCRA_QSRA.xlsx')},
+              {label:'Audit Model JSON',   detail:'Machine-readable · all fields · benchmark provenance · evidence chain',  color:'#10b981', fn:()=>download('/export/json',model,model.id+'_Audit.json')},
+              {label:'Timeline PDF',       detail:'Four-track animated timeline as A3 print-ready PDF',                    color:'#8df7ff', fn:()=>printOnePager(model,whiteLabelLogo)},
+            ].map((ex,i)=>(
+              <button key={i} onClick={ex.fn} style={{background:'rgba(255,255,255,.025)',border:'1px solid rgba(255,255,255,.07)',borderRadius:8,padding:'14px 16px',textAlign:'left',cursor:'pointer',transition:'all .14s',fontFamily:'inherit'}}
+                onMouseOver={e=>{e.currentTarget.style.background='rgba(255,255,255,.05)';e.currentTarget.style.borderColor='rgba(255,255,255,.14)';}}
+                onMouseOut={e=>{e.currentTarget.style.background='rgba(255,255,255,.025)';e.currentTarget.style.borderColor='rgba(255,255,255,.07)';}}>
+                <div style={{fontSize:11,fontWeight:700,color:ex.color,marginBottom:5,letterSpacing:'.02em'}}>{ex.label}</div>
+                <div style={{fontSize:10,color:'rgba(255,255,255,.3)',lineHeight:1.5,marginBottom:10}}>{ex.detail}</div>
+                <div style={{fontSize:10,fontWeight:600,color:ex.color}}>Download →</div>
+              </button>
+            ))}
+          </div>
+
+          {/* MONTHLY ACTUALS */}
+          <div style={{marginTop:24}}>
+            <MonthlyActualsFeed model={model} onUpdate={(actuals)=>{setModel(m=>({...m,monthly_actuals:actuals,_actualsLoaded:true}));}}/>
           </div>
         </section>}
         {tab === 'outputs' && <section className="layout two"><Card><h2>Generated Artefacts</h2><p>The public demo previews the intelligence pack. Enterprise access unlocks the live generated controls deliverables.</p><div className="exports v50Exports lockedExports">
-          <button onClick={() => download('/export/workbook', model, `${model.id || 'casey'}_COST_WORKBOOK.xlsx`)}><FileSpreadsheet/> Generate Cost Model XLSX</button>
+          <button onClick={() => download('/export/workbook-with-cover', {...model,...xlsxCoverTabData(model,whiteLabelLogo)}, `${model.id || 'casey'}_COST_WORKBOOK.xlsx`)}><FileSpreadsheet/> Generate Cost Model XLSX</button>
           <button onClick={() => download('/export/risk-register', model, `${model.id || 'casey'}_RISK_REGISTER.xlsx`)}><Database/> Generate Risk Register XLSX</button>
           <button onClick={() => download('/export/xer', model, `${model.id || 'casey'}_PRA_SCHEDULE.xer`)}><Workflow/> Generate PRA Schedule XER</button>
           <button onClick={() => download('/export/qcra-qsra', model, `${model.id || 'casey'}_QCRA_QSRA.xlsx`)}><BarChart3/> Generate QCRA/QSRA Pack</button>
@@ -5023,6 +5631,39 @@ return <div className="app v50EliteApp">
           <a className="contactBtn" href={emailLink}><Mail/> Request Enterprise Review</a></div></Card><Card><h2>What the pack delivers</h2>{['Executive control centre with project, scenario, class, level and confidence clearly identified','Scenario comparison covering Base, Faster, Cheaper, Lower Risk and Premium cases','Selected estimate class plus all class levels for audit and challenge','Direct, indirect and reserve cost views with QCRA cost curve and cost tornado','All schedule levels with QSRA schedule curve and schedule tornado','Risk register with cause, event, impact, owner, mitigation, trigger and quantified likelihood','Basis of Estimate, assumptions, exclusions and benchmark validation','Commercial next steps: buyer action, procurement challenge and board decision path'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card></section>}
 
         {tab === 'assurance' && <><IncumbentPressurePanel model={model} direct={direct} indirect={indirect} reserves={reserves} reconcileCheck={reconcileCheck}/><section className="layout two"><Card><h2>Assurance room weapons</h2>{['Open with the P80/P90 exposure, not the headline P50.','Ask which evidence package retires the governing constraint.','Force every mitigation to name owner, trigger, residual exposure and date.','Show scenario trade-offs live before anyone can defend a single-point estimate.','Export the audit model immediately so the conversation moves from opinion to traceability.'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card><Card><h2>Why CASEY changes the conversation</h2>{['CASEY recalculates cost, schedule, confidence and board posture from one source of truth in seconds.','Every scenario is a complete recalculation — not a slide edit.','The system surfaces contradictions rather than polishing the management narrative.','Static reports become live investment-committee intelligence.'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card></section><section className="layout one"><ProgrammeHealthSignal onRunHealthCheck={runHealthCheck}/></section></>}
+
+        {/* ── PORTFOLIO TAB — multi-programme P80 dashboard ── */}
+        {tab === 'portfolio' && (
+          <section className="layout one" style={{padding:'16px 20px'}}>
+            <PortfolioDashboard
+              savedProjects={(() => { try { return JSON.parse(localStorage.getItem('casey_saved_projects') || '[]'); } catch { return []; } })()}
+              onLoad={(p) => { setModel(p); setTab('timeline'); }}
+            />
+          </section>
+        )}
+
+        {/* ── RISK HEATMAP — injected below risk register ── */}
+        {tab === 'risk' && model && (
+          <section className="layout one" style={{padding:'0 0 24px'}}>
+            <RiskRegisterHeatmap model={model}/>
+          </section>
+        )}
+
+        {/* ── CHALLENGE MY BOARD PACK ── */}
+        {tab === 'assurance' && model && (
+          <section className="layout one" style={{padding:'0 20px 24px'}}>
+            <DocumentUpload model={model} apiBase={API}/>
+          </section>
+        )}
+
+        {/* ── MONTHLY ACTUALS in export tab ── */}
+        {tab === 'export' && model && (
+          <section className="layout one" style={{padding:'0 20px 24px'}}>
+            <MonthlyActualsFeed model={model} onUpdate={(actuals) => {
+              setModel(m => ({ ...m, monthly_actuals: actuals, _actualsLoaded: true }));
+            }}/>
+          </section>
+        )}
 
         {tab === 'advisor' && <>
           <section className="layout two">
@@ -5068,20 +5709,7 @@ return <div className="app v50EliteApp">
                   "{x}"
                 </button>)}
               </div>
-              <div className="advisorPrompts bigButtons">{[
-                'Why is this estimate probably wrong?',
-                'What assumption in this submission is most likely to be false?',
-                'Which risk will kill this programme if it is not closed before capital commitment?',
-                'What is management not telling the board?',
-                'Why should the board not approve this today?',
-                'What would make you reject this submission?',
-                'If this programme fails publicly, what is the primary cause?',
-                'Where is the optimism bias in this estimate?',
-                'What does the reference class say the actual outturn will be?',
-                'Which benchmark failure does this most resemble and why?',
-                'What is the one piece of evidence missing that would change your view?',
-                'Challenge my confidence score — is it justified?',
-              ].map(x=><button key={x} data-question={x} onClick={()=>ask(x)}><Brain size={14}/>{x}</button>)}</div>
+              <RotatingChallenge onAsk={ask}/>
               <div className="chatBox boardInterrogation">{chat.length ? chat.map((m,i)=><div key={i} className={`msg ${m.role}`}>{renderChatMsg(m)}</div>) : <div className="msg assistant"><b>Board attack ready.</b><br/>Click any challenge above. CASEY will answer against the active scenario, not as a generic chatbot.</div>}</div>
               <div className="ask"><input value={chatQ} onChange={e=>setChatQ(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')ask()}} placeholder="Challenge the programme — e.g. Why is this estimate wrong? Which risk will kill this? What is management hiding?"/><button onClick={() => ask(chatQ)}>Ask</button></div>
             </Card>
