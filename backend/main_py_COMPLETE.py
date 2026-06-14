@@ -737,3 +737,455 @@ No more cold start. Every demo opens instantly.
 
 ════════════════════════════════════════════════════════════════
 """
+
+# ════════════════════════════════════════════════════════════════════════════
+# ═══ NEW ROUTE A: PUBLIC API — XER / P6 INGESTION ═══════════════════════
+# ════════════════════════════════════════════════════════════════════════════
+#
+# POST /api/ingest-xer
+#
+# What it does:
+#   Accepts a raw Primavera P6 XER file (or JSON schedule payload)
+#   → Parses activities, logic ties, critical path, WBS, resources
+#   → Runs CASEY intelligence engine against the real schedule
+#   → Returns a full CASEY model JSON (same shape as /generate)
+#   → Client can then download board pack, risk register, QCRA/QSRA
+#
+# This is the feature that turns CASEY into infrastructure.
+# A client connects their live P6 → Sunday night cron → updated forecast.
+# T&T cannot replicate a product their clients use automatically.
+#
+# USAGE:
+#   curl -X POST https://corbit-1.onrender.com/api/ingest-xer \
+#     -H "Content-Type: application/json" \
+#     -d '{"xer_content": "<raw XER text>", "currency": "£", "location": "UK"}'
+#
+# Or from the frontend (DocumentUpload component already handles file reading):
+#   POST /api/ingest-xer
+#   { "xer_content": "...", "xer_filename": "HS2.xer", "currency": "£" }
+#
+# ════════════════════════════════════════════════════════════════════════════
+
+@app.post("/api/ingest-xer")
+async def ingest_xer(request: Request):
+    """
+    Accept a Primavera P6 XER file → return a full CASEY model JSON.
+    The model can then be used to generate board pack, risk register,
+    QCRA/QSRA, timeline — all from the client's live schedule.
+    """
+    import re, datetime, anthropic
+
+    try:
+        payload = await request.json()
+        xer_raw = payload.get('xer_content', '')
+        xer_filename = payload.get('xer_filename', 'schedule.xer')
+        currency = payload.get('currency', '£')
+        location = payload.get('location', '')
+        client_name = payload.get('client', '')
+
+        if not xer_raw:
+            return {"error": "No XER content provided. Send xer_content as a string."}
+
+        # ── PARSE XER ──
+        # XER files are tab-delimited with %T table markers and %F field headers
+        tables = {}
+        current_table = None
+        current_fields = []
+
+        for line in xer_raw.split('\n'):
+            line = line.rstrip('\r')
+            if line.startswith('%T\t'):
+                current_table = line[3:].strip()
+                tables[current_table] = []
+                current_fields = []
+            elif line.startswith('%F\t') and current_table:
+                current_fields = line[3:].split('\t')
+            elif line.startswith('%R\t') and current_table and current_fields:
+                values = line[3:].split('\t')
+                row = dict(zip(current_fields, values))
+                tables[current_table].append(row)
+            elif line.startswith('%E'):
+                current_table = None
+
+        # Extract key data
+        activities = tables.get('TASK', [])
+        project_rows = tables.get('PROJECT', [])
+        wbs_rows = tables.get('PROJWBS', [])
+        relations = tables.get('TASKPRED', [])
+        resources = tables.get('TASKRSRC', [])
+
+        # Project metadata
+        project = project_rows[0] if project_rows else {}
+        proj_name = project.get('proj_short_name', '') or project.get('proj_id', '') or xer_filename.replace('.xer','')
+
+        # Activity stats
+        total_acts = len(activities)
+        critical_acts = [a for a in activities if a.get('driving_path_flag','') == 'Y' or a.get('cstr_type','') in ['CS_ALAP']]
+        
+        # Parse dates
+        def parse_xer_date(s):
+            if not s: return None
+            for fmt in ['%Y-%m-%d %H:%M', '%Y-%m-%d', '%d-%b-%y']:
+                try: return datetime.datetime.strptime(s.strip(), fmt)
+                except: pass
+            return None
+
+        earliest_start = None
+        latest_finish = None
+        for a in activities:
+            s = parse_xer_date(a.get('act_start_date') or a.get('early_start_date') or a.get('target_start_date',''))
+            f = parse_xer_date(a.get('act_end_date') or a.get('early_end_date') or a.get('target_end_date',''))
+            if s and (earliest_start is None or s < earliest_start): earliest_start = s
+            if f and (latest_finish is None or f > latest_finish): latest_finish = f
+
+        duration_months = 0
+        if earliest_start and latest_finish:
+            duration_months = round((latest_finish - earliest_start).days / 30.44)
+
+        # Logic quality
+        open_ends = sum(1 for a in activities if a.get('task_type','') not in ['TT_LOE','TT_WBS'] and
+                       not any(r.get('pred_task_id') == a.get('task_id') or r.get('task_id') == a.get('task_id') for r in relations))
+
+        logic_quality = 'GOOD' if open_ends < total_acts * 0.05 else \
+                       'REVIEW' if open_ends < total_acts * 0.12 else 'POOR'
+
+        # Build XER summary for Claude
+        xer_summary = f"""
+PARSED XER SCHEDULE — {proj_name}
+Total activities: {total_acts}
+Apparent critical activities: {len(critical_acts)}
+Logic ties (relationships): {len(relations)}
+Open ends (missing logic): {open_ends} ({round(open_ends/max(total_acts,1)*100)}%)
+Logic quality: {logic_quality}
+Earliest start: {earliest_start.strftime('%b %Y') if earliest_start else 'Unknown'}
+Latest finish: {latest_finish.strftime('%b %Y') if latest_finish else 'Unknown'}
+Duration: {duration_months} months
+WBS levels: {len(wbs_rows)}
+Resources: {len(resources)}
+Location: {location or 'Not specified'}
+Currency: {currency}
+Client: {client_name or 'Not specified'}
+
+TOP 15 ACTIVITIES (by name):
+{chr(10).join([f"  - {a.get('task_name','?')[:60]}" for a in activities[:15]])}
+
+WBS STRUCTURE (top levels):
+{chr(10).join([f"  - {w.get('wbs_name','?')[:50]}" for w in wbs_rows[:8]])}
+"""
+
+        # ── CALL CLAUDE TO GENERATE CASEY MODEL FROM XER ──
+        ai_client = anthropic.Anthropic()
+
+        system_prompt = """You are CASEY, the world's most advanced programme intelligence system.
+You have been given parsed data from a real Primavera P6 XER schedule.
+Generate a complete CASEY intelligence model from this data.
+Return ONLY valid JSON — no markdown, no preamble, no explanation.
+The JSON must be a complete CASEY model that the frontend can render."""
+
+        user_prompt = f"""Generate a complete CASEY programme intelligence model from this real P6 XER schedule.
+
+{xer_summary}
+
+Return a complete JSON model with ALL of these fields populated from the schedule data:
+{{
+  "programme_title": "Derived from project name",
+  "title": "Short title",
+  "subsector": "Inferred from activity names and WBS",
+  "mode": "Earth",
+  "location": "{location or 'Inferred from project'}",
+  "currency_symbol": "{currency}",
+  "start_date": "ISO date from earliest activity",
+  "schedule": "{duration_months} months",
+  "schedule_months": {duration_months},
+  "cost_p50": "Estimated from sector benchmarks and duration",
+  "cost_p50_bn": 0.0,
+  "cost_p80": "P80 cost",
+  "cost_p80_bn": 0.0,
+  "cost_p90": "P90 cost",
+  "direct_cost": "Direct works estimate",
+  "indirect_cost": "Indirect / prelims",
+  "p80_reserve": "Reserve",
+  "p80_reserve_pct": 18,
+  "confidence_pct": 62,
+  "risk": "Medium",
+  "estimate_class": 3,
+  "estimate_class_name": "Class 3 — Budget",
+  "schedule_level": 3,
+  "schedule_level_name": "Level 3",
+  "oba_pct": 35,
+  "governing_constraint_prominent": "Identified from critical path",
+  "institutional_authority_line": "One sentence board verdict",
+  "monte_carlo": {{
+    "qcra": {{"p10": "...", "p50": "...", "p80": "...", "p90": "..."}},
+    "qsra": {{"p10": {duration_months-20}, "p50": {duration_months}, "p80": {duration_months+25}, "p90": {duration_months+45}}}
+  }},
+  "xer_health": {{
+    "headline": "Schedule quality assessment",
+    "activity_count": {total_acts},
+    "critical_count": {len(critical_acts)},
+    "logic_quality": "{logic_quality}",
+    "float_quality": "REVIEW",
+    "critical_pct": "{round(len(critical_acts)/max(total_acts,1)*100)}",
+    "open_ends": {open_ends},
+    "board_flag": "Key schedule risk identified from XER"
+  }},
+  "risks": [
+    {{"title": "Risk 1 from schedule analysis", "probability": "High", "impact": "Critical", "cause": "...", "owner": "TBC", "mitigation": "...", "cost_emv_bn": 0.1, "schedule_impact_weeks": 8}},
+    {{"title": "Risk 2", "probability": "Medium", "impact": "Major", "cause": "...", "owner": "TBC", "mitigation": "...", "cost_emv_bn": 0.05, "schedule_impact_weeks": 4}},
+    {{"title": "Risk 3", "probability": "High", "impact": "Major", "cause": "...", "owner": "TBC", "mitigation": "...", "cost_emv_bn": 0.08, "schedule_impact_weeks": 6}},
+    {{"title": "Risk 4", "probability": "Medium", "impact": "Moderate", "cause": "...", "owner": "TBC", "mitigation": "...", "cost_emv_bn": 0.03, "schedule_impact_weeks": 2}},
+    {{"title": "Risk 5", "probability": "Low", "impact": "Major", "cause": "...", "owner": "TBC", "mitigation": "...", "cost_emv_bn": 0.04, "schedule_impact_weeks": 3}}
+  ],
+  "schedule_detail": [
+    {{"activity": "Phase name", "start": "date", "end": "date", "critical": true}}
+  ],
+  "benchmark_comparison": [
+    {{"name": "Comparable programme", "cost_bn": 0.0, "cost_growth_pct": 25, "schedule_slip_months": 12, "lesson": "..."}}
+  ],
+  "board_attack_questions": [
+    "Board question 1?", "Board question 2?", "Board question 3?", "Board question 4?", "Board question 5?"
+  ],
+  "confidence_breakdown": [
+    {{"driver": "Schedule maturity", "effect": "Class 3 XER uploaded", "delta": 6}},
+    {{"driver": "Logic quality", "effect": "{logic_quality}", "delta": 4}}
+  ],
+  "prompt": "XER ingestion: {proj_name}",
+  "source": "xer_ingestion",
+  "xer_filename": "{xer_filename}",
+  "xer_activity_count": {total_acts},
+  "xer_open_ends": {open_ends}
+}}
+
+Make all values specific and plausible for the sector, location and duration.
+Populate costs from sector benchmarks (not dummy zeros).
+Identify real risks from the WBS and activity names provided."""
+
+        response = ai_client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=4000,
+            system=system_prompt,
+            messages=[{"role": "user", "content": user_prompt}]
+        )
+
+        raw = response.content[0].text.strip()
+        if raw.startswith('```'):
+            raw = raw.split('```')[1]
+            if raw.startswith('json'): raw = raw[4:]
+        raw = raw.strip()
+
+        model_json = json.loads(raw)
+
+        # Add XER health data we computed
+        model_json['xer_health'] = {
+            'headline': f"Schedule parsed: {total_acts} activities · {logic_quality} logic · {open_ends} open ends",
+            'activity_count': total_acts,
+            'critical_count': len(critical_acts),
+            'logic_quality': logic_quality,
+            'float_quality': 'REVIEW' if open_ends > 5 else 'GOOD',
+            'critical_pct': f"{round(len(critical_acts)/max(total_acts,1)*100)}%",
+            'open_ends': open_ends,
+            'board_flag': f"{open_ends} open-end activities reduce schedule confidence. Review logic before board submission." if open_ends > 3 else None,
+        }
+        model_json['source'] = 'xer_ingestion'
+        model_json['xer_filename'] = xer_filename
+
+        return {
+            "model": model_json,
+            "xer_stats": {
+                "activities": total_acts,
+                "relations": len(relations),
+                "open_ends": open_ends,
+                "logic_quality": logic_quality,
+                "duration_months": duration_months,
+                "start": earliest_start.isoformat() if earliest_start else None,
+                "finish": latest_finish.isoformat() if latest_finish else None,
+            },
+            "message": f"XER parsed successfully. {total_acts} activities · {duration_months} months · {logic_quality} logic quality."
+        }
+
+    except json.JSONDecodeError as e:
+        return {"error": f"Claude returned invalid JSON: {str(e)}", "raw_preview": (raw or '')[:300]}
+    except ImportError:
+        return {"error": "anthropic not installed — pip install anthropic"}
+    except Exception as e:
+        import traceback
+        return {"error": f"XER ingestion failed: {str(e)}", "trace": traceback.format_exc()[-600:]}
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# ═══ NEW ROUTE B: UPGRADE challenge-document with STREAMING ════════════════
+# ════════════════════════════════════════════════════════════════════════════
+#
+# POST /advisor/challenge-document-stream
+#
+# Same as /advisor/challenge-document but returns a streaming response
+# so the UI can show results appearing in real time (like Claude typing).
+# The frontend shows each gap as it arrives rather than waiting for all.
+#
+# ════════════════════════════════════════════════════════════════════════════
+
+from fastapi.responses import StreamingResponse
+import asyncio
+
+@app.post("/advisor/challenge-document-stream")
+async def challenge_document_stream(request: Request):
+    """
+    Streaming version of document challenge.
+    Returns server-sent events (SSE) so gaps appear in real time.
+    """
+    import anthropic
+
+    try:
+        payload = await request.json()
+        file_b64 = payload.get('file_b64', '')
+        file_name = payload.get('file_name', 'document')
+        model_ctx = payload.get('model', {})
+
+        doc_text = ""
+        if file_b64:
+            file_bytes = base64.b64decode(file_b64)
+            fname_lower = file_name.lower()
+            if fname_lower.endswith('.pdf'):
+                try:
+                    import pdfplumber, io
+                    with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
+                        pages = [p.extract_text() or '' for p in pdf.pages[:20]]
+                        doc_text = '\n'.join(pages)[:14000]
+                except ImportError:
+                    doc_text = f"[PDF: {file_name}]"
+            elif fname_lower.endswith(('.pptx', '.ppt')):
+                try:
+                    from pptx import Presentation
+                    import io
+                    prs = Presentation(io.BytesIO(file_bytes))
+                    doc_text = '\n'.join(shape.text for slide in prs.slides for shape in slide.shapes if hasattr(shape, 'text'))[:14000]
+                except ImportError:
+                    doc_text = f"[PPTX: {file_name}]"
+            elif fname_lower.endswith(('.docx','.doc')):
+                try:
+                    from docx import Document
+                    import io
+                    doc = Document(io.BytesIO(file_bytes))
+                    doc_text = '\n'.join(p.text for p in doc.paragraphs)[:14000]
+                except ImportError:
+                    doc_text = f"[DOCX: {file_name}]"
+
+        model_info = ""
+        if model_ctx:
+            model_info = f"""
+CASEY has already run this programme:
+- Title: {model_ctx.get('title') or model_ctx.get('subsector', 'Unknown')}
+- P50: {model_ctx.get('cost_p50', '?')} · P80: {model_ctx.get('cost_p80', '?')}
+- Confidence: {model_ctx.get('confidence_pct', '?')}% · Schedule: {model_ctx.get('schedule', '?')}
+- Governing constraint: {model_ctx.get('governing_constraint_prominent', 'Not identified')}
+Compare the uploaded document against these CASEY findings."""
+
+        prompt = f"""You are CASEY — the world's most rigorous investment committee examiner.
+A user has uploaded a board pack / stage gate submission.
+{model_info}
+
+DOCUMENT:
+{doc_text or '[No text extracted]'}
+
+Act as a hostile, technically expert investment committee member.
+Be specific. Reference actual content from the document where you can.
+Do not be polite. Do not hedge.
+
+Structure your response exactly as:
+
+## VERDICT
+[One clear sentence: is this board-ready? Yes / Conditional / No — and why in 10 words]
+
+## CRITICAL GAPS
+[For each gap, write: CATEGORY — Finding — Recommendation]
+
+## BOARD QUESTIONS THIS PACK CANNOT ANSWER
+[Number each question. These are the exact questions a board member will ask and this pack has no answer for]
+
+## WHAT'S MISSING
+[Bullet list of specific missing elements — be technical]
+
+## REBUILT CONFIDENCE SCORE
+[State what confidence score CASEY would assign to this pack, and what it would need to reach 75%]"""
+
+        ai_client = anthropic.Anthropic()
+
+        async def generate():
+            with ai_client.messages.stream(
+                model="claude-sonnet-4-6",
+                max_tokens=2500,
+                messages=[{"role": "user", "content": prompt}]
+            ) as stream:
+                for text in stream.text_stream:
+                    yield f"data: {json.dumps({'text': text})}\n\n"
+            yield "data: [DONE]\n\n"
+
+        return StreamingResponse(
+            generate(),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
+        )
+
+    except Exception as e:
+        return {"error": str(e)}
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# ═══ NEW ROUTE C: PUBLIC API HEALTH + DOCS ═════════════════════════════════
+# ════════════════════════════════════════════════════════════════════════════
+
+@app.get("/api")
+async def api_docs():
+    """Public API documentation endpoint."""
+    return {
+        "name": "CASEY Programme Intelligence API",
+        "version": "290",
+        "description": "World-class programme intelligence — cost, schedule, QCRA, QSRA, risk, board pack from one sentence or XER file.",
+        "endpoints": {
+            "POST /generate": "Generate full CASEY intelligence pack from a text prompt",
+            "POST /api/ingest-xer": "Upload Primavera P6 XER → full CASEY model JSON",
+            "POST /advisor/challenge-document": "Upload board pack PDF/PPTX → board challenge analysis",
+            "POST /advisor/challenge-document-stream": "Same, streaming — gaps appear in real time",
+            "POST /export/board-pack-pptx": "Generate 13-slide board pack PPTX from CASEY model",
+            "POST /export/workbook-with-cover": "Generate XLSX with cover tab, risk heatmap, risk register",
+            "POST /actuals/ingest": "Monthly actuals → updated model with actual_progress_t",
+            "POST /ai/timeline-narrative": "AI narrative for advisor what-if events",
+            "POST /advisor/memory/save": "Save advisor conversation to server",
+            "POST /advisor/memory/load": "Load advisor conversation from server",
+            "POST /versions/save": "Save model version (audit trail)",
+            "GET  /versions/{programme_id}": "Get version history",
+            "POST /portfolio/save": "Save portfolio to server",
+            "POST /portfolio/load": "Load portfolio from server",
+        },
+        "authentication": "No auth required for demo. Contact hello@controlorbit.com for API keys.",
+        "rate_limits": "50 requests/hour per IP on free tier.",
+        "contact": "hello@controlorbit.com",
+        "docs": "https://controlorbit.com/api-docs",
+    }
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# ═══ FRONTEND: How to call the XER ingest from the Upload component ═════════
+# ════════════════════════════════════════════════════════════════════════════
+#
+# In your DocumentUpload component (CASEY_Features.jsx), add this case:
+#
+#   if (f.name.endsWith('.xer') || f.name.endsWith('.XER')) {
+#     const text = await f.text();  // XER is plain text
+#     const resp = await fetch(`${apiBase}/api/ingest-xer`, {
+#       method: 'POST',
+#       headers: { 'Content-Type': 'application/json' },
+#       body: JSON.stringify({
+#         xer_content: text,
+#         xer_filename: f.name,
+#         currency: model?.currency_symbol || '£',
+#         location: model?.location || '',
+#       }),
+#     });
+#     const data = await resp.json();
+#     if (data.model) {
+#       onModelFromXER(data.model);  // pass to App to setModel()
+#     }
+#   }
+#
+# ════════════════════════════════════════════════════════════════════════════
