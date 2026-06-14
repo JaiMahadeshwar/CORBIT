@@ -1,0 +1,12 @@
+{
+  "name": "casey-backend",
+  "version": "1.0.0",
+  "description": "CASEY board pack generator — requires Node.js and pptxgenjs",
+  "main": "generate_board_pack.js",
+  "dependencies": {
+    "pptxgenjs": "^4.0.1"
+  },
+  "scripts": {
+    "test-pack": "node generate_board_pack.js"
+  }
+}
