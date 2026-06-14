@@ -1,4 +1,3 @@
-// CASEY V291 BUILD 1781474052806413115 — showVersions fix
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -6524,4 +6523,4 @@ function ShowcaseLibrary({ onRun, onBack }) {
 }
 
 
-createRoot(document.getElementById('root')).render(<CaseyErrorBoundary><App/></CaseyErrorBoundary>);
+window.CASEY_VERSION='V291-FIXED'; createRoot(document.getElementById('root')).render(<CaseyErrorBoundary><App/></CaseyErrorBoundary>);
