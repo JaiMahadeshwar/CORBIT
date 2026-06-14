@@ -794,7 +794,36 @@ function Table({ rows = [], cols = [], moneyCols = [], cellFmt = null, curr = '$
     if (cellFmt) return cellFmt(col, raw);
     return String(raw);
   };
-  return <div className="tableWrap"><table><thead><tr>{cols.map(c => <th key={c[0]}>{c[1]}</th>)}</tr></thead><tbody>{rows.map((r, i) => <tr key={i}>{cols.map(c => <td key={c[0]}>{renderCell(c[0], r)}</td>)}</tr>)}</tbody></table></div>;
+  function getRagColor(row) {
+    const p = String(row.probability || row.likelihood || '').toLowerCase();
+    const im = String(row.impact || row.consequence || '').toLowerCase();
+    const isHigh = /high|critical|almost|certain|very high/.test(p) || /critical|catastrophic|major|severe/.test(im);
+    const isMed  = /medium|moderate|possible|likely/.test(p) || /moderate|significant/.test(im);
+    if (isHigh) return { border:'rgba(239,68,68,.55)', bg:'rgba(239,68,68,.045)', dot:'#ef4444' };
+    if (isMed)  return { border:'rgba(245,158,11,.4)',  bg:'rgba(245,158,11,.035)', dot:'#f59e0b' };
+    return { border:'rgba(16,185,129,.3)', bg:'rgba(16,185,129,.03)', dot:'#10b981' };
+  }
+  const isRiskTable = cols.some(c => ['probability','likelihood','impact','consequence','owner'].includes(c[0]));
+  return (
+    <div className="tableWrap">
+      <table>
+        <thead><tr>{cols.map(c => <th key={c[0]}>{c[1]}</th>)}</tr></thead>
+        <tbody>{rows.map((r, i) => {
+          const rag = isRiskTable ? getRagColor(r) : null;
+          return (
+            <tr key={i} style={rag ? { borderLeft:'3px solid '+rag.border, background:rag.bg } : {}}>
+              {cols.map((c,ci) => (
+                <td key={c[0]} style={ci===0&&rag ? { paddingLeft:'10px', position:'relative' } : {}}>
+                  {ci===0&&rag && <span style={{ display:'inline-block',width:6,height:6,borderRadius:'50%',background:rag.dot,marginRight:6,verticalAlign:'middle',boxShadow:'0 0 4px '+rag.dot+'80' }}/>}
+                  {renderCell(c[0], r)}
+                </td>
+              ))}
+            </tr>
+          );
+        })}</tbody>
+      </table>
+    </div>
+  );
 }
 // ── ACCOUNT PANEL ─────────────────────────────────────────────────────────────
 function AccountPanel({ email, setEmail, projects, loading, onLoad, onDelete, onSave, onLoadProjects, onClose, model }) {
@@ -1968,6 +1997,161 @@ function TornadoChart({risks,currency='£',maxBn}){
   return <canvas ref={cvsRef} style={{display:'block',width:'100%',background:'#030a18',borderRadius:8,border:'1px solid rgba(255,255,255,.06)',marginBottom:12}} />;
 }
 
+/* ═══════════════════════════════════════════════════════════
+   NAV MORE MENU — collapses secondary nav items
+   Keeps the header clean. T&T visitors see core actions only.
+═══════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════
+   SHOWCASE CARD — sector-coloured, emoji accent, confidence RAG
+   Used in the showcase library grid
+═══════════════════════════════════════════════════════════ */
+const SECTOR_ACCENTS = {
+  'Rail':{'#4a9eff':'bg'},Space:{'#a78bfa':'bg'},Nuclear:{'#ef4444':'bg'},
+  Pharma:{'#10b981':'bg'},'Data Centre':{'#06b6d4':'bg'},Defence:{'#6366f1':'bg'},
+  Energy:{'#f59e0b':'bg'},Airport:{'#8b5cf6':'bg'},Semiconductor:{'#ec4899':'bg'},
+};
+function getSectorColor(s){
+  const sector=String(s||'');
+  if(/space|lunar|mars|orbit/i.test(sector))return'#a78bfa';
+  if(/rail|transit|metro/i.test(sector))return'#4a9eff';
+  if(/nuclear|smr/i.test(sector))return'#ef4444';
+  if(/pharma|bio|life|glp/i.test(sector))return'#10b981';
+  if(/data.cent|hyperscale|ai.campus/i.test(sector))return'#06b6d4';
+  if(/defence|naval|submarine/i.test(sector))return'#6366f1';
+  if(/energy|wind|solar|lng/i.test(sector))return'#f59e0b';
+  if(/airport|aviation/i.test(sector))return'#8b5cf6';
+  if(/semiconductor|fab/i.test(sector))return'#ec4899';
+  if(/battery|gigafactor/i.test(sector))return'#22c55e';
+  return'#8df7ff';
+}
+
+function ShowcaseCard({p,onLoad}){
+  const col=getSectorColor(p.sector||p.subsector||p.mode||'');
+  const conf=+(p.confidence_pct||0);
+  const confCol=conf>=75?'#10b981':conf>=55?'#f59e0b':'#ef4444';
+  const [hov,setHov]=React.useState(false);
+  return(
+    <div onClick={onLoad}
+      onMouseOver={()=>setHov(true)} onMouseOut={()=>setHov(false)}
+      style={{
+        background:hov?`${col}0d`:'rgba(255,255,255,.02)',
+        border:`1px solid ${hov?col+'55':'rgba(255,255,255,.07)'}`,
+        borderLeft:`3px solid ${col}`,
+        borderRadius:8,padding:'14px 14px 12px',cursor:'pointer',
+        transition:'all .18s',position:'relative',overflow:'hidden',
+      }}>
+      {/* Sector glow */}
+      {hov&&<div style={{position:'absolute',top:-30,right:-30,width:90,height:90,
+        borderRadius:'50%',background:col+'14',pointerEvents:'none'}}/>}
+      <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
+        <span style={{fontSize:20}}>{p.icon||'🏗'}</span>
+        <div>
+          <div style={{fontSize:8.5,fontWeight:700,color:col,letterSpacing:'.08em',textTransform:'uppercase'}}>
+            {String(p.sector||p.mode||'Capital Programme').slice(0,28)}
+          </div>
+          <div style={{fontSize:8,color:'rgba(255,255,255,.25)',marginTop:1}}>
+            {p.region||p.location||'Global'}
+          </div>
+        </div>
+      </div>
+      <div style={{fontSize:12,fontWeight:700,color:'#e2eaf6',lineHeight:1.3,marginBottom:8}}>
+        {String(p.title||p.subsector||'Programme').slice(0,52)}
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:4}}>
+        {p.cost_p50_bn&&<div style={{background:'rgba(255,255,255,.04)',borderRadius:4,padding:'4px 6px',textAlign:'center'}}>
+          <div style={{fontSize:7,color:'rgba(255,255,255,.3)'}}>P50</div>
+          <div style={{fontSize:10.5,fontWeight:700,color:col}}>{p.currency_symbol||'£'}{Number(p.cost_p50_bn).toFixed(1)}B</div>
+        </div>}
+        {p.schedule_months&&<div style={{background:'rgba(255,255,255,.04)',borderRadius:4,padding:'4px 6px',textAlign:'center'}}>
+          <div style={{fontSize:7,color:'rgba(255,255,255,.3)'}}>Duration</div>
+          <div style={{fontSize:10.5,fontWeight:700,color:'rgba(255,255,255,.7)'}}>{p.schedule_months}mo</div>
+        </div>}
+        {conf>0&&<div style={{background:`${confCol}12`,borderRadius:4,padding:'4px 6px',textAlign:'center',border:`1px solid ${confCol}25`}}>
+          <div style={{fontSize:7,color:'rgba(255,255,255,.3)'}}>Conf.</div>
+          <div style={{fontSize:10.5,fontWeight:700,color:confCol}}>{conf}%</div>
+        </div>}
+      </div>
+    </div>
+  );
+}
+
+
+function NavMoreMenu({model,onEarth,onSpace,onPortfolio,onCompare,onInvestor,onRecovery,onSaveLocal,onHowTo}){
+  const [open,setOpen]=React.useState(false);
+  const ref=React.useRef(null);
+  React.useEffect(()=>{
+    function h(e){if(ref.current&&!ref.current.contains(e.target))setOpen(false);}
+    document.addEventListener('mousedown',h);return()=>document.removeEventListener('mousedown',h);
+  },[]);
+  const items=[
+    {label:'🌍  Earth demo',   fn:onEarth,  col:'#4a9eff'},
+    {label:'🚀  Space demo',   fn:onSpace,  col:'#a78bfa'},
+    {label:'◈  Portfolio',     fn:onPortfolio,col:'#8df7ff'},
+    {label:'◆  Compare',       fn:onCompare,col:'#b18cff'},
+    model&&{label:'📊  Investor brief',fn:onInvestor,col:'#fbbf24'},
+    model&&{label:'🔄  Recovery plan', fn:onRecovery,col:'#f59e0b'},
+    model&&{label:'↓  Save locally',   fn:onSaveLocal,col:'#10b981'},
+    {label:'?  How to use',    fn:onHowTo,  col:'#64748b'},
+  ].filter(Boolean);
+  return(
+    <div ref={ref} style={{position:'relative'}}>
+      <button onClick={()=>setOpen(o=>!o)}
+        style={{color:'rgba(255,255,255,.45)',fontWeight:'600',fontSize:'11px',
+                padding:'4px 10px',border:'1px solid rgba(255,255,255,.1)',borderRadius:4,
+                background:open?'rgba(255,255,255,.06)':'transparent',cursor:'pointer'}}>
+        More ▾
+      </button>
+      {open&&<div style={{position:'absolute',right:0,top:'calc(100% + 6px)',minWidth:180,
+               background:'#0b1628',border:'1px solid rgba(255,255,255,.1)',borderRadius:7,
+               boxShadow:'0 16px 48px rgba(0,0,0,.7)',zIndex:999,overflow:'hidden'}}>
+        {items.map((item,i)=>(
+          <button key={i} onClick={()=>{item.fn&&item.fn();setOpen(false);}}
+            style={{display:'block',width:'100%',textAlign:'left',padding:'9px 16px',
+                    background:'transparent',border:'none',borderBottom:'1px solid rgba(255,255,255,.05)',
+                    color:item.col||'#e2eaf6',fontSize:'11px',fontWeight:'600',cursor:'pointer',
+                    fontFamily:'inherit',transition:'background .12s'}}
+            onMouseOver={e=>e.currentTarget.style.background='rgba(255,255,255,.06)'}
+            onMouseOut={e=>e.currentTarget.style.background='transparent'}>
+            {item.label}
+          </button>
+        ))}
+      </div>}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CONFIDENCE BAR — animated fill + RAG glow
+   Replaces the static bar. Fills on mount.
+═══════════════════════════════════════════════════════════ */
+function AnimatedConfidenceBar({pct,showThreshold=true}){
+  const [filled,setFilled]=React.useState(0);
+  React.useEffect(()=>{
+    const t=setTimeout(()=>setFilled(pct||0),200);
+    return()=>clearTimeout(t);
+  },[pct]);
+  const col=pct>=75?'#10b981':pct>=55?'#f59e0b':'#ef4444';
+  const glow=pct>=75?'rgba(16,185,129,.35)':pct>=55?'rgba(245,158,11,.3)':'rgba(239,68,68,.3)';
+  return(
+    <div style={{position:'relative'}}>
+      <div style={{height:8,background:'rgba(255,255,255,.06)',borderRadius:4,overflow:'hidden'}}>
+        <div style={{height:'100%',width:filled+'%',background:`linear-gradient(90deg,${col}aa,${col})`,
+                     borderRadius:4,transition:'width 1.4s cubic-bezier(.4,0,.2,1)',
+                     boxShadow:`0 0 12px ${glow}`}}/>
+      </div>
+      {showThreshold&&(
+        <div style={{position:'absolute',left:'75%',top:-4,bottom:-4,width:2,
+                     background:'rgba(255,255,255,.18)',borderRadius:1}}>
+          <div style={{position:'absolute',top:-14,left:'50%',transform:'translateX(-50%)',
+                       fontSize:7,color:'rgba(255,255,255,.35)',whiteSpace:'nowrap',
+                       fontFamily:'monospace',letterSpacing:'.04em'}}>75% threshold</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 function Loading({ text }) {
   const stages = ['CASEY recalibrating confidence curves...', 'Applying live sector calibration signals...', 'Running procurement and delivery-tail model...', 'Comparing against 137+ benchmark programmes...', 'Stamping scenario deltas into board pack...'];
   const [i,setI] = useState(0);
@@ -2802,106 +2986,7 @@ function AdvisoryFeeCounter({ model }) {
       </div>
       <div className="feeItems">
         {items.map((item, i) => (
-          <div key={i} className="feeRow">
-            <span className="feeCheck">✓</span>
-            <span className="feeItemLabel">{item.label}</span>
-            <span className="feeItemTrad">{item.trad}</span>
-            <span className="feeItemTime">{item.time}</span>
-            <span className="feeItemCasey">Instant</span>
-          </div>
-        ))}
-      </div>
-      <div className="feeDemoLine">
-        "Traditional project controls reports show numbers. CASEY shows the board what the numbers are trying to hide."
-      </div>
-    </Card>
-  );
-}
-
-function ShowcaseLibrary({ onRun, onBack }) {
-  const [sector, setSector] = useState('All');
-  const [query, setQuery] = useState('');
-  const filtered = showcaseProjects.filter(p => (sector === 'All' || p.sector === sector) && (`${p.title} ${p.sector} ${p.region} ${p.client} ${p.prompt}`.toLowerCase().includes(query.toLowerCase())));
-  const counts = showcaseSectors.map(s => ({ sector: s, count: s === 'All' ? showcaseProjects.length : showcaseProjects.filter(p => p.sector === s).length }));
-  return <section className="showcaseLibrary">
-    <div className="showcaseHero card">
-      <div><p className="eyebrow">CASEY Strategic Intelligence Simulations</p><h1>Global capital-project showcase library</h1><p>Clickable Earth and Space reference cases for board packs, scenario pressure tests, confidence analysis and audit-ready export demos.</p></div>
-      <div className="phaseStack"><b>Phase 1</b><span>Showcase Library</span><b>Phase 2</b><span>Live intelligence feeds</span><b>Phase 3</b><span>Bring-your-own-project ingestion</span></div>
-    </div>
-    <div className="showcaseControls card"><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search rail, data centres, Starship, Lilly, NEOM..."/><button onClick={onBack}>Back to console</button></div>
-    <div className="sectorPills">{counts.map(x => <button key={x.sector} className={sector===x.sector?'active':''} onClick={()=>setSector(x.sector)}>{x.sector}<span>{x.count}</span></button>)}</div>
-    <div className="showcaseGrid">{filtered.map(p => <motion.button className="showcaseCard" key={p.title} onClick={() => onRun(p)} whileHover={{ y:-4 }} whileTap={{ scale:.99 }}>
-      <div className="showcaseIcon">{p.icon}</div><div className="showcaseMeta"><span>{p.sector}</span><em>{p.region}</em></div><h3>{p.title}</h3><p>{p.prompt}</p><div className="showcaseFooter"><b>{p.confidence}</b><strong>Run board pack <ChevronRight size={15}/></strong></div>
-    </motion.button>)}</div>
-  </section>;
-}
-
-function GatedMessage({ raw, onDismiss, onShowcase, onEarth, onSpace }) {
-  let msg = "You have used your one free CASEY intelligence run.";
-  let sub = "You can still browse 200 free reference cases in the Showcase Library and run the Earth or Space demos for free. For unlimited projects, get in touch.";
-  let email = "deepa@caseai.co.uk";
-  let linkedin = "https://www.linkedin.com/company/caseai";
-  let isStartingUp = false;
-  try {
-    const p = JSON.parse(raw);
-    if (p.message) msg = p.message;
-    if (p.sub) sub = p.sub;
-    if (p.email) email = p.email;
-    if (p.linkedin) linkedin = p.linkedin;
-    isStartingUp = !!(p.message && p.message.toLowerCase().includes('starting'));
-  } catch {}
-
-  return (
-    <div style={{
-      position:'fixed',inset:0,background:'rgba(0,0,0,0.65)',zIndex:900,
-      display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'
-    }}>
-      <div style={{
-        background:'#0d1b2e',border:'1px solid rgba(141,247,255,0.25)',borderRadius:'8px',
-        padding:'28px 32px',maxWidth:'520px',width:'100%',position:'relative',
-        boxShadow:'0 24px 80px rgba(0,0,0,0.6)'
-      }}>
-        {onDismiss && <button onClick={onDismiss} style={{
-          position:'absolute',top:'14px',right:'16px',background:'rgba(255,255,255,0.06)',
-          border:'1px solid rgba(255,255,255,0.1)',color:'#94a3b8',cursor:'pointer',
-          fontSize:'14px',width:'28px',height:'28px',borderRadius:'50%',
-          display:'flex',alignItems:'center',justifyContent:'center',lineHeight:1
-        }}>✕</button>}
-
-        <div style={{fontSize:'22px',marginBottom:'10px'}}>{isStartingUp ? '⏳' : '✦'}</div>
-        <h3 style={{
-          fontSize:'17px',fontWeight:'800',color: isStartingUp ? '#f59e0b' : '#e2e8f0',
-          marginBottom:'8px',paddingRight:'30px',lineHeight:'1.3'
-        }}>{isStartingUp ? '⏳ Server starting up — try again in 20 seconds' : msg}</h3>
-        <p style={{
-          fontSize:'13px',color:'#94a3b8',lineHeight:'1.6',marginBottom:'18px'
-        }}>{sub}</p>
-
-        {isStartingUp ? (
-          <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
-            <div style={{background:'rgba(245,158,11,0.08)',border:'1px solid rgba(245,158,11,0.2)',borderRadius:'5px',padding:'10px 14px',fontSize:'12px',color:'#fde68a',lineHeight:'1.5'}}>
-              The backend is waking up — this takes 20–30 seconds on first load. Click the demo button again after waiting.
-            </div>
-            <div style={{display:'flex',gap:'8px',flexWrap:'wrap'}}>
-              {onEarth && <button onClick={onEarth} style={{flex:1,background:'rgba(16,185,129,0.1)',border:'1px solid rgba(16,185,129,0.3)',color:'#10b981',cursor:'pointer',padding:'10px 14px',borderRadius:'5px',fontSize:'13px',fontWeight:'700'}}>🚄 Try Earth Demo again</button>}
-              {onSpace && <button onClick={onSpace} style={{flex:1,background:'rgba(141,247,255,0.08)',border:'1px solid rgba(141,247,255,0.2)',color:'#8df7ff',cursor:'pointer',padding:'10px 14px',borderRadius:'5px',fontSize:'13px',fontWeight:'700'}}>🌕 Try Space Demo again</button>}
-            </div>
-            {onShowcase && <button onClick={onShowcase} style={{width:'100%',background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.1)',color:'#94a3b8',cursor:'pointer',padding:'8px',borderRadius:'5px',fontSize:'12px'}}>Browse Showcase Library while waiting →</button>}
-          </div>
-        ) : (
-          <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
-            {onShowcase && <button onClick={onShowcase} style={{width:'100%',background:'rgba(141,247,255,0.1)',border:'1px solid rgba(141,247,255,0.3)',color:'#8df7ff',cursor:'pointer',padding:'11px',borderRadius:'5px',fontSize:'13px',fontWeight:'700',textAlign:'left'}}>
-              Browse Showcase Library — 200 free reference cases →
-            </button>}
-            <div style={{display:'flex',gap:'8px',flexWrap:'wrap'}}>
-              {onEarth && <button onClick={onEarth} style={{flex:1,background:'rgba(16,185,129,0.08)',border:'1px solid rgba(16,185,129,0.2)',color:'#10b981',cursor:'pointer',padding:'9px',borderRadius:'5px',fontSize:'12px',fontWeight:'700'}}>🚄 Earth Demo</button>}
-              {onSpace && <button onClick={onSpace} style={{flex:1,background:'rgba(141,247,255,0.05)',border:'1px solid rgba(141,247,255,0.15)',color:'#8df7ff',cursor:'pointer',padding:'9px',borderRadius:'5px',fontSize:'12px',fontWeight:'700'}}>🌕 Space Demo</button>}
-            </div>
-            <div style={{borderTop:'1px solid rgba(255,255,255,0.07)',paddingTop:'12px',display:'flex',flexDirection:'column',gap:'6px'}}>
-              <a href={"mailto:" + email} style={{display:'block',background:'rgba(141,247,255,0.06)',border:'1px solid rgba(141,247,255,0.2)',color:'#8df7ff',padding:'10px 14px',borderRadius:'5px',fontSize:'12px',fontWeight:'700',textDecoration:'none',textAlign:'center'}}>✉ Email us for full access — {email}</a>
-              <a href={linkedin} target="_blank" rel="noopener noreferrer" style={{display:'block',background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.1)',color:'#94a3b8',padding:'9px 14px',borderRadius:'5px',fontSize:'12px',textDecoration:'none',textAlign:'center'}}>Connect on LinkedIn</a>
-            </div>
-          </div>
+          
         )}
       </div>
     </div>
@@ -4496,20 +4581,14 @@ return <div className="app v50EliteApp">
       <button onClick={() => setTrialOpen(true)}>Free run</button>
       <button onClick={() => { setModel(null); setShow(false); setShowShowcase(true); setError(''); }}>Showcase library</button>
       {savedProjects.length > 0 && <button onClick={() => setShowSaved(s => !s)} style={{position:'relative'}}>Saved <span style={{background:'#8df7ff',color:'#0a1628',borderRadius:'10px',padding:'1px 6px',fontSize:'10px',fontWeight:'900',marginLeft:'4px'}}>{savedProjects.length}</span></button>}
-      <button onClick={loadMyProjects} style={{color:'#8df7ff',fontWeight:'700'}}>My Projects</button>
-      <button onClick={loadPortfolio} style={{color:'#a78bfa',fontWeight:'700'}}>Portfolio</button>
       {model && <button onClick={saveProject} style={{color:'#10b981',fontWeight:'700',opacity:savingProject?0.6:1}} disabled={savingProject}>{savingProject?'Saving…':saveMsg||'Save'}</button>}
-      {model && <button onClick={()=>setShowVersions(v=>!v)} style={{color:'rgba(255,255,255,.35)',fontSize:'11px'}}>History</button>}
-      {savedProjectId && model && <button onClick={loadReplay} style={{color:'#06b6d4',fontWeight:'700'}}>Replay ⏪</button>}
-      {model && <button onClick={loadInvestorAnalysis} style={{color:'#fbbf24',fontWeight:'700'}}>Investor</button>}
-      {model && <button onClick={loadRecoveryPlan} style={{color:'#f59e0b',fontWeight:'700'}}>Recovery Plan</button>}
-      {model && <button onClick={saveCurrentProject} style={{color:'#8df7ff',fontWeight:'700'}}>↓ Save (local)</button>}
-      <button onClick={() => setShowAccount(s => !s)} style={{color:'#8df7ff',fontWeight:'700'}}>Account</button>
-      <button onClick={() => setShowCompare(s => !s)} style={{color:'#b18cff',fontWeight:'700'}}>Compare ◆</button>
-      <button onClick={runEarth}>Earth demo</button>
-      <button onClick={runSpace}>Space demo</button>
-      <button onClick={() => setShowInvestor(s => !s)} style={{color:'#b18cff',fontWeight:'700'}}>Investor brief</button>
-      <button onClick={() => setShowOnboarding(true)} style={{color:'#64748b',fontSize:'10px',fontWeight:'700',letterSpacing:'.06em'}}>How to use</button>
+      {model && <button onClick={()=>setShowVersions(v=>!v)} style={{color:'rgba(255,255,255,.3)',fontSize:'10px'}}>History</button>}
+      <button onClick={loadMyProjects} style={{color:'#8df7ff',fontWeight:'700'}}>My Projects</button>
+      <button onClick={() => setShowAccount(s => !s)} style={{color:'rgba(255,255,255,.5)',fontWeight:'600'}}>Account</button>
+      <NavMoreMenu model={model} onEarth={runEarth} onSpace={runSpace}
+        onPortfolio={loadPortfolio} onCompare={()=>setShowCompare(s=>!s)}
+        onInvestor={()=>setShowInvestor(s=>!s)} onRecovery={loadRecoveryPlan}
+        onSaveLocal={saveCurrentProject} onHowTo={()=>setShowOnboarding(true)}/>
       {model?.live_intel_active && <div style={{display:'flex',alignItems:'center',gap:'5px',padding:'3px 9px',background:'rgba(16,185,129,0.08)',border:'1px solid rgba(16,185,129,0.2)',borderRadius:'4px'}}>
         <div style={{width:'6px',height:'6px',borderRadius:'50%',background:'#10b981',animation:'pulse 1.5s infinite',flexShrink:0}}/>
         <span style={{fontSize:'9px',fontWeight:'800',color:'#10b981',letterSpacing:'.06em'}}>
@@ -5645,6 +5724,7 @@ return <div className="app v50EliteApp">
         {/* ── RISK HEATMAP — injected below risk register ── */}
         {tab === 'risk' && model && (
           <section className="layout one" style={{padding:'0 0 24px'}}>
+            <TornadoChart risks={model.risks||[]} currency={model.currency_symbol||'£'} maxBn={model.board_risk_summary?.total_emv_bn}/>
             <RiskRegisterHeatmap model={model}/>
           </section>
         )}
@@ -6336,6 +6416,109 @@ function SavedProjectsPanel({ projects, onLoad, onDelete, onClose }) {
       </div>)}
     </div>
   </div>;
+}
+
+
+function ShowcaseLibrary({ onRun, onBack }) {
+  const [sector, setSector] = useState('All');
+  const [query, setQuery] = useState('');
+  const [showAll, setShowAll] = useState(false);
+
+  const filtered = useMemo(() => {
+    const q = query.toLowerCase().trim();
+    let list = showcaseProjects;
+    if (sector !== 'All') list = list.filter(p => p.sector === sector);
+    if (q) list = list.filter(p =>
+      (p.title||'').toLowerCase().includes(q) ||
+      (p.sector||'').toLowerCase().includes(q) ||
+      (p.region||'').toLowerCase().includes(q) ||
+      (p.client||'').toLowerCase().includes(q) ||
+      (p.prompt||'').toLowerCase().includes(q)
+    );
+    return list;
+  }, [sector, query]);
+
+  const counts = showcaseSectors.map(s => ({
+    sector: s,
+    count: s === 'All' ? showcaseProjects.length : showcaseProjects.filter(p => p.sector === s).length
+  }));
+
+  const visible = showAll ? filtered : filtered.slice(0, 24);
+
+  const QUICK = [
+    {emoji:'🚄',l:'HS2 Rail',      p:'HS2 Phase 2b High Speed Rail United Kingdom £65B tunnelling systems integration signalling'},
+    {emoji:'🌕',l:'Lunar Base',    p:'Lunar Base Alpha permanent crewed lunar outpost NASA Artemis life support power MAIT launch'},
+    {emoji:'⚛️',l:'Nuclear SMR',  p:'Small modular reactor SMR 400MW nuclear power plant United Kingdom civil FOAK regulatory'},
+    {emoji:'💊',l:'Pharma GLP-1', p:'GLP-1 weight loss drug manufacturing facility greenfield pharma biologics fill finish US 2027'},
+    {emoji:'🖥',l:'Data Centre',   p:'500MW hyperscale AI data centre campus GPU cooling grid connection 2026 delivery United States'},
+  ];
+
+  return (
+    <section style={{padding:'0 0 40px',maxWidth:'100%'}}>
+      {/* Hero */}
+      <div style={{background:'linear-gradient(135deg,rgba(8,14,32,.97),rgba(10,22,40,.97))',borderBottom:'1px solid rgba(255,255,255,.07)',padding:'24px 24px 20px'}}>
+        <div style={{fontSize:9,fontWeight:700,color:'rgba(141,247,255,.4)',letterSpacing:'.18em',marginBottom:8,textTransform:'uppercase'}}>CASEY Strategic Intelligence Simulations</div>
+        <h1 style={{fontSize:'clamp(18px,3vw,26px)',fontWeight:900,color:'#e2eaf6',marginBottom:8,letterSpacing:'-.01em'}}>Global capital-project showcase library</h1>
+        <p style={{fontSize:12,color:'rgba(255,255,255,.35)',marginBottom:14,lineHeight:1.6}}>200 Earth and Space reference cases — board packs, QCRA/QSRA, scenario analysis and risk registers in 30 seconds.</p>
+        {/* Quick-run buttons */}
+        <div style={{display:'flex',gap:7,flexWrap:'wrap',alignItems:'center'}}>
+          <span style={{fontSize:8.5,color:'rgba(255,255,255,.22)',letterSpacing:'.08em',marginRight:4}}>QUICK RUN →</span>
+          {QUICK.map((d,i)=>(
+            <button key={i} onClick={()=>onRun({sector:d.l,title:d.l,prompt:d.p,icon:d.emoji,confidence_pct:64})}
+              style={{padding:'5px 12px',background:'rgba(141,247,255,.06)',border:'1px solid rgba(141,247,255,.15)',borderRadius:4,color:'#8df7ff',fontSize:10,fontWeight:700,cursor:'pointer',fontFamily:'inherit',display:'flex',gap:5,alignItems:'center',transition:'all .14s'}}
+              onMouseOver={e=>{e.currentTarget.style.background='rgba(141,247,255,.12)';e.currentTarget.style.borderColor='rgba(141,247,255,.3)';}}
+              onMouseOut={e=>{e.currentTarget.style.background='rgba(141,247,255,.06)';e.currentTarget.style.borderColor='rgba(141,247,255,.15)';}}>
+              {d.emoji} {d.l}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Search + back */}
+      <div style={{padding:'12px 24px',borderBottom:'1px solid rgba(255,255,255,.06)',display:'flex',gap:10,alignItems:'center',flexWrap:'wrap',background:'rgba(4,8,20,.97)'}}>
+        <input value={query} onChange={e=>setQuery(e.target.value)}
+          placeholder="Search rail, data centres, Starship, Lilly, NEOM..."
+          style={{flex:1,minWidth:180,background:'rgba(255,255,255,.04)',border:'1px solid rgba(255,255,255,.09)',borderRadius:5,color:'#e2eaf6',padding:'7px 12px',fontSize:12,outline:'none',fontFamily:'inherit'}}/>
+        <span style={{fontSize:10,color:'rgba(255,255,255,.3)'}}>{filtered.length} programmes</span>
+        <button onClick={onBack}
+          style={{padding:'6px 14px',background:'transparent',border:'1px solid rgba(255,255,255,.1)',borderRadius:4,color:'rgba(255,255,255,.5)',fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'inherit'}}>
+          ← Back
+        </button>
+      </div>
+
+      {/* Sector pills */}
+      <div style={{padding:'10px 24px',borderBottom:'1px solid rgba(255,255,255,.05)',display:'flex',gap:6,flexWrap:'wrap',background:'rgba(3,6,14,.96)'}}>
+        {counts.map(x=>(
+          <button key={x.sector} onClick={()=>setSector(x.sector)}
+            style={{padding:'4px 12px',borderRadius:20,fontSize:9.5,fontWeight:sector===x.sector?700:500,cursor:'pointer',fontFamily:'inherit',transition:'all .13s',
+                    border:sector===x.sector?'1px solid rgba(141,247,255,.35)':'1px solid rgba(255,255,255,.08)',
+                    background:sector===x.sector?'rgba(141,247,255,.1)':'transparent',
+                    color:sector===x.sector?'#8df7ff':'rgba(255,255,255,.4)'}}>
+            {x.sector} <span style={{fontSize:8,opacity:.6}}>{x.count}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* GRID — uses ShowcaseCard component */}
+      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(220px,1fr))',gap:10,padding:'16px 24px 0'}}>
+        {visible.map((p,i)=>(
+          <ShowcaseCard key={p.title+i}
+            p={{...p, cost_p50_bn:p.cost_p50_bn||p.cost_bn, schedule_months:p.schedule_months,
+                confidence_pct:p.confidence_pct||60, currency_symbol:p.currency_symbol||'£'}}
+            onLoad={()=>onRun(p)}/>
+        ))}
+      </div>
+
+      {!showAll && filtered.length > 24 && (
+        <div style={{textAlign:'center',padding:'20px 0'}}>
+          <button onClick={()=>setShowAll(true)}
+            style={{padding:'10px 28px',background:'rgba(141,247,255,.07)',border:'1px solid rgba(141,247,255,.2)',borderRadius:5,color:'#8df7ff',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>
+            Show all {filtered.length} programmes →
+          </button>
+        </div>
+      )}
+    </section>
+  );
 }
 
 
