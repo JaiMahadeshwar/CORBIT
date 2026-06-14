@@ -2986,10 +2986,16 @@ function AdvisoryFeeCounter({ model }) {
       </div>
       <div className="feeItems">
         {items.map((item, i) => (
-          
-        )}
+          <div className="feeItem" key={`${item.label}-${i}`}>
+            <div className="feeItemMain">
+              <span className="feeItemLabel">{item.label}</span>
+              <span className="feeItemTime">{item.time}</span>
+            </div>
+            <span className="feeItemValue">{item.trad}</span>
+          </div>
+        ))}
       </div>
-    </div>
+    </Card>
   );
 }
 
