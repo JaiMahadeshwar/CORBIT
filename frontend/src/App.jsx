@@ -3551,6 +3551,7 @@ function parseMoneyLocal(v) {
 
   // ── COMPARE STATE ──────────────────────────────────────────────────────────
   const [showCompare, setShowCompare] = React.useState(false);
+  const [showVersions, setShowVersions] = React.useState(false);
   const [comparePromptA, setComparePromptA] = React.useState('');
   const [comparePromptB, setComparePromptB] = React.useState('');
   const [compareResult, setCompareResult] = React.useState(null);
