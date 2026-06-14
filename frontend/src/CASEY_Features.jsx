@@ -175,7 +175,7 @@ export function MonthlyActualsFeed({ model, onUpdate }) {
      // Add to Board Room tab or create new "Challenge" sub-tab:
      <DocumentUpload model={model} apiBase={API_BASE}/>
 ═══════════════════════════════════════════════════════════ */
-export function DocumentUpload({ model, apiBase }) {
+export function DocumentUpload({ model, apiBase, onModelFromXER }) {
   const [dragging, setDragging] = useState(false);
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -186,29 +186,107 @@ export function DocumentUpload({ model, apiBase }) {
   async function analyse(f) {
     if (!f) return;
     setFile(f); setLoading(true); setResult(null); setError('');
+    const BASE = apiBase || 'https://corbit-1.onrender.com';
+
+    // ── XER FILE: call the XER ingestion API ──
+    if (f.name.toLowerCase().endsWith('.xer')) {
+      try {
+        const text = await f.text();
+        const resp = await fetch(`${BASE}/api/ingest-xer`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            xer_content: text,
+            xer_filename: f.name,
+            currency: model?.currency_symbol || '£',
+            location: model?.location || '',
+            client: model?.client || '',
+          }),
+        });
+        const data = await resp.json();
+        if (data.model) {
+          setResult({
+            _xerModel: data.model,
+            _xerStats: data.xer_stats,
+            summary: data.message || 'XER parsed successfully',
+            critical_gaps: [],
+            board_questions: [],
+            missing_elements: [],
+          });
+          if (onModelFromXER) onModelFromXER(data.model);
+        } else {
+          setError(data.error || 'XER ingestion failed');
+        }
+      } catch (e) {
+        setError('XER ingestion failed: ' + e.message);
+      } finally { setLoading(false); }
+      return;
+    }
+
+    // ── PDF/PPTX/DOCX: streaming challenge ──
     try {
-      // Convert to base64
       const b64 = await new Promise((res, rej) => {
         const r = new FileReader();
         r.onload = () => res(r.result.split(',')[1]);
         r.onerror = rej;
         r.readAsDataURL(f);
       });
-      // Call CASEY backend to challenge the document
-      const resp = await fetch(`${apiBase || 'https://corbit-1.onrender.com'}/advisor/challenge-document`, {
+
+      // Try streaming first
+      try {
+        const resp = await fetch(`${BASE}/advisor/challenge-document-stream`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            file_name: f.name,
+            file_b64: b64,
+            file_type: f.type,
+            model: model ? { title: model.title, subsector: model.subsector, cost_p50: model.cost_p50,
+              cost_p80: model.cost_p80, schedule: model.schedule, confidence_pct: model.confidence_pct,
+              governing_constraint_prominent: model.governing_constraint_prominent } : null,
+          }),
+        });
+
+        if (resp.ok && resp.headers.get('content-type')?.includes('text/event-stream')) {
+          // Handle streaming SSE
+          setResult({ _streaming: true, _text: '' });
+          const reader = resp.body.getReader();
+          const decoder = new TextDecoder();
+          let fullText = '';
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n');
+            for (const line of lines) {
+              if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+                try {
+                  const { text } = JSON.parse(line.slice(6));
+                  fullText += text;
+                  setResult({ _streaming: true, _text: fullText });
+                } catch {}
+              }
+            }
+          }
+          setResult({ _streaming: false, _text: fullText, _markdown: true });
+          setLoading(false);
+          return;
+        }
+      } catch {}
+
+      // Fallback: non-streaming challenge
+      const resp2 = await fetch(`${BASE}/advisor/challenge-document`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          file_name: f.name,
-          file_b64: b64,
-          file_type: f.type,
-          model: model ? { title: model.title, subsector: model.subsector, cost_p50: model.cost_p50, schedule: model.schedule, confidence_pct: model.confidence_pct } : null,
+          file_name: f.name, file_b64: b64, file_type: f.type,
+          model: model ? { title: model.title, subsector: model.subsector, cost_p50: model.cost_p50,
+            cost_p80: model.cost_p80, schedule: model.schedule, confidence_pct: model.confidence_pct } : null,
         }),
       });
-      const data = await resp.json();
+      const data = await resp2.json();
       setResult(data);
     } catch (e) {
-      // Fallback: client-side mock analysis when backend not available
       setResult(mockChallenge(f, model));
     } finally { setLoading(false); }
   }
@@ -259,9 +337,10 @@ export function DocumentUpload({ model, apiBase }) {
               transition:'all .15s',
             }}>
             <div style={{ fontSize:32, marginBottom:10, opacity:.5 }}>📄</div>
-            <div style={{ fontSize:13, fontWeight:700, color:'#e2eaf6', marginBottom:4 }}>Drop your board pack here</div>
-            <div style={{ fontSize:11, color:'rgba(255,255,255,.3)' }}>PDF, PPTX or DOCX · CASEY will challenge it against board standards</div>
-            <input ref={inputRef} type="file" accept=".pdf,.pptx,.ppt,.docx,.doc" style={{ display:'none' }} onChange={e => { if(e.target.files[0]) analyse(e.target.files[0]); }}/>
+            <div style={{ fontSize:13, fontWeight:700, color:'#e2eaf6', marginBottom:4 }}>Drop your board pack or P6 schedule here</div>
+            <div style={{ fontSize:11, color:'rgba(255,255,255,.3)' }}>PDF · PPTX · DOCX → CASEY challenges it against board standards</div>
+            <div style={{ fontSize:10, color:'rgba(141,247,255,.5)', marginTop:4, fontWeight:600 }}>XER → CASEY ingests it and generates a full intelligence pack from your live schedule</div>
+            <input ref={inputRef} type="file" accept=".pdf,.pptx,.ppt,.docx,.doc,.xer,.XER" style={{ display:'none' }} onChange={e => { if(e.target.files[0]) analyse(e.target.files[0]); }}/>
           </div>
         )}
 
@@ -272,7 +351,43 @@ export function DocumentUpload({ model, apiBase }) {
           </div>
         )}
 
-        {result && (
+        {result?._xerModel && (
+          <div style={{padding:'14px',background:'rgba(16,185,129,.06)',border:'1px solid rgba(16,185,129,.2)',borderRadius:6}}>
+            <div style={{display:'flex',gap:8,alignItems:'center',marginBottom:10,flexWrap:'wrap'}}>
+              <span style={{...F.badge('#10b981')}}>XER LOADED</span>
+              <span style={{fontSize:10,color:'rgba(255,255,255,.5)'}}>
+                {result._xerStats?.activities} activities · {result._xerStats?.duration_months}mo · {result._xerStats?.logic_quality} logic
+              </span>
+              <button style={{...F.btn,fontSize:9,marginLeft:'auto'}} onClick={()=>{setResult(null);setFile(null);}}>Upload another</button>
+            </div>
+            <div style={{fontSize:12,color:'#10b981',fontWeight:600,marginBottom:6}}>{result.summary}</div>
+            <div style={{fontSize:11,color:'rgba(255,255,255,.5)'}}>
+              CASEY model generated from this XER. The timeline, costs, risks, QCRA/QSRA and board pack now reflect the real schedule.
+              {result._xerStats?.open_ends > 0 && <span style={{color:'#f59e0b',marginLeft:8}}>⚠ {result._xerStats.open_ends} open ends detected</span>}
+            </div>
+          </div>
+        )}
+        {result?._markdown && (
+          <div>
+            <div style={{display:'flex',gap:8,alignItems:'center',marginBottom:10}}>
+              <span style={{...F.badge('#8df7ff')}}>CHALLENGE COMPLETE</span>
+              {file&&<span style={{fontSize:10,color:'rgba(255,255,255,.3)'}}>{file.name}</span>}
+              <button style={{...F.btn,fontSize:9,marginLeft:'auto'}} onClick={()=>{setResult(null);setFile(null);}}>Upload another</button>
+            </div>
+            <div style={{background:'rgba(255,255,255,.02)',border:'1px solid rgba(255,255,255,.07)',borderRadius:6,padding:'14px 16px',fontSize:11,color:'rgba(255,255,255,.7)',lineHeight:1.8,whiteSpace:'pre-wrap',fontFamily:'system-ui',maxHeight:480,overflowY:'auto'}}>
+              {result._text}
+            </div>
+          </div>
+        )}
+        {result?._streaming && (
+          <div>
+            <div style={{fontSize:9,color:'#8df7ff',letterSpacing:'.08em',marginBottom:8}}>CASEY IS READING YOUR BOARD PACK...</div>
+            <div style={{background:'rgba(255,255,255,.02)',border:'1px solid rgba(141,247,255,.15)',borderRadius:6,padding:'14px 16px',fontSize:11,color:'rgba(255,255,255,.7)',lineHeight:1.8,whiteSpace:'pre-wrap',maxHeight:400,overflowY:'auto'}}>
+              {result._text}<span style={{opacity:.6,animation:'blink 0.8s step-end infinite'}}>▌</span>
+            </div>
+          </div>
+        )}
+        {result && !result._xerModel && !result._markdown && !result._streaming && (
           <div>
             <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:14 }}>
               <span style={F.badge('#ef4444')}>{result.critical_gaps?.length || 0} CRITICAL GAPS</span>
