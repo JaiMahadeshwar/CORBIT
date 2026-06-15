@@ -458,15 +458,13 @@ function paintCanvas(ctx,W,H,state){
       const sz=r.sev==='high'?(mob?5.5:7):(mob?3.5:5);
       // Diamond
       // Risk diamonds: HIGH=orange, CRITICAL=red, MED=track colour
-      const riskFill=r.sev==='high'?'#f59e0b':r.sev==='critical'?'#ef4444':'rgba(255,255,255,0.82)';
-      const riskGlow=r.sev==='high'?'rgba(245,158,11,.8)':r.sev==='critical'?'rgba(239,68,68,.8)':'rgba(255,255,255,.4)';
-      const riskShadow=r.sev==='high'?16:r.sev==='critical'?18:6;
-      ctx.save();ctx.shadowColor=riskGlow;ctx.shadowBlur=riskShadow;
+      const riskFill=r.sev==='high'?'#f59e0b':r.sev==='critical'?'#ef4444':'rgba(255,255,255,0.85)';
+      const riskGlow=r.sev==='high'?'rgba(245,158,11,.75)':r.sev==='critical'?'rgba(239,68,68,.75)':'rgba(255,255,255,.3)';
+      ctx.save();ctx.shadowColor=riskGlow;const _rBlur=r.sev==='high'?14:r.sev==='critical'?16:5; ctx.shadowBlur=_rBlur;
       ctx.fillStyle=riskFill;
       ctx.translate(rx2,ryi);ctx.beginPath();
       ctx.moveTo(0,-sz);ctx.lineTo(sz,0);ctx.lineTo(0,sz);ctx.lineTo(-sz,0);ctx.closePath();ctx.fill();
-      // All diamonds get stroke — severity sets colour and weight
-      ctx.strokeStyle=r.sev==='critical'?'#ff6b6b':r.sev==='high'?'#fbbf24':'rgba(255,255,255,0.95)';
+      ctx.strokeStyle=r.sev==='critical'?'#ff4444':r.sev==='high'?'#fbbf24':'rgba(255,255,255,0.9)';
       ctx.lineWidth=r.sev==='high'||r.sev==='critical'?1.5:0.8;
       ctx.beginPath();ctx.moveTo(0,-sz);ctx.lineTo(sz,0);ctx.lineTo(0,sz);ctx.lineTo(-sz,0);ctx.closePath();ctx.stroke();
       ctx.restore();
@@ -480,7 +478,7 @@ function paintCanvas(ctx,W,H,state){
         ctx.fillStyle='rgba(3,5,14,.93)';ctx.strokeStyle=tr.color+'55';ctx.lineWidth=.7;
         ctx.beginPath();ctx.roundRect(bx,by,bw,bh,4);ctx.fill();ctx.stroke();
         // Left colour strip
-        ctx.fillStyle=r.sev==='high'?'#f59e0b':r.sev==='critical'?'#ef4444':'rgba(255,255,255,0.55)';ctx.beginPath();ctx.roundRect(bx,by,3,bh,[3,0,0,3]);ctx.fill();
+        ctx.fillStyle=r.sev==='high'?'#f59e0b':r.sev==='critical'?'#ef4444':'rgba(255,255,255,0.6)';ctx.beginPath();ctx.roundRect(bx,by,3,bh,[3,0,0,3]);ctx.fill();
         ctx.font=`700 6px 'SF Mono',monospace`;ctx.fillStyle=tr.color+'cc';ctx.textAlign='left';
         ctx.fillText(tr.shortL.slice(0,9).toUpperCase(),bx+6,by+9);
         ctx.font=`700 ${tab?7.5:8}px 'SF Mono',monospace`;ctx.fillStyle='#d8e8f4';
@@ -750,9 +748,9 @@ export default function ProjectTimeline({model,actualProgress,initialMode}){
         <div style={{width:1,height:10,background:'rgba(255,255,255,.07)',margin:'0 2px'}}/>
         <div style={{display:'flex',alignItems:'center',gap:3}}><div style={{width:7,height:7,borderRadius:'50%',background:'#10b981',boxShadow:'0 0 5px rgba(16,185,129,.5)'}}/><span>Milestone</span></div>
         <div style={{display:'flex',alignItems:'center',gap:6}}>
-          <div style={{display:'flex',alignItems:'center',gap:3}}><div style={{width:9,height:9,background:'#f59e0b',transform:'rotate(45deg)',boxShadow:'0 0 8px rgba(245,158,11,.7)'}}/><span style={{fontWeight:700,color:'#f59e0b'}}>HIGH</span></div>
+          <div style={{display:'flex',alignItems:'center',gap:3}}><div style={{width:7,height:7,background:'#f59e0b',transform:'rotate(45deg)',boxShadow:'0 0 5px rgba(245,158,11,.5)'}}/><span>Risk HIGH</span></div>
           <div style={{display:'flex',alignItems:'center',gap:3}}><div style={{width:7,height:7,background:'#ef4444',transform:'rotate(45deg)',boxShadow:'0 0 5px rgba(239,68,68,.5)'}}/><span>CRITICAL</span></div>
-          <div style={{display:'flex',alignItems:'center',gap:3}}><div style={{width:7,height:7,background:'rgba(255,255,255,0.82)',border:'1px solid rgba(255,255,255,.9)',transform:'rotate(45deg)'}}/><span>MED risk</span></div>
+          <div style={{display:'flex',alignItems:'center',gap:3}}><div style={{width:7,height:7,background:'rgba(255,255,255,.35)',transform:'rotate(45deg)'}}/><span>MED</span></div>
         </div>
         <div style={{display:'flex',alignItems:'center',gap:3}}><div style={{width:18,height:0,borderTop:'1px dashed rgba(141,247,255,.3)'}}/><span>Predicted future</span></div>
         {!mob&&<div style={{marginLeft:'auto',fontSize:7,color:'rgba(255,255,255,.1)',letterSpacing:'.04em'}}>CASEY · PROGRAMME INTELLIGENCE · {D.sector.toUpperCase()}</div>}

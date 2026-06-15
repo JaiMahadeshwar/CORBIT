@@ -1706,18 +1706,16 @@ body{overflow-x:hidden!important;}
 
 
 
-/* ═══════════════════════════════════════════════════════════
-   CASEY V294 — AUTHORITATIVE HERO CSS
-   Single source of truth. All previous hero blocks removed.
-   Position: fixed full-viewport, z-index 100.
-   No competing rules. No !important wars.
-═══════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   CASEY V294 — SINGLE AUTHORITATIVE HERO CSS
+   All previous conflicting hero blocks removed.
+   This is the ONLY source of truth for hero layout.
+═══════════════════════════════════════════════════════════════ */
 
-/* Hide sticky app header when Hero is showing */
-body:has(.v50TakeoverHero) .v50ConsoleTop { display: none !important; }
-.app:has(.v50TakeoverHero) > header { display: none !important; }
+/* Hide sticky header when hero is showing */
+body:has(.v50TakeoverHero) .v50ConsoleTop,
+body:has(.v50TakeoverHero) header { display: none !important; }
 
-/* ── HERO CONTAINER ── */
 .v50TakeoverHero {
   position: fixed !important;
   inset: 0 !important;
@@ -1728,9 +1726,6 @@ body:has(.v50TakeoverHero) .v50ConsoleTop { display: none !important; }
   background: #000 !important;
   display: block !important;
 }
-
-/* ── VIDEO — fills the hero ── */
-.v50TakeoverHero .v50HeroVideo,
 .v50HeroVideo {
   position: absolute !important;
   inset: 0 !important;
@@ -1738,29 +1733,20 @@ body:has(.v50TakeoverHero) .v50ConsoleTop { display: none !important; }
   height: 100% !important;
   object-fit: cover !important;
   z-index: 1 !important;
-  opacity: 1 !important;
   filter: brightness(0.72) contrast(1.1) saturate(1.1) !important;
 }
-
-/* ── SHADE — over video ── */
-.v50TakeoverHero .v50HeroShade,
 .v50HeroShade {
   position: absolute !important;
   inset: 0 !important;
   z-index: 2 !important;
+  pointer-events: none !important;
   background:
     linear-gradient(180deg, rgba(0,0,0,.62) 0%, rgba(0,0,0,.08) 40%, rgba(0,0,0,.78) 100%),
     linear-gradient(90deg, rgba(0,0,0,.55), transparent 50%, rgba(0,0,0,.45)) !important;
-  pointer-events: none !important;
 }
-
-/* ── TOP BAR — logo + one action only ── */
-.v50TakeoverHero .v50TopBar,
 .v50TopBar {
   position: absolute !important;
-  top: 28px !important;
-  left: 40px !important;
-  right: 40px !important;
+  top: 28px !important; left: 40px !important; right: 40px !important;
   z-index: 20 !important;
   display: flex !important;
   align-items: center !important;
@@ -1770,9 +1756,6 @@ body:has(.v50TakeoverHero) .v50ConsoleTop { display: none !important; }
   backdrop-filter: none !important;
   padding: 0 !important;
 }
-
-/* ── HERO CENTER — headline + buttons ── */
-.v50TakeoverHero .v50HeroCenter,
 .v50HeroCenter {
   position: absolute !important;
   inset: 0 !important;
@@ -1782,10 +1765,8 @@ body:has(.v50TakeoverHero) .v50ConsoleTop { display: none !important; }
   text-align: center !important;
   padding: 0 24px !important;
 }
-
-/* ── HEADLINE ── */
 .v50HeroCenter h1 {
-  font-size: clamp(48px, 7.5vw, 112px) !important;
+  font-size: clamp(48px, 7.5vw, 110px) !important;
   font-weight: 900 !important;
   text-transform: uppercase !important;
   letter-spacing: -.055em !important;
@@ -1794,32 +1775,21 @@ body:has(.v50TakeoverHero) .v50ConsoleTop { display: none !important; }
   text-shadow: 0 4px 40px rgba(0,0,0,.5) !important;
   margin: 0 0 16px !important;
 }
-
-/* ── BOTTOM BAR ── */
-.v50TakeoverHero .v50BottomBar,
 .v50BottomBar {
   position: absolute !important;
-  bottom: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
+  bottom: 0 !important; left: 0 !important; right: 0 !important;
   z-index: 10 !important;
   text-align: center !important;
-  padding: 16px !important;
+  padding: 14px !important;
   font-size: 11px !important;
   letter-spacing: .18em !important;
   text-transform: uppercase !important;
   color: rgba(207,229,244,.5) !important;
 }
-
-/* ── LOGO ── */
+.v50HeroButtons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 24px; }
 .v50Logo { display: flex; gap: 14px; align-items: center; }
 .v50Logo img { width: 130px; height: auto; filter: drop-shadow(0 0 18px rgba(141,247,255,.3)); }
 .v50Logo span { font-size: 10px; color: #8df7ff; text-transform: uppercase; letter-spacing: .2em; }
-
-/* ── HERO BUTTONS ── */
-.v50HeroButtons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 24px; }
-
-/* ── TOP ACTIONS (buttons inside hero topbar) ── */
 .v50TopActions { display: flex; gap: 10px; align-items: center; }
 .v50TopActions button, .v50TopActions a {
   border: 1px solid rgba(141,247,255,.38);
@@ -1834,17 +1804,13 @@ body:has(.v50TakeoverHero) .v50ConsoleTop { display: none !important; }
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  clip-path: polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px);
   cursor: pointer;
   font-family: inherit;
+  clip-path: polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px);
 }
-
-/* ── STICKY CONSOLE HEADER (shows only when model is loaded) ── */
 .v50ConsoleTop {
   position: sticky;
-  top: 0;
-  z-index: 40;
-  margin: 0;
+  top: 0; z-index: 40;
   padding: 14px 24px;
   background: rgba(2,5,10,.85);
   border-bottom: 1px solid rgba(255,255,255,.1);
@@ -1853,12 +1819,7 @@ body:has(.v50TakeoverHero) .v50ConsoleTop { display: none !important; }
   align-items: center;
   justify-content: space-between;
 }
-.v50ConsoleTop nav {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
-}
+.v50ConsoleTop nav { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .v50ConsoleTop nav button, .v50ConsoleTop nav a {
   border: 1px solid rgba(255,255,255,.16);
   background: rgba(7,17,31,.85);
@@ -1872,9 +1833,8 @@ body:has(.v50TakeoverHero) .v50ConsoleTop { display: none !important; }
   cursor: pointer;
   font-family: inherit;
 }
-
 @media (max-width: 640px) {
-  .v50TopBar, .v50TakeoverHero .v50TopBar { left: 14px !important; right: 14px !important; top: 14px !important; }
+  .v50TopBar { left: 14px !important; right: 14px !important; top: 14px !important; }
   .v50HeroCenter h1 { font-size: 44px !important; }
   .v50HeroButtons { flex-direction: column; align-items: center; }
 }

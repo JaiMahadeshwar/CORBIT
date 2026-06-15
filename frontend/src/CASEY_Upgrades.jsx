@@ -138,6 +138,31 @@ export function applyClassToModel(model, classLevel, scheduleLevel) {
   const curr = model.currency_symbol || '£';
   const fmt = (bn) => bn >= 1000 ? `${curr}${(bn/1000).toFixed(1)}T` : bn >= 1 ? `${curr}${bn.toFixed(2)}B` : `${curr}${Math.round(bn*1000)}M`;
 
+  // P80 = P50 × (1 + reserve%) where reserve scales with class
+  // Class 5=+50%, 4=+35%, 3=+18-22%, 2=+15%, 1=+10%
+  const p80Mult = { 5:1.50, 4:1.35, 3:1.20, 2:1.15, 1:1.10 }[classLevel] || 1.20;
+  // P80 schedule scales with schedule level accuracy
+  const qsraP80Mult = { 1:1.30, 2:1.25, 3:1.18, 4:1.15, 5:1.10 }[scheduleLevel] || 1.15;
+  const baseSched = parseInt(String(model.schedule || model.schedule_months || '24').replace(/[^0-9]/g, '')) || 24;
+  const newP80Bn = baseCostBn > 0 ? baseCostBn * p80Mult : 0;
+  const newP80Str = newP80Bn > 0 ? fmt(newP80Bn) : (model.cost_p80 || '—');
+  const newQSRAP80 = Math.round(baseSched * qsraP80Mult);
+  const newQSRAP90 = Math.round(baseSched * (qsraP80Mult * 1.10));
+  const newQSRAP10 = Math.round(baseSched * 0.88);
+  // OBA changes with class — higher class = lower OBA needed
+  const obaByClass = { 5:66, 4:50, 3:35, 2:20, 1:10 };
+  const newOba = obaByClass[classLevel] || 35;
+  // Reserve % scales with class
+  const reserveByClass = { 5:50, 4:35, 3:20, 2:15, 1:10 };
+  const newReservePct = reserveByClass[classLevel] || 20;
+  const newP80Reserve = baseCostBn > 0 ? fmt(newP80Bn - baseCostBn) : model.p80_reserve;
+  // Board authority line updates with class
+  const classVerdict = classLevel <= 2
+    ? `${fmt(baseCostBn)} · ${cl.name} (${cl.accuracy}) · ${Math.max(20,Math.min(96,newConf))}% confidence. ${newConf>=75?'Board-ready.':'Approaching board threshold.'}`
+    : classLevel === 3
+    ? `${fmt(baseCostBn)} · ${cl.name} (${cl.accuracy}) · ${newConf}% confidence. ${newConf>=75?'Board-ready.':'Conditional — advance to Class 2 before approval.'}`
+    : `${fmt(baseCostBn)} · ${cl.name} (${cl.accuracy}) · ${newConf}% confidence. Do not approve — insufficient estimate maturity for capital commitment.`;
+
   return {
     ...model,
     estimate_class: classLevel,
@@ -146,10 +171,38 @@ export function applyClassToModel(model, classLevel, scheduleLevel) {
     schedule_level: scheduleLevel,
     schedule_level_name: `${sl.name} — ${sl.label}`,
     confidence_pct: newConf,
+    // P-values update with class
     cost_p10: baseCostBn > 0 ? fmt(baseCostBn * lo) : model.cost_p10,
+    cost_p80: newP80Str,
+    cost_p80_bn: newP80Bn || model.cost_p80_bn,
     cost_p90: baseCostBn > 0 ? fmt(baseCostBn * hi) : model.cost_p90,
     cost_range: baseCostBn > 0 ? `${fmt(baseCostBn * lo)} — ${fmt(baseCostBn * hi)}` : model.cost_range,
-    // These fields are read by exports, timeline, and front screen
+    // OBA and reserve update with class
+    oba_pct: newOba,
+    p80_reserve_pct: newReservePct,
+    p80_reserve: newP80Reserve,
+    p80_reserve_bn: newP80Bn > 0 ? parseFloat((newP80Bn - baseCostBn).toFixed(3)) : model.p80_reserve_bn,
+    // QSRA updates with schedule level
+    monte_carlo: {
+      ...(model.monte_carlo || {}),
+      qsra: {
+        ...(model.monte_carlo?.qsra || {}),
+        p10: newQSRAP10,
+        p50: baseSched,
+        p80: newQSRAP80,
+        p90: newQSRAP90,
+      },
+      qcra: {
+        ...(model.monte_carlo?.qcra || {}),
+        p10: baseCostBn > 0 ? parseFloat((baseCostBn * lo).toFixed(2)) : model.monte_carlo?.qcra?.p10,
+        p50: baseCostBn > 0 ? baseCostBn : model.monte_carlo?.qcra?.p50,
+        p80: newP80Bn > 0 ? parseFloat(newP80Bn.toFixed(2)) : model.monte_carlo?.qcra?.p80,
+        p90: baseCostBn > 0 ? parseFloat((baseCostBn * hi).toFixed(2)) : model.monte_carlo?.qcra?.p90,
+      },
+    },
+    // Narrative updates
+    institutional_authority_line: classVerdict,
+    _base_confidence_pct: model._base_confidence_pct || model.confidence_pct,
     _class_level_applied: classLevel,
     _schedule_level_applied: scheduleLevel,
     _class_impact: classLevelImpact(classLevel, scheduleLevel),
