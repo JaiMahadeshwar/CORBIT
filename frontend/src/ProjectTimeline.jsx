@@ -457,12 +457,15 @@ function paintCanvas(ctx,W,H,state){
       const rx2=xAt(r.t,tr.schedMult),above=ri%2===0;
       const sz=r.sev==='high'?(mob?5.5:7):(mob?3.5:5);
       // Diamond
-      ctx.save();ctx.shadowColor=r.sev==='high'?tr.color:'transparent';ctx.shadowBlur=r.sev==='high'?10:0;
-      ctx.fillStyle=r.sev==='high'?tr.color:tr.color+'bb';
+      // Risk diamonds: HIGH=orange, CRITICAL=red, MED=track colour
+      const riskFill=r.sev==='high'?'#f59e0b':r.sev==='critical'?'#ef4444':tr.color+'bb';
+      const riskGlow=r.sev==='high'?'rgba(245,158,11,.6)':r.sev==='critical'?'rgba(239,68,68,.6)':'transparent';
+      ctx.save();ctx.shadowColor=riskGlow;ctx.shadowBlur=r.sev==='high'||r.sev==='critical'?12:0;
+      ctx.fillStyle=riskFill;
       ctx.translate(rx2,ryi);ctx.beginPath();
       ctx.moveTo(0,-sz);ctx.lineTo(sz,0);ctx.lineTo(0,sz);ctx.lineTo(-sz,0);ctx.closePath();ctx.fill();
-      if(r.sev==='high'){
-        ctx.strokeStyle='#ef4444';ctx.lineWidth=1;ctx.beginPath();
+      if(r.sev==='high'||r.sev==='critical'){
+        ctx.strokeStyle=r.sev==='critical'?'#ff6b6b':'#fbbf24';ctx.lineWidth=1.2;ctx.beginPath();
         ctx.moveTo(0,-sz);ctx.lineTo(sz,0);ctx.lineTo(0,sz);ctx.lineTo(-sz,0);ctx.closePath();ctx.stroke();
       }
       ctx.restore();
@@ -471,12 +474,12 @@ function paintCanvas(ctx,W,H,state){
         const cLen=36,cY=above?ryi-cLen:ryi+cLen;
         ctx.save();ctx.strokeStyle=tr.color+'50';ctx.lineWidth=.5;ctx.setLineDash([2,4]);
         ctx.beginPath();ctx.moveTo(rx2,above?ryi-sz:ryi+sz);ctx.lineTo(rx2,cY);ctx.stroke();ctx.setLineDash([]);
-        const bw=tab?112:132,bh=38,bx=Math.max(PL+2,Math.min(rx2-bw/2,W-PR-bw-2));
+        const bw=tab?112:134,bh=38,bx=Math.max(PL+2,Math.min(rx2-bw/2,W-PR-bw-2));
         const by=above?cY-bh-2:cY+2;
         ctx.fillStyle='rgba(3,5,14,.93)';ctx.strokeStyle=tr.color+'55';ctx.lineWidth=.7;
         ctx.beginPath();ctx.roundRect(bx,by,bw,bh,4);ctx.fill();ctx.stroke();
         // Left colour strip
-        ctx.fillStyle=tr.color;ctx.beginPath();ctx.roundRect(bx,by,3,bh,[3,0,0,3]);ctx.fill();
+        ctx.fillStyle=r.sev==='high'?'#f59e0b':r.sev==='critical'?'#ef4444':tr.color;ctx.beginPath();ctx.roundRect(bx,by,3,bh,[3,0,0,3]);ctx.fill();
         ctx.font=`700 6px 'SF Mono',monospace`;ctx.fillStyle=tr.color+'cc';ctx.textAlign='left';
         ctx.fillText(tr.shortL.slice(0,9).toUpperCase(),bx+6,by+9);
         ctx.font=`700 ${tab?7.5:8}px 'SF Mono',monospace`;ctx.fillStyle='#d8e8f4';
@@ -512,11 +515,7 @@ export default function ProjectTimeline({model,actualProgress,initialMode}){
   const cvsRef=useRef(null),rafRef=useRef(null),lastTs=useRef(null),glowRef=useRef(0);
   const[prog,setProg]=useState(0),[playing,setPlaying]=useState(false);
   const[mode,setMode]=useState(initialMode||'base');
-  // Sync when parent changes scenario
-  useEffect(()=>{
-    if(initialMode && initialMode!==mode){ changeMode(initialMode); }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[initialMode]);,[speed,setSpeed]=useState(2);
+  useEffect(()=>{if(initialMode&&initialMode!==mode)changeMode(initialMode);},[initialMode]);,[speed,setSpeed]=useState(2);
   const[revMap,setRevMap]=useState(()=>new Map([['base',new Set()],['scenario',new Set()],['benchmark',new Set()],['stress',new Set()]]));
   const[log,setLog]=useState([]),[advisor,setAdvisor]=useState('');
   const[mob,setMob]=useState(()=>window.innerWidth<500);
@@ -749,7 +748,11 @@ export default function ProjectTimeline({model,actualProgress,initialMode}){
         ))}
         <div style={{width:1,height:10,background:'rgba(255,255,255,.07)',margin:'0 2px'}}/>
         <div style={{display:'flex',alignItems:'center',gap:3}}><div style={{width:7,height:7,borderRadius:'50%',background:'#10b981',boxShadow:'0 0 5px rgba(16,185,129,.5)'}}/><span>Milestone</span></div>
-        <div style={{display:'flex',alignItems:'center',gap:3}}><div style={{width:7,height:7,background:TC[mode]||TC.base,transform:'rotate(45deg)',boxShadow:`0 0 5px ${TC[mode]||TC.base}55`}}/><span>Risk (track-coloured)</span></div>
+        <div style={{display:'flex',alignItems:'center',gap:6}}>
+          <div style={{display:'flex',alignItems:'center',gap:3}}><div style={{width:7,height:7,background:'#f59e0b',transform:'rotate(45deg)',boxShadow:'0 0 5px rgba(245,158,11,.5)'}}/><span>Risk HIGH</span></div>
+          <div style={{display:'flex',alignItems:'center',gap:3}}><div style={{width:7,height:7,background:'#ef4444',transform:'rotate(45deg)',boxShadow:'0 0 5px rgba(239,68,68,.5)'}}/><span>CRITICAL</span></div>
+          <div style={{display:'flex',alignItems:'center',gap:3}}><div style={{width:7,height:7,background:'rgba(255,255,255,.35)',transform:'rotate(45deg)'}}/><span>MED</span></div>
+        </div>
         <div style={{display:'flex',alignItems:'center',gap:3}}><div style={{width:18,height:0,borderTop:'1px dashed rgba(141,247,255,.3)'}}/><span>Predicted future</span></div>
         {!mob&&<div style={{marginLeft:'auto',fontSize:7,color:'rgba(255,255,255,.1)',letterSpacing:'.04em'}}>CASEY · PROGRAMME INTELLIGENCE · {D.sector.toUpperCase()}</div>}
       </div>

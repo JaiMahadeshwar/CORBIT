@@ -393,52 +393,52 @@ const getScenarioMults = (model) => ({
 
 const showcaseProjects = [
   { sector:'AI / Data Centres', region:'United States', client:'Microsoft / OpenAI reference case', currency_symbol:'$', cost_p50_bn:50, schedule_months:36, confidence_pct:62, title:'Microsoft AI Supercluster Expansion', icon:'AI', confidence:'Grid constrained', prompt:'Microsoft OpenAI AI supercluster expansion with 500MW hyperscale data centres, GPU procurement bottlenecks, grid interconnection, liquid cooling, transmission upgrades and accelerated 2027 delivery' },
-  { sector:'AI / Data Centres', region:'Global', client:'Amazon AWS reference case', title:'AWS Global Region Expansion', icon:'AI', confidence:'Power + fibre dependency', prompt:'Amazon AWS global region expansion with sovereign cloud zones, edge data centres, fibre backbone, redundant power, energy procurement and geopolitical resilience requirements' },
-  { sector:'AI / Data Centres', region:'United States / Europe', client:'Meta reference case', title:'Meta AI Compute Network', icon:'AI', confidence:'Cooling + rack density', prompt:'Meta AI compute network expansion with training clusters, hyperscale networking, custom silicon, high rack density, liquid cooling and power procurement constraints' },
-  { sector:'AI / Data Centres', region:'Global', client:'Google reference case', title:'Google TPU Infrastructure', icon:'AI', confidence:'Energy integration', prompt:'Google TPU AI infrastructure programme with renewable energy integration, data centre campuses, low latency routing, cooling systems and autonomous optimisation infrastructure' },
-  { sector:'AI / Data Centres', region:'United States / Middle East', client:'Oracle / Sovereign cloud reference case', title:'Oracle Sovereign AI Cloud', icon:'AI', confidence:'Sovereign resilience', prompt:'Oracle sovereign AI cloud campus rollout with sovereign hosting, cyber resilience, GPU procurement, utility interconnection, water cooling and national infrastructure constraints' },
-  { sector:'AI / Data Centres', region:'United States', client:'xAI reference case', title:'xAI Compute Expansion', icon:'AI', confidence:'Utility race', prompt:'xAI large scale AI compute expansion with rapid data centre construction, power substation upgrades, GPU delivery pressure, cooling infrastructure and aggressive schedule compression' },
+  {  currency_symbol:'$', cost_p50_bn:8, schedule_months:30, confidence_pct:68,sector:'AI / Data Centres', region:'Global', client:'Amazon AWS reference case', title:'AWS Global Region Expansion', icon:'AI', confidence:'Power + fibre dependency', prompt:'Amazon AWS global region expansion with sovereign cloud zones, edge data centres, fibre backbone, redundant power, energy procurement and geopolitical resilience requirements' },
+  {  currency_symbol:'$', cost_p50_bn:12, schedule_months:28, confidence_pct:65,sector:'AI / Data Centres', region:'United States / Europe', client:'Meta reference case', title:'Meta AI Compute Network', icon:'AI', confidence:'Cooling + rack density', prompt:'Meta AI compute network expansion with training clusters, hyperscale networking, custom silicon, high rack density, liquid cooling and power procurement constraints' },
+  {  currency_symbol:'$', cost_p50_bn:6, schedule_months:24, confidence_pct:70,sector:'AI / Data Centres', region:'Global', client:'Google reference case', title:'Google TPU Infrastructure', icon:'AI', confidence:'Energy integration', prompt:'Google TPU AI infrastructure programme with renewable energy integration, data centre campuses, low latency routing, cooling systems and autonomous optimisation infrastructure' },
+  {  currency_symbol:'$', cost_p50_bn:5, schedule_months:30, confidence_pct:63,sector:'AI / Data Centres', region:'United States / Middle East', client:'Oracle / Sovereign cloud reference case', title:'Oracle Sovereign AI Cloud', icon:'AI', confidence:'Sovereign resilience', prompt:'Oracle sovereign AI cloud campus rollout with sovereign hosting, cyber resilience, GPU procurement, utility interconnection, water cooling and national infrastructure constraints' },
+  {  currency_symbol:'$', cost_p50_bn:10, schedule_months:18, confidence_pct:58,sector:'AI / Data Centres', region:'United States', client:'xAI reference case', title:'xAI Compute Expansion', icon:'AI', confidence:'Utility race', prompt:'xAI large scale AI compute expansion with rapid data centre construction, power substation upgrades, GPU delivery pressure, cooling infrastructure and aggressive schedule compression' },
 
   { sector:'Rail / Transit', region:'United States', client:'California HSR reference case', currency_symbol:'$', cost_p50_bn:128, schedule_months:240, confidence_pct:31, title:'California High-Speed Rail', icon:'Rail', confidence:'Land + tunnelling risk', prompt:'California High-Speed Rail megaproject with corridor acquisition, tunnelling, utility relocation, civil packages, political scrutiny, systems integration and cost escalation exposure' },
   { sector:'Rail / Transit', region:'United Kingdom', client:'HS2 reference case', currency_symbol:'£', cost_p50_bn:65.7, schedule_months:189, confidence_pct:64, title:'HS2 High-Speed Rail', icon:'Rail', confidence:'Scope + governance pressure', prompt:'HS2 high speed rail programme with scope changes, tunnelling, stations, systems integration, political volatility, cost escalation and governance confidence challenge' },
-  { sector:'Rail / Transit', region:'United States', client:'Gateway Program reference case', title:'Gateway / Hudson Tunnel', icon:'Rail', confidence:'Urban resilience', prompt:'Gateway Hudson Tunnel rail resilience programme with urban tunnelling, aging infrastructure interfaces, rail continuity, federal funding, environmental approvals and schedule uncertainty' },
-  { sector:'Rail / Transit', region:'United States', client:'Brightline reference case', title:'Brightline West', icon:'Rail', confidence:'Accelerated delivery', prompt:'Brightline West high speed rail project with desert corridor construction, private finance, power integration, stations, rolling stock, systems delivery and accelerated schedule pressure' },
-  { sector:'Rail / Transit', region:'Europe', client:'Rail Baltica reference case', title:'Rail Baltica', icon:'Rail', confidence:'Cross-border governance', prompt:'Rail Baltica cross border European rail programme with multi-country governance, procurement coordination, interoperability, defence mobility, stations and schedule integration risk' },
-  { sector:'Rail / Transit', region:'Australia', client:'Sydney Metro reference case', title:'Sydney Metro Expansion', icon:'Rail', confidence:'Urban systems integration', prompt:'Sydney Metro expansion with tunnels, underground stations, rail systems, live city interfaces, systems integration, commissioning and public disruption constraints' },
-  { sector:'Rail / Transit', region:'Canada', client:'Metrolinx reference case', title:'Ontario Line', icon:'Rail', confidence:'Interface density', prompt:'Toronto Ontario Line transit megaproject with tunnelling, station boxes, procurement packaging, utility relocation, systems coordination and urban interface risk' },
-  { sector:'Rail / Transit', region:'India', client:'NHSRCL reference case', title:'Mumbai–Ahmedabad HSR', icon:'Rail', confidence:'Land + technology transfer', prompt:'Mumbai Ahmedabad High Speed Rail programme with land acquisition, viaducts, stations, Japanese technology transfer, systems integration and corridor delivery uncertainty' },
+  {  currency_symbol:'$', cost_p50_bn:31, schedule_months:120, confidence_pct:52,sector:'Rail / Transit', region:'United States', client:'Gateway Program reference case', title:'Gateway / Hudson Tunnel', icon:'Rail', confidence:'Urban resilience', prompt:'Gateway Hudson Tunnel rail resilience programme with urban tunnelling, aging infrastructure interfaces, rail continuity, federal funding, environmental approvals and schedule uncertainty' },
+  {  currency_symbol:'$', cost_p50_bn:12, schedule_months:60, confidence_pct:61,sector:'Rail / Transit', region:'United States', client:'Brightline reference case', title:'Brightline West', icon:'Rail', confidence:'Accelerated delivery', prompt:'Brightline West high speed rail project with desert corridor construction, private finance, power integration, stations, rolling stock, systems delivery and accelerated schedule pressure' },
+  {  currency_symbol:'€', cost_p50_bn:16.2, schedule_months:180, confidence_pct:55,sector:'Rail / Transit', region:'Europe', client:'Rail Baltica reference case', title:'Rail Baltica', icon:'Rail', confidence:'Cross-border governance', prompt:'Rail Baltica cross border European rail programme with multi-country governance, procurement coordination, interoperability, defence mobility, stations and schedule integration risk' },
+  {  currency_symbol:'A$', cost_p50_bn:25, schedule_months:120, confidence_pct:60,sector:'Rail / Transit', region:'Australia', client:'Sydney Metro reference case', title:'Sydney Metro Expansion', icon:'Rail', confidence:'Urban systems integration', prompt:'Sydney Metro expansion with tunnels, underground stations, rail systems, live city interfaces, systems integration, commissioning and public disruption constraints' },
+  {  currency_symbol:'C$', cost_p50_bn:27, schedule_months:132, confidence_pct:57,sector:'Rail / Transit', region:'Canada', client:'Metrolinx reference case', title:'Ontario Line', icon:'Rail', confidence:'Interface density', prompt:'Toronto Ontario Line transit megaproject with tunnelling, station boxes, procurement packaging, utility relocation, systems coordination and urban interface risk' },
+  {  currency_symbol:'₹', cost_p50_bn:1700, schedule_months:168, confidence_pct:54,sector:'Rail / Transit', region:'India', client:'NHSRCL reference case', title:'Mumbai–Ahmedabad HSR', icon:'Rail', confidence:'Land + technology transfer', prompt:'Mumbai Ahmedabad High Speed Rail programme with land acquisition, viaducts, stations, Japanese technology transfer, systems integration and corridor delivery uncertainty' },
 
-  { sector:'Mega Infrastructure', region:'Saudi Arabia', client:'NEOM reference case', title:'NEOM / The Line Mobility', icon:'Infra', confidence:'Giga-project orchestration', prompt:'NEOM The Line transit and infrastructure programme with autonomous mobility, giga project logistics, workforce scaling, utilities, modular construction, supply chain and governance complexity' },
-  { sector:'Mega Infrastructure', region:'Singapore', client:'Changi reference case', title:'Changi Airport Expansion', icon:'Air', confidence:'Live operations', prompt:'Changi airport expansion with terminal construction, runway systems, baggage automation, live airport operations, passenger growth, regulatory approvals and resilience planning' },
-  { sector:'Mega Infrastructure', region:'UAE', client:'Etihad Rail reference case', title:'Etihad Rail Freight Network', icon:'Rail', confidence:'Desert logistics', prompt:'Etihad Rail freight network expansion with desert civil works, freight terminals, port interfaces, signalling, regional coordination and logistics integration risk' },
+  {  currency_symbol:'$', cost_p50_bn:500, schedule_months:300, confidence_pct:28,sector:'Mega Infrastructure', region:'Saudi Arabia', client:'NEOM reference case', title:'NEOM / The Line Mobility', icon:'Infra', confidence:'Giga-project orchestration', prompt:'NEOM The Line transit and infrastructure programme with autonomous mobility, giga project logistics, workforce scaling, utilities, modular construction, supply chain and governance complexity' },
+  {  currency_symbol:'S$', cost_p50_bn:9, schedule_months:120, confidence_pct:68,sector:'Mega Infrastructure', region:'Singapore', client:'Changi reference case', title:'Changi Airport Expansion', icon:'Air', confidence:'Live operations', prompt:'Changi airport expansion with terminal construction, runway systems, baggage automation, live airport operations, passenger growth, regulatory approvals and resilience planning' },
+  {  currency_symbol:'$', cost_p50_bn:11, schedule_months:84, confidence_pct:62,sector:'Mega Infrastructure', region:'UAE', client:'Etihad Rail reference case', title:'Etihad Rail Freight Network', icon:'Rail', confidence:'Desert logistics', prompt:'Etihad Rail freight network expansion with desert civil works, freight terminals, port interfaces, signalling, regional coordination and logistics integration risk' },
 
-  { sector:'Pharma / Life Sciences', region:'United States', client:'Eli Lilly reference case', title:'Eli Lilly GLP-1 Manufacturing', icon:'Bio', confidence:'GMP validation', prompt:'Eli Lilly obesity medicine manufacturing expansion with sterile fill finish, GMP validation, GLP-1 demand growth, cold chain logistics, regulatory approvals and accelerated commercial readiness' },
-  { sector:'Pharma / Life Sciences', region:'Europe / United States', client:'Novo Nordisk reference case', title:'Novo Nordisk Capacity Expansion', icon:'Bio', confidence:'Demand surge', prompt:'Novo Nordisk biologics manufacturing capacity expansion with GLP-1 demand surge, sterile production, cold chain, validation, clean utilities and supply chain redundancy' },
-  { sector:'Pharma / Life Sciences', region:'United States', client:'Moderna reference case', title:'Moderna Biosecurity Facility', icon:'Bio', confidence:'Regulatory readiness', prompt:'Moderna biosecurity and vaccine manufacturing facility with rapid response production, GMP cleanrooms, sterile commissioning, regulatory inspections and sovereign health resilience requirements' },
+  {  currency_symbol:'$', cost_p50_bn:9, schedule_months:48, confidence_pct:67,sector:'Pharma / Life Sciences', region:'United States', client:'Eli Lilly reference case', title:'Eli Lilly GLP-1 Manufacturing', icon:'Bio', confidence:'GMP validation', prompt:'Eli Lilly obesity medicine manufacturing expansion with sterile fill finish, GMP validation, GLP-1 demand growth, cold chain logistics, regulatory approvals and accelerated commercial readiness' },
+  {  currency_symbol:'€', cost_p50_bn:6, schedule_months:42, confidence_pct:65,sector:'Pharma / Life Sciences', region:'Europe / United States', client:'Novo Nordisk reference case', title:'Novo Nordisk Capacity Expansion', icon:'Bio', confidence:'Demand surge', prompt:'Novo Nordisk biologics manufacturing capacity expansion with GLP-1 demand surge, sterile production, cold chain, validation, clean utilities and supply chain redundancy' },
+  {  currency_symbol:'$', cost_p50_bn:4, schedule_months:36, confidence_pct:64,sector:'Pharma / Life Sciences', region:'United States', client:'Moderna reference case', title:'Moderna Biosecurity Facility', icon:'Bio', confidence:'Regulatory readiness', prompt:'Moderna biosecurity and vaccine manufacturing facility with rapid response production, GMP cleanrooms, sterile commissioning, regulatory inspections and sovereign health resilience requirements' },
 
-  { sector:'Energy / Industrial', region:'Global', client:'SMR developer reference case', title:'SMR Nuclear Rollout', icon:'Energy', confidence:'Certification gate', prompt:'Small modular reactor nuclear rollout programme with regulatory certification, containment qualification, nuclear island procurement, grid integration, safety assurance and long tail licensing risk' },
-  { sector:'Energy / Industrial', region:'United States / Gulf', client:'LNG operator reference case', title:'LNG Export Terminal', icon:'Energy', confidence:'Commissioning exposure', prompt:'LNG export terminal megaproject with cryogenic systems, marine berths, long lead valves, liquefaction trains, permits, commissioning risk and weather logistics exposure' },
-  { sector:'Energy / Industrial', region:'North Sea / Atlantic', client:'Offshore wind developer reference case', title:'Offshore Wind Mega-Hub', icon:'Energy', confidence:'Weather windows', prompt:'Offshore wind mega hub with turbine foundations, export cables, grid integration, installation vessel constraints, weather windows and marine logistics risk' },
-  { sector:'Energy / Industrial', region:'Middle East / Australia', client:'Hydrogen developer reference case', title:'Hydrogen Export Corridor', icon:'Energy', confidence:'Immature supply chain', prompt:'Hydrogen export corridor with electrolysers, ammonia conversion, port infrastructure, energy pricing, immature supply chain, offtake uncertainty and export logistics' },
-  { sector:'Energy / Industrial', region:'United States / Europe', client:'Grid operator reference case', title:'Transmission Supergrid', icon:'Energy', confidence:'Permitting bottleneck', prompt:'Transmission supergrid modernization programme with high voltage lines, substations, permitting, grid resilience, interconnection queues, supply chain delays and public opposition' },
+  {  currency_symbol:'£', cost_p50_bn:3.5, schedule_months:144, confidence_pct:45,sector:'Energy / Industrial', region:'Global', client:'SMR developer reference case', title:'SMR Nuclear Rollout', icon:'Energy', confidence:'Certification gate', prompt:'Small modular reactor nuclear rollout programme with regulatory certification, containment qualification, nuclear island procurement, grid integration, safety assurance and long tail licensing risk' },
+  {  currency_symbol:'$', cost_p50_bn:12, schedule_months:60, confidence_pct:62,sector:'Energy / Industrial', region:'United States / Gulf', client:'LNG operator reference case', title:'LNG Export Terminal', icon:'Energy', confidence:'Commissioning exposure', prompt:'LNG export terminal megaproject with cryogenic systems, marine berths, long lead valves, liquefaction trains, permits, commissioning risk and weather logistics exposure' },
+  {  currency_symbol:'£', cost_p50_bn:8, schedule_months:72, confidence_pct:60,sector:'Energy / Industrial', region:'North Sea / Atlantic', client:'Offshore wind developer reference case', title:'Offshore Wind Mega-Hub', icon:'Energy', confidence:'Weather windows', prompt:'Offshore wind mega hub with turbine foundations, export cables, grid integration, installation vessel constraints, weather windows and marine logistics risk' },
+  {  currency_symbol:'$', cost_p50_bn:6, schedule_months:84, confidence_pct:48,sector:'Energy / Industrial', region:'Middle East / Australia', client:'Hydrogen developer reference case', title:'Hydrogen Export Corridor', icon:'Energy', confidence:'Immature supply chain', prompt:'Hydrogen export corridor with electrolysers, ammonia conversion, port infrastructure, energy pricing, immature supply chain, offtake uncertainty and export logistics' },
+  {  currency_symbol:'$', cost_p50_bn:14, schedule_months:120, confidence_pct:52,sector:'Energy / Industrial', region:'United States / Europe', client:'Grid operator reference case', title:'Transmission Supergrid', icon:'Energy', confidence:'Permitting bottleneck', prompt:'Transmission supergrid modernization programme with high voltage lines, substations, permitting, grid resilience, interconnection queues, supply chain delays and public opposition' },
 
-  { sector:'Defence / National Security', region:'Australia / UK / US', client:'AUKUS reference case', title:'AUKUS Industrial Base', icon:'Defence', confidence:'Sovereign capability', prompt:'AUKUS industrial base programme with nuclear submarine shipyard scaling, workforce shortages, sovereign supply chain, certification, dockyard capacity and defence governance pressure' },
-  { sector:'Defence / National Security', region:'NATO / Indo-Pacific', client:'Defence ministry reference case', title:'Missile Defence Network', icon:'Defence', confidence:'Systems interoperability', prompt:'Missile defence modernization network with radar integration, command systems, interceptor procurement, interoperability, cyber resilience, simulation evidence and supplier maturity constraints' },
-  { sector:'Defence / National Security', region:'Global', client:'Defence ministry reference case', title:'Autonomous Drone Swarm', icon:'Defence', confidence:'AI assurance', prompt:'Autonomous drone swarm defence programme with AI assurance, electronic warfare survivability, battery logistics, sensor integrity, autonomy certification and mission assurance risk' },
-  { sector:'Defence / National Security', region:'United States / UK / Australia', client:'Naval command reference case', title:'Naval Shipbuilding Expansion', icon:'Defence', confidence:'Workforce bottleneck', prompt:'Naval shipbuilding expansion programme with dockyard capacity, steel supply, propulsion systems, combat systems integration, workforce readiness and schedule confidence exposure' },
+  {  currency_symbol:'$', cost_p50_bn:368, schedule_months:240, confidence_pct:42,sector:'Defence / National Security', region:'Australia / UK / US', client:'AUKUS reference case', title:'AUKUS Industrial Base', icon:'Defence', confidence:'Sovereign capability', prompt:'AUKUS industrial base programme with nuclear submarine shipyard scaling, workforce shortages, sovereign supply chain, certification, dockyard capacity and defence governance pressure' },
+  {  currency_symbol:'$', cost_p50_bn:22, schedule_months:120, confidence_pct:55,sector:'Defence / National Security', region:'NATO / Indo-Pacific', client:'Defence ministry reference case', title:'Missile Defence Network', icon:'Defence', confidence:'Systems interoperability', prompt:'Missile defence modernization network with radar integration, command systems, interceptor procurement, interoperability, cyber resilience, simulation evidence and supplier maturity constraints' },
+  {  currency_symbol:'$', cost_p50_bn:3, schedule_months:60, confidence_pct:48,sector:'Defence / National Security', region:'Global', client:'Defence ministry reference case', title:'Autonomous Drone Swarm', icon:'Defence', confidence:'AI assurance', prompt:'Autonomous drone swarm defence programme with AI assurance, electronic warfare survivability, battery logistics, sensor integrity, autonomy certification and mission assurance risk' },
+  {  currency_symbol:'$', cost_p50_bn:35, schedule_months:180, confidence_pct:50,sector:'Defence / National Security', region:'United States / UK / Australia', client:'Naval command reference case', title:'Naval Shipbuilding Expansion', icon:'Defence', confidence:'Workforce bottleneck', prompt:'Naval shipbuilding expansion programme with dockyard capacity, steel supply, propulsion systems, combat systems integration, workforce readiness and schedule confidence exposure' },
 
-  { sector:'Semiconductors / Advanced Manufacturing', region:'United States', client:'TSMC reference case', title:'TSMC Arizona Fab', icon:'Fab', confidence:'Toolchain + workforce', prompt:'TSMC Arizona semiconductor fab programme with ultra clean environments, toolchain delivery, workforce maturity, water and power utilities, process node commissioning and geopolitical urgency' },
-  { sector:'Semiconductors / Advanced Manufacturing', region:'United States / Europe', client:'Intel reference case', title:'Intel Fab Expansion', icon:'Fab', confidence:'Yield ramp', prompt:'Intel semiconductor fab expansion with EUV tooling, cleanroom construction, utility systems, process node complexity, supply chain constraints and commissioning readiness risk' },
-  { sector:'Semiconductors / Advanced Manufacturing', region:'United States / Korea', client:'Samsung reference case', title:'Samsung Foundry Expansion', icon:'Fab', confidence:'Manufacturing maturity', prompt:'Samsung foundry expansion with advanced semiconductor manufacturing, ultra cleanroom delivery, utility redundancy, tool installation, yield ramp uncertainty and global supply chain risk' },
+  {  currency_symbol:'$', cost_p50_bn:40, schedule_months:60, confidence_pct:58,sector:'Semiconductors / Advanced Manufacturing', region:'United States', client:'TSMC reference case', title:'TSMC Arizona Fab', icon:'Fab', confidence:'Toolchain + workforce', prompt:'TSMC Arizona semiconductor fab programme with ultra clean environments, toolchain delivery, workforce maturity, water and power utilities, process node commissioning and geopolitical urgency' },
+  {  currency_symbol:'$', cost_p50_bn:20, schedule_months:48, confidence_pct:55,sector:'Semiconductors / Advanced Manufacturing', region:'United States / Europe', client:'Intel reference case', title:'Intel Fab Expansion', icon:'Fab', confidence:'Yield ramp', prompt:'Intel semiconductor fab expansion with EUV tooling, cleanroom construction, utility systems, process node complexity, supply chain constraints and commissioning readiness risk' },
+  {  currency_symbol:'$', cost_p50_bn:17, schedule_months:42, confidence_pct:60,sector:'Semiconductors / Advanced Manufacturing', region:'United States / Korea', client:'Samsung reference case', title:'Samsung Foundry Expansion', icon:'Fab', confidence:'Manufacturing maturity', prompt:'Samsung foundry expansion with advanced semiconductor manufacturing, ultra cleanroom delivery, utility redundancy, tool installation, yield ramp uncertainty and global supply chain risk' },
 
-  { sector:'Space / Orbital Infrastructure', region:'Texas / Florida / Orbit', client:'SpaceX reference case', title:'SpaceX Starship Industrialization', icon:'Space', confidence:'Launch cadence', prompt:'SpaceX Starship industrialization programme with launch cadence scaling, orbital refueling, thermal protection, booster recovery, regulatory approvals, pad infrastructure and autonomous operations' },
-  { sector:'Space / Orbital Infrastructure', region:'Lunar surface', client:'Lunar programme reference case', title:'Lunar Habitat Infrastructure', icon:'Space', confidence:'Mission survivability', prompt:'Lunar habitat infrastructure programme with life support, habitat redundancy, landing pads, nuclear power, thermal survivability, autonomous commissioning, launch windows and crew logistics' },
-  { sector:'Space / Orbital Infrastructure', region:'Mars logistics', client:'Mars programme reference case', title:'Mars Cargo Logistics Network', icon:'Space', confidence:'Autonomous operations', prompt:'Mars cargo logistics network with autonomous navigation, radiation hardening, communication latency, in situ resource utilisation, cargo landers, long-cycle logistics and mission recovery constraints' },
-  { sector:'Space / Orbital Infrastructure', region:'Low Earth Orbit', client:'Amazon Kuiper reference case', title:'Amazon Kuiper Constellation', icon:'Space', confidence:'Production + launch manifest', prompt:'Amazon Kuiper satellite constellation deployment with satellite production ramp, launch manifest reliability, ground stations, spectrum coordination, network rollout and orbital commissioning risk' },
-  { sector:'Space / Orbital Infrastructure', region:'Low Earth Orbit', client:'AST SpaceMobile reference case', title:'AST SpaceMobile Network', icon:'Space', confidence:'Telecom integration', prompt:'AST SpaceMobile orbital telecom network with satellite deployment sequencing, telecom interoperability, antenna deployment, regulatory spectrum approvals and ground network integration risk' },
-  { sector:'Space / Orbital Infrastructure', region:'Orbit', client:'Orbital compute reference case', title:'Orbital Data Centres', icon:'Space', confidence:'Radiation + servicing', prompt:'Space based orbital data centre infrastructure with launch economics, orbital cooling, autonomous servicing, radiation hardening, power redundancy, data relay and mission assurance constraints' },
-  { sector:'Space / Orbital Infrastructure', region:'Cislunar', client:'Orbital servicing reference case', title:'Autonomous Orbital Servicing', icon:'Space', confidence:'Robotic reliability', prompt:'Autonomous orbital servicing platform with rendezvous proximity operations, robotic capture, refuelling, inspection payloads, debris avoidance and mission assurance governance' },
-  { sector:'Space / Orbital Infrastructure', region:'Lunar surface', client:'Lunar resources reference case', title:'Lunar Resource Extraction', icon:'Space', confidence:'ISRU maturity', prompt:'Lunar resource extraction programme with autonomous mining, regolith processing, in situ resource utilisation, surface power, habitat logistics, thermal survivability and launch logistics' },
+  {  currency_symbol:'$', cost_p50_bn:10, schedule_months:60, confidence_pct:52,sector:'Space / Orbital Infrastructure', region:'Texas / Florida / Orbit', client:'SpaceX reference case', title:'SpaceX Starship Industrialization', icon:'Space', confidence:'Launch cadence', prompt:'SpaceX Starship industrialization programme with launch cadence scaling, orbital refueling, thermal protection, booster recovery, regulatory approvals, pad infrastructure and autonomous operations' },
+  {  currency_symbol:'$', cost_p50_bn:28, schedule_months:144, confidence_pct:48,sector:'Space / Orbital Infrastructure', region:'Lunar surface', client:'Lunar programme reference case', title:'Lunar Habitat Infrastructure', icon:'Space', confidence:'Mission survivability', prompt:'Lunar habitat infrastructure programme with life support, habitat redundancy, landing pads, nuclear power, thermal survivability, autonomous commissioning, launch windows and crew logistics' },
+  {  currency_symbol:'$', cost_p50_bn:64, schedule_months:300, confidence_pct:35,sector:'Space / Orbital Infrastructure', region:'Mars logistics', client:'Mars programme reference case', title:'Mars Cargo Logistics Network', icon:'Space', confidence:'Autonomous operations', prompt:'Mars cargo logistics network with autonomous navigation, radiation hardening, communication latency, in situ resource utilisation, cargo landers, long-cycle logistics and mission recovery constraints' },
+  {  currency_symbol:'$', cost_p50_bn:10, schedule_months:72, confidence_pct:60,sector:'Space / Orbital Infrastructure', region:'Low Earth Orbit', client:'Amazon Kuiper reference case', title:'Amazon Kuiper Constellation', icon:'Space', confidence:'Production + launch manifest', prompt:'Amazon Kuiper satellite constellation deployment with satellite production ramp, launch manifest reliability, ground stations, spectrum coordination, network rollout and orbital commissioning risk' },
+  {  currency_symbol:'$', cost_p50_bn:3, schedule_months:48, confidence_pct:55,sector:'Space / Orbital Infrastructure', region:'Low Earth Orbit', client:'AST SpaceMobile reference case', title:'AST SpaceMobile Network', icon:'Space', confidence:'Telecom integration', prompt:'AST SpaceMobile orbital telecom network with satellite deployment sequencing, telecom interoperability, antenna deployment, regulatory spectrum approvals and ground network integration risk' },
+  {  currency_symbol:'$', cost_p50_bn:8, schedule_months:96, confidence_pct:38,sector:'Space / Orbital Infrastructure', region:'Orbit', client:'Orbital compute reference case', title:'Orbital Data Centres', icon:'Space', confidence:'Radiation + servicing', prompt:'Space based orbital data centre infrastructure with launch economics, orbital cooling, autonomous servicing, radiation hardening, power redundancy, data relay and mission assurance constraints' },
+  {  currency_symbol:'$', cost_p50_bn:2, schedule_months:60, confidence_pct:45,sector:'Space / Orbital Infrastructure', region:'Cislunar', client:'Orbital servicing reference case', title:'Autonomous Orbital Servicing', icon:'Space', confidence:'Robotic reliability', prompt:'Autonomous orbital servicing platform with rendezvous proximity operations, robotic capture, refuelling, inspection payloads, debris avoidance and mission assurance governance' },
+  {  currency_symbol:'$', cost_p50_bn:18, schedule_months:180, confidence_pct:40,sector:'Space / Orbital Infrastructure', region:'Lunar surface', client:'Lunar resources reference case', title:'Lunar Resource Extraction', icon:'Space', confidence:'ISRU maturity', prompt:'Lunar resource extraction programme with autonomous mining, regolith processing, in situ resource utilisation, surface power, habitat logistics, thermal survivability and launch logistics' },
 { sector:'AI / Data Centres', region:'United States', client:'STACK Infrastructure COL01', title:'STACK Denver Campus', icon:'AI', confidence:'Grid connection and power procurement', prompt:'STACK Infrastructure Denver Campus data centre 960MW hyperscale colocation power infrastructure grid connection GPU deployment' },
   { sector:'AI / Data Centres', region:'United States', client:'STACK Infrastructure VA01', title:'STACK Northern Virginia Campus', icon:'AI', confidence:'Planning consent and grid', prompt:'STACK Infrastructure Northern Virginia campus hyperscale colocation data centre power Loudoun County planning moratorium grid upgrade' },
   { sector:'AI / Data Centres', region:'Germany', client:'STACK Infrastructure FRA01', title:'STACK Frankfurt Campus', icon:'AI', confidence:'EU permitting and grid', prompt:'STACK Infrastructure Frankfurt Germany European campus data centre hyperscale power EU heat reuse permitting regulatory' },
@@ -689,12 +689,12 @@ function parseMoneyLocal(v) {
   if (s.includes('M')) return n / 1000;
   return n;
 }
-function moneyLocal(n, curr) { const c = curr || '£'; return n >= 1000 ? `${c}${(n/1000).toFixed(1)}T` : n >= 1 ? `${c}${n.toFixed(1)}B` : `${c}${Math.round(n*1000)}M`; }
+function moneyLocal(n, curr) { const c = curr || '$'; return n >= 1000 ? `${c}${(n/1000).toFixed(1)}T` : n >= 1 ? `${c}${n.toFixed(1)}B` : `${c}${Math.round(n*1000)}M`; }
 
 function fmt(v, curr) {
   if (v === undefined || v === null || v === '') return '—';
   if (typeof v === 'string') return v;
-  const c = curr || '£';
+  const c = curr || '$';
   return v >= 1000 ? `${c}${(v / 1000).toFixed(1)}T` : v >= 1 ? `${c}${v.toFixed(1)}B` : `${c}${(v * 1000).toFixed(0)}M`;
 }
 async function post(path, body) {
@@ -1539,16 +1539,15 @@ function CountUpNumber({ target, suffix = '', style = {} }) {
   React.useEffect(() => {
     const from = val; const to = target||0; const diff = to - from;
     if (Math.abs(diff) < 1) { setVal(to); return; }
-    const steps = 36; const ms = Math.abs(diff) > 20 ? 900 : 400;
+    const steps = 40; const ms = Math.abs(diff) > 20 ? 900 : 400;
     let i = 0;
     const t = setInterval(() => {
-      i = Math.min(i+1, steps);
-      setVal(Math.round(from + diff * (i/steps)));
-      if (i >= steps) { clearInterval(t); setVal(to); }
+      i=Math.min(i+1,steps); setVal(Math.round(from+diff*(i/steps)));
+      if(i>=steps){clearInterval(t);setVal(to);}
     }, ms/steps);
-    return () => clearInterval(t);
+    return ()=>clearInterval(t);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [target]);
+  },[target]);
   return <div style={style}>{val}{suffix}</div>;
 }
 
@@ -2515,7 +2514,7 @@ const ALL_PROGRAMMES = [
     cost:'£45B–£54B authorised', sched:'2033 London–Birmingham', status:'On track (per PAC)',
     source:'HS2 Ltd / PAC 2024',
     prompt:'HS2 Phase 1 tunnelling stations systems migration possessions operator acceptance political exposure' },
-  { id:'calHSR', name:'California High-Speed Rail', sector:'Rail', region:'USA',
+  { id:'calHSR', name:'California High-Speed Rail', currency_symbol:'$', cost_p50_bn:128, schedule_months:240, confidence_pct:31, sector:'Rail', region:'USA',
     cost:'$89B–$128B', sched:'2033 partial / 2040s full', status:'Under review (GAO)',
     source:'CAHSRA / GAO 2023',
     prompt:'California High Speed Rail tunnelling corridor land acquisition utility relocation signalling political scrutiny cost escalation' },
@@ -2579,7 +2578,7 @@ const ALL_PROGRAMMES = [
     prompt:'Hydroelectric dam civil works electromechanical systems commissioning environmental community interfaces remote delivery' },
 
   // ── DATA CENTRE / HYPERSCALE ──────────────────────────────────────
-  { id:'microsoftAI', name:'Microsoft AI Supercluster', sector:'Data Centre', region:'Global',
+  { id:'microsoftAI', name:'Microsoft AI Supercluster', currency_symbol:'$', cost_p50_bn:50, schedule_months:36, confidence_pct:62, sector:'Data Centre', region:'Global',
     cost:'$50B+ announced', sched:'2025–2027 phased', status:'Active construction',
     source:'Microsoft / press 2024',
     prompt:'AI hyperscale data centre campus 500MW grid connection liquid cooling GPU supply chain accelerated commissioning' },
@@ -3270,7 +3269,7 @@ function scenarioAdjustedModel(currentModel, nextScenario) {
       if (s.endsWith('M')) return Number(s.slice(0,-1)) / 1000;
       return Number(s) || 0;
     };
-    const toMoney = (bn) => bn >= 1000 ? (curr || '£') + (bn/1000).toFixed(1) + 'T' : bn >= 1 ? (curr || '£') + bn.toFixed(1) + 'B' : (curr || '£') + (bn*1000).toFixed(0) + 'M';
+    const toMoney = (bn) => bn >= 1000 ? (curr || '$') + (bn/1000).toFixed(1) + 'T' : bn >= 1 ? (curr || '$') + bn.toFixed(1) + 'B' : (curr || '$') + (bn*1000).toFixed(0) + 'M';
 
     const baseCostBn = currentModel._base_cost_bn || moneyToBn(currentModel.cost_p50);
     const baseMonths = currentModel._base_months || parseFloat(String(currentModel.schedule || '').replace(/[^0-9.]/g,'')) || 60;
@@ -3382,7 +3381,7 @@ function parseMoneyLocal(v) {
     if (s.includes('M')) return n / 1000;
     return n;
   }
-  function moneyLocal(n, curr) { const c = curr || '£'; return n >= 1000 ? `${c}${(n/1000).toFixed(1)}T` : n >= 1 ? `${c}${n.toFixed(1)}B` : `${c}${Math.round(n*1000)}M`; }
+  function moneyLocal(n, curr) { const c = curr || '$'; return n >= 1000 ? `${c}${(n/1000).toFixed(1)}T` : n >= 1 ? `${c}${n.toFixed(1)}B` : `${c}${Math.round(n*1000)}M`; }
   function normalizeCostRowsForUI(modelLike) {
     const m = modelLike || {};
     const target = parseMoneyLocal(m.cost_p50);
@@ -3444,38 +3443,29 @@ function parseMoneyLocal(v) {
     return rows;
   }
 
-  // ── CURRENCY DETECTION — runs on every model normalisation ──────────
   function inferCurrencySymbol(m) {
-    const trusted = ['£','$','€','¥','₹','A$','C$','S$','kr','CHF','AED','SAR','NOK','DKK','SEK','BRL','MXN','ZAR','SGD'];
-    if (m.currency_symbol && trusted.includes(m.currency_symbol)) return m.currency_symbol;
-    const src = (m.location||'')+(m.region||'')+(m.prompt||'')+(m.subsector||'')+(m.mode||'');
-    const t = src.toLowerCase();
-    if (/united kingdom|england|scotland|wales|northern ireland|\buk\b|\bgbp\b|london|manchester|birmingham|leeds|glasgow|edinburgh|bristol|liverpool|sheffield|cardiff|belfast/.test(t)) return '£';
-    if (/australia|sydney|melbourne|brisbane|perth|adelaide|canberra/.test(t)) return 'A$';
-    if (/canada|toronto|vancouver|calgary|montreal|ottawa/.test(t)) return 'C$';
-    if (/singapore|\bsgd\b/.test(t)) return 'S$';
-    if (/norway|oslo/.test(t)) return 'kr';
-    if (/sweden|stockholm/.test(t)) return 'kr';
-    if (/switzerland|zurich|geneva/.test(t)) return 'CHF';
-    if (/japan|tokyo|osaka|\bjpy\b/.test(t)) return '¥';
-    if (/china|beijing|shanghai|shenzhen|guangzhou/.test(t)) return '¥';
-    if (/india|mumbai|delhi|bangalore|hyderabad|chennai/.test(t)) return '₹';
-    if (/eurozone|france|paris|germany|berlin|netherlands|amsterdam|spain|madrid|italy|rome|poland|brussels|vienna|ireland|dublin/.test(t)) return '€';
-    if (/brazil|são paulo|rio/.test(t)) return 'BRL';
-    if (/mexico|ciudad de mexico/.test(t)) return 'MXN';
-    if (/south africa|johannesburg|cape town/.test(t)) return 'ZAR';
-    if (/saudi|riyadh|ksa|\bsar\b/.test(t)) return 'SAR';
-    if (/\buae\b|dubai|abu dhabi|emirates|\baed\b/.test(t)) return 'AED';
-    // Space & US default to $
-    if (/space|lunar|mars|orbit|satellite|nasa|spacex|rocket/i.test(t)) return '$';
-    if (/usa|united states|america|\btexas\b|california|new york|arizona|boston|chicago|florida|washington|houston|seattle/.test(t)) return '$';
-    // Unknown global → $
+    if (m.currency_symbol && /^[£$€¥₹]$|^(A\$|C\$|S\$|kr|CHF|AED|SAR)$/.test(m.currency_symbol)) return m.currency_symbol;
+    const src = ((m.location||'')+(m.region||'')+(m.prompt||'')+(m.subsector||'')+(m.mode||'')+(m.title||'')).toLowerCase();
+    if (/\buk\b|united kingdom|england|scotland|wales|northern ireland|london|manchester|birmingham|leeds|glasgow|edinburgh|bristol|liverpool|sheffield|cardiff|belfast|hs2|crossrail|thames tideway|hinkley|sizewell/.test(src)) return '£';
+    if (/eurozone|\bfrance\b|\bparis\b|\bgermany\b|\bberlin\b|\bnetherlands\b|amsterdam|\bspain\b|madrid|\bitaly\b|\brome\b|\bpoland\b|brussels|vienna|\bireland\b|dublin/.test(src)) return '€';
+    if (/\baustralia\b|\bsydney\b|\bmelbourne\b|\bbrisbane\b|\bperth\b/.test(src)) return 'A$';
+    if (/\bcanada\b|\btoronto\b|\bvancouver\b|\bcalgary\b/.test(src)) return 'C$';
+    if (/\bsingapore\b/.test(src)) return 'S$';
+    if (/\bjapan\b|\btokyo\b|jaxa/.test(src)) return '¥';
+    if (/\bchina\b|beijing|shanghai|shenzhen/.test(src)) return '¥';
+    if (/\bindia\b|\bmumbai\b|\bdelhi\b|bangalore/.test(src)) return '₹';
+    if (/norway|sweden|denmark|oslo|stockholm|copenhagen/.test(src)) return 'kr';
+    if (/switzerland|zurich|geneva/.test(src)) return 'CHF';
+    if (/\bsaudi\b|riyadh|neom/.test(src)) return 'SAR';
+    if (/\buae\b|\bdubai\b|abu dhabi|emirates/.test(src)) return 'AED';
+    if (/space|lunar|mars|orbit|satellite|nasa|spacex|rocket|spacecraft/.test(src)) return '$';
+    if (/\busa\b|united states|\bamerica\b|california|new york|\btexas\b|houston|seattle/.test(src)) return '$';
     return '$';
   }
 
   function normalizeModelForUI(raw) {
     const m = {...(raw || {})};
-    m.currency_symbol = inferCurrencySymbol(m);  // Always correct currency
+    m.currency_symbol = inferCurrencySymbol(m);
     const rows = normalizeCostRowsForUI(m);
     m.cost_breakdown = rows;
     m.cost_lines = rows;
@@ -4464,7 +4454,7 @@ return <div className="app v50EliteApp">
               </ResponsiveContainer>
               <div style={{fontSize:'10px',color:'#475569',fontWeight:'700',textTransform:'uppercase',letterSpacing:'.1em',margin:'12px 0 6px'}}>Schedule (months)</div>
               <ResponsiveContainer width="100%" height={120}>
-                <LineChart data={[{d:'Inception',s:Math.round(parseInt(model.schedule||189)*0.82)},{d:'Concept',s:Math.round(parseInt(model.schedule||189)*0.89)},{d:'Feasibility',s:Math.round(parseInt(model.schedule||189)*0.95)},{d:'Scheme',s:Math.round(parseInt(model.schedule||189)*0.98)},{d:'Now',s:parseInt(model.schedule||189)}]} margin={{top:4,right:40,left:0,bottom:4}}>
+                <LineChart data={[{d:'Inception',s:Math.round(parseInt(model.schedule||'24')*0.82)},{d:'Concept',s:Math.round(parseInt(model.schedule||'24')*0.89)},{d:'Feasibility',s:Math.round(parseInt(model.schedule||'24')*0.95)},{d:'Scheme',s:Math.round(parseInt(model.schedule||'24')*0.98)},{d:'Now',s:parseInt(model.schedule||'24')}]} margin={{top:4,right:40,left:0,bottom:4}}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false}/>
                   <XAxis dataKey="d" tick={{fontSize:10,fill:'#475569'}} axisLine={false} tickLine={false}/>
                   <YAxis tick={{fontSize:10,fill:'#475569'}} axisLine={false} tickLine={false} tickFormatter={v=>v+'mo'}/>
@@ -4839,7 +4829,7 @@ return <div className="app v50EliteApp">
                 <div style={{position:'absolute',top:14,right:16,width:7,height:7,borderRadius:'50%',background:'#f59e0b',boxShadow:'0 0 10px 3px rgba(245,158,11,0.5)'}}/>
                 <div style={{fontSize:'10px',fontWeight:'900',color:'#f59e0b',letterSpacing:'.18em',marginBottom:10,textTransform:'uppercase'}}>Commit to schedule</div>
                 <div style={{fontSize:'48px',fontWeight:'900',color:'#fbbf24',lineHeight:1,marginBottom:5,letterSpacing:'-.02em'}}>{model.schedule}</div>
-                <div style={{fontSize:'11px',color:'#334155',marginBottom:12}}>P80: {model.monte_carlo?.qsra?.p80||Math.round(parseInt(model.schedule||189)*1.15)+' mo'} · P90: {model.monte_carlo?.qsra?.p90||Math.round(parseInt(model.schedule||189)*1.28)+' mo'}</div>
+                <div style={{fontSize:'11px',color:'#334155',marginBottom:12}}>P80: {model.monte_carlo?.qsra?.p80||Math.round(parseInt(model.schedule||'24')*1.15)+' mo'} · P90: {model.monte_carlo?.qsra?.p90||Math.round(parseInt(model.schedule||'24')*1.28)+' mo'}</div>
                 <div style={{height:1,background:'rgba(245,158,11,0.1)',marginBottom:12}}/>
                 <div style={{fontSize:'11px',fontWeight:'700',color:'#f59e0b',lineHeight:1.4}}>{(model.governing_constraint_prominent||'Governing constraint — see board pack').slice(0,58)}</div>
               </div>
@@ -4928,7 +4918,7 @@ return <div className="app v50EliteApp">
                     <div style={{fontSize:'9px',color:'#334155',marginTop:1}}>reference</div>
                   </div>
                   <div style={{fontSize:'14px',fontWeight:'800',color:'#94a3b8'}}>{model._base_cost||model.cost_p50}</div>
-                  <div style={{fontSize:'13px',color:'#64748b'}}>{parseInt(model._base_months||model.schedule||189)}<span style={{fontSize:'9px',marginLeft:1}}>mo</span></div>
+                  <div style={{fontSize:'13px',color:'#64748b'}}>{parseInt(model._base_months||model.schedule||'24')}<span style={{fontSize:'9px',marginLeft:1}}>mo</span></div>
                   <div style={{fontSize:'13px',color:'#64748b'}}>{model._base_confidence_pct||model.confidence_pct}<span style={{fontSize:'9px',marginLeft:1}}>%</span></div>
                 </div>
 
@@ -4937,7 +4927,7 @@ return <div className="app v50EliteApp">
                   const bC=parseFloat(String(model._base_cost||model.cost_p50||0).replace(/[£$€B,]/g,''))||0;
                   const sC=parseFloat(String(s.cost_p50||s.cost||0).replace(/[£$€B,]/g,''))||bC;
                   const cd=bC>0?Math.round((sC-bC)/bC*100):0;
-                  const bM=parseInt(model._base_months||model.schedule||189);
+                  const bM=parseInt(model._base_months||model.schedule||'24');
                   const sM=parseInt(s.schedule_months||s.schedule||bM);
                   const sd=sM-bM;
                   const bCf=parseInt(model._base_confidence_pct||model.confidence_pct||64);
@@ -5064,7 +5054,7 @@ return <div className="app v50EliteApp">
               <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:10,padding:'16px 18px'}}>
                 <div style={{fontSize:'10px',fontWeight:'800',color:'#f59e0b',letterSpacing:'.14em',marginBottom:10,textTransform:'uppercase'}}>Schedule — commit to P50, approve at P80</div>
                 <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:8}}>
-                  {[['P10',(model.monte_carlo?.qsra?.p10||Math.round(parseInt(model.schedule||189)*0.85))+'mo','#10b981','optimistic'],['P50',model.schedule,'#fbbf24','base'],['P80',(model.monte_carlo?.qsra?.p80||Math.round(parseInt(model.schedule||189)*1.15))+'mo','#f59e0b','board exposure'],['P90',(model.monte_carlo?.qsra?.p90||Math.round(parseInt(model.schedule||189)*1.28))+'mo','#ef4444','stress case']].map(([k,v,col,sub])=>(
+                  {[['P10',(model.monte_carlo?.qsra?.p10||Math.round(parseInt(model.schedule||'24')*0.85))+'mo','#10b981','optimistic'],['P50',model.schedule,'#fbbf24','base'],['P80',(model.monte_carlo?.qsra?.p80||Math.round(parseInt(model.schedule||'24')*1.15))+'mo','#f59e0b','board exposure'],['P90',(model.monte_carlo?.qsra?.p90||Math.round(parseInt(model.schedule||'24')*1.28))+'mo','#ef4444','stress case']].map(([k,v,col,sub])=>(
                     <div key={k} style={{textAlign:'center',padding:'10px 6px',background:k==='P80'?'rgba(245,158,11,0.1)':'rgba(0,0,0,0.2)',borderRadius:7,border:k==='P80'?'1px solid rgba(245,158,11,0.3)':'1px solid transparent'}}>
                       <div style={{fontSize:'10px',color:k==='P80'?'#f59e0b':'#64748b',fontWeight:'700',marginBottom:3}}>{k}</div>
                       <div style={{fontSize:'18px',fontWeight:'900',color:col}}>{v}</div>
@@ -5137,7 +5127,7 @@ return <div className="app v50EliteApp">
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
                   <div>
                     <div style={{fontSize:'9px',color:'#475569',fontWeight:'700',marginBottom:4,textTransform:'uppercase'}}>QSRA range</div>
-                    {[['P10',(model.monte_carlo?.qsra?.p10||Math.round(parseInt(model.schedule||189)*0.85))+'mo','#10b981'],['P50',model.schedule,'#fbbf24'],['P80',(model.monte_carlo?.qsra?.p80||Math.round(parseInt(model.schedule||189)*1.15))+'mo','#f59e0b'],['P90',(model.monte_carlo?.qsra?.p90||Math.round(parseInt(model.schedule||189)*1.28))+'mo','#ef4444']].map(([k,v,col])=>(
+                    {[['P10',(model.monte_carlo?.qsra?.p10||Math.round(parseInt(model.schedule||'24')*0.85))+'mo','#10b981'],['P50',model.schedule,'#fbbf24'],['P80',(model.monte_carlo?.qsra?.p80||Math.round(parseInt(model.schedule||'24')*1.15))+'mo','#f59e0b'],['P90',(model.monte_carlo?.qsra?.p90||Math.round(parseInt(model.schedule||'24')*1.28))+'mo','#ef4444']].map(([k,v,col])=>(
                       <div key={k} style={{display:'flex',justifyContent:'space-between',padding:'4px 0',borderBottom:'1px solid rgba(255,255,255,0.05)'}}>
                         <span style={{fontSize:'11px',color:'#64748b',fontWeight:'600'}}>{k}</span>
                         <span style={{fontSize:'12px',fontWeight:'800',color:col}}>{v}</span>
@@ -5241,7 +5231,7 @@ return <div className="app v50EliteApp">
               <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:10,padding:'14px 16px'}}>
                 <div style={{fontSize:'10px',fontWeight:'800',color:'#f59e0b',letterSpacing:'.14em',marginBottom:8,textTransform:'uppercase'}}>Scheduler — QSRA</div>
                 <div style={{fontSize:'9px',color:'#475569',fontWeight:'700',marginBottom:4,textTransform:'uppercase'}}>P-range</div>
-                {[['P10',(model.monte_carlo?.qsra?.p10||Math.round(parseInt(model.schedule||189)*0.85))+'mo','#10b981'],['P50',model.schedule,'#fbbf24'],['P80',(model.monte_carlo?.qsra?.p80||Math.round(parseInt(model.schedule||189)*1.15))+'mo','#f59e0b'],['P90',(model.monte_carlo?.qsra?.p90||Math.round(parseInt(model.schedule||189)*1.28))+'mo','#ef4444']].map(([k,v,col])=>(
+                {[['P10',(model.monte_carlo?.qsra?.p10||Math.round(parseInt(model.schedule||'24')*0.85))+'mo','#10b981'],['P50',model.schedule,'#fbbf24'],['P80',(model.monte_carlo?.qsra?.p80||Math.round(parseInt(model.schedule||'24')*1.15))+'mo','#f59e0b'],['P90',(model.monte_carlo?.qsra?.p90||Math.round(parseInt(model.schedule||'24')*1.28))+'mo','#ef4444']].map(([k,v,col])=>(
                   <div key={k} style={{display:'flex',justifyContent:'space-between',padding:'4px 0',borderBottom:'1px solid rgba(255,255,255,0.05)'}}>
                     <span style={{fontSize:'11px',color:'#64748b',fontWeight:'600'}}>{k}</span>
                     <span style={{fontSize:'12px',fontWeight:'800',color:col}}>{v}</span>
@@ -5280,7 +5270,7 @@ return <div className="app v50EliteApp">
 
         {tab === 'compare' && <section className="layout two"><Card><h2>Scenario comparison</h2>
               {model && <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8,marginBottom:10,padding:'10px 14px',background:'rgba(6,182,212,0.04)',border:'1px solid rgba(6,182,212,0.15)',borderRadius:7}}>
-                {[{label:'BASE',cost:model.cost_p50,sched:parseInt(model.schedule||189)+'mo',conf:(model.confidence_pct||0)+'%',color:'#94a3b8',tag:'base'},{label:(model.scenario_label||'CURRENT').toUpperCase(),cost:model.cost_p50,sched:model.schedule,conf:(model.confidence_pct||0)+'%',color:'#8df7ff',tag:model.scenario||'base'},{label:'BEST BENCHMARK',cost:((model.benchmark_comparison||[])[0]?.name||'—').slice(0,14),sched:'+'+( (model.benchmark_comparison||[])[0]?.schedule_slip_months||'—')+'mo slip',conf:'+'+( (model.benchmark_comparison||[])[0]?.cost_growth_pct||'—')+'% cost',color:'#a78bfa',tag:'bench'}].map((s,i)=>(
+                {[{label:'BASE',cost:model.cost_p50,sched:parseInt(model.schedule||'24')+'mo',conf:(model.confidence_pct||0)+'%',color:'#94a3b8',tag:'base'},{label:(model.scenario_label||'CURRENT').toUpperCase(),cost:model.cost_p50,sched:model.schedule,conf:(model.confidence_pct||0)+'%',color:'#8df7ff',tag:model.scenario||'base'},{label:'BEST BENCHMARK',cost:((model.benchmark_comparison||[])[0]?.name||'—').slice(0,14),sched:'+'+( (model.benchmark_comparison||[])[0]?.schedule_slip_months||'—')+'mo slip',conf:'+'+( (model.benchmark_comparison||[])[0]?.cost_growth_pct||'—')+'% cost',color:'#a78bfa',tag:'bench'}].map((s,i)=>(
                   <div key={i} style={{textAlign:'center',padding:'8px',background:s.tag===( model.scenario||'base')?'rgba(141,247,255,0.06)':'rgba(0,0,0,0.1)',borderRadius:5,border:s.tag===(model.scenario||'base')?'1px solid rgba(141,247,255,0.2)':'1px solid transparent'}}>
                     <div style={{fontSize:'8px',fontWeight:'800',color:s.color,marginBottom:3,letterSpacing:'.1em'}}>{s.label}</div>
                     <div style={{fontSize:'13px',fontWeight:'900',color:s.color}}>{s.cost}</div>
@@ -5921,7 +5911,7 @@ return <div className="app v50EliteApp">
                   </span>
                   {' '}— if this applies, your programme moves from {model.cost_p50} to{' '}
                   <span style={{color:'#ef4444',fontWeight:'700'}}>
-                    {model?.p50_cost_bn ? (model?.currency_symbol||'$')+(model.p50_cost_bn*(1+(model.benchmark_comparison||[]).reduce((s,b)=>s+(b.cost_growth_pct||0),0)/Math.max((model.benchmark_comparison||[]).length,1)/100)).toFixed(1)+'B' : '—'}
+                    {model?.p50_cost_bn ? '$'+(model.p50_cost_bn*(1+(model.benchmark_comparison||[]).reduce((s,b)=>s+(b.cost_growth_pct||0),0)/Math.max((model.benchmark_comparison||[]).length,1)/100)).toFixed(1)+'B' : '—'}
                   </span>
                 </div>
                 <div style={{marginBottom:4}}>
@@ -6553,4 +6543,4 @@ function ShowcaseLibrary({ onRun, onBack }) {
 }
 
 
-window.CASEY_VERSION='V291-FINAL'; createRoot(document.getElementById('root')).render(<CaseyErrorBoundary><App/></CaseyErrorBoundary>);
+window.CASEY_VERSION='V293'; createRoot(document.getElementById('root')).render(<CaseyErrorBoundary><App/></CaseyErrorBoundary>);
