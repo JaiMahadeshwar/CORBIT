@@ -2991,7 +2991,7 @@ function AdvisoryFeeCounter({ model }) {
           </div>
         ))}
       </div>
-    </div>
+    </Card>
   );
 }
 
