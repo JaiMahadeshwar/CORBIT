@@ -2985,8 +2985,11 @@ function AdvisoryFeeCounter({ model }) {
       </div>
       <div className="feeItems">
         {items.map((item, i) => (
-          
-        )}
+          <div key={i} className="feeItem">
+            <span className="feeCheck">✓</span>
+            <span className="feeItemLabel">{typeof item === 'string' ? item : item.label || item.name || String(item)}</span>
+          </div>
+        ))}
       </div>
     </div>
   );
