@@ -78,7 +78,7 @@ function asList(v) {
 
 function ProfessionalIntakeResult({ result, model }) {
   const [expanded, setExpanded] = React.useState(null);
-  const baselineP50 = model?.cost_p50 || moneyLocal(model?.cost_p50_bn || model?.p50_cost_bn || 0) || '—';
+  const baselineP50 = model?.cost_p50 || moneyLocal(model?.cost_p50_bn || model?.p50_cost_bn || 0, model?.currency_symbol || '£') || '—';
   const baselineMonths = model?.schedule_months || model?.duration_months || (String(model?.schedule || '').match(/\d+/)||[])[0] || '—';
   const baselineConf = model?.confidence_pct ?? '—';
   const qcraP80 = model?.monte_carlo?.qcra?.p80;
@@ -102,7 +102,7 @@ function ProfessionalIntakeResult({ result, model }) {
   const _curr = model?.currency_symbol || '$';
   const challengeP50 = cm.p50_bn ? (_curr + Number(cm.p50_bn).toFixed(1) + 'B') : baselineP50;
   const challengeP80 = cm.p80_bn ? (_curr + Number(cm.p80_bn).toFixed(1) + 'B') : (qcraP80 ? moneyLocal(qcraP80, _curr) : '—');
-  const challengeP90 = cm.p90_bn ? (_curr + Number(cm.p90_bn).toFixed(1) + 'B') : (model?.monte_carlo?.qcra?.p90 ? moneyLocal(model.monte_carlo.qcra.p90) : '—');
+  const challengeP90 = cm.p90_bn ? (_curr + Number(cm.p90_bn).toFixed(1) + 'B') : (model?.monte_carlo?.qcra?.p90 ? moneyLocal(model.monte_carlo.qcra.p90, _curr) : '—');
   const deltaBn = cm.delta_bn ?? (cm.p80_bn && model?.cost_p50_bn ? Number(cm.p80_bn) - Number(model.cost_p50_bn) : null);
   const deltaText = deltaBn !== null && deltaBn !== undefined && !Number.isNaN(Number(deltaBn)) ? ((Number(deltaBn) >= 0 ? '+' : '−') + _curr + Math.abs(Number(deltaBn)).toFixed(1) + 'B latent exposure') : 'Exposure delta requires source bundle';
   const scheduleDelta = cm.schedule_delta_months ?? src.xer?.schedule_delta_months ?? null;
@@ -689,7 +689,7 @@ function parseMoneyLocal(v) {
   if (s.includes('M')) return n / 1000;
   return n;
 }
-function moneyLocal(n, curr) { const c = curr || '$'; return n >= 1000 ? `${c}${(n/1000).toFixed(1)}T` : n >= 1 ? `${c}${n.toFixed(1)}B` : `${c}${Math.round(n*1000)}M`; }
+function moneyLocal(n, curr) { const c = curr || '£'; return n >= 1000 ? `${c}${(n/1000).toFixed(1)}T` : n >= 1 ? `${c}${n.toFixed(1)}B` : `${c}${Math.round(n*1000)}M`; }
 
 function fmt(v, curr) {
   if (v === undefined || v === null || v === '') return '—';
@@ -3269,7 +3269,7 @@ function scenarioAdjustedModel(currentModel, nextScenario) {
       if (s.endsWith('M')) return Number(s.slice(0,-1)) / 1000;
       return Number(s) || 0;
     };
-    const toMoney = (bn) => bn >= 1000 ? (curr || '$') + (bn/1000).toFixed(1) + 'T' : bn >= 1 ? (curr || '$') + bn.toFixed(1) + 'B' : (curr || '$') + (bn*1000).toFixed(0) + 'M';
+    const toMoney = (bn) => bn >= 1000 ? (curr || model?.currency_symbol || '£') + (bn/1000).toFixed(1) + 'T' : bn >= 1 ? (curr || model?.currency_symbol || '£') + bn.toFixed(1) + 'B' : (curr || '$') + (bn*1000).toFixed(0) + 'M';
 
     const baseCostBn = currentModel._base_cost_bn || moneyToBn(currentModel.cost_p50);
     const baseMonths = currentModel._base_months || parseFloat(String(currentModel.schedule || '').replace(/[^0-9.]/g,'')) || 60;
@@ -3356,13 +3356,18 @@ function scenarioAdjustedModel(currentModel, nextScenario) {
 function TrustRuntimeBar({ model }) {
   if (!model) return null;
   const g = model.governance_state || model.scenario_state?.governance || {};
+  const _gcurr = model?.currency_symbol || '$';
+  const _gFix = (val) => {
+    if (!val || typeof val !== 'string') return val;
+    return val.replace(/^[\$£€¥₹A-Z\$]+/, _gcurr);
+  };
   const runtime = model.casey_runtime || {};
   const items = [
-    ['Board defensibility', g.board_defensibility ?? '—'],
-    ['Governance stress', g.governance_stress ?? '—'],
-    ['Tail exposure', g.tail_exposure ?? '—'],
+    ['Board defensibility', _gFix(g.board_defensibility) ?? '—'],
+    ['Governance stress', _gFix(g.governance_stress) ?? '—'],
+    ['Tail exposure', _gFix(g.tail_exposure) ?? '—'],
     ['Evidence volatility', g.evidence_volatility ?? '—'],
-    ['Reserve pressure', g.reserve_pressure ?? '—'],
+    ['Reserve pressure', _gFix(g.reserve_pressure) ?? '—'],
     ['Signature', model.scenario_signature || runtime.scenario_signature || '—'],
   ];
   return <section className="trustRuntimeBar">
@@ -3381,7 +3386,7 @@ function parseMoneyLocal(v) {
     if (s.includes('M')) return n / 1000;
     return n;
   }
-  function moneyLocal(n, curr) { const c = curr || '$'; return n >= 1000 ? `${c}${(n/1000).toFixed(1)}T` : n >= 1 ? `${c}${n.toFixed(1)}B` : `${c}${Math.round(n*1000)}M`; }
+  function moneyLocal(n, curr) { const c = curr || '£'; return n >= 1000 ? `${c}${(n/1000).toFixed(1)}T` : n >= 1 ? `${c}${n.toFixed(1)}B` : `${c}${Math.round(n*1000)}M`; }
   function normalizeCostRowsForUI(modelLike) {
     const m = modelLike || {};
     const target = parseMoneyLocal(m.cost_p50);
@@ -3927,11 +3932,11 @@ function parseMoneyLocal(v) {
     const nextCost = Math.max(.1, (baseCostBn || 1) * (1 + shock.cost));
     const nextMonths = Math.max(1, Math.round((baseMonthsNum || 1) + shock.months));
     const nextConf = Math.max(5, Math.min(95, Math.round((model.confidence_pct || 50) + shock.conf)));
-    const nextCostStr = moneyLocal(nextCost);
+    const _shockCurr = model?.currency_symbol || '£'; const nextCostStr = moneyLocal(nextCost, _shockCurr);
     const nextSchedStr = nextMonths + ' months';
     const nextP80 = Math.round(nextCost * 1.22 * 10) / 10;
     const nextP90 = Math.round(nextCost * 1.35 * 10) / 10;
-    const nextRange = nextCostStr + ' P50 | $' + nextP80 + 'B P80';
+    const nextRange = nextCostStr + ' P50 | ' + _shockCurr + nextP80 + 'B P80';
     const nextConfLabel = nextConf < 45 ? 'Do not approve without more evidence' : nextConf < 60 ? 'Board challenge likely' : nextConf < 75 ? 'Conditionally approvable' : 'Board-defensible';
     const mutationStamp = '[STRESS TEST: ' + kind.replace(/_/g,' ').toUpperCase() + ']';
     setModel({ ...model,
@@ -5911,7 +5916,7 @@ return <div className="app v50EliteApp">
                   </span>
                   {' '}— if this applies, your programme moves from {model.cost_p50} to{' '}
                   <span style={{color:'#ef4444',fontWeight:'700'}}>
-                    {model?.p50_cost_bn ? '$'+(model.p50_cost_bn*(1+(model.benchmark_comparison||[]).reduce((s,b)=>s+(b.cost_growth_pct||0),0)/Math.max((model.benchmark_comparison||[]).length,1)/100)).toFixed(1)+'B' : '—'}
+                    {model?.p50_cost_bn ? (model?.currency_symbol||'£')+(model.p50_cost_bn*(1+(model.benchmark_comparison||[]).reduce((s,b)=>s+(b.cost_growth_pct||0),0)/Math.max((model.benchmark_comparison||[]).length,1)/100)).toFixed(1)+'B' : '—'}
                   </span>
                 </div>
                 <div style={{marginBottom:4}}>
@@ -6543,4 +6548,4 @@ function ShowcaseLibrary({ onRun, onBack }) {
 }
 
 
-window.CASEY_VERSION='V293'; createRoot(document.getElementById('root')).render(<CaseyErrorBoundary><App/></CaseyErrorBoundary>);
+window.CASEY_VERSION='V294'; createRoot(document.getElementById('root')).render(<CaseyErrorBoundary><App/></CaseyErrorBoundary>);
