@@ -392,15 +392,15 @@ const getScenarioMults = (model) => ({
 
 
 const showcaseProjects = [
-  { sector:'AI / Data Centres', region:'United States', client:'Microsoft / OpenAI reference case', title:'Microsoft AI Supercluster Expansion', icon:'AI', confidence:'Grid constrained', prompt:'Microsoft OpenAI AI supercluster expansion with 500MW hyperscale data centres, GPU procurement bottlenecks, grid interconnection, liquid cooling, transmission upgrades and accelerated 2027 delivery' },
+  { sector:'AI / Data Centres', region:'United States', client:'Microsoft / OpenAI reference case', currency_symbol:'$', cost_p50_bn:50, schedule_months:36, confidence_pct:62, title:'Microsoft AI Supercluster Expansion', icon:'AI', confidence:'Grid constrained', prompt:'Microsoft OpenAI AI supercluster expansion with 500MW hyperscale data centres, GPU procurement bottlenecks, grid interconnection, liquid cooling, transmission upgrades and accelerated 2027 delivery' },
   { sector:'AI / Data Centres', region:'Global', client:'Amazon AWS reference case', title:'AWS Global Region Expansion', icon:'AI', confidence:'Power + fibre dependency', prompt:'Amazon AWS global region expansion with sovereign cloud zones, edge data centres, fibre backbone, redundant power, energy procurement and geopolitical resilience requirements' },
   { sector:'AI / Data Centres', region:'United States / Europe', client:'Meta reference case', title:'Meta AI Compute Network', icon:'AI', confidence:'Cooling + rack density', prompt:'Meta AI compute network expansion with training clusters, hyperscale networking, custom silicon, high rack density, liquid cooling and power procurement constraints' },
   { sector:'AI / Data Centres', region:'Global', client:'Google reference case', title:'Google TPU Infrastructure', icon:'AI', confidence:'Energy integration', prompt:'Google TPU AI infrastructure programme with renewable energy integration, data centre campuses, low latency routing, cooling systems and autonomous optimisation infrastructure' },
   { sector:'AI / Data Centres', region:'United States / Middle East', client:'Oracle / Sovereign cloud reference case', title:'Oracle Sovereign AI Cloud', icon:'AI', confidence:'Sovereign resilience', prompt:'Oracle sovereign AI cloud campus rollout with sovereign hosting, cyber resilience, GPU procurement, utility interconnection, water cooling and national infrastructure constraints' },
   { sector:'AI / Data Centres', region:'United States', client:'xAI reference case', title:'xAI Compute Expansion', icon:'AI', confidence:'Utility race', prompt:'xAI large scale AI compute expansion with rapid data centre construction, power substation upgrades, GPU delivery pressure, cooling infrastructure and aggressive schedule compression' },
 
-  { sector:'Rail / Transit', region:'United States', client:'California HSR reference case', title:'California High-Speed Rail', icon:'Rail', confidence:'Land + tunnelling risk', prompt:'California High-Speed Rail megaproject with corridor acquisition, tunnelling, utility relocation, civil packages, political scrutiny, systems integration and cost escalation exposure' },
-  { sector:'Rail / Transit', region:'United Kingdom', client:'HS2 reference case', title:'HS2 High-Speed Rail', icon:'Rail', confidence:'Scope + governance pressure', prompt:'HS2 high speed rail programme with scope changes, tunnelling, stations, systems integration, political volatility, cost escalation and governance confidence challenge' },
+  { sector:'Rail / Transit', region:'United States', client:'California HSR reference case', currency_symbol:'$', cost_p50_bn:128, schedule_months:240, confidence_pct:31, title:'California High-Speed Rail', icon:'Rail', confidence:'Land + tunnelling risk', prompt:'California High-Speed Rail megaproject with corridor acquisition, tunnelling, utility relocation, civil packages, political scrutiny, systems integration and cost escalation exposure' },
+  { sector:'Rail / Transit', region:'United Kingdom', client:'HS2 reference case', currency_symbol:'£', cost_p50_bn:65.7, schedule_months:189, confidence_pct:64, title:'HS2 High-Speed Rail', icon:'Rail', confidence:'Scope + governance pressure', prompt:'HS2 high speed rail programme with scope changes, tunnelling, stations, systems integration, political volatility, cost escalation and governance confidence challenge' },
   { sector:'Rail / Transit', region:'United States', client:'Gateway Program reference case', title:'Gateway / Hudson Tunnel', icon:'Rail', confidence:'Urban resilience', prompt:'Gateway Hudson Tunnel rail resilience programme with urban tunnelling, aging infrastructure interfaces, rail continuity, federal funding, environmental approvals and schedule uncertainty' },
   { sector:'Rail / Transit', region:'United States', client:'Brightline reference case', title:'Brightline West', icon:'Rail', confidence:'Accelerated delivery', prompt:'Brightline West high speed rail project with desert corridor construction, private finance, power integration, stations, rolling stock, systems delivery and accelerated schedule pressure' },
   { sector:'Rail / Transit', region:'Europe', client:'Rail Baltica reference case', title:'Rail Baltica', icon:'Rail', confidence:'Cross-border governance', prompt:'Rail Baltica cross border European rail programme with multi-country governance, procurement coordination, interoperability, defence mobility, stations and schedule integration risk' },
@@ -689,12 +689,12 @@ function parseMoneyLocal(v) {
   if (s.includes('M')) return n / 1000;
   return n;
 }
-function moneyLocal(n, curr) { const c = curr || '$'; return n >= 1000 ? `${c}${(n/1000).toFixed(1)}T` : n >= 1 ? `${c}${n.toFixed(1)}B` : `${c}${Math.round(n*1000)}M`; }
+function moneyLocal(n, curr) { const c = curr || '£'; return n >= 1000 ? `${c}${(n/1000).toFixed(1)}T` : n >= 1 ? `${c}${n.toFixed(1)}B` : `${c}${Math.round(n*1000)}M`; }
 
 function fmt(v, curr) {
   if (v === undefined || v === null || v === '') return '—';
   if (typeof v === 'string') return v;
-  const c = curr || '$';
+  const c = curr || '£';
   return v >= 1000 ? `${c}${(v / 1000).toFixed(1)}T` : v >= 1 ? `${c}${v.toFixed(1)}B` : `${c}${(v * 1000).toFixed(0)}M`;
 }
 async function post(path, body) {
@@ -1535,19 +1535,19 @@ function TypewriterVerdict({ model }) {
    Used for confidence score. Makes the number feel live.
 ═══════════════════════════════════════════════════════════════ */
 function CountUpNumber({ target, suffix = '', style = {} }) {
-  const [val, setVal] = useState(0);
-  useEffect(() => {
-    setVal(0);
-    const duration = 1400; // ms
-    const steps = 60;
-    const increment = target / steps;
-    let current = 0;
-    const timer = setInterval(() => {
-      current = Math.min(current + increment, target);
-      setVal(Math.round(current));
-      if (current >= target) clearInterval(timer);
-    }, duration / steps);
-    return () => clearInterval(timer);
+  const [val, setVal] = React.useState(target||0);
+  React.useEffect(() => {
+    const from = val; const to = target||0; const diff = to - from;
+    if (Math.abs(diff) < 1) { setVal(to); return; }
+    const steps = 36; const ms = Math.abs(diff) > 20 ? 900 : 400;
+    let i = 0;
+    const t = setInterval(() => {
+      i = Math.min(i+1, steps);
+      setVal(Math.round(from + diff * (i/steps)));
+      if (i >= steps) { clearInterval(t); setVal(to); }
+    }, ms/steps);
+    return () => clearInterval(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [target]);
   return <div style={style}>{val}{suffix}</div>;
 }
@@ -2986,16 +2986,10 @@ function AdvisoryFeeCounter({ model }) {
       </div>
       <div className="feeItems">
         {items.map((item, i) => (
-          <div className="feeItem" key={`${item.label}-${i}`}>
-            <div className="feeItemMain">
-              <span className="feeItemLabel">{item.label}</span>
-              <span className="feeItemTime">{item.time}</span>
-            </div>
-            <span className="feeItemValue">{item.trad}</span>
-          </div>
-        ))}
+          
+        )}
       </div>
-    </Card>
+    </div>
   );
 }
 
@@ -3276,7 +3270,7 @@ function scenarioAdjustedModel(currentModel, nextScenario) {
       if (s.endsWith('M')) return Number(s.slice(0,-1)) / 1000;
       return Number(s) || 0;
     };
-    const toMoney = (bn) => bn >= 1000 ? (curr || '$') + (bn/1000).toFixed(1) + 'T' : bn >= 1 ? (curr || '$') + bn.toFixed(1) + 'B' : (curr || '$') + (bn*1000).toFixed(0) + 'M';
+    const toMoney = (bn) => bn >= 1000 ? (curr || '£') + (bn/1000).toFixed(1) + 'T' : bn >= 1 ? (curr || '£') + bn.toFixed(1) + 'B' : (curr || '£') + (bn*1000).toFixed(0) + 'M';
 
     const baseCostBn = currentModel._base_cost_bn || moneyToBn(currentModel.cost_p50);
     const baseMonths = currentModel._base_months || parseFloat(String(currentModel.schedule || '').replace(/[^0-9.]/g,'')) || 60;
@@ -3388,7 +3382,7 @@ function parseMoneyLocal(v) {
     if (s.includes('M')) return n / 1000;
     return n;
   }
-  function moneyLocal(n, curr) { const c = curr || '$'; return n >= 1000 ? `${c}${(n/1000).toFixed(1)}T` : n >= 1 ? `${c}${n.toFixed(1)}B` : `${c}${Math.round(n*1000)}M`; }
+  function moneyLocal(n, curr) { const c = curr || '£'; return n >= 1000 ? `${c}${(n/1000).toFixed(1)}T` : n >= 1 ? `${c}${n.toFixed(1)}B` : `${c}${Math.round(n*1000)}M`; }
   function normalizeCostRowsForUI(modelLike) {
     const m = modelLike || {};
     const target = parseMoneyLocal(m.cost_p50);
@@ -3449,8 +3443,39 @@ function parseMoneyLocal(v) {
     }
     return rows;
   }
+
+  // ── CURRENCY DETECTION — runs on every model normalisation ──────────
+  function inferCurrencySymbol(m) {
+    const trusted = ['£','$','€','¥','₹','A$','C$','S$','kr','CHF','AED','SAR','NOK','DKK','SEK','BRL','MXN','ZAR','SGD'];
+    if (m.currency_symbol && trusted.includes(m.currency_symbol)) return m.currency_symbol;
+    const src = (m.location||'')+(m.region||'')+(m.prompt||'')+(m.subsector||'')+(m.mode||'');
+    const t = src.toLowerCase();
+    if (/united kingdom|england|scotland|wales|northern ireland|\buk\b|\bgbp\b|london|manchester|birmingham|leeds|glasgow|edinburgh|bristol|liverpool|sheffield|cardiff|belfast/.test(t)) return '£';
+    if (/australia|sydney|melbourne|brisbane|perth|adelaide|canberra/.test(t)) return 'A$';
+    if (/canada|toronto|vancouver|calgary|montreal|ottawa/.test(t)) return 'C$';
+    if (/singapore|\bsgd\b/.test(t)) return 'S$';
+    if (/norway|oslo/.test(t)) return 'kr';
+    if (/sweden|stockholm/.test(t)) return 'kr';
+    if (/switzerland|zurich|geneva/.test(t)) return 'CHF';
+    if (/japan|tokyo|osaka|\bjpy\b/.test(t)) return '¥';
+    if (/china|beijing|shanghai|shenzhen|guangzhou/.test(t)) return '¥';
+    if (/india|mumbai|delhi|bangalore|hyderabad|chennai/.test(t)) return '₹';
+    if (/eurozone|france|paris|germany|berlin|netherlands|amsterdam|spain|madrid|italy|rome|poland|brussels|vienna|ireland|dublin/.test(t)) return '€';
+    if (/brazil|são paulo|rio/.test(t)) return 'BRL';
+    if (/mexico|ciudad de mexico/.test(t)) return 'MXN';
+    if (/south africa|johannesburg|cape town/.test(t)) return 'ZAR';
+    if (/saudi|riyadh|ksa|\bsar\b/.test(t)) return 'SAR';
+    if (/\buae\b|dubai|abu dhabi|emirates|\baed\b/.test(t)) return 'AED';
+    // Space & US default to $
+    if (/space|lunar|mars|orbit|satellite|nasa|spacex|rocket/i.test(t)) return '$';
+    if (/usa|united states|america|\btexas\b|california|new york|arizona|boston|chicago|florida|washington|houston|seattle/.test(t)) return '$';
+    // Unknown global → $
+    return '$';
+  }
+
   function normalizeModelForUI(raw) {
     const m = {...(raw || {})};
+    m.currency_symbol = inferCurrencySymbol(m);  // Always correct currency
     const rows = normalizeCostRowsForUI(m);
     m.cost_breakdown = rows;
     m.cost_lines = rows;
@@ -4580,9 +4605,8 @@ return <div className="app v50EliteApp">
     <Briefing open={briefing} onClose={() => setBriefing(false)} onEarth={runEarth} onSpace={runSpace}/>
     <OneShotDemo open={trialOpen} onClose={() => setTrialOpen(false)} onComplete={(m) => { const nm = normalizeModelForUI(m); setModel(nm); setProjectContext(lockedProjectContext(nm, nm?.prompt || prompt)); setShow(false); setTrialOpen(false); setTab('timeline'); }} />
     <AnimatePresence>{loading && <Loading text="Building full CASEY intelligence pack..."/>}</AnimatePresence>
-    {show && !model && <LandingHeroTimeline onRunEarth={runEarth} onRunSpace={runSpace} onRunFree={()=>{setShow(false);setTrialOpen(true);}}/>}
     {show && !model && <Hero onBriefing={() => setBriefing(true)} onEarth={runEarth} onSpace={runSpace} onConsole={() => setShow(false)} onTryDemo={() => setTrialOpen(true)}/>} 
-    <header className="v50ConsoleTop"><Logo/><nav>
+    {!(show && !model) && <header className="v50ConsoleTop"><Logo/><nav>
       <button onClick={() => { setModel(null); setProjectContext(null); setShowShowcase(false); setShow(true); setError(''); }}>Home</button>
       <button onClick={() => setBriefing(true)}>Film</button>
       <button onClick={() => setTrialOpen(true)}>Free run</button>
@@ -4610,7 +4634,7 @@ return <div className="app v50EliteApp">
         <span style={{width:'6px',height:'6px',borderRadius:'50%',background:backendStatus==='ok'?'#10b981':backendStatus==='down'?'#ef4444':'#475569',display:'inline-block'}}/>
         {backendStatus==='ok'?'LIVE':backendStatus==='down'?'Starting...':'...'}
       </span>
-    </nav></header>
+    </nav></header>}
     {showOnboarding && <OnboardingGuide onClose={() => { setShowOnboarding(false); try { localStorage.setItem('casey_onboarding_done','1'); } catch {} }}/>}
     {showSaved && <SavedProjectsPanel projects={savedProjects} onLoad={loadSaved} onDelete={deleteSaved} onClose={() => setShowSaved(false)}/>}
     {showVersions && model && <div style={{position:'fixed',top:52,right:16,zIndex:900,width:'min(480px,96vw)',maxHeight:'70vh',overflowY:'auto',boxShadow:'0 20px 60px rgba(0,0,0,.8)'}}><VersionHistoryPanel programmeId={model.id||model.subsector} onClose={()=>setShowVersions(false)}/></div>}
@@ -4758,7 +4782,7 @@ return <div className="app v50EliteApp">
         {/* TIMELINE — hero page */}
         {tab === 'timeline' && (
           <section style={{padding:'0 0 24px',background:'#06090f'}}>
-            <ProjectTimeline model={model} actualProgress={model?._actualsLoaded ? (model.actual_progress_t || 0) : 0}/>
+            <ProjectTimeline model={model} actualProgress={model?._actualsLoaded ? (model.actual_progress_t || 0) : 0} initialMode={model?.scenario && model.scenario !== 'base' ? 'scenario' : 'base'}/>
           </section>
         )}
 
@@ -5713,7 +5737,7 @@ return <div className="app v50EliteApp">
           <button onClick={() => download('/export/xer', model, `${model.id || 'casey'}_PRA_SCHEDULE.xer`)}><Workflow/> Generate PRA Schedule XER</button>
           <button onClick={() => download('/export/qcra-qsra', model, `${model.id || 'casey'}_QCRA_QSRA.xlsx`)}><BarChart3/> Generate QCRA/QSRA Pack</button>
           <button onClick={() => download('/export/json', model, `${model.id || 'casey'}_AUDIT_MODEL.json`)}><Brain/> Generate Audit File JSON</button>
-          <button onClick={() => download('/export/pdf', model, `${model.id || 'casey'}_CASEY_Board_Pack.pdf`)}><Download/> Generate Full Pack ZIP</button>
+          <button onClick={() => download('/export/board-pack-pptx', {...model,...boardPdfCoverData(model,whiteLabelLogo)}, `${model.id || 'casey'}_Board_Pack.pptx`)}><Download/> Generate Full Pack ZIP</button>
           <a className="contactBtn" href={emailLink}><Mail/> Request Enterprise Review</a></div></Card><Card><h2>What the pack delivers</h2>{['Executive control centre with project, scenario, class, level and confidence clearly identified','Scenario comparison covering Base, Faster, Cheaper, Lower Risk and Premium cases','Selected estimate class plus all class levels for audit and challenge','Direct, indirect and reserve cost views with QCRA cost curve and cost tornado','All schedule levels with QSRA schedule curve and schedule tornado','Risk register with cause, event, impact, owner, mitigation, trigger and quantified likelihood','Basis of Estimate, assumptions, exclusions and benchmark validation','Commercial next steps: buyer action, procurement challenge and board decision path'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card></section>}
 
         {tab === 'assurance' && <><IncumbentPressurePanel model={model} direct={direct} indirect={indirect} reserves={reserves} reconcileCheck={reconcileCheck}/><section className="layout two"><Card><h2>Assurance room weapons</h2>{['Open with the P80/P90 exposure, not the headline P50.','Ask which evidence package retires the governing constraint.','Force every mitigation to name owner, trigger, residual exposure and date.','Show scenario trade-offs live before anyone can defend a single-point estimate.','Export the audit model immediately so the conversation moves from opinion to traceability.'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card><Card><h2>Why CASEY changes the conversation</h2>{['CASEY recalculates cost, schedule, confidence and board posture from one source of truth in seconds.','Every scenario is a complete recalculation — not a slide edit.','The system surfaces contradictions rather than polishing the management narrative.','Static reports become live investment-committee intelligence.'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span>{x}</div>)}</Card></section><section className="layout one"><ProgrammeHealthSignal onRunHealthCheck={runHealthCheck}/></section></>}
@@ -5897,7 +5921,7 @@ return <div className="app v50EliteApp">
                   </span>
                   {' '}— if this applies, your programme moves from {model.cost_p50} to{' '}
                   <span style={{color:'#ef4444',fontWeight:'700'}}>
-                    {model?.p50_cost_bn ? '$'+(model.p50_cost_bn*(1+(model.benchmark_comparison||[]).reduce((s,b)=>s+(b.cost_growth_pct||0),0)/Math.max((model.benchmark_comparison||[]).length,1)/100)).toFixed(1)+'B' : '—'}
+                    {model?.p50_cost_bn ? (model?.currency_symbol||'$')+(model.p50_cost_bn*(1+(model.benchmark_comparison||[]).reduce((s,b)=>s+(b.cost_growth_pct||0),0)/Math.max((model.benchmark_comparison||[]).length,1)/100)).toFixed(1)+'B' : '—'}
                   </span>
                 </div>
                 <div style={{marginBottom:4}}>
@@ -5939,7 +5963,7 @@ return <div className="app v50EliteApp">
           <Card><h2>Send this project now</h2>
             <p style={{fontSize:'12px',color:'#64748b',marginBottom:'12px'}}>Send this output to your investment committee, board pack, or programme sponsor.</p>
             <a className="contactBtn huge" href={emailLink}><Mail size={16}/> Send project for review</a>
-            {model && <button className="primary" style={{marginTop:'12px',width:'100%'}} onClick={() => download('/export/pdf', model, 'CASEY_Board_Pack.pdf')}><Download size={15}/> Download full intelligence pack</button>}
+            {model && <button className="primary" style={{marginTop:'12px',width:'100%'}} onClick={() => download('/export/board-pack-pptx', {...model,...boardPdfCoverData(model,whiteLabelLogo)}, 'CASEY_Board_Pack.pptx')}><Download size={15}/> Download full intelligence pack</button>}
             <div style={{marginTop:'16px',borderTop:'1px solid rgba(255,255,255,0.06)',paddingTop:'14px'}}>
               <p style={{fontSize:'11px',color:'#475569',marginBottom:'10px',fontWeight:'700',letterSpacing:'.08em'}}>WHAT'S IN THE PACK</p>
               {['Cost model XLSX — P10/P50/P90 by CBS line, direct/indirect/reserve split','Risk register XLSX — cause, event, impact, owner, trigger, mitigation, residual','QCRA/QSRA Excel — cost and schedule probability curves and tornado chart','PRA schedule XER — Primavera-compatible with logic, phases and critical path','Audit model JSON — full traceability, benchmark provenance, evidence gaps','Board pack narrative — executive summary, board attack simulation, OBA assessment'].map((x,i)=><div className="reason" key={x}><span>{i+1}</span><span style={{fontSize:'11px'}}>{x}</span></div>)}
@@ -6529,4 +6553,4 @@ function ShowcaseLibrary({ onRun, onBack }) {
 }
 
 
-window.CASEY_VERSION='V291-FIXED'; createRoot(document.getElementById('root')).render(<CaseyErrorBoundary><App/></CaseyErrorBoundary>);
+window.CASEY_VERSION='V291-FINAL'; createRoot(document.getElementById('root')).render(<CaseyErrorBoundary><App/></CaseyErrorBoundary>);

@@ -471,7 +471,7 @@ function paintCanvas(ctx,W,H,state){
         const cLen=36,cY=above?ryi-cLen:ryi+cLen;
         ctx.save();ctx.strokeStyle=tr.color+'50';ctx.lineWidth=.5;ctx.setLineDash([2,4]);
         ctx.beginPath();ctx.moveTo(rx2,above?ryi-sz:ryi+sz);ctx.lineTo(rx2,cY);ctx.stroke();ctx.setLineDash([]);
-        const bw=tab?96:116,bh=36,bx=Math.max(PL+2,Math.min(rx2-bw/2,W-PR-bw-2));
+        const bw=tab?112:132,bh=38,bx=Math.max(PL+2,Math.min(rx2-bw/2,W-PR-bw-2));
         const by=above?cY-bh-2:cY+2;
         ctx.fillStyle='rgba(3,5,14,.93)';ctx.strokeStyle=tr.color+'55';ctx.lineWidth=.7;
         ctx.beginPath();ctx.roundRect(bx,by,bw,bh,4);ctx.fill();ctx.stroke();
@@ -482,7 +482,7 @@ function paintCanvas(ctx,W,H,state){
         ctx.font=`700 ${tab?7.5:8}px 'SF Mono',monospace`;ctx.fillStyle='#d8e8f4';
         ctx.fillText(r.l.length>16?r.l.slice(0,15)+'…':r.l,bx+6,by+20);
         ctx.font=`7px 'SF Mono',monospace`;ctx.fillStyle='rgba(180,210,240,.52)';
-        ctx.fillText(r.imp.slice(0,24),bx+6,by+31);
+        ctx.fillText(r.imp.slice(0,30),bx+6,by+31);
         ctx.restore();
       }
     });
@@ -508,10 +508,15 @@ function paintCanvas(ctx,W,H,state){
 /* ═══════════════════════════════════════════════════
    REACT COMPONENT
 ═══════════════════════════════════════════════════ */
-export default function ProjectTimeline({model,actualProgress}){
+export default function ProjectTimeline({model,actualProgress,initialMode}){
   const cvsRef=useRef(null),rafRef=useRef(null),lastTs=useRef(null),glowRef=useRef(0);
   const[prog,setProg]=useState(0),[playing,setPlaying]=useState(false);
-  const[mode,setMode]=useState('base'),[speed,setSpeed]=useState(2);
+  const[mode,setMode]=useState(initialMode||'base');
+  // Sync when parent changes scenario
+  useEffect(()=>{
+    if(initialMode && initialMode!==mode){ changeMode(initialMode); }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[initialMode]);,[speed,setSpeed]=useState(2);
   const[revMap,setRevMap]=useState(()=>new Map([['base',new Set()],['scenario',new Set()],['benchmark',new Set()],['stress',new Set()]]));
   const[log,setLog]=useState([]),[advisor,setAdvisor]=useState('');
   const[mob,setMob]=useState(()=>window.innerWidth<500);
@@ -663,7 +668,7 @@ export default function ProjectTimeline({model,actualProgress}){
   const MODES=[
     {id:'base',     lbl:'Base',        shortLbl:'Base',   col:TC.base,      del:fmtD(addM(startDate,totalMonths)),                         cost:fmtC(baseCostBn,currency),                  conf:confPct,          desc:'Contractual baseline'},
     {id:'scenario', lbl:scenario.label,shortLbl:'Faster', col:TC.scenario,  del:fmtD(addM(startDate,totalMonths*scenario.schedMult)),      cost:fmtC(baseCostBn*scenario.costMult,currency), conf:scenario.confPct, desc:'Best credible outcome'},
-    {id:'benchmark',lbl:'Benchmark',   shortLbl:'Bench',  col:TC.benchmark, del:fmtD(addM(startDate,totalMonths*benchmark.schedMult)),     cost:fmtC(baseCostBn*benchmark.costMult,currency),conf:benchmark.confPct,desc:benchmark.label},
+    {id:'benchmark',lbl:benchmark.label||'Benchmark', shortLbl:(benchmark.label||'Bench').slice(0,8), col:TC.benchmark, del:fmtD(addM(startDate,totalMonths*benchmark.schedMult)),     cost:fmtC(baseCostBn*benchmark.costMult,currency),conf:benchmark.confPct,desc:benchmark.label},
     {id:'stress',   lbl:'Stress P90',  shortLbl:'P90',    col:TC.stress,    del:fmtD(addM(startDate,totalMonths*stress.schedMult)),        cost:fmtC(baseCostBn*stress.costMult,currency),   conf:stress.confPct,   desc:'All risks materialise'},
   ];
 
