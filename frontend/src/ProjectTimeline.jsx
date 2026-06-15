@@ -514,7 +514,8 @@ export default function ProjectTimeline({model,actualProgress,initialMode}){
   const cvsRef=useRef(null),rafRef=useRef(null),lastTs=useRef(null),glowRef=useRef(0);
   const[prog,setProg]=useState(0),[playing,setPlaying]=useState(false);
   const[mode,setMode]=useState(initialMode||'base');
-  useEffect(()=>{if(initialMode&&initialMode!==mode)changeMode(initialMode);},[initialMode]);,[speed,setSpeed]=useState(2);
+  useEffect(()=>{if(initialMode&&initialMode!==mode)changeMode(initialMode);},[initialMode]);
+  const[speed,setSpeed]=useState(2);
   const[revMap,setRevMap]=useState(()=>new Map([['base',new Set()],['scenario',new Set()],['benchmark',new Set()],['stress',new Set()]]));
   const[log,setLog]=useState([]),[advisor,setAdvisor]=useState('');
   const[mob,setMob]=useState(()=>window.innerWidth<500);
