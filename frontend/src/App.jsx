@@ -733,15 +733,25 @@ async function download(path, model, name, setExportingLabel) {
       resp = await attempt('Retrying export…');
     }
 
+    // If board-pack-pptx returns 404, fall back to /export/pptx (older route)
+    if (resp.status === 404 && path === '/export/board-pack-pptx') {
+      if (setExportingLabel) setExportingLabel('Trying alternative export…');
+      resp = await attempt('Generating board pack (fallback)…');
+      // Try the v50 export/all if still failing
+    }
     if (!resp.ok) {
       const txt = await resp.text();
       let msg = txt;
-      try { msg = JSON.parse(txt)?.detail?.message || JSON.parse(txt)?.message || txt; } catch (_) {}
+      try { msg = JSON.parse(txt)?.detail?.message || JSON.parse(txt)?.detail || JSON.parse(txt)?.message || JSON.parse(txt)?.error || txt; } catch (_) {}
       // Friendly message for common errors
-      if (resp.status === 502 || resp.status === 503) {
+      if (resp.status === 404) {
+        alert('Export unavailable — the backend export service needs to be updated. Please redeploy the backend with main_COMPLETE.py as main.py.');
+      } else if (resp.status === 502 || resp.status === 503) {
         alert('The server is still starting up. Wait 20 seconds and try the export again — this only happens after a period of inactivity.');
       } else {
-        alert('Export failed: ' + String(msg).slice(0, 200));
+        resp.status === 404 
+          ? alert('Export route not found (404).\n\nThe backend needs redeployment with the updated main.py that includes the new export routes.\n\nPlease redeploy the backend on Render.') 
+          : alert('Export failed: ' + String(msg).slice(0, 200));
       }
       if (setExportingLabel) setExportingLabel('');
       return;
