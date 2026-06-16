@@ -694,7 +694,7 @@ function moneyLocal(n, curr) { const c = curr || '£'; return n >= 1000 ? `${c}$
 function fmt(v, curr) {
   if (v === undefined || v === null || v === '') return '—';
   if (typeof v === 'string') return v;
-  const c = curr || '$';
+  const c = curr || '£';
   return v >= 1000 ? `${c}${(v / 1000).toFixed(1)}T` : v >= 1 ? `${c}${v.toFixed(1)}B` : `${c}${(v * 1000).toFixed(0)}M`;
 }
 async function post(path, body) {
