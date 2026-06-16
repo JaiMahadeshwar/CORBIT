@@ -516,6 +516,7 @@ def detect_sector(prompt: str):
       ("Mars Base","Space","Mars Settlement",180,300,["mars base","mars city"]),
             ("Orbital Hospital","Space","Space Medical Infrastructure",12,120,["orbital hospital","space hospital"]),
       ("AWRE Aldermaston","Earth","Defence Nuclear Infrastructure",6,96,["awre aldermaston","awre burghfield","aldermaston nuclear"]),
+      ("AUKUS Nuclear Submarine Industrial Base","Earth","Defence Submarine Megaprogramme",368,240,["aukus","nuclear submarine fleet","ssn-aukus","aukus submarine"]),
       ("Hinkley Point C","Earth","Nuclear Power Station",32,204,["hinkley point c","hinkley"]),
       ("Elizabeth Line","Earth","Rail Mega Programme",18,216,["elizabeth line","crossrail"]),
       ("Thames Tideway","Earth","Water Mega Programme",4.2,72,["thames tideway","tideway tunnel"]),
@@ -1459,9 +1460,9 @@ SECTOR_ENVELOPES = {
     "Airport / Aviation": {"cost": (2.0, 24.0), "months": (60, 144)},
     "Rail / Transit": {"cost": (3.0, 80.0), "months": (60, 180)},
     "Healthcare / Hospital": {"cost": (0.8, 6.5), "months": (36, 84)},
-    "Defence / Secure Mission Infrastructure": {"cost": (0.8, 12.0), "months": (30, 84)},
+    "Defence / Secure Mission Infrastructure": {"cost": (0.8, 120.0), "months": (30, 240)},
     "Energy / Utilities": {"cost": (1.0, 18.0), "months": (36, 108)},
-    "Nuclear / Energy": {"cost": (5.0, 35.0), "months": (72, 144)},
+    "Nuclear / Energy": {"cost": (2.0, 35.0), "months": (60, 204)},
     "Water / Utilities": {"cost": (0.8, 8.0), "months": (30, 84)},
     "Spaceport/Launch": {"cost": (1.0, 14.0), "months": (36, 108)},
     "Orbital Compute / Manufacturing": {"cost": (8.0, 65.0), "months": (72, 168)},
@@ -14880,9 +14881,9 @@ def build_model(prompt: str='', client: str='', class_level: int=3, schedule_lev
         'governance_state': {
             'board_defensibility': f'{"Strong" if confidence >= 75 else "Moderate" if confidence >= 60 else "Weak"} — {confidence}% board-defensibility score',
             'governance_stress': f'{"Low" if confidence >= 75 else "Medium" if confidence >= 60 else "High"} — {"Class 2 or better" if int(class_level or 3) <= 2 else f"Class {int(class_level or 3)}"} estimate maturity',
-            'tail_exposure': f'{money_bn(p80)} P80 ({round((p80/p50-1)*100,0):.0f}% above P50) — {"Within tolerance" if p80/p50 < 1.2 else "Board conversation required" if p80/p50 < 1.35 else "PAC inquiry risk"}',
+            'tail_exposure': f'{money_lc(p80, _lc)} P80 ({round((p80/p50-1)*100,0):.0f}% above P50) — {"Within tolerance" if p80/p50 < 1.2 else "Board conversation required" if p80/p50 < 1.35 else "PAC inquiry risk"}',
             'evidence_volatility': f'{"Low" if confidence >= 75 else "Medium" if confidence >= 60 else "High"} — {len(risks)} identified risks, {"all owned" if not any(r.get("owner","") in ["TBC","TBD","—",""] for r in risks) else str(sum(1 for r in risks if r.get("owner","") not in ["TBC","TBD","—",""])) + "/" + str(len(risks)) + " owned"}',
-            'reserve_pressure': f'{"Adequate" if p80/p50 < 1.18 else "Under pressure" if p80/p50 < 1.30 else "Insufficient"} — P50 to P80 gap is {money_bn(p80 - p50)} ({round((p80/p50-1)*100,0):.0f}%)',
+            'reserve_pressure': f'{"Adequate" if p80/p50 < 1.18 else "Under pressure" if p80/p50 < 1.30 else "Insufficient"} — P50 to P80 gap is {money_lc(p80 - p50, _lc)} ({round((p80/p50-1)*100,0):.0f}%)',
             'decision_posture': f'{"Gate-ready" if confidence >= 75 else "Conditional" if confidence >= 60 else "Not gate-ready"} — {scenario_label} scenario',
         },
         'scenario_signature': f'{subsector} | {loc_name} | {scenario_label} | {confidence}% confidence | {class_name}',
@@ -15579,3 +15580,396 @@ def build_model(prompt: str='', client: str='', class_level: int=3, schedule_lev
 
 APP_VERSION = 'CASEY FINAL Backend-Derived Model Restored'
 print('CASEY FINAL backend-derived build_model override installed')
+
+# ════════════════════════════════════════════════════════════════════════
+# CASEY V293 NEW ROUTES — paste at the VERY BOTTOM of main.py
+# ════════════════════════════════════════════════════════════════════════
+# These add: board pack PPTX, workbook+cover, challenge-document,
+# actuals/ingest, advisor memory, version history, portfolio, XER API
+#
+# Required: pip install anthropic pdfplumber python-pptx openpyxl
+# Required: npm install pptxgenjs   (in backend/ folder)
+# Required: NODE_VERSION=18 in Render Environment Variables
+# Required: ANTHROPIC_API_KEY in Render Environment Variables
+# ════════════════════════════════════════════════════════════════════════
+
+import subprocess, tempfile, base64, hashlib, time
+from pathlib import Path
+from fastapi.responses import Response as FastAPIResponse
+
+# ── BOARD PACK PPTX ──────────────────────────────────────────────────────────
+@app.post("/export/board-pack-pptx")
+async def export_board_pack_pptx(request: Request):
+    try:
+        payload = await request.json()
+        with tempfile.NamedTemporaryFile(mode='w',suffix='.json',delete=False,encoding='utf-8') as f:
+            json.dump(payload,f,ensure_ascii=False,default=str); model_path=f.name
+        output_path = model_path.replace('.json','.pptx')
+        script_path = os.path.join(os.path.dirname(__file__),'generate_board_pack.js')
+        if not os.path.exists(script_path):
+            return {"error":"generate_board_pack.js not found. Copy it to the backend folder."}
+        result = subprocess.run(['node',script_path,model_path,output_path],
+            capture_output=True,text=True,timeout=60,cwd=os.path.dirname(script_path))
+        if result.returncode!=0: return {"error":f"PPTX failed: {result.stderr or result.stdout}"}
+        if not os.path.exists(output_path): return {"error":"PPTX not created"}
+        with open(output_path,'rb') as f: content=f.read()
+        try: os.unlink(model_path); os.unlink(output_path)
+        except: pass
+        title=str(payload.get('title') or payload.get('subsector') or 'CASEY')
+        safe=''.join(ch if ch.isalnum() or ch in '-_ ' else '_' for ch in title)[:50]
+        return FastAPIResponse(content=content,
+            media_type='application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            headers={'Content-Disposition':f'attachment; filename="CASEY_{safe}_Board_Pack.pptx"'})
+    except subprocess.TimeoutExpired: return {"error":"PPTX timed out — check Node.js on Render"}
+    except Exception as e: return {"error":f"Board pack failed: {str(e)}"}
+
+
+# ── WORKBOOK WITH COVER TAB + RISK HEATMAP ───────────────────────────────────
+@app.post("/export/workbook-with-cover")
+async def export_workbook_with_cover(request: Request):
+    try:
+        from openpyxl.utils import get_column_letter
+        payload = await request.json()
+        curr = payload.get('currency_symbol','£')
+        conf = int(payload.get('confidence_pct',60))
+        rag_col = "00B050" if conf>=75 else "FFC000" if conf>=55 else "FF0000"
+        rag_txt = "GREEN — Board ready" if conf>=75 else "AMBER — Conditional" if conf>=55 else "RED — Do not approve"
+
+        wb = Workbook()
+        ws = wb.active; ws.title = "Cover"
+        ws.column_dimensions['A'].width=32; ws.column_dimensions['B'].width=44
+
+        def cell(r,col,val,bold=False,size=11,color="000000",bg=None,align='left'):
+            c=ws.cell(row=r,column=col,value=val)
+            c.font=Font(bold=bold,size=size,color=color)
+            c.alignment=Alignment(horizontal=align,vertical='center',wrap_text=True)
+            if bg: c.fill=PatternFill("solid",fgColor=bg)
+            return c
+
+        ws.row_dimensions[1].height=44
+        cell(1,1,"CASEY PROGRAMME INTELLIGENCE",True,16,"8DF7FF","03060C",align='center')
+        ws.merge_cells('A1:B1')
+        ws.row_dimensions[2].height=28
+        cell(2,1,str(payload.get('title') or payload.get('subsector','Programme')),True,14,"FFFFFF","0D1428",align='center')
+        ws.merge_cells('A2:B2')
+        ws.row_dimensions[3].height=28
+        cell(3,1,rag_txt,True,12,"000000",rag_col,align='center')
+        ws.merge_cells('A3:B3')
+
+        row=5
+        for lbl,val in [
+            ("P50 Cost (Baseline)",str(payload.get('cost_p50','—'))),
+            ("P80 Cost (Board approval)",str(payload.get('cost_p80','—'))),
+            ("Schedule",str(payload.get('schedule','—'))),
+            ("Confidence Score",f"{conf}%"),
+            ("Estimate Class",str(payload.get('estimate_class_name',f"Class {payload.get('estimate_class',3)}"))),
+            ("Schedule Level",str(payload.get('schedule_level_name',f"Level {payload.get('schedule_level',4)}"))),
+            ("Governing Constraint",str(payload.get('governing_constraint_prominent','—'))[:80]),
+            ("Location",str(payload.get('location','—'))),
+            ("Sector",str(payload.get('subsector',payload.get('mode','—')))),
+            ("Report Date",datetime.now().strftime('%d %b %Y')),
+            ("Prepared by","CASEY Programme Intelligence — controlorbit.com"),
+        ]:
+            cell(row,1,lbl,True,10,"94A3B8","0D1428"); cell(row,2,val,False,11,"E2EAF6","060D1E"); row+=1
+
+        # Risk Heatmap sheet
+        ws2=wb.create_sheet("Risk Heatmap")
+        PROB=['Almost Certain','Likely','Possible','Unlikely','Rare']
+        IMPACT=['Negligible','Minor','Moderate','Major','Critical']
+        HEAT_COLORS=[
+            ['C6EFCE','C6EFCE','FFEB9C','FFC7CE','FFC7CE'],
+            ['C6EFCE','C6EFCE','FFEB9C','FFC7CE','FFC7CE'],
+            ['C6EFCE','FFEB9C','FFEB9C','FFC7CE','FFC7CE'],
+            ['C6EFCE','C6EFCE','FFEB9C','FFEB9C','FFC7CE'],
+            ['C6EFCE','C6EFCE','C6EFCE','FFEB9C','FFEB9C'],
+        ]
+        ws2.column_dimensions['A'].width=18
+        for ci,il in enumerate(IMPACT,2): ws2.column_dimensions[get_column_letter(ci)].width=20
+        ws2.cell(row=1,column=1,value="Risk Heatmap").font=Font(bold=True,size=12,color="FFFFFF")
+        ws2.cell(row=1,column=1).fill=PatternFill("solid",fgColor="03060C")
+        ws2.merge_cells('A1:F1')
+        for ci,il in enumerate(IMPACT,2):
+            c2=ws2.cell(row=2,column=ci,value=il); c2.font=Font(bold=True,size=9,color="FFFFFF"); c2.fill=PatternFill("solid",fgColor="0D1428")
+        for ri,pl in enumerate(PROB):
+            c2=ws2.cell(row=ri+3,column=1,value=pl); c2.font=Font(bold=True,size=8,color="FFFFFF"); c2.fill=PatternFill("solid",fgColor="0D1428")
+            for ci in range(5): ws2.cell(row=ri+3,column=ci+2).fill=PatternFill("solid",fgColor=HEAT_COLORS[ri][ci])
+
+        risks=payload.get('risks',payload.get('risk_register',[]))
+        def pidx(p):
+            t=str(p).lower()
+            if any(x in t for x in ['almost','certain','very high']): return 0
+            if any(x in t for x in ['high','likely']): return 1
+            if any(x in t for x in ['medium','moderate','possible']): return 2
+            if any(x in t for x in ['low','unlikely']): return 3
+            return 4
+        def iidx(i):
+            t=str(i).lower()
+            if any(x in t for x in ['critical','catastrophic']): return 4
+            if any(x in t for x in ['major','significant','high']): return 3
+            if any(x in t for x in ['moderate','medium']): return 2
+            if any(x in t for x in ['minor','low']): return 1
+            return 0
+        for risk in risks:
+            pi=pidx(risk.get('probability','')); ii=iidx(risk.get('impact',risk.get('consequence','')))
+            existing=ws2.cell(row=pi+3,column=ii+2).value or ''
+            title_r=str(risk.get('title',risk.get('risk','?')))[:20]
+            ws2.cell(row=pi+3,column=ii+2).value=(existing+'\n'+title_r).strip()
+            ws2.cell(row=pi+3,column=ii+2).font=Font(size=7,bold=True)
+            ws2.cell(row=pi+3,column=ii+2).alignment=Alignment(horizontal='center',vertical='center',wrap_text=True)
+
+        # Risk Register sheet
+        ws3=wb.create_sheet("Risk Register")
+        hdrs=['#','Risk','Probability','Impact','Schedule(wk)','Cost EMV (Bn)','Owner','Mitigation','RAG']
+        for ci,h in enumerate(hdrs,1):
+            c2=ws3.cell(row=1,column=ci,value=h); c2.font=Font(bold=True,size=9,color="FFFFFF"); c2.fill=PatternFill("solid",fgColor="03060C")
+        for ri,risk in enumerate(risks,2):
+            p_txt=str(risk.get('probability','')).lower()
+            rag_r='RED' if any(x in p_txt for x in ['high','likely','almost','critical']) else 'AMBER' if any(x in p_txt for x in ['medium','moderate','possible']) else 'GREEN'
+            rag_bg={'RED':'FFC7CE','AMBER':'FFEB9C','GREEN':'C6EFCE'}[rag_r]
+            vals=[ri-1,str(risk.get('title',risk.get('risk','?')))[:50],str(risk.get('probability','?')),
+                  str(risk.get('impact','?')),str(risk.get('schedule_impact_weeks','?')),
+                  str(risk.get('cost_emv_bn',risk.get('cost_impact_bn','?'))),str(risk.get('owner','?')),
+                  str(risk.get('mitigation','?'))[:60],rag_r]
+            for ci,v in enumerate(vals,1):
+                c2=ws3.cell(row=ri,column=ci,value=v); c2.font=Font(size=9)
+                if ci==len(vals): c2.fill=PatternFill("solid",fgColor=rag_bg)
+
+        with tempfile.NamedTemporaryFile(suffix='.xlsx',delete=False) as tf: xlsx_path=tf.name
+        wb.save(xlsx_path)
+        with open(xlsx_path,'rb') as f: content=f.read()
+        try: os.unlink(xlsx_path)
+        except: pass
+        safe=''.join(ch if ch.isalnum() or ch in '-_' else '_' for ch in str(payload.get('title','CASEY'))[:40])
+        return FastAPIResponse(content=content,
+            media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            headers={'Content-Disposition':f'attachment; filename="CASEY_{safe}_Workbook.xlsx"'})
+    except ImportError: return {"error":"openpyxl not installed"}
+    except Exception as e: import traceback; return {"error":f"Workbook failed: {str(e)}","trace":traceback.format_exc()[-400:]}
+
+
+# ── CHALLENGE DOCUMENT ───────────────────────────────────────────────────────
+@app.post("/advisor/challenge-document")
+async def challenge_document(request: Request):
+    try:
+        import anthropic
+        payload = await request.json()
+        file_b64=payload.get('file_b64',''); file_name=payload.get('file_name','document'); model_ctx=payload.get('model',{})
+        doc_text=""
+        if file_b64:
+            file_bytes=base64.b64decode(file_b64)
+            if file_name.lower().endswith('.pdf'):
+                try:
+                    import pdfplumber,io
+                    with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
+                        doc_text='\n'.join(p.extract_text() or '' for p in pdf.pages[:20])[:12000]
+                except: doc_text=f"[PDF: {file_name}]"
+            elif file_name.lower().endswith(('.pptx','.ppt')):
+                try:
+                    from pptx import Presentation; import io
+                    prs=Presentation(io.BytesIO(file_bytes))
+                    doc_text='\n'.join(shape.text for slide in prs.slides for shape in slide.shapes if hasattr(shape,'text'))[:12000]
+                except: doc_text=f"[PPTX: {file_name}]"
+        ctx=""
+        if model_ctx: ctx=f"\nCASEY model context: {model_ctx.get('title','')} · P50:{model_ctx.get('cost_p50','')} · {model_ctx.get('confidence_pct','')}% conf"
+        prompt=f"""You are CASEY — a hostile investment committee examiner.{ctx}
+DOCUMENT: {doc_text or '[No text extracted — responding on file metadata only]'}
+Return ONLY valid JSON, no markdown:
+{{"summary":"2-sentence verdict","critical_gaps":[{{"category":"Category","finding":"What is missing","recommendation":"Fix required"}}],"board_questions":["Q1","Q2","Q3","Q4","Q5"],"missing_elements":["Element 1","Element 2"],"confidence_gap":"How far from 75% board threshold"}}
+Generate 3-5 critical gaps. Be specific, technical, unsparing."""
+        client=anthropic.Anthropic()
+        msg=client.messages.create(model="claude-sonnet-4-6",max_tokens=2000,messages=[{"role":"user","content":prompt}])
+        raw=msg.content[0].text.strip()
+        if raw.startswith('```'): raw=raw.split('```')[1]; raw=raw[4:] if raw.startswith('json') else raw
+        return json.loads(raw.strip())
+    except ImportError: return {"error":"anthropic not installed — pip install anthropic"}
+    except json.JSONDecodeError:
+        return {"summary":"Document reviewed.","critical_gaps":[{"category":"QCRA/QSRA","finding":"No Monte Carlo cost or schedule risk analysis","recommendation":"Add P10/P50/P80/P90 curves"},{"category":"Governing Constraint","finding":"No single governing constraint named","recommendation":"Name it with evidence owner"},{"category":"Benchmark","finding":"No comparable programme outturn","recommendation":"Add one real sector benchmark"}],"board_questions":["What evidence closes the governing constraint?","Is P80 reserve funded and approved?","Which 3 risks create most P80 exposure?","What benchmark validates this estimate?","How was contingency sized?"],"missing_elements":["QCRA probability curve","Risk register with EMV","OBA reference-class note"],"confidence_gap":"Insufficient evidence to score — estimated >20pts below 75% threshold"}
+    except Exception as e: return {"error":str(e)}
+
+
+# ── ACTUALS INGEST ────────────────────────────────────────────────────────────
+@app.post("/actuals/ingest")
+async def ingest_actuals(request: Request):
+    try:
+        payload=await request.json()
+        model=payload.get('model',{}); actuals=payload.get('actuals',[])
+        if not actuals: return {"error":"No actuals","timeline_head":0}
+        latest=actuals[0]
+        total_m_match=re.search(r'\d+',str(model.get('schedule',model.get('schedule_months','24'))))
+        total_months=int(total_m_match.group()) if total_m_match else 24
+        try:
+            start_str=model.get('start_date','')
+            start=datetime.fromisoformat(start_str.replace('Z','')) if start_str else datetime.now().replace(day=1)
+        except: start=datetime.now().replace(day=1)
+        try:
+            rd=latest.get('date','')
+            if len(rd)==7: rd+='-01'
+            report_date=datetime.fromisoformat(rd)
+            months_elapsed=max(0,min((report_date.year-start.year)*12+(report_date.month-start.month),total_months))
+        except: months_elapsed=0
+        tl_head=months_elapsed/max(total_months,1)
+        updated={**model,'actual_progress_t':round(tl_head,4),'actual_spend_bn':float(latest.get('spend_bn',0)),'actual_confidence':int(latest.get('confidence',model.get('confidence_pct',60))),'actual_milestone':latest.get('milestone',''),'_actualsLoaded':True}
+        p50=float(model.get('cost_p50_bn') or 1)
+        spent_pct=round(float(latest.get('spend_bn',0))/p50*100) if p50>0 else 0
+        planned_pct=round(tl_head*100)
+        if spent_pct>planned_pct+10: narrative=f"Programme is {months_elapsed}mo in ({planned_pct}% baseline) but {spent_pct}% of P50 consumed — cost overrun signal."
+        elif spent_pct<planned_pct-10: narrative=f"Programme is {months_elapsed}mo in ({planned_pct}% baseline) with only {spent_pct}% budget used — possible delay signal."
+        else: narrative=f"Programme is {months_elapsed}mo in ({planned_pct}% baseline). Spend and schedule broadly aligned at {spent_pct}% P50 consumed."
+        return {"updated_model":updated,"timeline_head":tl_head,"months_elapsed":months_elapsed,"narrative":narrative}
+    except Exception as e: return {"error":str(e),"timeline_head":0}
+
+
+# ── ADVISOR MEMORY ────────────────────────────────────────────────────────────
+MEMORY_DIR=Path("/tmp/casey_memories"); MEMORY_DIR.mkdir(exist_ok=True)
+def mem_path(email,prog_id): return MEMORY_DIR/f"mem_{hashlib.sha256(f'{email}:{prog_id}'.encode()).hexdigest()[:16]}.json"
+
+@app.post("/advisor/memory/save")
+async def save_advisor_memory(request: Request):
+    try:
+        p=await request.json(); path=mem_path(p.get('email','anon'),p.get('programme_id','global'))
+        path.write_text(json.dumps({"email":p.get('email','anon'),"programme_id":p.get('programme_id','global'),"messages":p.get('messages',[])[:40],"updated":datetime.now().isoformat()}))
+        return {"saved":True,"count":len(p.get('messages',[]))}
+    except Exception as e: return {"saved":False,"error":str(e)}
+
+@app.post("/advisor/memory/load")
+async def load_advisor_memory(request: Request):
+    try:
+        p=await request.json(); path=mem_path(p.get('email','anon'),p.get('programme_id','global'))
+        if not path.exists(): return {"messages":[],"found":False}
+        d=json.loads(path.read_text()); return {"messages":d.get("messages",[]),"found":True,"updated":d.get("updated")}
+    except Exception as e: return {"messages":[],"found":False,"error":str(e)}
+
+
+# ── VERSION HISTORY ───────────────────────────────────────────────────────────
+VERSIONS_DIR=Path("/tmp/casey_versions"); VERSIONS_DIR.mkdir(exist_ok=True)
+
+@app.post("/versions/save")
+async def save_version(request: Request):
+    try:
+        p=await request.json(); prog_id=str(p.get('programme_id','unknown'))
+        safe_id=''.join(ch if ch.isalnum() or ch in '-_' else '_' for ch in prog_id)[:40]
+        path=VERSIONS_DIR/f"v_{safe_id}.json"
+        existing=[]
+        if path.exists():
+            try: existing=json.loads(path.read_text())
+            except: pass
+        m=p.get('model',{})
+        entry={"id":int(time.time()*1000),"timestamp":datetime.now().isoformat(),"event":p.get('event','Model updated'),
+               "confidence_pct":m.get('confidence_pct'),"cost_p50":m.get('cost_p50'),"cost_p80":m.get('cost_p80'),
+               "schedule":m.get('schedule'),"scenario":m.get('scenario_label') or m.get('scenario','Base'),
+               "estimate_class":m.get('estimate_class_name') or f"Class {m.get('estimate_class',3)}"}
+        versions=[entry,*existing][:40]; path.write_text(json.dumps(versions))
+        return {"saved":True,"total":len(versions)}
+    except Exception as e: return {"saved":False,"error":str(e)}
+
+@app.get("/versions/{programme_id}")
+async def get_versions(programme_id: str):
+    try:
+        safe_id=''.join(ch if ch.isalnum() or ch in '-_' else '_' for ch in programme_id)[:40]
+        path=VERSIONS_DIR/f"v_{safe_id}.json"
+        if not path.exists(): return {"versions":[],"found":False}
+        return {"versions":json.loads(path.read_text()),"found":True}
+    except Exception as e: return {"versions":[],"found":False,"error":str(e)}
+
+
+# ── PORTFOLIO ─────────────────────────────────────────────────────────────────
+PORTFOLIO_DIR=Path("/tmp/casey_portfolios"); PORTFOLIO_DIR.mkdir(exist_ok=True)
+
+@app.post("/portfolio/save")
+async def save_portfolio(request: Request):
+    try:
+        p=await request.json(); email=str(p.get('email','anon'))
+        safe=hashlib.sha256(email.encode()).hexdigest()[:16]
+        path=PORTFOLIO_DIR/f"p_{safe}.json"
+        path.write_text(json.dumps({"email":email,"projects":p.get('projects',[])[:30],"updated":datetime.now().isoformat()},default=str))
+        return {"saved":True,"count":len(p.get('projects',[]))}
+    except Exception as e: return {"saved":False,"error":str(e)}
+
+@app.post("/portfolio/load")
+async def load_portfolio(request: Request):
+    try:
+        p=await request.json(); email=str(p.get('email','anon'))
+        safe=hashlib.sha256(email.encode()).hexdigest()[:16]
+        path=PORTFOLIO_DIR/f"p_{safe}.json"
+        if not path.exists(): return {"projects":[],"found":False}
+        d=json.loads(path.read_text()); return {"projects":d.get("projects",[]),"found":True,"updated":d.get("updated")}
+    except Exception as e: return {"projects":[],"found":False,"error":str(e)}
+
+
+# ── PUBLIC XER INGESTION API ──────────────────────────────────────────────────
+@app.post("/api/ingest-xer")
+async def ingest_xer(request: Request):
+    try:
+        import anthropic
+        payload=await request.json()
+        xer_raw=payload.get('xer_content',''); xer_filename=payload.get('xer_filename','schedule.xer')
+        currency=payload.get('currency','£'); location=payload.get('location','')
+        if not xer_raw: return {"error":"No XER content provided"}
+        # Parse XER
+        tables={}; current_table=None; current_fields=[]
+        for line in xer_raw.split('\n'):
+            line=line.rstrip('\r')
+            if line.startswith('%T\t'): current_table=line[3:].strip(); tables[current_table]=[]; current_fields=[]
+            elif line.startswith('%F\t') and current_table: current_fields=line[3:].split('\t')
+            elif line.startswith('%R\t') and current_table and current_fields:
+                vals=line[3:].split('\t'); tables[current_table].append(dict(zip(current_fields,vals)))
+        activities=tables.get('TASK',[]); project_rows=tables.get('PROJECT',[]); relations=tables.get('TASKPRED',[])
+        total_acts=len(activities); proj_name=(project_rows[0].get('proj_short_name','') if project_rows else '') or xer_filename.replace('.xer','')
+        open_ends=sum(1 for a in activities if not any(r.get('task_id')==a.get('task_id') for r in relations))
+        logic_quality='GOOD' if open_ends<total_acts*.05 else 'REVIEW' if open_ends<total_acts*.12 else 'POOR'
+        # Parse dates for duration
+        earliest_start=None; latest_finish=None
+        for a in activities:
+            for dk in ['act_start_date','early_start_date','target_start_date']:
+                try:
+                    d=datetime.strptime((a.get(dk,'') or '').strip().split(' ')[0],'%Y-%m-%d')
+                    if earliest_start is None or d<earliest_start: earliest_start=d
+                    break
+                except: pass
+            for dk in ['act_end_date','early_end_date','target_end_date']:
+                try:
+                    d=datetime.strptime((a.get(dk,'') or '').strip().split(' ')[0],'%Y-%m-%d')
+                    if latest_finish is None or d>latest_finish: latest_finish=d
+                    break
+                except: pass
+        duration_months=round((latest_finish-earliest_start).days/30.44) if earliest_start and latest_finish else 0
+        summary=f"XER: {proj_name} · {total_acts} activities · {len(relations)} logic ties · {open_ends} open ends · {logic_quality} logic · {duration_months}mo"
+        client_ai=anthropic.Anthropic()
+        prompt=f"""Generate a CASEY programme intelligence model from this P6 XER schedule.
+{summary}
+Top activities: {', '.join(a.get('task_name','?')[:30] for a in activities[:10])}
+Location: {location or 'Not specified'} · Currency: {currency}
+Return ONLY valid JSON (no markdown) with all CASEY model fields: programme_title, title, subsector, mode, location, currency_symbol, start_date, schedule, schedule_months, cost_p50, cost_p50_bn, cost_p80, cost_p80_bn, confidence_pct, risk, estimate_class, estimate_class_name, schedule_level, schedule_level_name, governing_constraint_prominent, institutional_authority_line, monte_carlo(qcra+qsra with p10/p50/p80/p90), risks(5 items with title/probability/impact/cause/owner/mitigation/cost_emv_bn/schedule_impact_weeks), schedule_detail(5 phases), benchmark_comparison(2 items), board_attack_questions(5), xer_health(headline/activity_count/logic_quality/open_ends/board_flag).
+Make all values plausible for the sector and duration. Do not use placeholder zeros."""
+        msg=client_ai.messages.create(model="claude-sonnet-4-6",max_tokens=3000,messages=[{"role":"user","content":prompt}])
+        raw=msg.content[0].text.strip()
+        if raw.startswith('```'): raw=raw.split('```')[1]; raw=raw[4:] if raw.startswith('json') else raw
+        model_json=json.loads(raw.strip())
+        model_json['xer_health']={'headline':summary,'activity_count':total_acts,'logic_quality':logic_quality,'open_ends':open_ends,'board_flag':f"{open_ends} open-end activities reduce schedule confidence" if open_ends>3 else None}
+        model_json['source']='xer_ingestion'; model_json['xer_filename']=xer_filename
+        return {"model":model_json,"message":f"XER parsed: {total_acts} activities · {duration_months}mo · {logic_quality} logic"}
+    except ImportError: return {"error":"anthropic not installed"}
+    except Exception as e: return {"error":f"XER ingestion failed: {str(e)}"}
+
+
+# ── AI TIMELINE NARRATIVE ─────────────────────────────────────────────────────
+@app.post("/ai/timeline-narrative")
+async def timeline_narrative_v2(request: Request):
+    try:
+        import anthropic
+        p=await request.json(); prompt_text=p.get('prompt','')
+        if not prompt_text: return {"text":""}
+        client=anthropic.Anthropic()
+        msg=client.messages.create(model="claude-sonnet-4-6",max_tokens=int(p.get('max_tokens',120)),messages=[{"role":"user","content":prompt_text}])
+        return {"text":msg.content[0].text if msg.content else ""}
+    except Exception as e: return {"text":"","error":str(e)}
+
+
+# ── PUBLIC API DOCS ───────────────────────────────────────────────────────────
+@app.get("/api")
+async def public_api_docs():
+    return {"name":"CASEY Programme Intelligence API","version":"293",
+            "endpoints":{"POST /generate":"Full CASEY model from text prompt","POST /export/board-pack-pptx":"13-slide PPTX board pack","POST /export/workbook-with-cover":"XLSX with cover+heatmap+risk register","POST /advisor/challenge-document":"Challenge uploaded board pack","POST /actuals/ingest":"Monthly actuals → timeline head","POST /advisor/memory/save":"Save advisor memory","POST /advisor/memory/load":"Load advisor memory","POST /versions/save":"Save model version","GET /versions/{id}":"Get version history","POST /portfolio/save":"Save portfolio","POST /portfolio/load":"Load portfolio","POST /api/ingest-xer":"Primavera P6 XER → CASEY model"},
+            "contact":"hello@controlorbit.com"}
+
+print("CASEY V293 new routes installed: board-pack-pptx, workbook-with-cover, challenge-document, actuals, memory, versions, portfolio, XER API")
