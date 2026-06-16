@@ -458,15 +458,16 @@ function paintCanvas(ctx,W,H,state){
       const sz=r.sev==='high'?(mob?5.5:7):(mob?3.5:5);
       // Diamond
       // Risk diamonds: HIGH=orange, CRITICAL=red, MED=track colour
-      const riskFill=r.sev==='high'?'#f59e0b':r.sev==='critical'?'#ef4444':'rgba(255,255,255,0.85)';
-      const riskGlow=r.sev==='high'?'rgba(245,158,11,.75)':r.sev==='critical'?'rgba(239,68,68,.75)':'rgba(255,255,255,.3)';
-      ctx.save();ctx.shadowColor=riskGlow;const _rBlur=r.sev==='high'?14:r.sev==='critical'?16:5; ctx.shadowBlur=_rBlur;
+      const riskFill=r.sev==='high'?'#f59e0b':r.sev==='critical'?'#ef4444':tr.color+'bb';
+      const riskGlow=r.sev==='high'?'rgba(245,158,11,.6)':r.sev==='critical'?'rgba(239,68,68,.6)':'transparent';
+      ctx.save();ctx.shadowColor=riskGlow;ctx.shadowBlur=r.sev==='high'||r.sev==='critical'?12:0;
       ctx.fillStyle=riskFill;
       ctx.translate(rx2,ryi);ctx.beginPath();
       ctx.moveTo(0,-sz);ctx.lineTo(sz,0);ctx.lineTo(0,sz);ctx.lineTo(-sz,0);ctx.closePath();ctx.fill();
-      ctx.strokeStyle=r.sev==='critical'?'#ff4444':r.sev==='high'?'#fbbf24':'rgba(255,255,255,0.9)';
-      ctx.lineWidth=r.sev==='high'||r.sev==='critical'?1.5:0.8;
-      ctx.beginPath();ctx.moveTo(0,-sz);ctx.lineTo(sz,0);ctx.lineTo(0,sz);ctx.lineTo(-sz,0);ctx.closePath();ctx.stroke();
+      if(r.sev==='high'||r.sev==='critical'){
+        ctx.strokeStyle=r.sev==='critical'?'#ff6b6b':'#fbbf24';ctx.lineWidth=1.2;ctx.beginPath();
+        ctx.moveTo(0,-sz);ctx.lineTo(sz,0);ctx.lineTo(0,sz);ctx.lineTo(-sz,0);ctx.closePath();ctx.stroke();
+      }
       ctx.restore();
       // Connector + label box (tablet and desktop)
       if(!mob){
@@ -478,7 +479,7 @@ function paintCanvas(ctx,W,H,state){
         ctx.fillStyle='rgba(3,5,14,.93)';ctx.strokeStyle=tr.color+'55';ctx.lineWidth=.7;
         ctx.beginPath();ctx.roundRect(bx,by,bw,bh,4);ctx.fill();ctx.stroke();
         // Left colour strip
-        ctx.fillStyle=r.sev==='high'?'#f59e0b':r.sev==='critical'?'#ef4444':'rgba(255,255,255,0.6)';ctx.beginPath();ctx.roundRect(bx,by,3,bh,[3,0,0,3]);ctx.fill();
+        ctx.fillStyle=r.sev==='high'?'#f59e0b':r.sev==='critical'?'#ef4444':tr.color;ctx.beginPath();ctx.roundRect(bx,by,3,bh,[3,0,0,3]);ctx.fill();
         ctx.font=`700 6px 'SF Mono',monospace`;ctx.fillStyle=tr.color+'cc';ctx.textAlign='left';
         ctx.fillText(tr.shortL.slice(0,9).toUpperCase(),bx+6,by+9);
         ctx.font=`700 ${tab?7.5:8}px 'SF Mono',monospace`;ctx.fillStyle='#d8e8f4';

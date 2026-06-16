@@ -3168,31 +3168,27 @@ body:has(.v50TakeoverHero) .v50ConsoleTop {
 
 
 
-/* ═══════════════════════════════════════════════════════════════
-   CASEY V294 — HERO FINAL OVERRIDE
-   Appended LAST so specificity wins over all earlier rules.
-   Uses :is() and body:has() for maximum cascade weight.
-   Does NOT modify any existing rule structure.
-═══════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════
+   CASEY V294 HERO OVERRIDE — appended last, wins cascade
+   Base style.css kept intact to avoid structural breaks.
+   These rules use !important to override all previous.
+═══════════════════════════════════════════════════════ */
 
-/* Hide sticky nav when hero is active */
+/* Single nav — hide sticky header when hero showing */
 body:has(.v50TakeoverHero) .v50ConsoleTop { display: none !important; }
-body:has(.v50TakeoverHero) header.v50ConsoleTop { display: none !important; }
+body:has(.v50TakeoverHero) header { display: none !important; }
 
-/* Force hero to full viewport — override every earlier rule */
+/* Force hero to full viewport — wins over ALL earlier rules */
 .v50TakeoverHero {
   position: fixed !important;
   inset: 0 !important;
   z-index: 100 !important;
   width: 100vw !important;
   height: 100vh !important;
-  height: 100dvh !important;
   overflow: hidden !important;
   background: #000 !important;
   min-height: unset !important;
 }
-
-/* Video cover */
 .v50TakeoverHero .v50HeroVideo {
   position: absolute !important;
   inset: 0 !important;
@@ -3201,16 +3197,12 @@ body:has(.v50TakeoverHero) header.v50ConsoleTop { display: none !important; }
   object-fit: cover !important;
   z-index: 1 !important;
 }
-
-/* Shade overlay */
 .v50TakeoverHero .v50HeroShade {
   position: absolute !important;
   inset: 0 !important;
   z-index: 2 !important;
   pointer-events: none !important;
 }
-
-/* Top bar */
 .v50TakeoverHero .v50TopBar {
   position: absolute !important;
   top: 28px !important;
@@ -3220,8 +3212,6 @@ body:has(.v50TakeoverHero) header.v50ConsoleTop { display: none !important; }
   background: transparent !important;
   border: none !important;
 }
-
-/* Hero center */
 .v50TakeoverHero .v50HeroCenter {
   position: absolute !important;
   inset: 0 !important;
@@ -3229,9 +3219,8 @@ body:has(.v50TakeoverHero) header.v50ConsoleTop { display: none !important; }
   display: grid !important;
   place-items: center !important;
   text-align: center !important;
+  padding: 0 24px !important;
 }
-
-/* Bottom bar */
 .v50TakeoverHero .v50BottomBar {
   position: absolute !important;
   bottom: 0 !important;
@@ -3245,5 +3234,8 @@ body:has(.v50TakeoverHero) header.v50ConsoleTop { display: none !important; }
     left: 14px !important;
     right: 14px !important;
     top: 14px !important;
+  }
+  .v50TakeoverHero .v50HeroCenter h1 {
+    font-size: 44px !important;
   }
 }
